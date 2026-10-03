@@ -1,0 +1,8 @@
+# Nunca subir variables locales: en Vercel se configuran en el panel del proyecto.
+.env
+.env.*
+!.env.example
+node_modules
+.next
+.claude
+.agents

@@ -2,32 +2,48 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/app/logo"
+import { cn } from "@/lib/utils"
 
-const LINKS = [
-  { href: "/#inicio", label: "Inicio" },
-  { href: "/#funciones", label: "Funciones" },
-  { href: "/#precios", label: "Precios" },
-  { href: "/#preguntas", label: "Preguntas frecuentes" },
+export const SITE_LINKS = [
+  { href: "/", label: "Inicio" },
+  { href: "/funciones", label: "Funciones" },
+  { href: "/como-funciona", label: "Cómo funciona" },
+  { href: "/precios", label: "Precios" },
+  { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
 ]
 
 export function SiteHeader() {
+  const pathname = usePathname()
   const [open, setOpen] = React.useState(false)
+
   return (
-    <header className="sticky top-0 z-40 border-b border-transparent bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/70">
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/70">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Principal">
-          {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
-              {l.label}
-            </a>
-          ))}
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
+          {SITE_LINKS.map((l) => {
+            const active = pathname === l.href
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground",
+                  active && "font-medium text-foreground",
+                )}
+              >
+                {l.label}
+              </Link>
+            )
+          })}
         </nav>
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <Button variant="ghost" asChild>
             <Link href="/login">Iniciar sesión</Link>
           </Button>
@@ -37,7 +53,7 @@ export function SiteHeader() {
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menú">
+            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menú">
               <Menu />
             </Button>
           </SheetTrigger>
@@ -46,10 +62,19 @@ export function SiteHeader() {
               <SheetTitle className="text-left">Menú</SheetTitle>
             </SheetHeader>
             <nav className="grid gap-1 px-4" aria-label="Móvil">
-              {LINKS.map((l) => (
-                <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-base hover:bg-muted">
+              {SITE_LINKS.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={pathname === l.href ? "page" : undefined}
+                  className={cn(
+                    "rounded-lg px-3 py-2.5 text-base hover:bg-muted",
+                    pathname === l.href && "bg-muted font-medium",
+                  )}
+                >
                   {l.label}
-                </a>
+                </Link>
               ))}
             </nav>
             <div className="mt-auto grid gap-2 p-4">

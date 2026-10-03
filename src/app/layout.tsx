@@ -18,6 +18,18 @@ export const metadata: Metadata = {
   applicationName: "OrdenSimple",
   appleWebApp: { capable: true, title: "OrdenSimple", statusBarStyle: "default" },
   icons: { apple: "/pwa-icon/180" },
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    siteName: "OrdenSimple",
+    title: "OrdenSimple — Administra tu negocio sin complicarte",
+    description: "Controla tus ventas, gastos, productos y ganancias desde un solo lugar. Gratis para empezar.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OrdenSimple — Administra tu negocio sin complicarte",
+    description: "Controla tus ventas, gastos, productos y ganancias desde un solo lugar.",
+  },
 }
 
 export const viewport: Viewport = {

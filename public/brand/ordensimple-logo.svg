@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-label="OrdenSimple">
+  <rect width="64" height="64" rx="15" fill="#007653"/>
+  <rect x="14" y="36" width="9" height="14" rx="4.5" fill="#fff"/>
+  <rect x="27.5" y="28" width="9" height="22" rx="4.5" fill="#fff"/>
+  <rect x="41" y="26" width="9" height="24" rx="4.5" fill="#fff"/>
+  <circle cx="45.5" cy="17.5" r="4.5" fill="#f2a649"/>
+  <text x="80" y="43" font-family="Geist, Inter, 'Segoe UI', system-ui, sans-serif" font-size="32" font-weight="600" letter-spacing="-0.8" fill="#13201c">Orden<tspan fill="#007653">Simple</tspan></text>
+</svg>

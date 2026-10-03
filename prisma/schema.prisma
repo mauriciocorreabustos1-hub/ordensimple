@@ -1,0 +1,398 @@
+// OrdenSimple — modelo de datos
+// Montos: enteros en la unidad mínima de la moneda (CLP = pesos, USD = centavos).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  OWNER
+  ADMIN
+  EMPLOYEE
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum PaymentMethod {
+  CASH
+  DEBIT
+  CREDIT
+  TRANSFER
+  OTHER
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum NotificationType {
+  LOW_STOCK
+  OUT_OF_STOCK
+  NO_SALES
+  TIP
+  SYSTEM
+}
+
+// ─── Autenticación (Better Auth) ────────────────────────────────────────────
+
+model User {
+  id               String   @id
+  name             String
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  activeBusinessId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  memberships   BusinessMember[]
+  sales         Sale[]
+  expenses      Expense[]
+  movements     InventoryMovement[]
+  notifications Notification[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─── Negocio ────────────────────────────────────────────────────────────────
+
+model Business {
+  id                  String   @id @default(cuid())
+  name                String
+  type                String?
+  country             String   @default("CL")
+  currency            String   @default("CLP")
+  timezone            String   @default("America/Santiago")
+  plan                Plan     @default(FREE)
+  hasProducts         Boolean?
+  hasEmployees        Boolean?
+  managesInventory    Boolean?
+  monthlyRevenueRange String?
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  members           BusinessMember[]
+  settings          BusinessSettings?
+  categories        Category[]
+  products          Product[]
+  sales             Sale[]
+  expenses          Expense[]
+  expenseCategories ExpenseCategory[]
+  customers         Customer[]
+  suppliers         Supplier[]
+  movements         InventoryMovement[]
+  goals             Goal[]
+  notifications     Notification[]
+
+  @@map("business")
+}
+
+model BusinessMember {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @default(EMPLOYEE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([businessId, userId])
+  @@index([userId])
+  @@map("business_member")
+}
+
+model BusinessSettings {
+  id                String   @id @default(cuid())
+  businessId        String   @unique
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  easyMode          Boolean  @default(false)
+  lowStockAlerts    Boolean  @default(true)
+  noSalesReminder   Boolean  @default(true)
+  weeklySummary     Boolean  @default(false)
+  defaultPayment    PaymentMethod @default(CASH)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("business_settings")
+}
+
+// ─── Catálogo ───────────────────────────────────────────────────────────────
+
+model Category {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  products   Product[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([businessId, name])
+  @@map("category")
+}
+
+model Product {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  sku        String?
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  cost       Int       @default(0)
+  price      Int       @default(0)
+  stock      Int       @default(0)
+  minStock   Int       @default(0)
+  trackStock Boolean   @default(true)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  saleItems SaleItem[]
+  movements InventoryMovement[]
+
+  @@unique([businessId, sku])
+  @@index([businessId, active])
+  @@map("product")
+}
+
+// ─── Ventas ─────────────────────────────────────────────────────────────────
+
+model Sale {
+  id            String        @id @default(cuid())
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  date          DateTime      @default(now())
+  total         Int
+  paymentMethod PaymentMethod @default(CASH)
+  isQuick       Boolean       @default(false)
+  note          String?
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdBy     User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  items     SaleItem[]
+  movements InventoryMovement[]
+
+  @@index([businessId, date])
+  @@map("sale")
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Int
+  unitPrice   Int
+  unitCost    Int      @default(0)
+  subtotal    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_item")
+}
+
+// ─── Gastos ─────────────────────────────────────────────────────────────────
+
+model ExpenseCategory {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  icon       String?
+  isDefault  Boolean   @default(false)
+  // Gasto que crece con las ventas (compra de mercadería). El resto se trata como gasto fijo.
+  isVariable Boolean   @default(false)
+  expenses   Expense[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([businessId, name])
+  @@map("expense_category")
+}
+
+model Expense {
+  id          String           @id @default(cuid())
+  businessId  String
+  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  description String
+  amount      Int
+  date        DateTime         @default(now())
+  categoryId  String?
+  category    ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  supplierId  String?
+  supplier    Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([businessId, date])
+  @@map("expense")
+}
+
+// ─── Contactos ──────────────────────────────────────────────────────────────
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  phone      String?
+  email      String?
+  notes      String?
+  sales      Sale[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([businessId])
+  @@map("customer")
+}
+
+model Supplier {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String?
+  email        String?
+  products     String?
+  deliveryCost Int?
+  notes        String?
+  expenses     Expense[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([businessId])
+  @@map("supplier")
+}
+
+// ─── Inventario ─────────────────────────────────────────────────────────────
+
+model InventoryMovement {
+  id          String                @id @default(cuid())
+  businessId  String
+  business    Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        InventoryMovementType
+  // Positivo suma stock, negativo resta.
+  quantity    Int
+  reason      String?
+  saleId      String?
+  sale        Sale?                 @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([businessId, productId])
+  @@map("inventory_movement")
+}
+
+// ─── Metas y notificaciones ─────────────────────────────────────────────────
+
+model Goal {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Mes de la meta en formato AAAA-MM, en la zona horaria del negocio.
+  month        String
+  targetProfit Int
+  marginPct    Float?
+  fixedCosts   Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([businessId, month])
+  @@map("goal")
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  businessId String
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  title      String
+  body       String?
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([businessId, readAt])
+  @@map("notification")
+}

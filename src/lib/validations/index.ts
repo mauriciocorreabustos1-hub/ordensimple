@@ -1,0 +1,151 @@
+import { z } from "zod"
+import { CURRENCY_CODES } from "@/lib/currency"
+import { COUNTRIES } from "@/lib/constants"
+
+// Mismos esquemas en el formulario (cliente) y en la Server Action (servidor).
+
+const MAX_AMOUNT = 2_000_000_000
+
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Máximo ${max} caracteres`)
+    .optional()
+    .transform((v) => (v ? v : undefined))
+
+export const money = z
+  .number({ error: "Ingresa un monto" })
+  .int("Monto inválido")
+  .min(0, "No puede ser negativo")
+  .max(MAX_AMOUNT, "Monto demasiado alto")
+
+export const positiveMoney = money.refine((v) => v > 0, "Ingresa un monto mayor a 0")
+
+export const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
+
+export const paymentMethod = z.enum(["CASH", "DEBIT", "CREDIT", "TRANSFER", "OTHER"])
+
+// ─── Autenticación ──────────────────────────────────────────────────────────
+
+export const loginSchema = z.object({
+  email: z.email("Ingresa un correo válido").trim().toLowerCase(),
+  password: z.string().min(1, "Ingresa tu contraseña"),
+})
+
+export const registerSchema = z.object({
+  name: z.string().trim().min(2, "Escribe tu nombre").max(80),
+  email: z.email("Ingresa un correo válido").trim().toLowerCase(),
+  password: z.string().min(8, "Usa al menos 8 caracteres").max(128),
+})
+
+export const forgotPasswordSchema = z.object({
+  email: z.email("Ingresa un correo válido").trim().toLowerCase(),
+})
+
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, "Usa al menos 8 caracteres").max(128),
+    confirm: z.string(),
+  })
+  .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Las contraseñas no coinciden" })
+
+// ─── Negocio ────────────────────────────────────────────────────────────────
+
+const countryCode = z.enum(COUNTRIES.map((c) => c.code) as [string, ...string[]])
+const currencyCode = z.enum(CURRENCY_CODES as [string, ...string[]])
+
+export const onboardingSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre de tu negocio").max(80),
+  type: optionalText(80),
+  country: countryCode.default("CL"),
+  currency: currencyCode.default("CLP"),
+  hasProducts: z.boolean().nullable().optional(),
+  hasEmployees: z.boolean().nullable().optional(),
+  managesInventory: z.boolean().nullable().optional(),
+  monthlyRevenueRange: optionalText(60),
+})
+export type OnboardingInput = z.input<typeof onboardingSchema>
+
+export const businessSettingsSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre de tu negocio").max(80),
+  type: optionalText(80),
+  country: countryCode,
+  currency: currencyCode,
+})
+export type BusinessSettingsInput = z.input<typeof businessSettingsSchema>
+
+export const preferencesSchema = z.object({
+  easyMode: z.boolean().optional(),
+  lowStockAlerts: z.boolean().optional(),
+  noSalesReminder: z.boolean().optional(),
+  weeklySummary: z.boolean().optional(),
+})
+export type PreferencesInput = z.input<typeof preferencesSchema>
+
+export const categoryNameSchema = z.object({
+  name: z.string().trim().min(2, "Escribe un nombre").max(40),
+})
+
+// ─── Ventas ─────────────────────────────────────────────────────────────────
+
+export const saleItemSchema = z.object({
+  productId: z.string().optional(),
+  description: z.string().trim().min(1, "Escribe qué vendiste").max(120),
+  quantity: z.number().int("Usa números enteros").min(1, "Mínimo 1").max(100_000),
+  unitPrice: positiveMoney,
+})
+
+export const saleSchema = z.object({
+  items: z.array(saleItemSchema).min(1, "Agrega al menos un producto o servicio").max(50),
+  date: dateKey,
+  paymentMethod,
+  customerName: optionalText(80),
+  note: optionalText(200),
+})
+export type SaleInput = z.input<typeof saleSchema>
+
+export const quickSaleSchema = z.object({
+  amount: positiveMoney,
+  date: dateKey,
+  paymentMethod,
+  note: optionalText(200),
+})
+export type QuickSaleInput = z.input<typeof quickSaleSchema>
+
+// ─── Gastos ─────────────────────────────────────────────────────────────────
+
+export const expenseSchema = z.object({
+  description: z.string().trim().min(2, "Describe el gasto").max(120),
+  categoryId: z.string().optional(),
+  amount: positiveMoney,
+  date: dateKey,
+  supplierName: optionalText(80),
+})
+export type ExpenseInput = z.input<typeof expenseSchema>
+
+// ─── Productos ──────────────────────────────────────────────────────────────
+
+export const productSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre").max(100),
+  sku: optionalText(40),
+  categoryName: optionalText(40),
+  cost: money,
+  price: positiveMoney,
+  stock: z.number().int("Usa números enteros").min(0).max(10_000_000),
+  minStock: z.number().int("Usa números enteros").min(0).max(10_000_000),
+  trackStock: z.boolean(),
+  active: z.boolean(),
+})
+export type ProductInput = z.input<typeof productSchema>
+
+// ─── Herramientas ───────────────────────────────────────────────────────────
+
+export const goalSchema = z.object({
+  targetProfit: positiveMoney,
+  marginPct: z.number().min(1).max(100),
+  fixedCosts: money,
+})
+export type GoalInput = z.input<typeof goalSchema>
+
+export const idSchema = z.string().min(1).max(64)

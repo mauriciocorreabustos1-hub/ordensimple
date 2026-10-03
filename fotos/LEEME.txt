@@ -1,0 +1,63 @@
+OrdenSimple — Archivos de marca
+================================
+
+Esta carpeta NO la usa la página web. Son los logos e imágenes para
+redes sociales, documentos, presentaciones, imprenta, etc.
+
+PNG = para usar en cualquier lado (redes, WhatsApp, Word, Canva).
+SVG = calidad infinita; para imprenta, letreros o un diseñador.
+Los PNG sin fondo tienen fondo transparente.
+
+
+1-isotipo/  (solo el ícono, 1024x1024)
+  isotipo-color ................ Versión principal. Úsala siempre que puedas.
+  isotipo-invertido ............ Cuadro blanco con barras verdes. Para fondos verdes u oscuros.
+  isotipo-negro ................ Una sola tinta. Para fotocopias, timbres o impresión en negro.
+  isotipo-blanco-sin-fondo ..... Solo las barras en blanco. Para poner sobre fotos.
+  isotipo-verde-sin-fondo ...... Solo las barras en verde. Para fondos claros.
+
+2-logo-horizontal/  (ícono + nombre, 1600x400)
+  logo-horizontal-color ........ Versión principal, para fondos claros.
+  logo-horizontal-blanco ....... Para fondos oscuros o verdes.
+  logo-horizontal-negro ........ Una sola tinta, fondos claros.
+  logo-horizontal-blanco-mono .. Una sola tinta, fondos oscuros.
+
+3-logo-vertical/  (ícono arriba, nombre abajo, 1200x1200)
+  logo-vertical-color .......... Fondos claros.
+  logo-vertical-blanco ......... Fondos oscuros.
+
+4-redes/
+  perfil-verde-1080 ............ Foto de perfil (Instagram, WhatsApp Business, Facebook, LinkedIn).
+  perfil-blanco-1080 ........... Foto de perfil alternativa, fondo blanco.
+  portada-linkedin-1584x396 .... Portada de LinkedIn.
+  portada-x-twitter-1500x500 ... Portada de X (Twitter).
+  portada-facebook-1640x624 .... Portada de página de Facebook.
+  portada-youtube-2560x1440 .... Banner de canal de YouTube.
+  post-cuadrado-1080 ........... Publicación para Instagram / Facebook / WhatsApp.
+  historia-1080x1920 ........... Historia de Instagram o estado de WhatsApp.
+
+5-iconos/
+  icono-16 a icono-512 ......... El ícono en tamaños estándar (favicon, apps, accesos directos).
+
+6-correo/
+  firma-correo ................. Imagen para la firma de Gmail
+                                 (Gmail > Configuración > General > Firma > insertar imagen).
+
+
+Colores de la marca
+-------------------
+  Verde principal ...... #007653
+  Verde oscuro ......... #005A3F
+  Verde claro .......... #3FC28E
+  Ámbar (punto) ........ #F2A649
+  Texto oscuro ......... #13201C
+
+Tipografía: Geist (gratuita, licencia OFL) — https://vercel.com/font
+
+
+Reglas simples
+--------------
+  - No estires ni deformes el logo; agrándalo o achícalo manteniendo la proporción.
+  - Deja espacio libre alrededor (al menos el ancho de una barra).
+  - No cambies los colores ni le agregues sombras o bordes.
+  - Sobre fotos o fondos con mucho detalle, usa las versiones blancas.

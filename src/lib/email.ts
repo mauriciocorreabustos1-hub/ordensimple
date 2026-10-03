@@ -1,12 +1,12 @@
 import "server-only"
 
-type EmailInput = { to: string; subject: string; text: string }
+type EmailInput = { to: string; subject: string; text: string; html?: string }
 
 /**
  * Envía correos con Resend si RESEND_API_KEY está definido.
  * En desarrollo, sin clave, imprime el correo en la consola del servidor.
  */
-export async function sendEmail({ to, subject, text }: EmailInput) {
+export async function sendEmail({ to, subject, text, html }: EmailInput) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
     if (process.env.NODE_ENV === "production") {
@@ -21,10 +21,12 @@ export async function sendEmail({ to, subject, text }: EmailInput) {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "OrdenSimple <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM || "OrdenSimple <no-responder@ordensimple.cl>",
+      reply_to: process.env.EMAIL_REPLY_TO || "contacto@ordensimple.cl",
       to,
       subject,
       text,
+      ...(html ? { html } : {}),
     }),
   })
   if (!res.ok) {

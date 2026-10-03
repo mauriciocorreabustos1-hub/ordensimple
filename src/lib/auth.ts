@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js"
 import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { resetPasswordEmail, welcomeEmail } from "@/lib/email-templates"
 
 export const auth = betterAuth({
   appName: "OrdenSimple",
@@ -20,11 +21,19 @@ export const auth = betterAuth({
     resetPasswordTokenExpiresIn: 60 * 60,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      await sendEmail({
-        to: user.email,
-        subject: "Restablece tu contraseña de OrdenSimple",
-        text: `Hola ${user.name},\n\nPara crear una nueva contraseña entra a este enlace (vale por 1 hora):\n${url}\n\nSi no pediste este cambio, ignora este correo.`,
-      })
+      await sendEmail({ to: user.email, ...resetPasswordEmail({ name: user.name, url }) })
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        // Correo de bienvenida. Si falla, el registro no se interrumpe.
+        after: async (user) => {
+          await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name }) }).catch((error) =>
+            console.error("[email] No se pudo enviar la bienvenida:", error),
+          )
+        },
+      },
     },
   },
   user: {

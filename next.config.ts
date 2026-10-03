@@ -9,6 +9,17 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // La dirección antigua de Vercel lleva al dominio propio (un solo origen para sesiones y buscadores).
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "ordensimple.vercel.app" }],
+        destination: "https://www.ordensimple.cl/:path*",
+        permanent: true,
+      },
+    ]
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
   },

@@ -16,6 +16,7 @@ const FOOTER = [
   {
     title: "Ayuda",
     links: [
+      { href: "/guias", label: "Guías para tu negocio" },
       { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
       { href: "/terminos", label: "Términos y condiciones" },
       { href: "/privacidad", label: "Política de privacidad" },

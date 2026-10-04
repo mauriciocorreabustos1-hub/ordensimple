@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { FAQ_GROUPS, HIGHLIGHTS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
+import { StructuredData } from "@/components/landing/structured-data"
 import {
   BenefitsSection,
   Container,
@@ -25,6 +26,7 @@ const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 5)
 export default function LandingPage() {
   return (
     <>
+      <StructuredData />
       <LegacyHashRedirect />
 
       <section className="relative overflow-hidden">

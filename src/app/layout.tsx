@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   description:
     "Controla tus ventas, gastos, productos y ganancias desde un solo lugar. Hecho para emprendedores y pymes de Chile.",
   applicationName: "OrdenSimple",
+  // Código de Google Search Console (variable GOOGLE_SITE_VERIFICATION en Vercel).
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   appleWebApp: { capable: true, title: "OrdenSimple", statusBarStyle: "default" },
   icons: { apple: "/pwa-icon/180" },
   openGraph: {

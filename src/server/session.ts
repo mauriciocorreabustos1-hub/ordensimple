@@ -71,6 +71,11 @@ export class PermissionError extends Error {
   }
 }
 
+/** Para páginas: quien no tiene el permiso vuelve al inicio (el menú ya no le muestra la sección). */
+export function requirePermission(ctx: BusinessContext, permission: Permission) {
+  if (!can(ctx.role, permission)) redirect("/dashboard")
+}
+
 export function assertCan(ctx: BusinessContext, permission: Permission) {
   if (!can(ctx.role, permission)) throw new PermissionError()
 }

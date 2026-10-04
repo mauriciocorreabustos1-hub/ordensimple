@@ -60,6 +60,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
   const inv = await getInventory(ctx.businessId, ctx.timezone)
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "inventory:manage")
+  // Los empleados manejan el stock, pero no ven cuánto costó.
+  const showCosts = can(ctx.role, "finances:view")
   const items = filter === "todos" ? inv.items : inv.items.filter((i) => i.state === filter)
   const alerts = [...inv.out, ...inv.low]
 
@@ -84,9 +86,11 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
         />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard compactOnMobile label="Valor del inventario" value={money(inv.value)} icon={Boxes} tone="sales"
-              hint={`Lo que pagaste por tu stock. A precio de venta son ${money(inv.valueAtPrice)}.`} />
+          <div className={cn("grid gap-3 sm:grid-cols-2", showCosts ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+            {showCosts ? (
+              <StatCard compactOnMobile label="Valor del inventario" value={money(inv.value)} icon={Boxes} tone="sales"
+                hint={`Lo que pagaste por tu stock. A precio de venta son ${money(inv.valueAtPrice)}.`} />
+            ) : null}
             <StatCard compactOnMobile label="Unidades en stock" value={formatNumber(inv.units)} icon={TrendingUp}
               hint={`${inv.items.length} productos con control de stock.`} />
             <StatCard compactOnMobile label="Stock bajo" value={formatNumber(inv.low.length)} icon={AlertTriangle}
@@ -158,7 +162,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                         <p className={cn("tabular text-lg font-semibold", p.state === "out" && "text-danger")}>
                           {formatNumber(p.stock)}
                         </p>
-                        <p className="text-xs text-muted-foreground">{money(Math.max(0, p.stock) * p.cost)}</p>
+                        {showCosts ? (
+                          <p className="text-xs text-muted-foreground">{money(Math.max(0, p.stock) * p.cost)}</p>
+                        ) : null}
                       </div>
                       <StateBadge state={p.state} />
                       {canManage ? <MovementDialog products={inv.productOptions} defaultProductId={p.id} compact /> : null}
@@ -215,14 +221,18 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                         {inv.idle.slice(0, 5).map((p) => (
                           <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
                             <span className="min-w-0 truncate">{p.name}</span>
-                            <span className="tabular shrink-0 text-muted-foreground">{money(p.value)}</span>
+                            {showCosts ? (
+                              <span className="tabular shrink-0 text-muted-foreground">{money(p.value)}</span>
+                            ) : null}
                           </li>
                         ))}
                       </ul>
-                      <Explainer title="Dinero inmovilizado">
-                        Tienes {money(inv.idleValue)} en productos que no se están vendiendo. Considera una oferta para
-                        convertirlos en plata.
-                      </Explainer>
+                      {showCosts ? (
+                        <Explainer title="Dinero inmovilizado">
+                          Tienes {money(inv.idleValue)} en productos que no se están vendiendo. Considera una oferta para
+                          convertirlos en plata.
+                        </Explainer>
+                      ) : null}
                     </>
                   )}
                 </CardContent>

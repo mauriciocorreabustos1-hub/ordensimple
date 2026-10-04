@@ -60,6 +60,8 @@ model User {
   // Aceptación de términos (fecha) y consentimiento para recibir promociones.
   termsAcceptedAt  DateTime?
   marketingOptIn   Boolean  @default(false)
+  /// Correos de bienvenida enviados (1, 2, 3). 99 = no quiere recibirlos.
+  nudgeStep        Int       @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

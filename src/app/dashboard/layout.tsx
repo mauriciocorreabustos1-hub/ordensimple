@@ -48,6 +48,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     >
       <AppSidebar
         businessName={ctx.business.name}
+        role={ctx.role}
         userName={ctx.user.name}
         userEmail={ctx.user.email}
         businesses={businesses}
@@ -60,7 +61,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         </header>
         <main className="mx-auto w-full max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
       </div>
-      <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} />
+      <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} />
     </QuickActionsProvider>
   )
 }

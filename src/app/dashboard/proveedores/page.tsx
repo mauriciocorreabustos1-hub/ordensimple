@@ -13,12 +13,13 @@ import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { deleteSupplier } from "@/server/actions/contacts"
 import { getSuppliers } from "@/server/queries/contacts"
-import { requireBusiness } from "@/server/session"
+import { requireBusiness, requirePermission } from "@/server/session"
 
 export const metadata: Metadata = { title: "Proveedores" }
 
 export default async function SuppliersPage() {
   const ctx = await requireBusiness()
+  requirePermission(ctx, "suppliers:manage")
   if (!canUseFeature(ctx.business.plan, "suppliers")) {
     return <ProGate title="Proveedores" description="Ordena a tus proveedores y descubre cuál te conviene más." />
   }

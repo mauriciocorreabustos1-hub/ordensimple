@@ -16,7 +16,7 @@ import { db } from "@/lib/db"
 import { PLANS } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { deleteProduct } from "@/server/actions/products"
-import { requireBusiness } from "@/server/session"
+import { requireBusiness, requirePermission } from "@/server/session"
 
 export const metadata: Metadata = { title: "Productos" }
 
@@ -50,6 +50,7 @@ function StockBadge({ state, stock }: { state: StockState; stock: number }) {
 
 export default async function ProductsPage() {
   const ctx = await requireBusiness()
+  requirePermission(ctx, "products:manage")
   const [products, categories] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId },

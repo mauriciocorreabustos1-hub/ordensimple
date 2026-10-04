@@ -12,6 +12,8 @@ export type Permission =
   | "customers:manage"
   | "suppliers:manage"
   | "reports:view"
+  /** Ver ganancias, costos, márgenes y calculadoras. Los empleados no lo tienen. */
+  | "finances:view"
   | "settings:manage"
   | "members:manage"
   | "business:delete"
@@ -29,6 +31,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "customers:manage",
     "suppliers:manage",
     "reports:view",
+    "finances:view",
     "settings:manage",
     "members:manage",
     "business:delete",
@@ -45,6 +48,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "customers:manage",
     "suppliers:manage",
     "reports:view",
+    "finances:view",
     "settings:manage",
   ],
   EMPLOYEE: ["sales:create", "expenses:create", "inventory:manage", "customers:manage"],

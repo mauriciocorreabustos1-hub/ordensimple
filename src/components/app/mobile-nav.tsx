@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, LogOut, Menu, Plus, Receipt, ShoppingBag } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import type { Role } from "@/generated/prisma/enums"
 import { NavLinks } from "@/components/app/app-sidebar"
 import { useQuickActions } from "@/components/app/quick-actions"
 import { useSignOut } from "@/components/app/user-menu"
@@ -12,7 +13,7 @@ import { isActive } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
 /** Barra inferior para celular: lo más usado a un toque, el resto en "Más". */
-export function MobileNav({ userName, userEmail }: { userName: string; userEmail: string }) {
+export function MobileNav({ userName, userEmail, role }: { userName: string; userEmail: string; role: Role }) {
   const pathname = usePathname()
   const { open } = useQuickActions()
   const signOut = useSignOut()
@@ -106,7 +107,7 @@ export function MobileNav({ userName, userEmail }: { userName: string; userEmail
             <p className="truncate text-left text-xs text-muted-foreground">{userEmail}</p>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-3">
-            <NavLinks onNavigate={() => setMenuOpen(false)} />
+            <NavLinks role={role} onNavigate={() => setMenuOpen(false)} />
           </div>
           <div className="border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <button

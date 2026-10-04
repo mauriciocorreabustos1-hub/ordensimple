@@ -4,14 +4,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Logo } from "@/components/app/logo"
 import { SignOutButton, UserMenu, type BusinessOption } from "@/components/app/user-menu"
-import { isActive, NAV_ITEMS } from "@/lib/navigation"
+import type { Role } from "@/generated/prisma/enums"
+import { isActive, navItemsFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+export function NavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
   const pathname = usePathname()
   return (
     <nav className="grid gap-0.5" aria-label="Principal">
-      {NAV_ITEMS.map((item) => {
+      {navItemsFor(role).map((item) => {
         const active = isActive(pathname, item.href)
         return (
           <Link
@@ -42,12 +43,14 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar({
   businessName,
+  role,
   userName,
   userEmail,
   businesses = [],
   isAdmin = false,
 }: {
   businessName: string
+  role: Role
   userName: string
   userEmail: string
   businesses?: BusinessOption[]
@@ -64,7 +67,7 @@ export function AppSidebar({
         </p>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <NavLinks />
+        <NavLinks role={role} />
       </div>
       <div className="grid gap-1 border-t p-3">
         <UserMenu name={userName} email={userEmail} businesses={businesses} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />

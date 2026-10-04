@@ -16,6 +16,7 @@ import { getDashboardData } from "@/server/queries/dashboard"
 import { getInsights } from "@/server/queries/insights"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature } from "@/lib/plans"
+import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Inicio" }
@@ -23,7 +24,9 @@ export const metadata: Metadata = { title: "Inicio" }
 export default async function DashboardPage() {
   const ctx = await requireBusiness()
   const now = new Date()
-  const showTips = !ctx.settings.easyMode && canUseFeature(ctx.business.plan, "tips")
+  // Los empleados ven solo lo de hoy para registrar; las ganancias y comparaciones son del dueño.
+  const showFinances = can(ctx.role, "finances:view")
+  const showTips = showFinances && !ctx.settings.easyMode && canUseFeature(ctx.business.plan, "tips")
   const [data, insights] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
@@ -44,6 +47,37 @@ export default async function DashboardPage() {
   const ref = referenceAmount(ctx.currency)
   const monthMargin = data.month.sales > 0 ? data.month.profit / data.month.sales : null
   const currentMonth = monthName(now, ctx.timezone)
+
+  if (!showFinances) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">
+            {greeting(now, ctx.timezone)}, {ctx.user.name.split(" ")[0]}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{ctx.business.name}</h1>
+        </div>
+        <QuickButtons />
+        <section aria-labelledby="hoy" className="space-y-3">
+          <h2 id="hoy" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Hoy en el negocio
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <StatCard label="Ventas hoy" value={money(data.today.sales)} icon={ShoppingBag} tone="sales" size="lg"
+              hint={data.today.salesCount === 1 ? "1 venta registrada" : `${data.today.salesCount} ventas registradas`} />
+            <StatCard label="Gastos hoy" value={money(data.today.expenses)} icon={Receipt} tone="expenses" size="lg" />
+          </div>
+        </section>
+        <p className="text-center text-sm text-muted-foreground">
+          Anota cada venta y gasto apenas ocurra. Al cerrar el día, haz el{" "}
+          <Link href="/dashboard/caja" className="text-primary hover:underline">
+            cierre de caja
+          </Link>
+          .
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

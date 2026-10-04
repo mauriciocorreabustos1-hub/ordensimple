@@ -224,3 +224,92 @@ export function invitationEmail({
     text: `${inviterName} te invitó a usar OrdenSimple en ${businessName} como ${roleLabel}.\n\nAcepta aquí (vale por 7 días):\n${url}\n\nSi no conoces a esta persona, ignora este correo.`,
   }
 }
+
+/**
+ * Serie de bienvenida para quienes aún no anotan ventas: día 1, día 3 y día 7.
+ * hasBusiness = false cuando ni siquiera terminó de configurar su negocio.
+ */
+export function nudgeEmail({
+  step,
+  name,
+  hasBusiness,
+  unsubscribeUrl,
+}: {
+  step: 1 | 2 | 3
+  name: string
+  hasBusiness: boolean
+  unsubscribeUrl: string
+}) {
+  const appUrl = getAppUrl()
+  const firstRaw = name.split(" ")[0] || name
+  const first = escapeHtml(firstRaw)
+  const footer = `Recibes este correo porque creaste una cuenta en OrdenSimple. <a href="${unsubscribeUrl}" style="color:${MUTED};">No quiero recibir más consejos</a>.`
+
+  const content: Record<1 | 2 | 3, { subject: string; preview: string; title: string; paragraphs: string[]; cta: string; href: string }> = {
+    1: hasBusiness
+      ? {
+          subject: `${firstRaw}, anota tu primera venta en 10 segundos`,
+          preview: "No necesitas cargar productos: basta con el monto.",
+          title: "Tu primera venta, en 10 segundos",
+          paragraphs: [
+            `Hola ${first}, tu negocio ya está listo en OrdenSimple. Falta lo más importante: <strong>anotar tu primera venta</strong>.`,
+            "Toca el botón verde <strong>+</strong>, escribe el monto y elige cómo te pagaron. Listo. No necesitas cargar productos ni llenar nada más.",
+          ],
+          cta: "Anotar mi primera venta",
+          href: `${appUrl}/dashboard`,
+        }
+      : {
+          subject: `${firstRaw}, te falta un paso para ordenar tu negocio`,
+          preview: "Configura tu negocio en 2 minutos y empieza a anotar tus ventas.",
+          title: "Te falta solo un paso",
+          paragraphs: [
+            `Hola ${first}, creaste tu cuenta pero aún no configuras tu negocio.`,
+            "Son 2 minutos: el nombre, el rubro y un par de preguntas. Después ya puedes anotar ventas y gastos desde el celular.",
+          ],
+          cta: "Configurar mi negocio",
+          href: `${appUrl}/onboarding`,
+        },
+    2: {
+      subject: "El truco para no olvidarte de anotar",
+      preview: "Dos formas simples de llevar tus ventas al día sin esfuerzo.",
+      title: "El truco para no olvidarte de anotar",
+      paragraphs: [
+        `Hola ${first}, lo más difícil al principio es acordarse de anotar. Dos ideas que funcionan:`,
+        "<strong>1. Al momento:</strong> deja OrdenSimple abierto en el celular junto a la caja y anota cada venta apenas la cobras.<br><strong>2. Al cerrar:</strong> si no alcanzas, anota al final del día el total vendido como una sola venta. Sirve igual para saber cuánto ganas.",
+        "¿Te parece mucha información? Activa el <strong>Modo Fácil</strong> en Configuración y verás solo lo esencial.",
+      ],
+      cta: "Ir a OrdenSimple",
+      href: `${appUrl}/dashboard`,
+    },
+    3: {
+      subject: `${firstRaw}, ¿sabes cuánto ganó tu negocio esta semana?`,
+      preview: "Con anotar tus ventas y gastos, OrdenSimple te lo dice solo.",
+      title: "¿Cuánto ganaste esta semana?",
+      paragraphs: [
+        `Hola ${first}, muchos negocios venden harto pero no saben cuánto les queda. Con OrdenSimple lo ves al tiro, solo anotando ventas y gastos.`,
+        "Además puedes llevar el <strong>fiado</strong> de tus clientes, hacer el <strong>cierre de caja</strong> al final del día y calcular <strong>a cuánto vender</strong> cada producto.",
+        "Si algo no te queda claro, <strong>responde este correo</strong> y te ayudamos personalmente.",
+      ],
+      cta: "Ver mi negocio",
+      href: `${appUrl}/dashboard`,
+    },
+  }
+
+  const c = content[step]
+  // Sin negocio configurado, todos los botones llevan a terminar la configuración.
+  if (!hasBusiness) c.href = `${appUrl}/onboarding`
+  return {
+    subject: c.subject,
+    html: layout({
+      preview: c.preview,
+      body: [h1(c.title), ...c.paragraphs.map(p), button(c.href, c.cta)].join(""),
+      footer,
+    }),
+    text: [
+      c.title,
+      ...c.paragraphs.map((x) => x.replace(/<br>/g, "\n").replace(/<[^>]+>/g, "")),
+      `${c.cta}: ${c.href}`,
+      `---\nPara no recibir más consejos: ${unsubscribeUrl}`,
+    ].join("\n\n"),
+  }
+}

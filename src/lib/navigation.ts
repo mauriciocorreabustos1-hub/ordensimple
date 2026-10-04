@@ -12,6 +12,8 @@ import {
   Vault,
   type LucideIcon,
 } from "lucide-react"
+import type { Role } from "@/generated/prisma/enums"
+import { can, type Permission } from "@/lib/roles"
 
 export type NavItem = {
   href: string
@@ -19,6 +21,8 @@ export type NavItem = {
   icon: LucideIcon
   soon?: boolean
   pro?: boolean
+  /** Si se indica, solo se muestra a quien tenga este permiso. */
+  permission?: Permission
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -26,14 +30,19 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/ventas", label: "Ventas", icon: ShoppingBag },
   { href: "/dashboard/gastos", label: "Gastos", icon: Receipt },
   { href: "/dashboard/caja", label: "Cierre de caja", icon: Vault },
-  { href: "/dashboard/productos", label: "Productos", icon: Package },
+  { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users, pro: true },
-  { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true },
-  { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator },
-  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, pro: true },
+  { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },
+  { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator, permission: "finances:view" },
+  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, pro: true, permission: "reports:view" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]
+
+/** Menú según el rol: a los empleados no se les muestra lo que no pueden usar. */
+export function navItemsFor(role: Role) {
+  return NAV_ITEMS.filter((item) => !item.permission || can(role, item.permission))
+}
 
 export function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard"

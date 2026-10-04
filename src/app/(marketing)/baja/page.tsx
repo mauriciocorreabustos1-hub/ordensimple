@@ -7,7 +7,7 @@ import { verifyUnsubscribe } from "@/lib/unsubscribe"
 import { confirmUnsubscribe } from "@/server/actions/unsubscribe"
 
 export const metadata: Metadata = {
-  title: "Dejar de recibir ofertas",
+  title: "Dejar de recibir correos",
   robots: { index: false, follow: false },
 }
 
@@ -29,10 +29,10 @@ export default async function UnsubscribePage({ searchParams }: PageProps<"/baja
 
   if (params.listo) {
     return (
-      <Panel icon={CheckCircle2} title="Listo, ya no te enviaremos ofertas">
+      <Panel icon={CheckCircle2} title="Listo, ya no te enviaremos estos correos">
         <p className="text-muted-foreground">
           Seguirás recibiendo solo los correos necesarios de tu cuenta, como el de recuperar tu contraseña. Si cambias de
-          opinión, puedes activarlas de nuevo en Configuración.
+          opinión, puedes volver a activar las ofertas en Configuración.
         </p>
         <Button asChild variant="outline">
           <Link href="/">Ir a OrdenSimple</Link>
@@ -58,15 +58,15 @@ export default async function UnsubscribePage({ searchParams }: PageProps<"/baja
   }
 
   return (
-    <Panel icon={MailX} title="¿Dejar de recibir ofertas?">
+    <Panel icon={MailX} title="¿Dejar de recibir estos correos?">
       <p className="text-muted-foreground">
-        No te enviaremos más novedades ni promociones de OrdenSimple. Tu cuenta y tus datos siguen igual.
+        No te enviaremos más consejos, novedades ni promociones de OrdenSimple. Tu cuenta y tus datos siguen igual.
       </p>
       <form action={confirmUnsubscribe}>
         <input type="hidden" name="u" value={u} />
         <input type="hidden" name="t" value={t} />
         <Button type="submit" size="lg" className="h-11 px-6">
-          Sí, dejar de recibirlas
+          Sí, dejar de recibirlos
         </Button>
       </form>
     </Panel>

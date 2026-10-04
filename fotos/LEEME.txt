@@ -108,3 +108,8 @@ Reglas simples
                                  te avisamos, todo en una app, 10 segundos, fiado antes y ahora, síguenos.
   2-historias/ ................. 5 historias con los mismos mensajes.
   textos-para-publicar.txt ..... Textos, cuáles fijar en el perfil y cómo usarlas en anuncios.
+
+7-video/ (nuevo)
+  ordensimple-premium.mp4 ...... Video premium animado (28 s): celular deslizándose, tarjetas, montos contando y avisos.
+  portada-premium.png .......... Miniatura de ese video.
+  guion-video-premium.txt ...... Descripción, hashtags, escenas y guion para grabar voz.

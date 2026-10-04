@@ -1,5 +1,6 @@
 "use client"
 
+import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
 
 /** Porcentaje con barra deslizante y campo numérico. */
@@ -22,15 +23,14 @@ export function PercentInput({
 }) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <input
-        type="range"
+      <Slider
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 flex-1 cursor-pointer accent-primary"
+        value={[Math.min(max, Math.max(min, value))]}
+        onValueChange={([n]) => onChange(n)}
         aria-label={label}
+        className="flex-1 cursor-pointer py-2 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-primary [&_[data-slot=slider-thumb]]:shadow-sm [&_[data-slot=slider-track]]:h-2"
       />
       <div className="relative w-20">
         <input

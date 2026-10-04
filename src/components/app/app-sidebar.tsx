@@ -2,9 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogOut } from "lucide-react"
 import { Logo } from "@/components/app/logo"
-import { UserMenu, useSignOut } from "@/components/app/user-menu"
+import { SignOutButton, UserMenu } from "@/components/app/user-menu"
 import { isActive, NAV_ITEMS } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
@@ -52,7 +51,6 @@ export function AppSidebar({
   userEmail: string
   isAdmin?: boolean
 }) {
-  const signOut = useSignOut()
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-sidebar lg:flex">
       <div className="flex h-16 items-center px-5">
@@ -67,15 +65,8 @@ export function AppSidebar({
         <NavLinks />
       </div>
       <div className="grid gap-1 border-t p-3">
-        <UserMenu name={userName} email={userEmail} showDetails isAdmin={isAdmin} className="w-full" />
-        <button
-          type="button"
-          onClick={() => void signOut()}
-          className="flex h-9 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-        >
-          <LogOut className="size-4" />
-          Cerrar sesión
-        </button>
+        <UserMenu name={userName} email={userEmail} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />
+        <SignOutButton className="w-full justify-start hover:bg-sidebar-accent" />
       </div>
     </aside>
   )

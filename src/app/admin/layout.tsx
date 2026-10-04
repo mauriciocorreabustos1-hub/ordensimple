@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft, ShieldCheck } from "lucide-react"
 import { Logo } from "@/components/app/logo"
+import { SignOutButton } from "@/components/app/user-menu"
 import { requireAdmin } from "@/server/admin"
 
 export const metadata: Metadata = {
@@ -22,10 +23,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Administración
             </span>
           </div>
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" />
-            Volver a mi negocio
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link href="/dashboard" className="inline-flex h-9 items-center gap-1.5 px-2.5 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="size-4" />
+              <span className="hidden sm:inline">Volver a mi negocio</span>
+              <span className="sm:hidden">Volver</span>
+            </Link>
+            <SignOutButton compact />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>

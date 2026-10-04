@@ -7,6 +7,8 @@ import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/app/logo"
+import { SignOutButton } from "@/components/app/user-menu"
+import { useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
 export const SITE_LINKS = [
@@ -20,6 +22,8 @@ export const SITE_LINKS = [
 export function SiteHeader() {
   const pathname = usePathname()
   const [open, setOpen] = React.useState(false)
+  const { data: session } = useSession()
+  const loggedIn = Boolean(session)
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/70">
@@ -44,12 +48,23 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="hidden items-center gap-2 lg:flex">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Iniciar sesión</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/registro">Crear cuenta</Link>
-          </Button>
+          {loggedIn ? (
+            <>
+              <SignOutButton />
+              <Button asChild>
+                <Link href="/dashboard">Ir a mi negocio</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Iniciar sesión</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/registro">Crear cuenta</Link>
+              </Button>
+            </>
+          )}
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -78,12 +93,25 @@ export function SiteHeader() {
               ))}
             </nav>
             <div className="mt-auto grid gap-2 p-4">
-              <Button variant="outline" size="lg" className="h-11" asChild>
-                <Link href="/login">Iniciar sesión</Link>
-              </Button>
-              <Button size="lg" className="h-11" asChild>
-                <Link href="/registro">Crear cuenta gratis</Link>
-              </Button>
+              {loggedIn ? (
+                <>
+                  <Button size="lg" className="h-11" asChild>
+                    <Link href="/dashboard" onClick={() => setOpen(false)}>
+                      Ir a mi negocio
+                    </Link>
+                  </Button>
+                  <SignOutButton className="h-11 justify-center rounded-lg border" />
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="lg" className="h-11" asChild>
+                    <Link href="/login">Iniciar sesión</Link>
+                  </Button>
+                  <Button size="lg" className="h-11" asChild>
+                    <Link href="/registro">Crear cuenta gratis</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </SheetContent>
         </Sheet>

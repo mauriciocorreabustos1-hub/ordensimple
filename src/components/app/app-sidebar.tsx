@@ -43,10 +43,12 @@ export function AppSidebar({
   businessName,
   userName,
   userEmail,
+  isAdmin = false,
 }: {
   businessName: string
   userName: string
   userEmail: string
+  isAdmin?: boolean
 }) {
   const signOut = useSignOut()
   return (
@@ -63,7 +65,7 @@ export function AppSidebar({
         <NavLinks />
       </div>
       <div className="grid gap-1 border-t p-3">
-        <UserMenu name={userName} email={userEmail} showDetails className="w-full" />
+        <UserMenu name={userName} email={userEmail} showDetails isAdmin={isAdmin} className="w-full" />
         <button
           type="button"
           onClick={() => void signOut()}

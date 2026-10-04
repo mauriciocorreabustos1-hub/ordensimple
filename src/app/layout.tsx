@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { Analytics } from "@vercel/analytics/next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { getAppUrl } from "@/lib/app-url"
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   )

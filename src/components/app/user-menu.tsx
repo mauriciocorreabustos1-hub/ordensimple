@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, Monitor, Moon, Settings, Sun } from "lucide-react"
+import { LogOut, Monitor, Moon, Settings, ShieldCheck, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -40,11 +40,13 @@ export function UserMenu({
   name,
   email,
   showDetails = false,
+  isAdmin = false,
   className,
 }: {
   name: string
   email: string
   showDetails?: boolean
+  isAdmin?: boolean
   className?: string
 }) {
   const signOut = useSignOut()
@@ -81,6 +83,14 @@ export function UserMenu({
             Configuración
           </Link>
         </DropdownMenuItem>
+        {isAdmin ? (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck />
+              Administración
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs text-muted-foreground">Tema</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>

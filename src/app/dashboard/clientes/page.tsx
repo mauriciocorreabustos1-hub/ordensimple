@@ -140,8 +140,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                     .join("")}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 truncate font-medium">
-                    {c.name}
+                  <p className="flex flex-wrap items-center gap-1.5 font-medium">
+                    <span className="min-w-0 truncate">{c.name}</span>
                     {c.recentPurchases >= 3 ? (
                       <Badge variant="secondary" className="gap-1">
                         <Repeat className="size-3" />

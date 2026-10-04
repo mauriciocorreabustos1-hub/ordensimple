@@ -66,6 +66,9 @@ Reglas simples
   ordensimple-tutorial.mp4 ..... Tutorial vertical de 32 s para TikTok, Reels y Shorts (sin música).
   portada-video.png ............ Miniatura del video.
   guion-y-texto-para-publicar .. Descripción, hashtags, guion para voz e ideas de próximos videos.
+  ordensimple-fiado-y-caja.mp4 . Video vertical de 32 s: el fiado y el cierre de caja (para almacenes).
+  portada-fiado-y-caja.png ..... Miniatura de ese video.
+  guion-video-fiado-y-caja ..... Descripción, hashtags, guion para voz e ideas para grabarlo tú.
 
 8-publicidad/  (con capturas reales de la app)
   1-posts/ ..................... 7 publicaciones verticales (1080x1350) para el feed.

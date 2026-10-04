@@ -99,8 +99,9 @@ export default function PrivacyPage() {
 
       <LegalSection n={5} title="Cuánto tiempo guardamos los datos">
         <p>
-          Guardamos tus datos mientras tengas una cuenta activa. Si pides eliminarla, los borraremos dentro de 30 días,
-          salvo la información que debamos conservar por obligación legal o para resolver disputas.
+          Guardamos tus datos mientras tengas una cuenta activa. Puedes eliminar tu cuenta tú mismo en Configuración → Tu
+          cuenta: se borra al instante junto con tus negocios. Si prefieres pedírnoslo por correo, la borraremos dentro de
+          30 días, salvo la información que debamos conservar por obligación legal o para resolver disputas.
         </p>
       </LegalSection>
 
@@ -114,13 +115,14 @@ export default function PrivacyPage() {
             <strong>Rectificación:</strong> corregir datos inexactos o incompletos.
           </li>
           <li>
-            <strong>Supresión:</strong> pedir que los eliminemos.
+            <strong>Supresión:</strong> pedir que los eliminemos, o hacerlo tú mismo desde Configuración → Tu cuenta.
           </li>
           <li>
             <strong>Oposición:</strong> oponerte a ciertos usos, como recibir ofertas.
           </li>
           <li>
-            <strong>Portabilidad:</strong> recibir tus datos en un formato que puedas usar en otro servicio.
+            <strong>Portabilidad:</strong> recibir tus datos en un formato que puedas usar en otro servicio. Puedes descargarlos
+            cuando quieras en Configuración → Tu cuenta → Descargar mis datos.
           </li>
           <li>
             <strong>Bloqueo:</strong> pedir que suspendamos temporalmente su uso mientras se revisa una solicitud.

@@ -120,3 +120,29 @@ export async function updateMarketingOptIn(value: boolean): Promise<ActionResult
   revalidatePath("/dashboard/configuracion")
   return { ok: true, message: value ? "Recibirás novedades y ofertas" : "Ya no recibirás ofertas por correo" }
 }
+
+/**
+ * La persona elimina su propia cuenta: se borran la cuenta y los negocios de los que es dueña
+ * (con todas sus ventas, gastos, productos y clientes). De negocios ajenos solo se quita su acceso.
+ */
+export async function deleteMyAccount(confirmEmail: string): Promise<ActionResult> {
+  const user = await requireUser()
+  if (confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+    return { ok: false, message: "El correo no coincide. No se eliminó nada." }
+  }
+  try {
+    const owned = await db.businessMember.findMany({ where: { userId: user.id, role: "OWNER" }, select: { businessId: true } })
+    const ownedIds = owned.map((m) => m.businessId)
+    await db.$transaction([
+      db.business.deleteMany({ where: { id: { in: ownedIds } } }),
+      db.user.delete({ where: { id: user.id } }),
+    ])
+    if (ownedIds.length) {
+      await db.user.updateMany({ where: { activeBusinessId: { in: ownedIds } }, data: { activeBusinessId: null } })
+    }
+    console.info(`[cuenta] ${user.email} eliminó su cuenta y ${ownedIds.length} negocio(s)`)
+    return { ok: true, message: "Tu cuenta fue eliminada" }
+  } catch (error) {
+    return toActionError(error)
+  }
+}

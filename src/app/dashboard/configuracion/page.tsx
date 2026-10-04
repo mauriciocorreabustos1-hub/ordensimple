@@ -9,6 +9,7 @@ import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
+import { AccountSection } from "@/components/settings/account-section"
 import { RedeemCoupon } from "@/components/settings/redeem-coupon"
 import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
@@ -23,7 +24,7 @@ export const metadata: Metadata = { title: "Configuración" }
 export default async function SettingsPage() {
   const ctx = await requireBusiness()
   const canManage = can(ctx.role, "settings:manage")
-  const [categories, members, records, invitations] = await Promise.all([
+  const [categories, members, records, invitations, owned] = await Promise.all([
     db.expenseCategory.findMany({
       where: { businessId: ctx.businessId },
       select: { id: true, name: true },
@@ -45,6 +46,10 @@ export default async function SettingsPage() {
           orderBy: { createdAt: "asc" },
         })
       : Promise.resolve([]),
+    db.businessMember.findMany({
+      where: { userId: ctx.user.id, role: "OWNER" },
+      select: { business: { select: { name: true, _count: { select: { sales: true, members: true } } } } },
+    }),
   ])
   const plan = PLANS[ctx.business.plan]
   const planEnds =
@@ -211,6 +216,23 @@ export default async function SettingsPage() {
               <RedeemCoupon />
             </>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tu cuenta</CardTitle>
+          <CardDescription>Tus datos son tuyos: puedes llevártelos o eliminarlos cuando quieras.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AccountSection
+            email={ctx.user.email}
+            ownedBusinesses={owned.map((o) => ({
+              name: o.business.name,
+              sales: o.business._count.sales,
+              others: o.business._count.members - 1,
+            }))}
+          />
         </CardContent>
       </Card>
     </div>

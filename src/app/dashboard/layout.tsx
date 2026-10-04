@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const ctx = await requireBusiness()
   const isAdmin = isAdminEmail(ctx.user.email)
 
-  const [products, categories, customers] = await Promise.all([
+  const [products, categories, customers, memberships] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
       select: { id: true, name: true, price: true, stock: true, trackStock: true },
@@ -29,7 +29,13 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       orderBy: { name: "asc" },
       take: 500,
     }),
+    db.businessMember.findMany({
+      where: { userId: ctx.user.id, business: { onboardingCompleted: true } },
+      select: { business: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
   ])
+  const businesses = memberships.map((m) => ({ ...m.business, active: m.business.id === ctx.businessId }))
 
   return (
     <QuickActionsProvider
@@ -40,11 +46,17 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       categories={categories}
       customers={customers.map((c) => c.name)}
     >
-      <AppSidebar businessName={ctx.business.name} userName={ctx.user.name} userEmail={ctx.user.email} isAdmin={isAdmin} />
+      <AppSidebar
+        businessName={ctx.business.name}
+        userName={ctx.user.name}
+        userEmail={ctx.user.email}
+        businesses={businesses}
+        isAdmin={isAdmin}
+      />
       <div className="min-h-dvh bg-background lg:pl-64">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
           <Logo href="/" />
-          <UserMenu name={ctx.user.name} email={ctx.user.email} isAdmin={isAdmin} />
+          <UserMenu name={ctx.user.name} email={ctx.user.email} businesses={businesses} isAdmin={isAdmin} />
         </header>
         <main className="mx-auto w-full max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
       </div>

@@ -1,8 +1,6 @@
 import type { Metadata } from "next"
-import { Crown, UserPlus } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Crown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/app/page-header"
@@ -12,9 +10,11 @@ import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { RedeemCoupon } from "@/components/settings/redeem-coupon"
+import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
-import { PLANS } from "@/lib/plans"
+import { getAppUrl } from "@/lib/app-url"
+import { memberLimit, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Configuración" }
 export default async function SettingsPage() {
   const ctx = await requireBusiness()
   const canManage = can(ctx.role, "settings:manage")
-  const [categories, members, records] = await Promise.all([
+  const [categories, members, records, invitations] = await Promise.all([
     db.expenseCategory.findMany({
       where: { businessId: ctx.businessId },
       select: { id: true, name: true },
@@ -39,6 +39,12 @@ export default async function SettingsPage() {
       db.expense.count({ where: { businessId: ctx.businessId } }),
       db.product.count({ where: { businessId: ctx.businessId } }),
     ]),
+    can(ctx.role, "members:manage")
+      ? db.invitation.findMany({
+          where: { businessId: ctx.businessId, acceptedAt: null, expiresAt: { gt: new Date() } },
+          orderBy: { createdAt: "asc" },
+        })
+      : Promise.resolve([]),
   ])
   const plan = PLANS[ctx.business.plan]
   const planEnds =
@@ -148,37 +154,28 @@ export default async function SettingsPage() {
           <CardTitle>Usuarios</CardTitle>
           <CardDescription>Las personas que tienen acceso a este negocio.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <ul className="divide-y">
-            {members.map((m) => (
-              <li key={m.id} className="flex items-center gap-3 py-3">
-                <Avatar className="size-9">
-                  <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-                    {m.user.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((p) => p[0]?.toUpperCase())
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{m.user.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{m.user.email}</p>
-                </div>
-                <Badge variant={m.role === "OWNER" ? "default" : "secondary"}>{ROLE_LABEL[m.role]}</Badge>
-              </li>
-            ))}
-          </ul>
-          <Separator />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Invitar a tu equipo (administradores y empleados) estará disponible en el plan Empresa.
-            </p>
-            <Button variant="outline" disabled>
-              <UserPlus />
-              Invitar usuario
-            </Button>
-          </div>
+        <CardContent>
+          <TeamSection
+            members={members.map((m) => ({
+              id: m.id,
+              name: m.user.name,
+              email: m.user.email,
+              role: m.role,
+              isMe: m.userId === ctx.user.id,
+            }))}
+            invitations={invitations.map((inv) => ({
+              id: inv.id,
+              email: inv.email,
+              role: inv.role,
+              url: `${getAppUrl()}/invitacion/${inv.token}`,
+              expiresLabel: formatDate(inv.expiresAt, ctx.timezone, { day: "numeric", month: "short" }),
+            }))}
+            businessName={ctx.business.name}
+            canManage={can(ctx.role, "members:manage")}
+            isOwner={ctx.role === "OWNER"}
+            limit={memberLimit(ctx.business.plan)}
+            planName={plan.name}
+          />
         </CardContent>
       </Card>
 

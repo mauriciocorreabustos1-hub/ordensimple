@@ -94,3 +94,11 @@ export function couponSummary(c: { kind: "FREE_DAYS" | "PERCENT"; plan: Plan; da
     ? `${c.days} días gratis del plan ${PLANS[c.plan].name}`
     : `${c.percentOff}% de descuento en el plan ${PLANS[c.plan].name}`
 }
+
+/**
+ * Personas que pueden usar un negocio (incluido el dueño). Durante el lanzamiento todos
+ * pueden invitar como en Pro; con ENFORCE_PLANS=true se aplica el límite de cada plan.
+ */
+export function memberLimit(plan: Plan) {
+  return PLANS_ENFORCED ? PLANS[plan].maxMembers : Math.max(PLANS[plan].maxMembers, PLANS.PRO.maxMembers)
+}

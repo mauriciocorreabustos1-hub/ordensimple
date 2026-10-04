@@ -2,13 +2,14 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { LoginForm } from "@/components/auth/login-form"
+import { safeNext } from "@/lib/auth-errors"
 import { getSession } from "@/server/session"
 
 export const metadata: Metadata = { title: "Iniciar sesión" }
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  if (await getSession()) redirect("/dashboard")
   const { next } = await searchParams
+  if (await getSession()) redirect(safeNext(typeof next === "string" ? next : undefined))
 
   return (
     <div className="space-y-6">
@@ -19,7 +20,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <LoginForm next={typeof next === "string" ? next : undefined} />
       <p className="text-center text-sm text-muted-foreground">
         ¿No tienes cuenta?{" "}
-        <Link href="/registro" className="font-medium text-primary hover:underline">
+        <Link href={typeof next === "string" && next.startsWith("/invitacion/") ? `/registro?${new URLSearchParams({ next })}` : "/registro"} className="font-medium text-primary hover:underline">
           Crea una gratis
         </Link>
       </p>

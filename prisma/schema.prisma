@@ -159,6 +159,7 @@ model Business {
   cashClosings      CashClosing[]
   notifications     Notification[]
   couponRedemptions CouponRedemption[]
+  invitations       Invitation[]
 
   @@map("business")
 }
@@ -544,4 +545,23 @@ model EmailCampaign {
   sentAt      DateTime?
 
   @@map("email_campaign")
+}
+
+// ─── Invitaciones al equipo de un negocio ───────────────────────────────────
+
+model Invitation {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email       String
+  role        Role      @default(EMPLOYEE)
+  token       String    @unique
+  invitedById String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([email])
+  @@map("invitation")
 }

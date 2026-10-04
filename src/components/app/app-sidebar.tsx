@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Logo } from "@/components/app/logo"
-import { SignOutButton, UserMenu } from "@/components/app/user-menu"
+import { SignOutButton, UserMenu, type BusinessOption } from "@/components/app/user-menu"
 import { isActive, NAV_ITEMS } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
@@ -44,11 +44,13 @@ export function AppSidebar({
   businessName,
   userName,
   userEmail,
+  businesses = [],
   isAdmin = false,
 }: {
   businessName: string
   userName: string
   userEmail: string
+  businesses?: BusinessOption[]
   isAdmin?: boolean
 }) {
   return (
@@ -65,7 +67,7 @@ export function AppSidebar({
         <NavLinks />
       </div>
       <div className="grid gap-1 border-t p-3">
-        <UserMenu name={userName} email={userEmail} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />
+        <UserMenu name={userName} email={userEmail} businesses={businesses} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />
         <SignOutButton className="w-full justify-start hover:bg-sidebar-accent" />
       </div>
     </aside>

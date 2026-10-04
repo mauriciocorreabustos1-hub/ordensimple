@@ -193,3 +193,34 @@ export function promoEmail({
 
   return { subject: personalize(subject), html, text }
 }
+
+export function invitationEmail({
+  inviterName,
+  businessName,
+  roleLabel,
+  url,
+}: {
+  inviterName: string
+  businessName: string
+  roleLabel: string
+  url: string
+}) {
+  return {
+    subject: `${inviterName} te invitó a ${businessName} en OrdenSimple`,
+    html: layout({
+      preview: `Únete a ${businessName} como ${roleLabel}. La invitación vale por 7 días.`,
+      body: [
+        h1(`Te invitaron a ${escapeHtml(businessName)}`),
+        p(
+          `<strong>${escapeHtml(inviterName)}</strong> te invitó a usar OrdenSimple en <strong>${escapeHtml(businessName)}</strong> como <strong>${escapeHtml(roleLabel)}</strong>.`,
+        ),
+        p("Si aún no tienes cuenta, la creas en un minuto con este mismo correo. Es gratis."),
+        button(url, "Aceptar invitación"),
+        small(
+          `La invitación vale por 7 días. Si no conoces a esta persona, ignora este correo.<br>Si el botón no funciona, copia este enlace:<br><a href="${url}" style="color:${GREEN};word-break:break-all;">${escapeHtml(url)}</a>`,
+        ),
+      ].join(""),
+    }),
+    text: `${inviterName} te invitó a usar OrdenSimple en ${businessName} como ${roleLabel}.\n\nAcepta aquí (vale por 7 días):\n${url}\n\nSi no conoces a esta persona, ignora este correo.`,
+  }
+}

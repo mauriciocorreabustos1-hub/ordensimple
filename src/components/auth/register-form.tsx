@@ -13,10 +13,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Field } from "@/components/app/field"
 import { PasswordInput } from "@/components/auth/password-input"
 import { authClient } from "@/lib/auth-client"
-import { authErrorMessage } from "@/lib/auth-errors"
+import { authErrorMessage, safeNext } from "@/lib/auth-errors"
 import { registerSchema } from "@/lib/validations"
 
-export function RegisterForm() {
+/** next: a dónde ir después de crear la cuenta (por ejemplo, una invitación). Sin next, va a configurar su negocio. */
+export function RegisterForm({ next, defaultEmail }: { next?: string; defaultEmail?: string }) {
   const router = useRouter()
   const [pending, setPending] = React.useState(false)
   const [marketing, setMarketing] = React.useState(false)
@@ -45,7 +46,7 @@ export function RegisterForm() {
       setError(authErrorMessage(error))
       return
     }
-    router.replace("/onboarding")
+    router.replace(next ? safeNext(next, "/onboarding") : "/onboarding")
     router.refresh()
   }
 
@@ -60,7 +61,15 @@ export function RegisterForm() {
         <Input id="name" name="name" autoComplete="name" className="h-10" placeholder="María González" />
       </Field>
       <Field label="Correo" htmlFor="email" error={fieldErrors.email?.[0]}>
-        <Input id="email" name="email" type="email" autoComplete="email" className="h-10" placeholder="tu@correo.cl" />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          className="h-10"
+          placeholder="tu@correo.cl"
+          defaultValue={defaultEmail}
+        />
       </Field>
       <Field
         label="Contraseña"

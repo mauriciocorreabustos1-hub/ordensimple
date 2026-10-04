@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, Monitor, Moon, Settings, ShieldCheck, Sun } from "lucide-react"
+import { Check, LogOut, Monitor, Moon, Settings, ShieldCheck, Store, Sun } from "lucide-react"
 import { useTheme } from "@/lib/theme"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { authClient } from "@/lib/auth-client"
+import { switchBusiness } from "@/server/actions/team"
 import { cn } from "@/lib/utils"
 
 export function initials(name: string) {
@@ -75,9 +76,12 @@ export function SignOutButton({ className, compact = false }: { className?: stri
   )
 }
 
+export type BusinessOption = { id: string; name: string; active: boolean }
+
 export function UserMenu({
   name,
   email,
+  businesses = [],
   showDetails = false,
   isAdmin = false,
   hideSignOut = false,
@@ -85,6 +89,8 @@ export function UserMenu({
 }: {
   name: string
   email: string
+  /** Negocios a los que pertenece; si son varios, se puede cambiar desde aquí. */
+  businesses?: BusinessOption[]
   showDetails?: boolean
   isAdmin?: boolean
   /** En la barra lateral ya hay un botón propio de cerrar sesión. */
@@ -92,7 +98,16 @@ export function UserMenu({
   className?: string
 }) {
   const signOut = useSignOut()
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
+
+  async function changeBusiness(id: string) {
+    const r = await switchBusiness(id)
+    if (!r.ok) return void toast.error(r.message)
+    toast.success(r.message ?? "Listo")
+    router.push("/dashboard")
+    router.refresh()
+  }
 
   return (
     <DropdownMenu>
@@ -119,6 +134,19 @@ export function UserMenu({
           <p className="truncate text-xs text-muted-foreground">{email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {businesses.length > 1 ? (
+          <>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">Tus negocios</DropdownMenuLabel>
+            {businesses.map((b) => (
+              <DropdownMenuItem key={b.id} disabled={b.active} onSelect={() => void changeBusiness(b.id)}>
+                <Store />
+                <span className="flex-1 truncate">{b.name}</span>
+                {b.active ? <Check className="text-primary" /> : null}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         <DropdownMenuItem asChild>
           <Link href="/dashboard/configuracion">
             <Settings />

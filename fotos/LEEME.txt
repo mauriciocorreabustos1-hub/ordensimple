@@ -74,3 +74,16 @@ Reglas simples
   4-avisos-horizontales/ ....... 3 avisos (1200x628) para anuncios pagados.
   5-volante-imprimir/ .......... Volante A5 con código QR (PDF para imprenta y PNG).
   textos-para-publicar.txt ..... Texto para cada imagen, hashtags y calendario de 2 semanas.
+
+9-publicidad-por-cliente/  (distintos tonos para cada tipo de cliente)
+  1-almacen-de-barrio/ ......... Humor: carta al cuaderno del fiado y chat "¿cuánto le debo?" (post + historia).
+  2-ventas-por-redes/ .......... Moderno: "¿y cuánto te queda?" y meme "Yo a fin de mes".
+  3-feriantes/ ................. Práctico: "En la feria no hay tiempo para cuadernos".
+  4-servicios-y-otros-rubros/ .. "No es solo para almacenes" (peluquerías, talleres, comida…).
+  5-con-empleados/ ............. "Ellos registran. Tú ves todo desde tu casa".
+  6-emocional/ ................. Cálido: "Tu negocio es tu esfuerzo" y "Más tiempo para los tuyos".
+  7-educativo/ ................. Carrusel "el 30% engaña" y punto de equilibrio, con cuentas reales.
+  8-preguntas/ ................. Encuesta para comentarios: "¿Cuánto te deben del fiado?".
+  9-temporada/ ................. "Diciembre se viene fuerte" (publicar en noviembre).
+  10-directo/ .................. "Gratis. Sin tarjeta. En 2 minutos." y la boleta del día.
+  textos-por-cliente.txt ....... A quién apunta cada pieza, su texto, hashtags y calendario de 4 semanas.

@@ -90,3 +90,15 @@ Reglas simples
   9-temporada/ ................. "Diciembre se viene fuerte" (publicar en noviembre).
   10-directo/ .................. "Gratis. Sin tarjeta. En 2 minutos." y la boleta del día.
   textos-por-cliente.txt ....... A quién apunta cada pieza, su texto, hashtags y calendario de 4 semanas.
+
+10-mas-publicidad/
+  1-tip-de-la-semana/ .......... 6 consejos útiles (uno por semana): sueldo, gastos hormiga, fiado, stock, meta, caja.
+  2-carrusel-3-mitos/ .......... "3 excusas para no ordenar tu negocio" (5 imágenes).
+  3-funciones/ ................. Metas, simulador "¿qué pasa si…?" y reportes, con pantallas reales.
+  4-banners-google/ ............ 9 tamaños estándar para anuncios de Google (Display).
+  5-tarjeta-de-presentacion/ ... Tarjeta 85x55 mm con QR (PDF para imprenta + PNG).
+  textos-para-publicar.txt ..... Textos, hashtags y cómo usar cada pieza.
+
+7-video/ (nuevo)
+  ordensimple-5-errores.mp4 .... Video vertical de 24 s: "5 errores que te hacen perder plata".
+  portada-5-errores.png ........ Miniatura de ese video.

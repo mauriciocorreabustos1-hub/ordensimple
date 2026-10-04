@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { LogOut, Monitor, Moon, Settings, ShieldCheck, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/lib/theme"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {

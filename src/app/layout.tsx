@@ -5,6 +5,10 @@ import { Providers } from "@/components/providers"
 import { getAppUrl } from "@/lib/app-url"
 import "./globals.css"
 
+// Aplica el tema guardado (o el del sistema) antes de que se dibuje la página, para que no parpadee.
+// Debe coincidir con src/lib/theme.ts (misma clave y valores).
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;if(d)r.classList.add("dark");r.style.colorScheme=d?"dark":"light"}catch(e){}})()`
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
@@ -50,6 +54,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full">
         <Providers>{children}</Providers>
         <Analytics />

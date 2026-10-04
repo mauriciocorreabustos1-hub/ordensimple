@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Monitor, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 
 const OPTIONS = [

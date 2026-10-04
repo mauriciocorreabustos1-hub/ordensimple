@@ -257,7 +257,7 @@ export function TeamSection({
     used >= limit
       ? limit <= 1
         ? `El plan ${planName} es para una sola persona. Con Pro puedes sumar a tu equipo.`
-        : `Tu plan permite hasta ${limit} personas. Quita a alguien o cancela una invitación para invitar a otra.`
+        : `Tu plan permite hasta ${limit - 1} trabajadores. Quita a alguien o cancela una invitación para invitar a otra.`
       : null
 
   return (
@@ -287,7 +287,7 @@ export function TeamSection({
       {canManage ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            {used} de {limit} persona{limit === 1 ? "" : "s"} en tu plan {planName}. Invita a administradores o empleados para
+            {used - 1} de {limit - 1} trabajador{limit - 1 === 1 ? "" : "es"} en tu plan {planName}. Invita a administradores o empleados para
             que registren ventas y gastos.
           </p>
           <InviteDialog businessName={businessName} disabledReason={disabledReason} />

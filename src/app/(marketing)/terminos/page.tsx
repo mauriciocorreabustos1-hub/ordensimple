@@ -50,7 +50,7 @@ export default function TermsPage() {
           <li>El plan Gratis no tiene costo ni requiere tarjeta.</li>
           <li>
             Durante el período de lanzamiento, algunas funciones del plan Pro están disponibles para todos sin costo. Antes
-            de empezar a cobrar por ellas te avisaremos con al menos 30 días de anticipación, y podrás decidir si contratas
+            de empezar a cobrar por ellas te avisaremos con al menos 5 días de anticipación, y podrás decidir si contratas
             un plan pagado o sigues en el plan Gratis.
           </li>
           <li>

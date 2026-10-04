@@ -308,7 +308,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     title: "Cuenta y precios",
     items: [
       { q: "¿Es realmente gratis?", a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta." },
-      { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 30 días de anticipación antes de empezar a cobrar el plan Pro." },
+      { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro." },
       { q: "¿Necesito tarjeta de crédito para registrarme?", a: "No. Solo tu nombre, correo y una contraseña." },
       { q: "Olvidé mi contraseña, ¿qué hago?", a: "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y te enviaremos un enlace para crear una nueva." },
     ],
@@ -339,7 +339,7 @@ export type ComparisonRow = { label: string; values: [string | boolean, string |
 export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Negocios", values: ["1", "Hasta 3", "Hasta 10"] },
   { label: "Productos", values: ["Hasta 50", "Ilimitados", "Ilimitados"] },
-  { label: "Usuarios", values: ["1", "Hasta 3", "Hasta 50"] },
+  { label: "Trabajadores (además de ti)", values: ["5", "20", "Más de 50"] },
   { label: "Ventas y gastos", values: [true, true, true] },
   { label: "Panel de inicio", values: [true, true, true] },
   { label: "Calculadoras", values: [true, true, true] },

@@ -8,7 +8,7 @@ import { sendEmail, sendEmailBatch } from "@/lib/email"
 import { planGiftEmail, promoEmail } from "@/lib/email-templates"
 import { unsubscribeUrl } from "@/lib/unsubscribe"
 import { PLANS } from "@/lib/plans"
-import { requireAdmin } from "@/server/admin"
+import { isAdminEmail, requireAdmin } from "@/server/admin"
 import { audienceWhere } from "@/server/queries/campaigns"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -247,6 +247,52 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
         ? `Se enviaron ${sent} correos; ${failed} fallaron`
         : `¡Listo! Se enviaron ${sent} correo${sent === 1 ? "" : "s"}`,
     }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+// ─── Eliminar cuentas ───────────────────────────────────────────────────────
+
+const deleteUserSchema = z.object({
+  userId: z.string().min(1),
+  /** Se escribe el correo para confirmar: evita borrar a la persona equivocada. */
+  confirmEmail: z.string().trim().toLowerCase(),
+})
+
+/**
+ * Elimina una cuenta para siempre: el usuario y los negocios donde es dueño (con todas sus ventas,
+ * gastos, productos y clientes). De los negocios de otros solo se quita su acceso.
+ */
+export async function deleteUserAccount(input: z.input<typeof deleteUserSchema>): Promise<ActionResult> {
+  const admin = await requireAdmin()
+  const parsed = deleteUserSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Datos inválidos." }
+  const { userId, confirmEmail } = parsed.data
+
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { email: true, memberships: { where: { role: "OWNER" }, select: { businessId: true } } },
+    })
+    if (!user) return { ok: false, message: "Esa cuenta ya no existe." }
+    if (user.email.toLowerCase() !== confirmEmail) return { ok: false, message: "El correo no coincide. No se eliminó nada." }
+    if (user.email.toLowerCase() === admin.email.toLowerCase()) return { ok: false, message: "No puedes eliminar tu propia cuenta desde aquí." }
+    if (isAdminEmail(user.email)) return { ok: false, message: "No se puede eliminar la cuenta de un administrador." }
+
+    const ownedIds = user.memberships.map((m) => m.businessId)
+    await db.$transaction([
+      // Borra en cascada ventas, gastos, productos, clientes, invitaciones, etc. de sus negocios.
+      db.business.deleteMany({ where: { id: { in: ownedIds } } }),
+      // Borra en cascada sesiones, accesos a otros negocios y notificaciones.
+      db.user.delete({ where: { id: userId } }),
+    ])
+    // Quien tenía abierto un negocio borrado entrará al siguiente que tenga.
+    if (ownedIds.length) await db.user.updateMany({ where: { activeBusinessId: { in: ownedIds } }, data: { activeBusinessId: null } })
+
+    console.info(`[admin] ${admin.email} eliminó la cuenta ${user.email} y ${ownedIds.length} negocio(s)`)
+    revalidatePath("/admin")
+    return { ok: true, message: `Se eliminó la cuenta ${user.email}` }
   } catch (error) {
     return toActionError(error)
   }

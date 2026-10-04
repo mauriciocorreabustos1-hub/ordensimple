@@ -87,7 +87,7 @@ export async function listAdminUsers({ q, page }: { q?: string; page: number }) 
                 type: true,
                 plan: true,
                 onboardingCompleted: true,
-                _count: { select: { sales: true, expenses: true, products: true } },
+                _count: { select: { sales: true, expenses: true, products: true, members: true } },
               },
             },
           },

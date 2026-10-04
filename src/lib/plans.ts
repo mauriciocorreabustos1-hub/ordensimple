@@ -33,20 +33,20 @@ export const PLANS: Record<Plan, PlanConfig> = {
     description: "Para empezar a ordenar tu negocio.",
     maxBusinesses: 1,
     maxProducts: 50,
-    maxMembers: 1,
+    maxMembers: 6, // tú + 5 trabajadores
     features: ["tools"],
-    highlights: ["1 negocio", "Hasta 50 productos", "Ventas y gastos", "Cierre de caja", "Panel de inicio", "Calculadoras"],
+    highlights: ["1 negocio", "Tú + 5 trabajadores", "Hasta 50 productos", "Ventas y gastos", "Cierre de caja", "Panel de inicio", "Calculadoras"],
   },
   PRO: {
     id: "PRO",
     name: "Pro",
     // Las funciones Pro ya están abiertas a todos; lo que falta es el cobro.
     priceLabel: "Gratis por ahora",
-    priceNote: "Durante el lanzamiento. Te avisaremos 30 días antes de empezar a cobrar.",
+    priceNote: "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
     description: "Para negocios que quieren crecer con datos.",
     maxBusinesses: 3,
     maxProducts: null,
-    maxMembers: 3,
+    maxMembers: 21, // tú + 20 trabajadores
     features: ["inventory", "customers", "suppliers", "tools", "reports", "tips"],
     highlights: [
       "Productos ilimitados",
@@ -54,7 +54,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Clientes y fiado",
       "Proveedores",
       "Reportes y consejos automáticos",
-      "Hasta 3 personas en tu equipo",
+      "Tú + 20 trabajadores",
     ],
   },
   BUSINESS: {
@@ -65,9 +65,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     description: "Para equipos y varias sucursales.",
     maxBusinesses: 10,
     maxProducts: null,
-    maxMembers: 50,
+    maxMembers: 1000, // más de 50 trabajadores
     features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "multiUser", "branches"],
-    highlights: ["Todo lo de Pro", "Múltiples usuarios", "Múltiples sucursales", "Roles avanzados", "Reportes avanzados"],
+    highlights: ["Todo lo de Pro", "Más de 50 trabajadores", "Múltiples sucursales", "Roles avanzados", "Reportes avanzados"],
   },
 }
 

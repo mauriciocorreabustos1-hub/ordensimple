@@ -3,6 +3,7 @@ import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, Search,
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { CouponManager, type CouponRow } from "@/components/admin/coupon-manager"
+import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
 import { PlanDialog } from "@/components/admin/plan-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import { formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { couponSummary, effectivePlan, PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
+import { isAdminEmail } from "@/server/admin"
 import {
   getAdminStats,
   getPlanCounts,
@@ -205,6 +207,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                       <Badge variant="outline" className="text-muted-foreground">
                         Sin ventas aún
                       </Badge>
+                    )}
+                    {isAdminEmail(u.email) ? null : (
+                      <DeleteUserDialog
+                        userId={u.id}
+                        name={u.name}
+                        email={u.email}
+                        ownedBusinesses={u.memberships
+                          .filter((x) => x.role === "OWNER")
+                          .map((x) => ({ name: x.business.name, sales: x.business._count.sales, others: x.business._count.members - 1 }))}
+                      />
                     )}
                   </div>
                 </div>

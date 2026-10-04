@@ -55,7 +55,7 @@ export async function inviteMember(input: z.input<typeof inviteSchema>): Promise
         message:
           limit <= 1
             ? `El plan ${PLANS[ctx.business.plan].name} es para una sola persona. Con Pro puedes sumar a tu equipo.`
-            : `Tu plan permite hasta ${limit} personas en el negocio (contando invitaciones pendientes).`,
+            : `Tu plan permite hasta ${limit - 1} trabajadores (contando invitaciones pendientes).`,
       }
     }
 

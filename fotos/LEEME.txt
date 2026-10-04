@@ -113,3 +113,27 @@ Reglas simples
   ordensimple-premium.mp4 ...... Video premium animado (28 s): celular deslizándose, tarjetas, montos contando y avisos.
   portada-premium.png .......... Miniatura de ese video.
   guion-video-premium.txt ...... Descripción, hashtags, escenas y guion para grabar voz.
+
+12-publicidad-premium-2/  (estilo premium, sobre lo nuevo: sucursales, equipo por sucursal, Pro gratis)
+  1-posts/ ..................... 5 posts: sucursales, tú decides quién ve qué, Pro gratis por ahora,
+                                 tus datos son tuyos, guías gratis.
+  2-historias/ ................. 5 historias con los mismos mensajes.
+  3-carrusel-acceso-por-sucursal/  Carrusel de 4: cómo dar acceso a un trabajador a una sola sucursal.
+  4-video/ ..................... 5 videos animados: sucursales y equipo (~28 s), cierre de caja, fiado,
+                                 meta de ganancia y Pro gratis (15-20 s), cada uno con su miniatura.
+  textos-para-publicar.txt ..... Textos, hashtags y cómo usar cada pieza.
+
+13-tips-y-encuestas/  (contenido para publicar seguido: hace crecer la cuenta)
+  1-feed/ ...................... 6 tips nuevos (#7 al #12) + "Antes de cerrar el local" (checklist).
+  2-historias/ ................. Tips y checklist en historia, 6 encuestas, 2 "¿qué prefieres?",
+                                 2 verdadero o falso (pregunta + respuesta) y caja de preguntas.
+  textos-para-publicar.txt ..... Cómo poner el sticker de encuesta, opciones, textos y calendario de 4 semanas.
+
+14-publicidad-premium-3/
+  1-posts/ ..................... ¿Cuaderno, Excel u OrdenSimple?, 3 números que debes saber cada día,
+                                 Diciembre se viene.
+  2-historias/ ................. Los mismos 3 en formato historia.
+  3-carrusel-empieza-en-3-pasos/  5 imágenes con pantallas reales y código QR al final.
+  4-anuncios-cuadrados/ ........ 4 anuncios 1080x1080: Pro gratis, sucursales, fiado, cierre de caja.
+  5-anuncios-horizontales/ ..... 3 anuncios 1200x628: Pro gratis, sucursales, fiado.
+  textos-para-publicar.txt ..... Textos, y qué poner en cada anuncio pagado de Meta.

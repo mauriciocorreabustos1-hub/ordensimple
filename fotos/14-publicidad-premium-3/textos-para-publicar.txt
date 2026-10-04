@@ -1,0 +1,73 @@
+OrdenSimple — Publicidad premium 3: textos para publicar
+========================================================
+
+  1-posts/ ........................ 1080x1350 (feed)
+  2-historias/ .................... 1080x1920 (historias y estados de WhatsApp)
+  3-carrusel-empieza-en-3-pasos/ .. 5 imágenes 1080x1350, súbelas juntas y en orden
+  4-anuncios-cuadrados/ ........... 1080x1080, para anuncios pagados de Facebook e Instagram
+  5-anuncios-horizontales/ ........ 1200x628, para anuncios de Facebook (columna derecha y enlaces)
+
+
+1-posts/ y 2-historias/
+-----------------------
+
+post-01-cuaderno-excel-u-ordensimple  ← buena para fijar en el perfil
+  ¿Cuaderno, Excel u OrdenSimple? 🤔
+  El cuaderno se pierde y el Excel hay que saber usarlo. OrdenSimple suma solo,
+  te dice cuánto te quedó, te avisa cuando falta stock y te guía en el cierre de caja.
+  Pruébalo gratis 👉 link en la bio
+
+post-02-3-numeros-cada-dia
+  3 números que todo dueño debería saber cada día 👇
+  1️⃣ Cuánto vendiste  2️⃣ Cuánto gastaste  3️⃣ Cuánto te quedó
+  Si los sabes, sabes si tu negocio va bien. OrdenSimple te los muestra al abrir la app.
+  (Montos de ejemplo.)
+
+post-03-diciembre-se-viene  ← publícala a fines de octubre o en noviembre
+  Diciembre se viene 🎄 ¿Tu negocio está listo?
+  ✅ Revisa tu stock antes de que se acabe lo que más sale
+  ✅ Ponte una meta de ventas para el mes
+  ✅ Anota cada venta: con harta gente es cuando más se olvida
+  ✅ Cuadra la caja todos los días
+  Prepárate gratis 👉 link en la bio
+
+
+3-carrusel-empieza-en-3-pasos/  (5 imágenes)
+-------------------------------
+  Ordena tu negocio en 3 pasos 👇
+  1. Crea tu cuenta gratis (2 minutos, sin tarjeta)
+  2. Anota tu primera venta
+  3. Mira cuánto te quedó
+  La última imagen tiene un código QR que lleva a ordensimple.cl.
+  Guárdalo y compártelo con alguien que tenga negocio 📌
+
+
+4-anuncios-cuadrados/ y 5-anuncios-horizontales/  (para anuncios pagados)
+------------------------------------------------
+En el Administrador de anuncios de Meta, sube el cuadrado y el horizontal del mismo
+tema en el mismo anuncio: Meta usa el que mejor calce en cada lugar.
+
+  Pro gratis:
+    Texto principal: El plan Pro de OrdenSimple está gratis por ahora: productos ilimitados,
+      fiado, tú + 20 trabajadores y hasta 3 sucursales. Te avisamos 5 días antes de cobrar.
+    Título: Úsalo gratis desde hoy
+    Botón: "Registrarte"  ·  Enlace: https://www.ordensimple.cl
+
+  Sucursales:
+    Texto principal: ¿Tienes más de un local? Mira cuánto vende y te deja cada uno, en una pantalla.
+    Título: Todos tus locales, en orden
+    Botón: "Más información"
+
+  Fiado:
+    Texto principal: Deja el cuaderno. Anota cada fiado con nombre y los abonos; la deuda baja sola.
+    Título: Sabe quién te debe y cuánto
+    Botón: "Registrarte"
+
+  Cierre de caja (solo cuadrado):
+    Texto principal: Cuenta los billetes y OrdenSimple te dice al tiro si falta o sobra plata.
+    Título: ¿Te cuadra la caja?
+    Botón: "Registrarte"
+
+  Consejo: parte con poco (por ejemplo $3.000 al día por 5 días), público en Chile,
+  de 25 a 60 años, con intereses como "pequeñas empresas" o "emprendimiento".
+  Deja correr el que más clics consiga y apaga los demás.

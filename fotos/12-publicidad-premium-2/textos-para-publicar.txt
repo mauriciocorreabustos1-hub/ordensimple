@@ -1,0 +1,119 @@
+OrdenSimple — Publicidad premium 2: textos para publicar
+========================================================
+
+Esta tanda es sobre lo nuevo: sucursales, equipo por sucursal, Pro gratis,
+descargar tus datos y las guías gratis. Mismo estilo premium que la carpeta 11.
+En todas el celular entra completo, sin cortes.
+
+Formatos:
+  1-posts/ ........... 1080x1350 (feed de Instagram y Facebook)
+  2-historias/ ....... 1080x1920 (historias, reels y TikTok como imagen)
+  3-carrusel-.../ .... 4 imágenes 1080x1350: súbelas juntas, en orden (1, 2, 3, 4)
+  4-video/ ........... video vertical 1080x1920 de unos 28 s, para reels, TikTok e historias
+
+
+1-posts/
+-------
+
+post-01-sucursales  ← la mejor para dueños con más de un local
+  ¿Tienes más de un local? 🏪🏪
+  Con OrdenSimple ves todas tus sucursales juntas: cuánto vende, gasta y te deja cada una,
+  y cuál vende más. Todo en una pantalla.
+  Hasta 3 sucursales gratis por ahora 👉 link en la bio
+  (Montos de ejemplo.)
+
+post-02-tu-decides-quien-ve-que
+  Tú decides quién ve qué 🔐
+  Invita a tu trabajador y marca a qué sucursal puede entrar. Las demás ni las ve,
+  y tus ganancias son solo para ti. ¿Lo cambias de local? Lo cambias en un toque.
+
+post-03-pro-gratis  ← buena para anuncios: es una oferta concreta
+  El plan Pro está GRATIS por ahora 🎉
+  Productos ilimitados, inventario con alertas, clientes y fiado, reportes,
+  tú + 20 trabajadores y hasta 3 sucursales.
+  Te avisamos 5 días antes de empezar a cobrar, y tú decides si sigues.
+  Úsalo gratis 👉 link en la bio
+
+post-04-tus-datos-son-tuyos
+  Tus datos son tuyos 🔒
+  Desde Configuración descargas todas tus ventas, gastos, clientes y fiado en planillas
+  que se abren en Excel. Sin amarres: te vas cuando quieras.
+
+post-05-guias-gratis  ← trae gente nueva (no pide crear cuenta)
+  Guías gratis para ordenar tu negocio 📚
+  ✅ Cómo llevar el fiado sin perder plata
+  ✅ Cómo hacer el cierre de caja paso a paso
+  ✅ Cómo calcular la ganancia de tu negocio
+  Léelas en ordensimple.cl/guias — Guárdalo 📌
+
+
+2-historias/
+-----------
+Los mismos 5 mensajes en formato historia. Al subirlas a Instagram agrega el sticker
+"Enlace" apuntando a https://www.ordensimple.cl (o a /guias en la historia 05),
+y ponlo en la parte de arriba, donde no tapa nada.
+
+
+3-carrusel-acceso-por-sucursal/  (4 imágenes, súbelas juntas)
+------------------------------
+  ¿Cómo darle acceso a un trabajador a una sola sucursal? 👇
+  1. Ve a Configuración y toca "Invitar usuario".
+  2. Escribe su correo y marca su sucursal.
+  3. Listo: le llega un correo y trabaja solo en esa sucursal.
+  ¿Lo cambias de local? Toca "Cambiar sucursales".
+  Guárdalo para cuando lo necesites 📌
+
+
+4-video/
+-------
+ordensimple-sucursales-y-equipo.mp4  (portada.png = miniatura)
+  Escenas:
+    1. ¿Tienes más de un local?
+    2. Todas tus sucursales en una pantalla (los montos van contando)
+    3. ¿Cuál vende más? (barras que crecen)
+    4. Tú decides quién ve qué
+    5. Cada uno ve lo que necesita: tú vs. tu trabajador
+    6. Plan Pro: hasta 3 sucursales y 20 trabajadores, gratis por ahora
+    7. Cierre: ordensimple.cl
+
+  Descripción:
+    ¿Tienes más de un local? Ordénalos todos desde una app 📲
+    Ventas de cada sucursal, cuál vende más y qué ve cada trabajador. Gratis por ahora.
+    👉 ordensimple.cl
+
+Videos cortos para anuncios (15 a 20 s, misma carpeta 4-video/):
+
+ordensimple-cierre-de-caja.mp4
+  ¿Te cuadra la caja al final del día? 💵
+  Anota tus ventas, cuenta los billetes y OrdenSimple te dice al tiro si falta o sobra.
+  Gratis para empezar 👉 ordensimple.cl
+
+ordensimple-fiado.mp4
+  ¿Cuánta plata te deben tus clientes? 📒
+  El cuaderno no te avisa. OrdenSimple sí: quién te debe, cuánto y desde cuándo.
+  Anota los abonos y la deuda baja sola. 👉 ordensimple.cl
+
+ordensimple-meta-de-ganancia.mp4
+  ¿Cuánto tienes que vender para ganar $1.000.000 al mes? 🎯
+  Pon tu meta y te damos el número: al mes, por semana y por día.
+  Pruébalo gratis, también sin crear cuenta 👉 ordensimple.cl/calculadoras
+
+ordensimple-pro-gratis.mp4  ← el mejor para anuncios pagados (oferta clara)
+  📣 Dueños de negocio: el plan Pro está GRATIS por ahora.
+  Productos ilimitados, inventario, fiado, reportes, tú + 20 trabajadores y hasta 3 sucursales.
+  Te avisamos 5 días antes de empezar a cobrar. 👉 ordensimple.cl
+
+  Cada video tiene su miniatura: portada-<nombre>.png
+
+  Música: los videos no traen audio. En Instagram o TikTok elige una canción en tendencia
+  al subirlo (suena mejor y la app lo muestra a más gente).
+
+
+Hashtags (elige 5 a 8):
+  #pyme #pymechile #emprendimientochile #almacen #minimarket #negociopropio
+  #sucursales #emprendedoreschile #ordensimple #controldeventas
+
+Ideas para anuncios pagados:
+  - Para dueños con varios locales: post-01 + video.
+  - Para todos: post-03 (Pro gratis), es la oferta más clara.
+  - Para atraer gente nueva barata: post-05 (guías) y el carrusel.

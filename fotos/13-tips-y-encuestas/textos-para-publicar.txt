@@ -1,0 +1,90 @@
+OrdenSimple — Tips, encuestas y contenido para publicar seguido
+================================================================
+
+Esta carpeta es para mantener la cuenta activa todas las semanas, no para vender directo.
+La gente comenta, vota y guarda este tipo de publicaciones, y eso hace que Instagram
+y TikTok muestren más tu cuenta.
+
+  1-feed/ ............................ 1080x1350: 6 tips (#7 al #12) + checklist para guardar
+  2-historias/tips/ .................. los mismos tips y el checklist en formato historia
+  2-historias/encuestas/ ............. 6 encuestas
+  2-historias/que-prefieres/ ......... 2 "¿qué prefieres?"
+  2-historias/verdadero-o-falso/ ..... 2 juegos: primero la pregunta (a), al día siguiente la respuesta (b)
+  2-historias/preguntas/ ............. caja de preguntas
+
+
+CÓMO SUBIR LAS HISTORIAS CON ENCUESTA (importante)
+--------------------------------------------------
+Las encuestas, "¿qué prefieres?", verdadero o falso y la caja de preguntas tienen un
+espacio vacío bajo "Vota aquí ↓". Ahí va el sticker de Instagram:
+
+  1. Sube la imagen como historia.
+  2. Toca el ícono de stickers (la carita cuadrada arriba).
+  3. Elige "ENCUESTA" (o "PREGUNTAS" en la caja de preguntas).
+  4. Escribe las opciones (abajo te dejo cuáles) y ponlo en el espacio vacío.
+
+Opciones para cada una:
+  encuesta-1 ¿Cómo anotas tus ventas? .............. Cuaderno / Celular  (o usa "Cuestionario" con 4: Cuaderno, Excel, App, En la cabeza)
+  encuesta-2 ¿Le fías a tus clientes? .............. Sí, harto / Poco o nada
+  encuesta-3 ¿Cuadras la caja todos los días? ...... Sí / A veces / Nunca
+  encuesta-4 ¿Sabes cuánto ganaste el mes pasado? .. Sí, exacto / Más o menos
+  encuesta-5 ¿Qué te cuesta más? ................... Vender / Cobrar
+  encuesta-6 ¿Cuántos locales tienes? .............. 1 / 2 o más
+  que-prefieres-1 .................................. Efectivo / Transferencia
+  que-prefieres-2 .................................. Cuaderno / Celular
+  vf-1a y vf-2a .................................... Verdadero / Falso
+  caja-de-preguntas ................................ sticker "Preguntas": "¿Qué quieres saber?"
+
+Al día siguiente, comparte el resultado de la encuesta (Instagram te deja compartirlo)
+y súmale un tip relacionado. Ejemplo: después de "¿Le fías a tus clientes?" sube el
+tip #7 (ponle fecha a cada fiado).
+
+
+TEXTOS PARA EL FEED
+-------------------
+
+tip-07-fiado-con-fecha
+  Tip de la semana #7: ponle fecha a cada fiado 📅
+  Al fiar, acuerda cuándo te pagan y anótalo. Si pasa la fecha, recuérdale con amabilidad.
+  Sin fecha, la deuda se olvida. Guárdalo 📌
+
+tip-08-producto-que-mas-deja
+  Tip #8: el producto que más vendes no siempre es el que más te deja 🏆
+  Mira cuánto ganas por cada uno, no solo cuántos vendes. ¿Sabes cuál es el tuyo? Cuéntanos 👇
+
+tip-09-anota-la-merma
+  Tip #9: lo que se vence también es gasto 🗑️
+  Yogures vencidos, pan duro, botellas rotas: es plata que sale. Anótalo y sabrás qué comprar menos.
+
+tip-10-colchon-para-imprevistos
+  Tip #10: guarda un colchón para imprevistos 🐷
+  $10.000 a la semana son $260.000 en 6 meses. Para cuando falle el refri o baje la venta.
+
+tip-11-comparate-con-tu-semana
+  Tip #11: compárate con tu semana pasada, no con el vecino 📈
+  Lo que importa es si tú vas mejor que antes. ¿Cómo te fue esta semana?
+
+tip-12-acepta-mas-formas-de-pago
+  Tip #12: acepta más formas de pago 💳
+  Hay clientes que ya no andan con efectivo. Con transferencia y tarjeta no pierdes esas ventas.
+
+checklist-antes-de-cerrar  ← la que más se guarda; buena para fijar en el perfil
+  Checklist antes de cerrar el local ✅
+  Guárdalo y revísalo cada noche. En OrdenSimple el cierre de caja te guía paso a paso 👉 link en la bio
+
+Hashtags (elige 5 a 8):
+  #tipsparaemprendedores #pymechile #emprendimientochile #almacen #minimarket
+  #negociopropio #finanzasparaemprendedores #ordensimple
+
+
+CALENDARIO SUGERIDO (4 semanas)
+-------------------------------
+Cada semana: 1 tip en el feed + 3 historias.
+
+  Semana 1  Lun: tip-07 (feed)   Mié: encuesta-2 (fiado)       Vie: vf-1a  → Sáb: vf-1b
+  Semana 2  Lun: tip-08 (feed)   Mié: encuesta-1 (cómo anotas) Vie: que-prefieres-1
+  Semana 3  Lun: checklist (feed) Mié: encuesta-3 (caja)       Vie: vf-2a  → Sáb: vf-2b
+  Semana 4  Lun: tip-09 (feed)   Mié: encuesta-4 (ganancia)    Vie: caja de preguntas
+  Luego siguen tip-10, tip-11, tip-12, encuesta-5, encuesta-6 y que-prefieres-2.
+
+Intercala con las piezas de venta de las carpetas 11 y 12 (1 por semana es suficiente).

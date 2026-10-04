@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Field } from "@/components/app/field"
 import { PasswordInput } from "@/components/auth/password-input"
@@ -16,6 +19,7 @@ import { registerSchema } from "@/lib/validations"
 export function RegisterForm() {
   const router = useRouter()
   const [pending, setPending] = React.useState(false)
+  const [marketing, setMarketing] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string[] | undefined>>({})
 
@@ -27,6 +31,7 @@ export function RegisterForm() {
       name: form.get("name"),
       email: form.get("email"),
       password: form.get("password"),
+      marketingOptIn: marketing,
     })
     if (!parsed.success) {
       setFieldErrors(z.flattenError(parsed.error).fieldErrors)
@@ -65,10 +70,27 @@ export function RegisterForm() {
       >
         <PasswordInput id="password" name="password" autoComplete="new-password" />
       </Field>
+      <div className="flex items-start gap-2.5">
+        <Checkbox id="marketing" checked={marketing} onCheckedChange={(v) => setMarketing(v === true)} className="mt-0.5" />
+        <Label htmlFor="marketing" className="cursor-pointer text-sm leading-snug font-normal text-muted-foreground">
+          Quiero recibir novedades, consejos y ofertas de OrdenSimple por correo (puedes desactivarlo cuando quieras).
+        </Label>
+      </div>
       <Button type="submit" size="lg" className="h-11 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
         Crear cuenta gratis
       </Button>
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+        Al crear tu cuenta aceptas los{" "}
+        <Link href="/terminos" target="_blank" className="text-primary underline-offset-4 hover:underline">
+          Términos y condiciones
+        </Link>{" "}
+        y la{" "}
+        <Link href="/privacidad" target="_blank" className="text-primary underline-offset-4 hover:underline">
+          Política de privacidad
+        </Link>
+        .
+      </p>
     </form>
   )
 }

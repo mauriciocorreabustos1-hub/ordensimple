@@ -27,6 +27,8 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        // Registrarse implica aceptar los términos: se guarda la fecha como respaldo.
+        before: async (user) => ({ data: { ...user, termsAcceptedAt: new Date() } }),
         // Correo de bienvenida. Si falla, el registro no se interrumpe.
         after: async (user) => {
           await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name }) }).catch((error) =>
@@ -39,6 +41,9 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       activeBusinessId: { type: "string", required: false, input: false },
+      // Consentimiento para recibir promociones: lo marca la persona al registrarse (desmarcado por defecto).
+      marketingOptIn: { type: "boolean", required: false, input: true, defaultValue: false },
+      termsAcceptedAt: { type: "date", required: false, input: false },
     },
   },
   session: {

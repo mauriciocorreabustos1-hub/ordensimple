@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight, Crown, Repeat, Search, Sparkles, Users } from "lucide-react"
+import { ChevronRight, Crown, NotebookPen, Repeat, Search, Sparkles, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,12 +15,14 @@ import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import { getCustomers, type CustomerSegment } from "@/server/queries/contacts"
+import { getDebtors } from "@/server/queries/fiado"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Clientes" }
 
 const SEGMENTS: { value: CustomerSegment; label: string }[] = [
   { value: "todos", label: "Todos" },
+  { value: "deben", label: "Te deben" },
   { value: "frecuentes", label: "Frecuentes" },
   { value: "nuevos", label: "Nuevos" },
   { value: "top", label: "Mayor compra" },
@@ -34,12 +36,25 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 80) : ""
   const segment = SEGMENTS.some((s) => s.value === params.segmento) ? (params.segmento as CustomerSegment) : "todos"
-  const data = await getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined })
+  const [data, debts] = await Promise.all([
+    getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined }),
+    getDebtors(ctx.businessId),
+  ])
+  const owes = (id: string) => Math.max(0, debts.balances.get(id)?.balance ?? 0)
+  const debtors = data.rows.filter((r) => owes(r.id) > 0).sort((a, b) => owes(b.id) - owes(a.id))
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "customers:manage")
 
   const list =
-    segment === "frecuentes" ? data.frequent : segment === "nuevos" ? data.newOnes : segment === "top" ? data.top : data.rows
+    segment === "deben"
+      ? debtors
+      : segment === "frecuentes"
+        ? data.frequent
+        : segment === "nuevos"
+          ? data.newOnes
+          : segment === "top"
+            ? data.top
+            : data.rows
   const best = data.top[0]
 
   const hrefFor = (s: CustomerSegment) => {
@@ -58,9 +73,12 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
         actions={canManage ? <CustomerDialog /> : null}
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard compactOnMobile label="Clientes" value={formatNumber(data.rows.length)} icon={Users}
           hint={`${data.newOnes.length} nuevos en los últimos 30 días.`} />
+        <StatCard compactOnMobile label="Te deben (fiado)" value={money(debts.total)} icon={NotebookPen}
+          tone={debts.total > 0 ? "expenses" : "default"}
+          hint={debts.count ? `${debts.count} ${debts.count === 1 ? "cliente tiene" : "clientes tienen"} deuda pendiente.` : "Nadie te debe. ¡Bien!"} />
         <StatCard compactOnMobile label="Frecuentes" value={formatNumber(data.frequent.length)} icon={Repeat} tone="sales"
           hint="Te compraron 3 veces o más en los últimos 60 días." />
         <StatCard compactOnMobile label="Mejor cliente" value={best ? best.name : "—"} icon={Crown} tone="profit"
@@ -128,6 +146,12 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                       <Badge variant="secondary" className="gap-1">
                         <Repeat className="size-3" />
                         Frecuente
+                      </Badge>
+                    ) : null}
+                    {owes(c.id) > 0 ? (
+                      <Badge className="gap-1 border-warning/40 bg-warning/15 text-foreground">
+                        <NotebookPen className="size-3 text-warning" />
+                        Debe {money(owes(c.id))}
                       </Badge>
                     ) : null}
                     {c.isNew ? (

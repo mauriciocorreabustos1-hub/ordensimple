@@ -14,6 +14,9 @@ import { formatMoney } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { can } from "@/lib/roles"
 import { deleteSale } from "@/server/actions/sales"
+import { EditSaleButton, type EditableSale } from "@/components/sales/edit-sale-button"
+import { db } from "@/lib/db"
+import { toDateKey } from "@/lib/dates"
 import { listSales, parseRange, periodTotals } from "@/server/queries/records"
 import { requireBusiness } from "@/server/session"
 
@@ -33,10 +36,36 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
     { desde: params.desde as string, hasta: params.hasta as string, pagina: params.pagina as string },
     ctx.timezone,
   )
-  const [[today, month], list] = await Promise.all([
+  const canEdit = can(ctx.role, "sales:edit")
+  const [[today, month], list, products, customers] = await Promise.all([
     periodTotals(ctx.businessId, ctx.timezone),
     listSales(ctx.businessId, range.from, range.to, range.take),
+    canEdit
+      ? db.product.findMany({
+          where: { businessId: ctx.businessId },
+          select: { id: true, name: true, price: true, stock: true, trackStock: true },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
+    canEdit
+      ? db.customer.findMany({ where: { businessId: ctx.businessId }, select: { name: true }, orderBy: { name: "asc" }, take: 500 })
+      : Promise.resolve([]),
   ])
+  const customerNames = customers.map((c) => c.name)
+  const toEditable = (s: (typeof list.rows)[number]): EditableSale => ({
+    id: s.id,
+    isQuick: s.isQuick,
+    total: s.total,
+    paymentMethod: s.paymentMethod,
+    date: toDateKey(s.date, ctx.timezone),
+    customerName: s.customer?.name ?? "",
+    note: s.note ?? "",
+    lines: s.items.map((i) => ({ productId: i.productId, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice })),
+  })
+  const editButton = (s: (typeof list.rows)[number]) =>
+    canEdit ? (
+      <EditSaleButton sale={toEditable(s)} currency={ctx.currency} timezone={ctx.timezone} products={products} customers={customerNames} />
+    ) : null
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canDelete = can(ctx.role, "sales:delete")
   const avg = month.salesCount ? Math.round(month.sales / month.salesCount) : 0
@@ -88,6 +117,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                     </p>
                   </div>
                   <span className="tabular font-semibold">{money(s.total)}</span>
+                  {editButton(s)}
                   {canDelete ? (
                     <ConfirmDelete
                       title="¿Eliminar esta venta?"
@@ -109,7 +139,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                     <TableHead>Pago</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="text-right">Total</TableHead>
-                    {canDelete ? <TableHead className="w-12" /> : null}
+                    {canDelete || canEdit ? <TableHead className="w-20" /> : null}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -130,13 +160,18 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                       <TableCell>{PAYMENT_LABEL[s.paymentMethod]}</TableCell>
                       <TableCell className="text-muted-foreground">{s.customer?.name ?? "—"}</TableCell>
                       <TableCell className="tabular text-right font-medium">{money(s.total)}</TableCell>
-                      {canDelete ? (
+                      {canDelete || canEdit ? (
                         <TableCell className="pr-2">
-                          <ConfirmDelete
-                            title="¿Eliminar esta venta?"
-                            description={`Se eliminará la venta de ${money(s.total)} del ${formatDate(s.date, ctx.timezone)}. Si descontó stock, se devolverá.`}
-                            onConfirm={deleteSale.bind(null, s.id)}
-                          />
+                          <div className="flex items-center justify-end gap-1">
+                            {editButton(s)}
+                            {canDelete ? (
+                              <ConfirmDelete
+                                title="¿Eliminar esta venta?"
+                                description={`Se eliminará la venta de ${money(s.total)} del ${formatDate(s.date, ctx.timezone)}. Si descontó stock, se devolverá.`}
+                                onConfirm={deleteSale.bind(null, s.id)}
+                              />
+                            ) : null}
+                          </div>
                         </TableCell>
                       ) : null}
                     </TableRow>

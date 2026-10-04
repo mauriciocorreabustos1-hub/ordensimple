@@ -10,6 +10,7 @@ import { BusinessForm } from "@/components/settings/business-form"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { ThemePicker } from "@/components/settings/theme-picker"
+import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { db } from "@/lib/db"
 import { PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
@@ -122,6 +123,7 @@ export default async function SettingsPage() {
             checked={ctx.settings.weeklySummary}
             disabled={!canManage}
           />
+          <MarketingSwitch checked={Boolean((ctx.user as { marketingOptIn?: boolean }).marketingOptIn)} />
         </CardContent>
       </Card>
 

@@ -12,7 +12,7 @@ import {
   type BusinessSettingsInput,
   type PreferencesInput,
 } from "@/lib/validations"
-import { assertCan, requireBusiness } from "@/server/session"
+import { assertCan, requireBusiness, requireUser } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 export async function updateBusiness(input: BusinessSettingsInput): Promise<ActionResult> {
@@ -107,4 +107,16 @@ export async function deleteExpenseCategory(id: string): Promise<ActionResult> {
   }
   revalidatePath("/dashboard", "layout")
   return { ok: true, message: "Categoría eliminada" }
+}
+
+/** Cada persona decide si quiere recibir novedades y ofertas por correo. */
+export async function updateMarketingOptIn(value: boolean): Promise<ActionResult> {
+  const user = await requireUser()
+  try {
+    await db.user.update({ where: { id: user.id }, data: { marketingOptIn: Boolean(value) } })
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidatePath("/dashboard/configuracion")
+  return { ok: true, message: value ? "Recibirás novedades y ofertas" : "Ya no recibirás ofertas por correo" }
 }

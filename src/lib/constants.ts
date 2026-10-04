@@ -8,6 +8,7 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "CREDIT", label: "Crédito" },
   { value: "TRANSFER", label: "Transferencia" },
   { value: "OTHER", label: "Otro" },
+  { value: "FIADO", label: "Fiado" },
 ]
 
 export const PAYMENT_LABEL: Record<PaymentMethod, string> = Object.fromEntries(

@@ -52,7 +52,13 @@ export function QuickActionsProvider({
             <TabsTrigger value="detailed">Con detalle</TabsTrigger>
           </TabsList>
           <TabsContent value="quick">
-            <QuickSaleForm currency={currency} timezone={timezone} defaultPayment={defaultPayment} onDone={close} />
+            <QuickSaleForm
+              currency={currency}
+              timezone={timezone}
+              defaultPayment={defaultPayment}
+              customers={customers}
+              onDone={close}
+            />
           </TabsContent>
           <TabsContent value="detailed">
             <SaleForm

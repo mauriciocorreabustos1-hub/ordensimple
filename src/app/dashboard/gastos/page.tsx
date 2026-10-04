@@ -13,6 +13,9 @@ import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth } from "@/lib/dates"
 import { can } from "@/lib/roles"
 import { deleteExpense } from "@/server/actions/expenses"
+import { EditExpenseButton } from "@/components/expenses/edit-expense-button"
+import { db } from "@/lib/db"
+import { toDateKey } from "@/lib/dates"
 import { expensesByCategory, listExpenses, parseRange, periodTotals } from "@/server/queries/records"
 import { requireBusiness } from "@/server/session"
 
@@ -26,11 +29,35 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
     ctx.timezone,
   )
   const now = new Date()
-  const [[today, month], list, byCategory] = await Promise.all([
+  const canEdit = can(ctx.role, "expenses:edit")
+  const [[today, month], list, byCategory, categories] = await Promise.all([
     periodTotals(ctx.businessId, ctx.timezone, now),
     listExpenses(ctx.businessId, range.from, range.to, range.take),
     expensesByCategory(ctx.businessId, startOfMonth(now, ctx.timezone), startOfMonth(now, ctx.timezone, 1)),
+    canEdit
+      ? db.expenseCategory.findMany({
+          where: { businessId: ctx.businessId },
+          select: { id: true, name: true },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+        })
+      : Promise.resolve([]),
   ])
+  const editButton = (e: (typeof list.rows)[number]) =>
+    canEdit ? (
+      <EditExpenseButton
+        currency={ctx.currency}
+        timezone={ctx.timezone}
+        categories={categories}
+        expense={{
+          id: e.id,
+          amount: e.amount,
+          description: e.description,
+          categoryId: e.categoryId ?? undefined,
+          date: toDateKey(e.date, ctx.timezone),
+          supplierName: e.supplier?.name ?? "",
+        }}
+      />
+    ) : null
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canDelete = can(ctx.role, "expenses:delete")
   const top = byCategory[0]
@@ -82,6 +109,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                       </p>
                     </div>
                     <span className="tabular font-semibold">{money(e.amount)}</span>
+                    {editButton(e)}
                     {canDelete ? (
                       <ConfirmDelete
                         title="¿Eliminar este gasto?"
@@ -101,7 +129,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                       <TableHead>Categoría</TableHead>
                       <TableHead>Proveedor</TableHead>
                       <TableHead className="text-right">Monto</TableHead>
-                      {canDelete ? <TableHead className="w-12" /> : null}
+                      {canDelete || canEdit ? <TableHead className="w-20" /> : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -112,13 +140,18 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                         <TableCell>{e.category?.name ?? "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{e.supplier?.name ?? "—"}</TableCell>
                         <TableCell className="tabular text-right font-medium">{money(e.amount)}</TableCell>
-                        {canDelete ? (
+                        {canDelete || canEdit ? (
                           <TableCell className="pr-2">
-                            <ConfirmDelete
-                              title="¿Eliminar este gasto?"
-                              description={`Se eliminará "${e.description}" por ${money(e.amount)}.`}
-                              onConfirm={deleteExpense.bind(null, e.id)}
-                            />
+                            <div className="flex items-center justify-end gap-1">
+                              {editButton(e)}
+                              {canDelete ? (
+                                <ConfirmDelete
+                                  title="¿Eliminar este gasto?"
+                                  description={`Se eliminará "${e.description}" por ${money(e.amount)}.`}
+                                  onConfirm={deleteExpense.bind(null, e.id)}
+                                />
+                              ) : null}
+                            </div>
                           </TableCell>
                         ) : null}
                       </TableRow>

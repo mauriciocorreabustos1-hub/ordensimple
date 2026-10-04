@@ -2,19 +2,31 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { dateKeyToInstant } from "@/lib/dates"
+import { dateKeyToInstant, toDateKey } from "@/lib/dates"
 import { expenseSchema, idSchema, type ExpenseInput } from "@/lib/validations"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 export async function createExpense(input: ExpenseInput): Promise<ActionResult> {
+  return saveExpense(null, input)
+}
+
+export async function updateExpense(id: string, input: ExpenseInput): Promise<ActionResult> {
+  const parsedId = idSchema.safeParse(id)
+  if (!parsedId.success) return { ok: false, message: "Gasto no encontrado." }
+  return saveExpense(parsedId.data, input)
+}
+
+async function saveExpense(id: string | null, input: ExpenseInput): Promise<ActionResult> {
   const ctx = await requireBusiness()
   const parsed = expenseSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   const { description, categoryId, amount, date, supplierName } = parsed.data
 
   try {
-    assertCan(ctx, "expenses:create")
+    assertCan(ctx, id ? "expenses:edit" : "expenses:create")
+    const current = id ? await db.expense.findFirst({ where: { id, businessId: ctx.businessId } }) : null
+    if (id && !current) return { ok: false, message: "Gasto no encontrado." }
 
     if (categoryId) {
       const category = await db.expenseCategory.findFirst({ where: { id: categoryId, businessId: ctx.businessId } })
@@ -32,23 +44,25 @@ export async function createExpense(input: ExpenseInput): Promise<ActionResult> 
           : (await tx.supplier.create({ data: { businessId: ctx.businessId, name: supplierName } })).id
       }
 
-      await tx.expense.create({
-        data: {
-          businessId: ctx.businessId,
-          description,
-          amount,
-          date: dateKeyToInstant(date, ctx.timezone),
-          categoryId: categoryId ?? null,
-          supplierId,
-          createdById: ctx.user.id,
-        },
-      })
+      const data = {
+        description,
+        amount,
+        // Al editar sin cambiar el día se conserva la hora original.
+        date:
+          current && toDateKey(current.date, ctx.timezone) === date
+            ? current.date
+            : dateKeyToInstant(date, ctx.timezone),
+        categoryId: categoryId ?? null,
+        supplierId,
+      }
+      if (current) await tx.expense.update({ where: { id: current.id }, data })
+      else await tx.expense.create({ data: { ...data, businessId: ctx.businessId, createdById: ctx.user.id } })
     })
   } catch (error) {
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: "Gasto guardado" }
+  return { ok: true, message: id ? "Gasto actualizado" : "Gasto guardado" }
 }
 
 export async function deleteExpense(id: string): Promise<ActionResult> {

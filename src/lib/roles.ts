@@ -2,8 +2,10 @@ import type { Role } from "@/generated/prisma/enums"
 
 export type Permission =
   | "sales:create"
+  | "sales:edit"
   | "sales:delete"
   | "expenses:create"
+  | "expenses:edit"
   | "expenses:delete"
   | "products:manage"
   | "inventory:manage"
@@ -17,8 +19,10 @@ export type Permission =
 const PERMISSIONS: Record<Role, Permission[]> = {
   OWNER: [
     "sales:create",
+    "sales:edit",
     "sales:delete",
     "expenses:create",
+    "expenses:edit",
     "expenses:delete",
     "products:manage",
     "inventory:manage",
@@ -31,8 +35,10 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   ADMIN: [
     "sales:create",
+    "sales:edit",
     "sales:delete",
     "expenses:create",
+    "expenses:edit",
     "expenses:delete",
     "products:manage",
     "inventory:manage",

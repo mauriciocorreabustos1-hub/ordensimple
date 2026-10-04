@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Activity, BarChart3, Building2, Search, ShoppingBag, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Building2, Bug, CheckCircle2, Search, ShoppingBag, UserPlus, Users } from "lucide-react"
+import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +11,7 @@ import { formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
-import { getAdminStats, listAdminUsers, type AdminUserRow } from "@/server/queries/admin"
+import { getAdminStats, getRecentErrors, listAdminUsers, type AdminUserRow } from "@/server/queries/admin"
 
 const TZ = "America/Santiago"
 
@@ -23,7 +24,11 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : ""
   const page = Math.max(1, Number(params.pagina) || 1)
-  const [stats, users] = await Promise.all([getAdminStats(), listAdminUsers({ q: q || undefined, page })])
+  const [stats, users, errors] = await Promise.all([
+    getAdminStats(),
+    listAdminUsers({ q: q || undefined, page }),
+    getRecentErrors(),
+  ])
   const maxSignups = Math.max(1, ...stats.signupsByDay.map((d) => d.count))
 
   const pageHref = (p: number) => `/admin?${new URLSearchParams({ ...(q ? { q } : {}), pagina: String(p) })}`
@@ -154,6 +159,43 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             ) : null}
           </div>
         ) : null}
+      </section>
+
+      <section id="errores" className="scroll-mt-20 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Bug className="size-5 text-muted-foreground" />
+            Errores
+            <span className="font-normal text-muted-foreground">
+              ({formatNumber(errors.last24)} en las últimas 24 horas)
+            </span>
+          </h2>
+          {errors.total ? <ClearErrorsButton /> : null}
+        </div>
+        {errors.rows.length === 0 ? (
+          <p className="flex items-center gap-2 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+            <CheckCircle2 className="size-4 text-success" />
+            No hay errores registrados. Si ocurre alguno, aparecerá aquí y te avisaremos por correo.
+          </p>
+        ) : (
+          <ul className="grid gap-2">
+            {errors.rows.map((e) => (
+              <li key={e.id} className="space-y-1 rounded-xl border bg-card p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">
+                    {e.method ? `${e.method} ` : ""}
+                    {e.path ?? "—"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateTime(e.createdAt, TZ)} · {e.source}
+                  </span>
+                </div>
+                <p className="break-words text-destructive">{e.message}</p>
+                {e.digest ? <p className="text-xs text-muted-foreground">Código: {e.digest}</p> : null}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">

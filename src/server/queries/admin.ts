@@ -97,3 +97,13 @@ export async function listAdminUsers({ q, page }: { q?: string; page: number }) 
 }
 
 export type AdminUserRow = Awaited<ReturnType<typeof listAdminUsers>>["rows"][number]
+
+export async function getRecentErrors() {
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const [rows, last24, total] = await Promise.all([
+    db.errorLog.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
+    db.errorLog.count({ where: { createdAt: { gte: dayAgo } } }),
+    db.errorLog.count(),
+  ])
+  return { rows, last24, total }
+}

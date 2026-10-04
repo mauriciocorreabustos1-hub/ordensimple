@@ -2,7 +2,7 @@ import "server-only"
 import { db } from "@/lib/db"
 import { addDays, startOfDay } from "@/lib/dates"
 
-export type CustomerSegment = "todos" | "frecuentes" | "nuevos" | "top"
+export type CustomerSegment = "todos" | "deben" | "frecuentes" | "nuevos" | "top"
 
 export async function getCustomers(businessId: string, timezone: string, opts: { q?: string }, now = new Date()) {
   const today = startOfDay(now, timezone)

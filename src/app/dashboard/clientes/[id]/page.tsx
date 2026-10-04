@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, CalendarDays, Mail, Phone, ReceiptText, ShoppingBag, Wallet } from "lucide-react"
+import { ArrowLeft, CalendarDays, HandCoins, Mail, NotebookPen, Phone, ReceiptText, ShoppingBag, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
@@ -15,6 +15,9 @@ import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { deleteCustomer } from "@/server/actions/contacts"
 import { getCustomerDetail } from "@/server/queries/contacts"
+import { getCustomerBalance, getCustomerFiadoHistory } from "@/server/queries/fiado"
+import { PaymentDialog } from "@/components/contacts/payment-dialog"
+import { deleteCustomerPayment } from "@/server/actions/fiado"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Cliente" }
@@ -30,8 +33,14 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
     return <ProGate title="Clientes" description="Conoce a quienes te compran y cuánto te compran." />
   }
   const { id } = await params
-  const detail = await getCustomerDetail(ctx.businessId, id)
+  const [detail, balance, fiadoHistory] = await Promise.all([
+    getCustomerDetail(ctx.businessId, id),
+    getCustomerBalance(ctx.businessId, id),
+    getCustomerFiadoHistory(ctx.businessId, id),
+  ])
   if (!detail) notFound()
+  const canRegisterPayment = can(ctx.role, "sales:create")
+  const canDeletePayment = can(ctx.role, "sales:delete")
   const { customer: c } = detail
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "customers:manage")
@@ -86,6 +95,68 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
         <StatCard compactOnMobile label="Compra promedio" value={money(detail.average)} icon={ReceiptText} tone="profit"
           hint="Lo que gasta en promedio cada vez que te compra." />
       </div>
+
+      {balance > 0 || fiadoHistory.length ? (
+        <Card className={balance > 0 ? "border-warning/40" : undefined}>
+          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <NotebookPen className="size-4 text-warning" />
+                Fiado
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {balance > 0 ? (
+                  <>
+                    Te debe <span className="tabular text-lg font-semibold text-foreground">{money(balance)}</span>
+                  </>
+                ) : (
+                  "Está al día: no te debe nada."
+                )}
+              </p>
+            </div>
+            {balance > 0 && canRegisterPayment ? (
+              <PaymentDialog
+                customerId={c.id}
+                customerName={c.name}
+                balance={balance}
+                currency={ctx.currency}
+                timezone={ctx.timezone}
+              />
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y">
+              {fiadoHistory.map((e) => (
+                <li key={`${e.kind}-${e.id}`} className="flex items-center gap-3 py-2.5 text-sm">
+                  {e.kind === "abono" ? (
+                    <HandCoins className="size-4 shrink-0 text-success" />
+                  ) : (
+                    <NotebookPen className="size-4 shrink-0 text-warning" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate">
+                      {e.kind === "abono" ? `Abono · ${PAYMENT_LABEL[e.paymentMethod]}` : `Fiado · ${e.detail}`}
+                      {e.kind === "abono" && e.detail ? ` · ${e.detail}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{formatDateTime(e.date, ctx.timezone)}</p>
+                  </div>
+                  <span className={`tabular font-semibold ${e.kind === "abono" ? "text-success" : ""}`}>
+                    {e.kind === "abono" ? "−" : "+"}
+                    {money(e.amount)}
+                  </span>
+                  {e.kind === "abono" && canDeletePayment ? (
+                    <ConfirmDelete
+                      title="¿Eliminar este abono?"
+                      description={`El abono de ${money(e.amount)} se eliminará y la deuda volverá a subir.`}
+                      onConfirm={deleteCustomerPayment.bind(null, e.id)}
+                    />
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

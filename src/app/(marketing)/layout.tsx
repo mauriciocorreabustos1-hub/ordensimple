@@ -13,7 +13,11 @@ const FOOTER = [
   },
   {
     title: "Ayuda",
-    links: [{ href: "/preguntas-frecuentes", label: "Preguntas frecuentes" }],
+    links: [
+      { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
+      { href: "/terminos", label: "Términos y condiciones" },
+      { href: "/privacidad", label: "Política de privacidad" },
+    ],
   },
   {
     title: "Cuenta",

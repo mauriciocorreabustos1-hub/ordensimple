@@ -30,6 +30,8 @@ enum PaymentMethod {
   CREDIT
   TRANSFER
   OTHER
+  // Venta a crédito informal ("fiado"): el cliente paga después.
+  FIADO
 }
 
 enum InventoryMovementType {
@@ -55,6 +57,9 @@ model User {
   emailVerified    Boolean  @default(false)
   image            String?
   activeBusinessId String?
+  // Aceptación de términos (fecha) y consentimiento para recibir promociones.
+  termsAcceptedAt  DateTime?
+  marketingOptIn   Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -145,6 +150,8 @@ model Business {
   suppliers         Supplier[]
   movements         InventoryMovement[]
   goals             Goal[]
+  customerPayments  CustomerPayment[]
+  cashClosings      CashClosing[]
   notifications     Notification[]
 
   @@map("business")
@@ -314,6 +321,7 @@ model Customer {
   email      String?
   notes      String?
   sales      Sale[]
+  payments   CustomerPayment[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -407,4 +415,67 @@ model RateLimit {
   lastRequest BigInt
 
   @@map("rate_limit")
+}
+
+// ─── Fiado: abonos de clientes ──────────────────────────────────────────────
+// Saldo de un cliente = ventas FIADO − abonos.
+
+model CustomerPayment {
+  id            String        @id @default(cuid())
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount        Int
+  date          DateTime      @default(now())
+  paymentMethod PaymentMethod @default(CASH)
+  note          String?
+  createdById   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([businessId, date])
+  @@index([customerId])
+  @@map("customer_payment")
+}
+
+// ─── Cierre de caja ─────────────────────────────────────────────────────────
+
+model CashClosing {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Día del cierre (AAAA-MM-DD) en la zona horaria del negocio.
+  day         String
+  opening     Int
+  cashSales   Int
+  cashIn      Int
+  cashOut     Int
+  expected    Int
+  counted     Int
+  difference  Int
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, day])
+  @@map("cash_closing")
+}
+
+// ─── Registro de errores (se ve en /admin) ──────────────────────────────────
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  source    String
+  message   String
+  digest    String?
+  path      String?
+  method    String?
+  stack     String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("error_log")
 }

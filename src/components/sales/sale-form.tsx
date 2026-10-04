@@ -12,11 +12,20 @@ import { MoneyInput } from "@/components/app/money-input"
 import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
-import { createSale } from "@/server/actions/sales"
+import { createSale, updateSale } from "@/server/actions/sales"
 
 export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean }
 
 type Line = { key: number; productId: string; description: string; quantity: number; unitPrice: number }
+
+export type SaleEdit = {
+  id: string
+  lines: { productId: string | null; description: string; quantity: number; unitPrice: number }[]
+  paymentMethod: PaymentMethod
+  date: string
+  customerName: string
+  note: string
+}
 
 const CUSTOM = "__custom__"
 
@@ -28,6 +37,7 @@ export function SaleForm({
   defaultPayment,
   products,
   customers = [],
+  editing,
   onDone,
 }: {
   currency: string
@@ -36,6 +46,8 @@ export function SaleForm({
   products: ProductOption[]
   /** Nombres de clientes guardados, para sugerirlos y no crear duplicados. */
   customers?: string[]
+  /** Si viene, el formulario edita esa venta en vez de crear una nueva. */
+  editing?: SaleEdit
   onDone?: () => void
 }) {
   const newLine = (): Line => ({
@@ -45,10 +57,21 @@ export function SaleForm({
     quantity: 1,
     unitPrice: 0,
   })
-  const [lines, setLines] = React.useState<Line[]>(() => [newLine()])
-  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(defaultPayment)
-  const [date, setDate] = React.useState(() => toDateKey(new Date(), timezone))
-  const [customerName, setCustomerName] = React.useState("")
+  const [lines, setLines] = React.useState<Line[]>(() =>
+    editing?.lines.length
+      ? editing.lines.map((l) => ({
+          key: ++lineKey,
+          productId: l.productId ?? CUSTOM,
+          description: l.description,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+        }))
+      : [newLine()],
+  )
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(editing?.paymentMethod ?? defaultPayment)
+  const [date, setDate] = React.useState(() => editing?.date ?? toDateKey(new Date(), timezone))
+  const [customerName, setCustomerName] = React.useState(editing?.customerName ?? "")
+  const fiado = paymentMethod === "FIADO"
   const [error, setError] = React.useState<string | null>(null)
   const [pending, startTransition] = React.useTransition()
   const byId = React.useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
@@ -71,9 +94,13 @@ export function SaleForm({
       setError("Completa qué vendiste, la cantidad y el precio en cada línea.")
       return
     }
+    if (fiado && !customerName.trim()) {
+      setError("Para fiar, escribe el nombre del cliente.")
+      return
+    }
     setError(null)
     startTransition(async () => {
-      const result = await createSale({
+      const input = {
         items: lines.map((l) => ({
           productId: l.productId && l.productId !== CUSTOM ? l.productId : undefined,
           description: l.description,
@@ -83,14 +110,18 @@ export function SaleForm({
         paymentMethod,
         date,
         customerName,
-      })
+        note: editing?.note,
+      }
+      const result = editing ? await updateSale(editing.id, input) : await createSale(input)
       if (!result.ok) {
         toast.error(result.message)
         return
       }
-      toast.success(`Venta de ${formatMoney(total, currency)} guardada`)
-      setLines([newLine()])
-      setCustomerName("")
+      toast.success(editing ? "Venta actualizada" : `Venta de ${formatMoney(total, currency)} guardada`)
+      if (!editing) {
+        setLines([newLine()])
+        setCustomerName("")
+      }
       onDone?.()
     })
   }
@@ -197,7 +228,7 @@ export function SaleForm({
         <Field label="Fecha" htmlFor="s-date">
           <Input id="s-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
         </Field>
-        <Field label="Cliente" htmlFor="s-customer" optional>
+        <Field label={fiado ? "¿A quién le fiaste?" : "Cliente"} htmlFor="s-customer" optional={!fiado}>
           <Input
             id="s-customer"
             value={customerName}
@@ -224,7 +255,7 @@ export function SaleForm({
       </div>
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
-        Guardar venta
+        {editing ? "Guardar cambios" : fiado ? "Anotar fiado" : "Guardar venta"}
       </Button>
     </form>
   )

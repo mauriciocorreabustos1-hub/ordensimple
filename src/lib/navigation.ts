@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Truck,
   Users,
+  Vault,
   type LucideIcon,
 } from "lucide-react"
 
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/dashboard/ventas", label: "Ventas", icon: ShoppingBag },
   { href: "/dashboard/gastos", label: "Gastos", icon: Receipt },
+  { href: "/dashboard/caja", label: "Cierre de caja", icon: Vault },
   { href: "/dashboard/productos", label: "Productos", icon: Package },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users, pro: true },

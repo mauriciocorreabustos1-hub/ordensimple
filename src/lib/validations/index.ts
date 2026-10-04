@@ -24,7 +24,14 @@ export const positiveMoney = money.refine((v) => v > 0, "Ingresa un monto mayor 
 
 export const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
 
-export const paymentMethod = z.enum(["CASH", "DEBIT", "CREDIT", "TRANSFER", "OTHER"])
+export const paymentMethod = z.enum(["CASH", "DEBIT", "CREDIT", "TRANSFER", "OTHER", "FIADO"])
+/** Métodos con los que entra plata de verdad (para abonos de fiado). */
+export const cashPaymentMethod = z.enum(["CASH", "DEBIT", "CREDIT", "TRANSFER", "OTHER"])
+
+const FIADO_NEEDS_CUSTOMER = {
+  path: ["customerName"],
+  message: "Para fiar, escribe el nombre del cliente",
+}
 
 // ─── Autenticación ──────────────────────────────────────────────────────────
 
@@ -37,6 +44,7 @@ export const registerSchema = z.object({
   name: z.string().trim().min(2, "Escribe tu nombre").max(80),
   email: z.email("Ingresa un correo válido").trim().toLowerCase(),
   password: z.string().min(8, "Usa al menos 8 caracteres").max(128),
+  marketingOptIn: z.boolean().default(false),
 })
 
 export const forgotPasswordSchema = z.object({
@@ -96,21 +104,26 @@ export const saleItemSchema = z.object({
   unitPrice: positiveMoney,
 })
 
-export const saleSchema = z.object({
-  items: z.array(saleItemSchema).min(1, "Agrega al menos un producto o servicio").max(50),
-  date: dateKey,
-  paymentMethod,
-  customerName: optionalText(80),
-  note: optionalText(200),
-})
+export const saleSchema = z
+  .object({
+    items: z.array(saleItemSchema).min(1, "Agrega al menos un producto o servicio").max(50),
+    date: dateKey,
+    paymentMethod,
+    customerName: optionalText(80),
+    note: optionalText(200),
+  })
+  .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
 export type SaleInput = z.input<typeof saleSchema>
 
-export const quickSaleSchema = z.object({
-  amount: positiveMoney,
-  date: dateKey,
-  paymentMethod,
-  note: optionalText(200),
-})
+export const quickSaleSchema = z
+  .object({
+    amount: positiveMoney,
+    date: dateKey,
+    paymentMethod,
+    customerName: optionalText(80),
+    note: optionalText(200),
+  })
+  .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
 export type QuickSaleInput = z.input<typeof quickSaleSchema>
 
 // ─── Gastos ─────────────────────────────────────────────────────────────────
@@ -189,3 +202,24 @@ export const supplierSchema = z.object({
   notes: optionalText(300),
 })
 export type SupplierInput = z.input<typeof supplierSchema>
+
+// ─── Fiado y caja ───────────────────────────────────────────────────────────
+
+export const customerPaymentSchema = z.object({
+  customerId: z.string().min(1),
+  amount: positiveMoney,
+  date: dateKey,
+  paymentMethod: cashPaymentMethod,
+  note: optionalText(200),
+})
+export type CustomerPaymentInput = z.input<typeof customerPaymentSchema>
+
+export const cashClosingSchema = z.object({
+  day: dateKey,
+  opening: money,
+  counted: money,
+  /** Si los gastos del día se pagaron con el efectivo de la caja. */
+  expensesFromCash: z.boolean(),
+  note: optionalText(300),
+})
+export type CashClosingInput = z.input<typeof cashClosingSchema>

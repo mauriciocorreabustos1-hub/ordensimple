@@ -10,26 +10,38 @@ import { MoneyInput } from "@/components/app/money-input"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { cn } from "@/lib/utils"
-import { createExpense } from "@/server/actions/expenses"
+import { createExpense, updateExpense } from "@/server/actions/expenses"
 
 export type ExpenseCategoryOption = { id: string; name: string }
+
+export type ExpenseEdit = {
+  id: string
+  amount: number
+  description: string
+  categoryId?: string
+  date: string
+  supplierName: string
+}
 
 export function ExpenseForm({
   currency,
   timezone,
   categories,
+  editing,
   onDone,
 }: {
   currency: string
   timezone: string
   categories: ExpenseCategoryOption[]
+  /** Si viene, el formulario edita ese gasto en vez de crear uno nuevo. */
+  editing?: ExpenseEdit
   onDone?: () => void
 }) {
-  const [amount, setAmount] = React.useState(0)
-  const [description, setDescription] = React.useState("")
-  const [categoryId, setCategoryId] = React.useState<string | undefined>()
-  const [date, setDate] = React.useState(() => toDateKey(new Date(), timezone))
-  const [supplierName, setSupplierName] = React.useState("")
+  const [amount, setAmount] = React.useState(editing?.amount ?? 0)
+  const [description, setDescription] = React.useState(editing?.description ?? "")
+  const [categoryId, setCategoryId] = React.useState<string | undefined>(editing?.categoryId)
+  const [date, setDate] = React.useState(() => editing?.date ?? toDateKey(new Date(), timezone))
+  const [supplierName, setSupplierName] = React.useState(editing?.supplierName ?? "")
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
 
@@ -47,7 +59,8 @@ export function ExpenseForm({
     setErrors(errs)
     if (Object.keys(errs).length) return
     startTransition(async () => {
-      const result = await createExpense({ amount, description, categoryId, date, supplierName })
+      const input = { amount, description, categoryId, date, supplierName }
+      const result = editing ? await updateExpense(editing.id, input) : await createExpense(input)
       if (!result.ok) {
         toast.error(result.message)
         if (!result.ok && result.fieldErrors) {
@@ -55,7 +68,8 @@ export function ExpenseForm({
         }
         return
       }
-      toast.success(`Gasto de ${formatMoney(amount, currency)} guardado`)
+      toast.success(editing ? "Gasto actualizado" : `Gasto de ${formatMoney(amount, currency)} guardado`)
+      if (editing) return onDone?.()
       setAmount(0)
       setDescription("")
       setCategoryId(undefined)
@@ -113,7 +127,7 @@ export function ExpenseForm({
       </div>
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
-        Guardar gasto
+        {editing ? "Guardar cambios" : "Guardar gasto"}
       </Button>
     </form>
   )

@@ -54,7 +54,7 @@ export function AppSidebar({
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-sidebar lg:flex">
       <div className="flex h-16 items-center px-5">
-        <Logo href="/dashboard" />
+        <Logo href="/" />
       </div>
       <div className="px-5 pb-3">
         <p className="truncate rounded-lg bg-muted px-3 py-2 text-xs font-medium text-muted-foreground" title={businessName}>

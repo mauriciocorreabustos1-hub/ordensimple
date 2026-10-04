@@ -45,10 +45,22 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
   },
+  // Límite de intentos guardado en la base de datos: en Vercel hay varias copias del servidor
+  // y un contador en memoria no se compartiría entre ellas.
   rateLimit: {
     enabled: process.env.NODE_ENV === "production",
+    storage: "database",
+    modelName: "rateLimit",
     window: 60,
-    max: 30,
+    max: 60,
+    customRules: {
+      // Contraseñas: máximo 5 intentos por minuto desde la misma conexión.
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60 * 10, max: 5 },
+      // Evita usar "olvidé mi contraseña" para llenar la bandeja de alguien.
+      "/request-password-reset": { window: 60 * 15, max: 3 },
+      "/reset-password": { window: 60 * 15, max: 5 },
+    },
   },
   plugins: [nextCookies()],
 })

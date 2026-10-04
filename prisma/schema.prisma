@@ -396,3 +396,15 @@ model Notification {
   @@index([businessId, readAt])
   @@map("notification")
 }
+
+// ─── Límite de intentos (Better Auth) ───────────────────────────────────────
+// Se guarda en la base de datos para que funcione aunque Vercel use varias copias del servidor.
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}

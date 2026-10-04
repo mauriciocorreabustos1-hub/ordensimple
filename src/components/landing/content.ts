@@ -223,6 +223,19 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
+    id: "sucursales",
+    icon: Store,
+    title: "Sucursales",
+    description: "¿Tienes más de un local? Ordénalos todos desde una cuenta.",
+    points: [
+      "Cada sucursal con sus propias ventas, gastos, productos y caja",
+      "Resumen de todas juntas: ventas de hoy, del mes y ganancia",
+      "Cuál sucursal vende más, de un vistazo",
+      "Cambia de sucursal en un toque",
+      "Tu equipo trabaja solo en la sucursal donde lo invitas",
+    ],
+  },
+  {
     id: "seguridad",
     icon: ShieldCheck,
     title: "Seguridad y acceso",
@@ -245,7 +258,6 @@ export const TOOLS: Feature[] = [
 
 export const COMING_SOON: Feature[] = [
   { icon: CreditCard, title: "Pagar Pro y Empresa", text: "Pago mensual con tarjeta y boleta electrónica. Por ahora Pro es gratis." },
-  { icon: Store, title: "Sucursales", text: "Varios locales en una sola cuenta." },
   { icon: FileDown, title: "Reportes en PDF", text: "Resúmenes listos para imprimir o enviar." },
   { icon: Smartphone, title: "App instalable", text: "Ícono en tu celular y funciona con mala señal." },
 ]
@@ -337,7 +349,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
 export type ComparisonRow = { label: string; values: [string | boolean, string | boolean, string | boolean] }
 
 export const PLAN_COMPARISON: ComparisonRow[] = [
-  { label: "Negocios", values: ["1", "Hasta 3", "Hasta 10"] },
+  { label: "Negocios o sucursales", values: ["1", "Hasta 3", "Hasta 10"] },
   { label: "Productos", values: ["Hasta 50", "Ilimitados", "Ilimitados"] },
   { label: "Trabajadores (además de ti)", values: ["5", "20", "Más de 50"] },
   { label: "Ventas y gastos", values: [true, true, true] },
@@ -347,6 +359,5 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Clientes y proveedores", values: [false, true, true] },
   { label: "Reportes", values: [false, true, true] },
   { label: "Consejos automáticos", values: [false, true, true] },
-  { label: "Roles y permisos avanzados", values: [false, false, true] },
-  { label: "Múltiples sucursales", values: [false, false, true] },
+  { label: "Resumen de todas tus sucursales", values: [false, true, true] },
 ]

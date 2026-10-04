@@ -63,7 +63,7 @@ export default function FeaturesPage() {
           title="Lo que viene"
           description="Seguimos construyendo OrdenSimple. Esto es lo próximo que llegará."
         />
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {COMING_SOON.map((f) => (
             <div key={f.title} className="space-y-2 rounded-2xl border border-dashed bg-card/60 p-5">
               <f.icon className="size-5 text-muted-foreground" />

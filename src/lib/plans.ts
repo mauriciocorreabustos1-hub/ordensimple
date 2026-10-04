@@ -55,19 +55,20 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Proveedores",
       "Reportes y consejos automáticos",
       "Tú + 20 trabajadores",
+      "Hasta 3 sucursales",
     ],
   },
   BUSINESS: {
     id: "BUSINESS",
     name: "Empresa",
     priceLabel: "Próximamente",
-    priceNote: "Estamos terminando las sucursales.",
+    priceNote: "Aún no se puede contratar. Por ahora puedes tener hasta 3 sucursales gratis.",
     description: "Para equipos y varias sucursales.",
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // más de 50 trabajadores
     features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "multiUser", "branches"],
-    highlights: ["Todo lo de Pro", "Más de 50 trabajadores", "Múltiples sucursales", "Roles avanzados", "Reportes avanzados"],
+    highlights: ["Todo lo de Pro", "Más de 50 trabajadores", "Hasta 10 sucursales", "Resumen de todas tus sucursales juntas"],
   },
 }
 
@@ -112,4 +113,9 @@ export function memberLimit(plan: Plan) {
 /** Máximo de productos (null = sin límite). Durante el lanzamiento no hay límite, como en Pro. */
 export function productLimit(plan: Plan) {
   return PLANS_ENFORCED ? PLANS[plan].maxProducts : null
+}
+
+/** Negocios o sucursales que una persona puede tener como dueña. Durante el lanzamiento, como en Pro. */
+export function businessLimit(plan: Plan) {
+  return PLANS_ENFORCED ? PLANS[plan].maxBusinesses : Math.max(PLANS[plan].maxBusinesses, PLANS.PRO.maxBusinesses)
 }

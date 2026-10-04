@@ -29,7 +29,7 @@ export function AppModal({
           className,
         )}
       >
-        <DialogHeader className="text-left">
+        <DialogHeader className="text-center sm:text-left">
           <DialogTitle className="text-lg">{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>

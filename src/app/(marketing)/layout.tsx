@@ -34,8 +34,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <footer className="border-t bg-muted/30">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[2fr_1fr_1fr_1fr]">
-          <div className="space-y-3">
+        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-4 gap-y-8 px-4 py-12 text-center sm:px-6 md:grid-cols-[2fr_1fr_1fr_1fr] md:text-left">
+          <div className="col-span-3 flex flex-col items-center space-y-3 md:col-span-1 md:items-start">
             <Logo />
             <p className="max-w-xs text-sm text-muted-foreground">
               Administra tu negocio sin complicarte. Hecho en Chile para emprendedores y pymes.
@@ -57,7 +57,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           ))}
         </div>
         <div className="border-t">
-          <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-muted-foreground sm:px-6">
+          <p className="mx-auto max-w-6xl px-4 py-5 text-center text-xs text-muted-foreground sm:px-6 md:text-left">
             © {new Date().getFullYear()} OrdenSimple. Todos los derechos reservados.
           </p>
         </div>

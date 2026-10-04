@@ -80,21 +80,26 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           hint={`${formatNumber(stats.sales)} ventas · ${formatNumber(stats.expenses)} gastos · ${formatNumber(stats.products)} productos`} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border bg-card p-4 text-sm">
-        <span className="flex items-center gap-2 font-medium">
+      <div className="space-y-3 rounded-xl border bg-card p-4 text-sm">
+        <p className="flex items-center gap-2 font-medium">
           <Crown className="size-4 text-warning" />
           Suscripciones
-        </span>
-        <span>
-          <strong className="tabular">{formatNumber(planCounts.pro)}</strong> con Pro
-        </span>
-        <span>
-          <strong className="tabular">{formatNumber(planCounts.business)}</strong> con Empresa
-        </span>
-        <span className="text-muted-foreground">{formatNumber(planCounts.expired)} vencidas</span>
-        <span className="text-xs text-muted-foreground">
+        </p>
+        <div className="grid grid-cols-3 gap-2 text-center sm:max-w-md">
+          {[
+            { label: "con Pro", value: planCounts.pro },
+            { label: "con Empresa", value: planCounts.business },
+            { label: "vencidas", value: planCounts.expired },
+          ].map((s) => (
+            <div key={s.label} className="rounded-lg bg-muted/50 px-2 py-2">
+              <p className="tabular text-xl font-semibold">{formatNumber(s.value)}</p>
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
           Para dar un plan, busca al usuario y toca <strong>Plan</strong>.
-        </span>
+        </p>
       </div>
 
       <Card>

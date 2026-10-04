@@ -70,7 +70,7 @@ export function MobileNav({ userName, userEmail, role }: { userName: string; use
 
       <Sheet open={plusOpen} onOpenChange={setPlusOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          <SheetHeader>
+          <SheetHeader className="text-center">
             <SheetTitle>¿Qué quieres registrar?</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-2 gap-3 px-4">

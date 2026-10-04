@@ -83,8 +83,8 @@ export function FeatureGrid({ items, columns = 3 }: { items: Feature[]; columns?
       )}
     >
       {items.map((f) => (
-        <div key={f.title} className="space-y-3 rounded-2xl border bg-card p-5">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div key={f.title} className="space-y-3 rounded-2xl border bg-card p-5 text-center sm:text-left">
+          <span className="mx-auto flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary sm:mx-0">
             <f.icon className="size-5" />
           </span>
           <p className="font-semibold">{f.title}</p>
@@ -114,8 +114,8 @@ export function BenefitsSection() {
       <SectionTitle eyebrow="Beneficios" title="Entiende tus números, aunque no te gusten los números" />
       <div className="mt-12 grid gap-8 md:grid-cols-3">
         {BENEFITS.map((b) => (
-          <div key={b.title} className="space-y-3">
-            <b.icon className="size-6 text-primary" />
+          <div key={b.title} className="space-y-3 text-center md:text-left">
+            <b.icon className="mx-auto size-6 text-primary md:mx-0" />
             <p className="text-lg font-semibold">{b.title}</p>
             <p className="text-muted-foreground">{b.text}</p>
           </div>
@@ -129,8 +129,8 @@ export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
   return (
     <ol className={cn("grid gap-4 sm:grid-cols-2", !detailed && "lg:grid-cols-4")}>
       {STEPS.map((s) => (
-        <li key={s.n} className="space-y-3 rounded-2xl border bg-card p-5 md:p-6">
-          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+        <li key={s.n} className="space-y-3 rounded-2xl border bg-card p-5 text-center sm:text-left md:p-6">
+          <span className="mx-auto flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground sm:mx-0">
             {s.n}
           </span>
           <p className="font-semibold">{s.title}</p>

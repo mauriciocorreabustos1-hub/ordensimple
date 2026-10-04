@@ -565,11 +565,14 @@ model Invitation {
   role        Role      @default(EMPLOYEE)
   token       String    @unique
   invitedById String?
+  /// Invitaciones enviadas juntas (una por sucursal): se aceptan todas con un solo enlace.
+  batchId     String?
   expiresAt   DateTime
   acceptedAt  DateTime?
   createdAt   DateTime  @default(now())
 
   @@index([businessId])
   @@index([email])
+  @@index([batchId])
   @@map("invitation")
 }

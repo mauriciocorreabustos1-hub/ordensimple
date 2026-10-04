@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "Configuración" }
 export default async function SettingsPage() {
   const ctx = await requireBusiness()
   const canManage = can(ctx.role, "settings:manage")
-  const [categories, members, records, invitations, owned] = await Promise.all([
+  const [categories, currentMembers, records, invitations, owned] = await Promise.all([
     db.expenseCategory.findMany({
       where: { businessId: ctx.businessId },
       select: { id: true, name: true },
@@ -42,15 +42,36 @@ export default async function SettingsPage() {
     ]),
     can(ctx.role, "members:manage")
       ? db.invitation.findMany({
-          where: { businessId: ctx.businessId, acceptedAt: null, expiresAt: { gt: new Date() } },
+          // El dueño ve las invitaciones pendientes de todas sus sucursales.
+          where: { business: { members: { some: { userId: ctx.user.id, role: "OWNER" } } }, acceptedAt: null, expiresAt: { gt: new Date() } },
+          include: { business: { select: { name: true } } },
           orderBy: { createdAt: "asc" },
         })
       : Promise.resolve([]),
     db.businessMember.findMany({
       where: { userId: ctx.user.id, role: "OWNER" },
-      select: { business: { select: { name: true, _count: { select: { sales: true, members: true } } } } },
+      orderBy: { createdAt: "asc" },
+      select: { business: { select: { id: true, name: true, _count: { select: { sales: true, members: true } } } } },
     }),
   ])
+  // El dueño ve a todo su equipo, de todas sus sucursales, y a qué sucursales entra cada persona.
+  const ownedIds = owned.map((o) => o.business.id)
+  const access =
+    ctx.role === "OWNER" && ownedIds.length > 1
+      ? await db.businessMember.findMany({
+          where: { businessId: { in: ownedIds } },
+          include: { user: { select: { name: true, email: true } } },
+          orderBy: { createdAt: "asc" },
+        })
+      : []
+  const members = access.length
+    ? [
+        ...currentMembers,
+        ...access.filter((a, i) => !currentMembers.some((m) => m.userId === a.userId) && access.findIndex((x) => x.userId === a.userId) === i),
+      ]
+    : currentMembers
+  const branchesOf = (userId: string) =>
+    access.length ? access.filter((a) => a.userId === userId).map((a) => a.businessId) : [ctx.businessId]
   const plan = PLANS[ctx.business.plan]
   const planEnds =
     ctx.business.plan !== "FREE" && ctx.business.planExpiresAt
@@ -159,7 +180,7 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Usuarios</CardTitle>
-          <CardDescription>Las personas que tienen acceso a este negocio.</CardDescription>
+          <CardDescription>Las personas que tienen acceso a tu negocio y a tus sucursales.</CardDescription>
         </CardHeader>
         <CardContent>
           <TeamSection
@@ -169,6 +190,8 @@ export default async function SettingsPage() {
               email: m.user.email,
               role: m.role,
               isMe: m.userId === ctx.user.id,
+              userId: m.userId,
+              branchIds: branchesOf(m.userId),
             }))}
             invitations={invitations.map((inv) => ({
               id: inv.id,
@@ -176,12 +199,15 @@ export default async function SettingsPage() {
               role: inv.role,
               url: `${getAppUrl()}/invitacion/${inv.token}`,
               expiresLabel: formatDate(inv.expiresAt, ctx.timezone, { day: "numeric", month: "short" }),
+              branchName: inv.business.name,
             }))}
             businessName={ctx.business.name}
             canManage={can(ctx.role, "members:manage")}
             isOwner={ctx.role === "OWNER"}
             limit={memberLimit(ctx.business.plan)}
             planName={plan.name}
+            branches={ctx.role === "OWNER" ? owned.map((o) => ({ id: o.business.id, name: o.business.name })) : []}
+            currentBranchId={ctx.businessId}
           />
         </CardContent>
       </Card>

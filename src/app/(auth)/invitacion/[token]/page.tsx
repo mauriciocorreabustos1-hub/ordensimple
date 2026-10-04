@@ -44,6 +44,14 @@ export default async function InvitationPage({ params }: PageProps<"/invitacion/
     )
   }
 
+  // Invitación a varias sucursales: se muestran todas.
+  const batch = invitation.batchId
+    ? await db.invitation.findMany({
+        where: { batchId: invitation.batchId, email: invitation.email, acceptedAt: null, expiresAt: { gt: new Date() } },
+        select: { business: { select: { name: true } } },
+      })
+    : []
+  const branchNames = batch.length > 1 ? batch.map((b) => b.business.name) : [invitation.business.name]
   const back = `/invitacion/${token}`
   const sameEmail = session?.user.email.toLowerCase() === invitation.email
 
@@ -53,7 +61,10 @@ export default async function InvitationPage({ params }: PageProps<"/invitacion/
         <Users className="size-6" />
       </span>
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Te invitaron a {invitation.business.name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Te invitaron a {branchNames.length > 1 ? `${branchNames.length} sucursales` : branchNames[0]}
+        </h1>
+        {branchNames.length > 1 ? <p className="text-sm font-medium">{branchNames.join(" · ")}</p> : null}
         <p className="text-sm text-muted-foreground">
           Entrarás como <strong className="text-foreground">{ROLE_LABEL[invitation.role]}</strong>. {ROLE_HELP[invitation.role]}
         </p>
@@ -61,7 +72,7 @@ export default async function InvitationPage({ params }: PageProps<"/invitacion/
 
       {session ? (
         sameEmail ? (
-          <AcceptInvitationButton token={token} businessName={invitation.business.name} />
+          <AcceptInvitationButton token={token} businessName={branchNames.length > 1 ? `${branchNames.length} sucursales` : branchNames[0]} />
         ) : (
           <div className="space-y-3 rounded-xl border bg-muted/40 p-4 text-sm">
             <p>

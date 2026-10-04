@@ -139,6 +139,24 @@
   html {
     @apply font-sans;
   }
+  /* Campos de fecha: Safari en iPhone centra el texto y les da un ancho mínimo propio
+     que los saca de su columna. Los dejamos alineados como el resto de los campos. */
+  input[type="date"] {
+    min-width: 0;
+    text-align: left;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    margin: 0;
+    text-align: left;
+  }
+  @supports (-webkit-touch-callout: none) {
+    input[type="date"] {
+      -webkit-appearance: none;
+      appearance: none;
+      display: flex;
+      align-items: center;
+    }
+  }
 }
 
 /* Espacio para la barra inferior del celular y el área segura del iPhone */

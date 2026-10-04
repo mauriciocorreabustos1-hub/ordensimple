@@ -131,6 +131,11 @@ model Business {
   currency            String   @default("CLP")
   timezone            String   @default("America/Santiago")
   plan                Plan     @default(FREE)
+  /// Hasta cuándo dura el plan pagado o regalado. null = no vence.
+  planExpiresAt       DateTime?
+  /// Descuento ganado con un código, para aplicarlo cuando se cobre la suscripción.
+  discountPercent     Int?
+  discountCode        String?
   hasProducts         Boolean?
   hasEmployees        Boolean?
   managesInventory    Boolean?
@@ -153,6 +158,7 @@ model Business {
   customerPayments  CustomerPayment[]
   cashClosings      CashClosing[]
   notifications     Notification[]
+  couponRedemptions CouponRedemption[]
 
   @@map("business")
 }
@@ -478,4 +484,44 @@ model ErrorLog {
 
   @@index([createdAt])
   @@map("error_log")
+}
+
+// ─── Códigos de descuento (los crea el administrador en /admin) ─────────────
+
+enum CouponKind {
+  FREE_DAYS // Regala días de un plan
+  PERCENT // Descuento porcentual en la suscripción
+}
+
+model Coupon {
+  id             String     @id @default(cuid())
+  code           String     @unique
+  kind           CouponKind
+  plan           Plan       @default(PRO)
+  days           Int?
+  percentOff     Int?
+  maxRedemptions Int?
+  expiresAt      DateTime?
+  active         Boolean    @default(true)
+  note           String?
+  createdBy      String?
+  createdAt      DateTime   @default(now())
+
+  redemptions CouponRedemption[]
+
+  @@map("coupon")
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  coupon     Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@unique([couponId, businessId])
+  @@index([businessId])
+  @@map("coupon_redemption")
 }

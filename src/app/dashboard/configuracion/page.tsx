@@ -11,7 +11,9 @@ import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
+import { RedeemCoupon } from "@/components/settings/redeem-coupon"
 import { db } from "@/lib/db"
+import { formatDate } from "@/lib/dates"
 import { PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
@@ -39,6 +41,10 @@ export default async function SettingsPage() {
     ]),
   ])
   const plan = PLANS[ctx.business.plan]
+  const planEnds =
+    ctx.business.plan !== "FREE" && ctx.business.planExpiresAt
+      ? formatDate(ctx.business.planExpiresAt, ctx.timezone, { day: "numeric", month: "long", year: "numeric" })
+      : null
   const hasRecords = records.some((n) => n > 0)
 
   return (
@@ -184,12 +190,28 @@ export default async function SettingsPage() {
           </CardTitle>
           <CardDescription>{plan.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {plan.highlights.map((h) => (
               <li key={h}>· {h}</li>
             ))}
           </ul>
+          {planEnds || ctx.business.discountPercent ? (
+            <div className="flex flex-wrap gap-2">
+              {planEnds ? <Badge variant="secondary">Vigente hasta el {planEnds}</Badge> : null}
+              {ctx.business.discountPercent ? (
+                <Badge variant="secondary">
+                  {ctx.business.discountPercent}% de descuento guardado ({ctx.business.discountCode})
+                </Badge>
+              ) : null}
+            </div>
+          ) : null}
+          {canManage ? (
+            <>
+              <Separator />
+              <RedeemCoupon />
+            </>
+          ) : null}
         </CardContent>
       </Card>
     </div>

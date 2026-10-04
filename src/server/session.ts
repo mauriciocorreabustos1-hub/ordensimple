@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { effectivePlan } from "@/lib/plans"
 import { can, type Permission } from "@/lib/roles"
 
 export const getSession = cache(async () => {
@@ -43,7 +44,9 @@ export async function requireBusiness() {
   const user = await requireUser()
   const membership = await getActiveMembership(user.id, user.activeBusinessId as string | null | undefined)
   if (!membership || !membership.business.onboardingCompleted) redirect("/onboarding")
-  const { business, role } = membership
+  const { role } = membership
+  // Si el plan venció, todo el sistema lo trata como Gratis (ctx.business.plan ya es el plan vigente).
+  const business = { ...membership.business, plan: effectivePlan(membership.business) }
   const settings = business.settings ?? {
     easyMode: false,
     lowStockAlerts: true,

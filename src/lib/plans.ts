@@ -79,3 +79,18 @@ export function planHas(plan: Plan, feature: PlanFeature) {
 export function canUseFeature(plan: Plan, feature: PlanFeature) {
   return !PLANS_ENFORCED || planHas(plan, feature)
 }
+
+export const PLAN_RANK: Record<Plan, number> = { FREE: 0, PRO: 1, BUSINESS: 2 }
+
+/** Plan vigente: si el plan pagado o regalado ya venció, el negocio vuelve a Gratis. */
+export function effectivePlan(business: { plan: Plan; planExpiresAt?: Date | null }, now = new Date()): Plan {
+  if (business.plan !== "FREE" && business.planExpiresAt && business.planExpiresAt <= now) return "FREE"
+  return business.plan
+}
+
+/** Texto corto de lo que entrega un código. */
+export function couponSummary(c: { kind: "FREE_DAYS" | "PERCENT"; plan: Plan; days: number | null; percentOff: number | null }) {
+  return c.kind === "FREE_DAYS"
+    ? `${c.days} días gratis del plan ${PLANS[c.plan].name}`
+    : `${c.percentOff}% de descuento en el plan ${PLANS[c.plan].name}`
+}

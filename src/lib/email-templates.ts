@@ -105,3 +105,34 @@ export function welcomeEmail({ name }: { name: string }) {
     text: `¡Hola ${name.split(" ")[0] ?? name}, bienvenido a OrdenSimple!\n\nTu cuenta ya está lista:\n1. Registra tus ventas con el botón verde.\n2. Anota tus gastos.\n3. Mira cómo te va en el panel de inicio.\n\nEntra aquí: ${appUrl}/dashboard`,
   }
 }
+
+export function planGiftEmail({
+  name,
+  planName,
+  businessName,
+  expiresAt,
+}: {
+  name: string
+  planName: string
+  businessName: string
+  expiresAt: Date | null
+}) {
+  const appUrl = getAppUrl()
+  const firstRaw = name.split(" ")[0] ?? name
+  const until = expiresAt
+    ? `hasta el ${expiresAt.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Santiago" })}`
+    : "sin fecha de término"
+  return {
+    subject: `🎁 Activamos el plan ${planName} en tu OrdenSimple`,
+    html: layout({
+      preview: `${businessName} ya tiene el plan ${planName} ${until}.`,
+      body: [
+        h1(`¡${escapeHtml(firstRaw)}, tienes el plan ${escapeHtml(planName)}!`),
+        p(`Activamos el plan <strong>${escapeHtml(planName)}</strong> para <strong>${escapeHtml(businessName)}</strong>, ${until}. No tienes que pagar nada ni hacer ningún trámite.`),
+        p("Aprovecha el inventario, los clientes y el fiado, los proveedores y los reportes para tomar mejores decisiones."),
+        button(`${appUrl}/dashboard`, "Ir a mi negocio"),
+      ].join(""),
+    }),
+    text: `¡Hola ${firstRaw}!\n\nActivamos el plan ${planName} para ${businessName}, ${until}. No tienes que pagar nada.\n\nEntra aquí: ${appUrl}/dashboard`,
+  }
+}

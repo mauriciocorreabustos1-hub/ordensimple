@@ -80,7 +80,10 @@ export async function listAdminUsers({ q, page }: { q?: string; page: number }) 
             role: true,
             business: {
               select: {
+                id: true,
                 name: true,
+                planExpiresAt: true,
+                discountPercent: true,
                 type: true,
                 plan: true,
                 onboardingCompleted: true,
@@ -106,4 +109,21 @@ export async function getRecentErrors() {
     db.errorLog.count(),
   ])
   return { rows, last24, total }
+}
+
+export async function listCoupons() {
+  return db.coupon.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { _count: { select: { redemptions: true } } },
+  })
+}
+
+/** Negocios con plan Pro o Empresa (vigente o vencido), para el resumen de suscripciones. */
+export async function getPlanCounts(now = new Date()) {
+  const [pro, business, expired] = await Promise.all([
+    db.business.count({ where: { plan: "PRO", OR: [{ planExpiresAt: null }, { planExpiresAt: { gt: now } }] } }),
+    db.business.count({ where: { plan: "BUSINESS", OR: [{ planExpiresAt: null }, { planExpiresAt: { gt: now } }] } }),
+    db.business.count({ where: { plan: { not: "FREE" }, planExpiresAt: { lte: now } } }),
+  ])
+  return { pro, business, expired }
 }

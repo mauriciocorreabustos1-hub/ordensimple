@@ -149,3 +149,43 @@ export const goalSchema = z.object({
 export type GoalInput = z.input<typeof goalSchema>
 
 export const idSchema = z.string().min(1).max(64)
+
+// ─── Inventario ─────────────────────────────────────────────────────────────
+
+export const inventoryMovementSchema = z.object({
+  productId: z.string().min(1, "Elige un producto"),
+  type: z.enum(["IN", "OUT", "ADJUSTMENT"]),
+  /** Entrada/salida: unidades que entran o salen. Ajuste: unidades contadas en total. */
+  quantity: z.number().int("Usa números enteros").min(0).max(10_000_000),
+  reason: optionalText(120),
+})
+export type InventoryMovementInput = z.input<typeof inventoryMovementSchema>
+
+// ─── Clientes y proveedores ─────────────────────────────────────────────────
+
+const phone = optionalText(30)
+const email = z
+  .string()
+  .trim()
+  .max(120)
+  .optional()
+  .transform((v) => (v ? v.toLowerCase() : undefined))
+  .refine((v) => !v || z.email().safeParse(v).success, "Correo inválido")
+
+export const customerSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre").max(80),
+  phone,
+  email,
+  notes: optionalText(300),
+})
+export type CustomerInput = z.input<typeof customerSchema>
+
+export const supplierSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre").max(80),
+  phone,
+  email,
+  products: optionalText(200),
+  deliveryCost: money.optional(),
+  notes: optionalText(300),
+})
+export type SupplierInput = z.input<typeof supplierSchema>

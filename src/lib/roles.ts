@@ -6,6 +6,10 @@ export type Permission =
   | "expenses:create"
   | "expenses:delete"
   | "products:manage"
+  | "inventory:manage"
+  | "customers:manage"
+  | "suppliers:manage"
+  | "reports:view"
   | "settings:manage"
   | "members:manage"
   | "business:delete"
@@ -17,6 +21,10 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "expenses:create",
     "expenses:delete",
     "products:manage",
+    "inventory:manage",
+    "customers:manage",
+    "suppliers:manage",
+    "reports:view",
     "settings:manage",
     "members:manage",
     "business:delete",
@@ -27,9 +35,13 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "expenses:create",
     "expenses:delete",
     "products:manage",
+    "inventory:manage",
+    "customers:manage",
+    "suppliers:manage",
+    "reports:view",
     "settings:manage",
   ],
-  EMPLOYEE: ["sales:create", "expenses:create"],
+  EMPLOYEE: ["sales:create", "expenses:create", "inventory:manage", "customers:manage"],
 }
 
 export const ROLE_LABEL: Record<Role, string> = {

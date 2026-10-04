@@ -27,12 +27,15 @@ export function SaleForm({
   timezone,
   defaultPayment,
   products,
+  customers = [],
   onDone,
 }: {
   currency: string
   timezone: string
   defaultPayment: PaymentMethod
   products: ProductOption[]
+  /** Nombres de clientes guardados, para sugerirlos y no crear duplicados. */
+  customers?: string[]
   onDone?: () => void
 }) {
   const newLine = (): Line => ({
@@ -202,7 +205,14 @@ export function SaleForm({
             maxLength={80}
             className="h-10"
             placeholder="Nombre"
+            list="sale-customers"
+            autoComplete="off"
           />
+          <datalist id="sale-customers">
+            {customers.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </Field>
       </div>
 

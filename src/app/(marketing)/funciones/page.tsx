@@ -60,7 +60,7 @@ export default function FeaturesPage() {
         <SectionTitle
           eyebrow="Próximamente"
           title="Lo que viene"
-          description="Seguimos construyendo OrdenSimple. Estas funciones llegarán con el plan Pro."
+          description="Seguimos construyendo OrdenSimple. Esto es lo próximo que llegará."
         />
         <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {COMING_SOON.map((f) => (

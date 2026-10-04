@@ -3,6 +3,7 @@ import {
   Boxes,
   Calculator,
   Clock,
+  CreditCard,
   FileDown,
   FlaskConical,
   HeartHandshake,
@@ -13,10 +14,12 @@ import {
   ShieldCheck,
   ShoppingBag,
   Smartphone,
+  Store,
   Tag,
   Target,
   Truck,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react"
 
@@ -109,6 +112,56 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
+    id: "inventario",
+    icon: Boxes,
+    title: "Inventario",
+    description: "Sabe qué tienes, qué se acaba y qué no se mueve.",
+    points: [
+      "Stock actual, stock bajo y productos agotados",
+      "Alertas como “Te quedan 4 unidades de Coca-Cola 1.5L”",
+      "Entradas, salidas y ajustes por conteo",
+      "Productos más vendidos del mes",
+      "Dinero inmovilizado en productos que no se venden",
+    ],
+  },
+  {
+    id: "clientes",
+    icon: Users,
+    title: "Clientes",
+    description: "Conoce a quienes te compran.",
+    points: [
+      "Ficha con teléfono, correo y notas",
+      "Total comprado, número de compras y última compra",
+      "Clientes frecuentes, nuevos y los que más compran",
+      "Historial de compras de cada cliente",
+      "Contacto directo por WhatsApp",
+    ],
+  },
+  {
+    id: "proveedores",
+    icon: Truck,
+    title: "Proveedores",
+    description: "Compra mejor y sabe cuánto le compras a cada uno.",
+    points: [
+      "Ficha con contacto, productos y costo de despacho",
+      "Cuánto le has comprado y cuándo fue la última vez",
+      "Comparador: ¿qué proveedor me conviene según la cantidad?",
+    ],
+  },
+  {
+    id: "reportes",
+    icon: BarChart3,
+    title: "Reportes y consejos",
+    description: "Entiende qué está funcionando y qué no.",
+    points: [
+      "Resumen de cualquier período comparado con el anterior",
+      "Productos más vendidos y más rentables",
+      "Gastos por categoría y ventas por método de pago",
+      "Descarga tus ventas y gastos en Excel",
+      "Consejos automáticos calculados con tus números reales",
+    ],
+  },
+  {
     id: "seguridad",
     icon: ShieldCheck,
     title: "Seguridad y acceso",
@@ -130,11 +183,11 @@ export const TOOLS: Feature[] = [
 ]
 
 export const COMING_SOON: Feature[] = [
-  { icon: Boxes, title: "Inventario completo", text: "Entradas, salidas, ajustes y alertas de reposición." },
-  { icon: Users, title: "Clientes", text: "Quién te compra, cuánto y cada cuánto." },
-  { icon: Truck, title: "Proveedores", text: "Compara proveedores según precio y despacho." },
-  { icon: BarChart3, title: "Reportes", text: "Resúmenes semanales y mensuales, productos más rentables." },
-  { icon: FileDown, title: "Exportar", text: "Descarga tus datos en PDF y Excel." },
+  { icon: CreditCard, title: "Planes Pro y Empresa", text: "Pago mensual con tarjeta y boleta electrónica." },
+  { icon: UsersRound, title: "Tu equipo", text: "Invita empleados con permisos limitados." },
+  { icon: Store, title: "Sucursales", text: "Varios locales en una sola cuenta." },
+  { icon: FileDown, title: "Reportes en PDF", text: "Resúmenes listos para imprimir o enviar." },
+  { icon: Smartphone, title: "App instalable", text: "Ícono en tu celular y funciona con mala señal." },
 ]
 
 export const BENEFITS: Feature[] = [
@@ -195,7 +248,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     title: "Cuenta y precios",
     items: [
       { q: "¿Es realmente gratis?", a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta." },
-      { q: "¿Cuándo llegan los planes Pro y Empresa?", a: "Estamos construyéndolos. Mientras tanto, todo lo que está disponible se puede usar gratis." },
+      { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí. Durante el lanzamiento, inventario, clientes, proveedores, reportes y consejos están disponibles para todos. Te avisaremos con anticipación antes de empezar a cobrar el plan Pro." },
       { q: "¿Necesito tarjeta de crédito para registrarme?", a: "No. Solo tu nombre, correo y una contraseña." },
       { q: "Olvidé mi contraseña, ¿qué hago?", a: "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y te enviaremos un enlace para crear una nueva." },
     ],

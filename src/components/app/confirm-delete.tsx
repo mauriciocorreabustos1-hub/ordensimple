@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -22,12 +23,16 @@ export function ConfirmDelete({
   description,
   onConfirm,
   label = "Eliminar",
+  redirectTo,
 }: {
   title: string
   description: string
   onConfirm: () => Promise<Result>
   label?: string
+  /** Página a la que ir después de eliminar (por ejemplo, desde la ficha del elemento). */
+  redirectTo?: string
 }) {
+  const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [pending, startTransition] = React.useTransition()
 
@@ -40,6 +45,7 @@ export function ConfirmDelete({
       }
       toast.success(result.message ?? "Eliminado")
       setOpen(false)
+      if (redirectTo) router.replace(redirectTo)
     })
   }
 

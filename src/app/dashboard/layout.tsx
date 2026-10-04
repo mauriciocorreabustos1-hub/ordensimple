@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const ctx = await requireBusiness()
   const isAdmin = isAdminEmail(ctx.user.email)
 
-  const [products, categories] = await Promise.all([
+  const [products, categories, customers] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
       select: { id: true, name: true, price: true, stock: true, trackStock: true },
@@ -23,6 +23,12 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       select: { id: true, name: true },
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     }),
+    db.customer.findMany({
+      where: { businessId: ctx.businessId },
+      select: { name: true },
+      orderBy: { name: "asc" },
+      take: 500,
+    }),
   ])
 
   return (
@@ -32,6 +38,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       defaultPayment={ctx.settings.defaultPayment}
       products={products}
       categories={categories}
+      customers={customers.map((c) => c.name)}
     >
       <AppSidebar businessName={ctx.business.name} userName={ctx.user.name} userEmail={ctx.user.email} isAdmin={isAdmin} />
       <div className="min-h-dvh bg-background lg:pl-64">

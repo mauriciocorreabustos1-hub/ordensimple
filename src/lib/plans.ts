@@ -65,6 +65,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
   },
 }
 
+/**
+ * Mientras no existan los cobros, todas las funciones están abiertas (período de lanzamiento).
+ * Para exigir el plan, definir ENFORCE_PLANS=true en las variables de entorno.
+ */
+export const PLANS_ENFORCED = process.env.ENFORCE_PLANS === "true"
+
 export function planHas(plan: Plan, feature: PlanFeature) {
   return PLANS[plan].features.includes(feature)
+}
+
+/** ¿Puede este negocio usar la función? Considera el período de lanzamiento. */
+export function canUseFeature(plan: Plan, feature: PlanFeature) {
+  return !PLANS_ENFORCED || planHas(plan, feature)
 }

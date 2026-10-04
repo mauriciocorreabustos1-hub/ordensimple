@@ -159,9 +159,11 @@ En computador se reorganiza en una grilla de 3 columnas. Con **Modo Fácil** act
 
 Incluido: landing, registro, login, recuperación de contraseña, onboarding, dashboard, ventas (detallada y rápida), gastos, productos, las 4 herramientas, configuración (negocio, moneda, país, categorías, Modo Fácil, tema, usuarios en modo lectura) y la base de PWA (manifest + íconos).
 
-Fuera del MVP (en el menú como "Próximamente"): inventario, clientes, proveedores, reportes, consejos automáticos, invitar usuarios, cobros, exportar a PDF/Excel y service worker.
+Fase Pro (ya construida): inventario (movimientos, alertas, más vendidos, dinero inmovilizado), clientes (ficha, frecuentes, nuevos, top, historial), proveedores (ficha, total comprado, comparador), reportes (período vs. período anterior, rankings, exportación CSV para Excel) y consejos automáticos calculados con datos reales.
 
-Ya incluido en la arquitectura para lo que viene: el stock se descuenta al vender un producto y queda registrado en `InventoryMovement`; las ventas aceptan un cliente; los gastos aceptan un proveedor; los límites de cada plan están en `src/lib/plans.ts`.
+Mientras no existan los cobros, las funciones Pro están abiertas para todos. Para exigir el plan basta con definir `ENFORCE_PLANS=true` (ver `src/lib/plans.ts`, función `canUseFeature`).
+
+Pendiente: cobros (Mercado Pago o Flow) y códigos de descuento, invitar usuarios, sucursales, reportes en PDF y service worker.
 
 ## 10. Orden de implementación
 
@@ -174,4 +176,5 @@ Ya incluido en la arquitectura para lo que viene: el stock se descuenta al vende
 7. ✅ Herramientas.
 8. ✅ Configuración.
 9. ✅ Landing.
-10. Siguiente fase: inventario, clientes, proveedores, reportes y consejos automáticos.
+10. ✅ Inventario, clientes, proveedores, reportes y consejos automáticos.
+11. Siguiente fase: cobros, descuentos y correos masivos.

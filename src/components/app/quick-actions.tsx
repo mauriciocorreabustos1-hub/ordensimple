@@ -28,6 +28,7 @@ export function QuickActionsProvider({
   defaultPayment,
   products,
   categories,
+  customers,
 }: {
   children: React.ReactNode
   currency: string
@@ -35,6 +36,7 @@ export function QuickActionsProvider({
   defaultPayment: PaymentMethod
   products: ProductOption[]
   categories: ExpenseCategoryOption[]
+  customers: string[]
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
   const value = React.useMemo(() => ({ open: (a: Action) => setAction(a) }), [])
@@ -58,6 +60,7 @@ export function QuickActionsProvider({
               timezone={timezone}
               defaultPayment={defaultPayment}
               products={products}
+              customers={customers}
               onDone={close}
             />
           </TabsContent>

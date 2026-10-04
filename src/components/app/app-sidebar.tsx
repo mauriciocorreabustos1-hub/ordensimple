@@ -31,6 +31,8 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 Pronto
               </span>
+            ) : item.pro ? (
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">Pro</span>
             ) : null}
           </Link>
         )

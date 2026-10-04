@@ -13,6 +13,9 @@ import { businessHealth, percentChange } from "@/lib/calculations"
 import { formatMoney, referenceAmount } from "@/lib/currency"
 import { greeting, monthName } from "@/lib/dates"
 import { getDashboardData } from "@/server/queries/dashboard"
+import { getInsights } from "@/server/queries/insights"
+import { InsightsCard } from "@/components/dashboard/insights-card"
+import { canUseFeature } from "@/lib/plans"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Inicio" }
@@ -20,7 +23,11 @@ export const metadata: Metadata = { title: "Inicio" }
 export default async function DashboardPage() {
   const ctx = await requireBusiness()
   const now = new Date()
-  const data = await getDashboardData(ctx.businessId, ctx.timezone, now)
+  const showTips = !ctx.settings.easyMode && canUseFeature(ctx.business.plan, "tips")
+  const [data, insights] = await Promise.all([
+    getDashboardData(ctx.businessId, ctx.timezone, now),
+    showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
+  ])
   const money = (n: number) => formatMoney(n, ctx.currency)
   const easy = ctx.settings.easyMode
 
@@ -127,6 +134,8 @@ export default async function DashboardPage() {
               </Explainer>
             ) : null}
           </section>
+
+          {showTips ? <InsightsCard insights={insights} limit={4} /> : null}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>

@@ -1,16 +1,155 @@
 import type { Metadata } from "next"
-import { Users } from "lucide-react"
-import { ComingSoon } from "@/components/app/coming-soon"
+import Link from "next/link"
+import { ChevronRight, Crown, Repeat, Search, Sparkles, Users } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { EmptyState } from "@/components/app/empty-state"
+import { PageHeader } from "@/components/app/page-header"
+import { ProGate } from "@/components/app/pro-gate"
+import { StatCard } from "@/components/app/stat-card"
+import { CustomerDialog } from "@/components/contacts/customer-dialog"
+import { formatMoney, formatNumber } from "@/lib/currency"
+import { formatDate } from "@/lib/dates"
+import { canUseFeature } from "@/lib/plans"
+import { can } from "@/lib/roles"
+import { cn } from "@/lib/utils"
+import { getCustomers, type CustomerSegment } from "@/server/queries/contacts"
+import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Clientes" }
 
-export default function Page() {
+const SEGMENTS: { value: CustomerSegment; label: string }[] = [
+  { value: "todos", label: "Todos" },
+  { value: "frecuentes", label: "Frecuentes" },
+  { value: "nuevos", label: "Nuevos" },
+  { value: "top", label: "Mayor compra" },
+]
+
+export default async function CustomersPage({ searchParams }: PageProps<"/dashboard/clientes">) {
+  const ctx = await requireBusiness()
+  if (!canUseFeature(ctx.business.plan, "customers")) {
+    return <ProGate title="Clientes" description="Conoce a quienes te compran y cuánto te compran." />
+  }
+  const params = await searchParams
+  const q = typeof params.q === "string" ? params.q.trim().slice(0, 80) : ""
+  const segment = SEGMENTS.some((s) => s.value === params.segmento) ? (params.segmento as CustomerSegment) : "todos"
+  const data = await getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined })
+  const money = (n: number) => formatMoney(n, ctx.currency)
+  const canManage = can(ctx.role, "customers:manage")
+
+  const list =
+    segment === "frecuentes" ? data.frequent : segment === "nuevos" ? data.newOnes : segment === "top" ? data.top : data.rows
+  const best = data.top[0]
+
+  const hrefFor = (s: CustomerSegment) => {
+    const p = new URLSearchParams()
+    if (s !== "todos") p.set("segmento", s)
+    if (q) p.set("q", q)
+    const qs = p.toString()
+    return `/dashboard/clientes${qs ? `?${qs}` : ""}`
+  }
+
   return (
-    <ComingSoon
-      title="Clientes"
-      icon={Users}
-      description="Conoce a quienes te compran y cuánto te compran."
-      features={["Total comprado, número de compras y última compra", "Clientes frecuentes y clientes nuevos", "Los clientes que más te compran"]}
-    />
+    <div className="space-y-6">
+      <PageHeader
+        title="Clientes"
+        description="Quién te compra, cuánto y cada cuánto. Las ventas con nombre de cliente se suman solas aquí."
+        actions={canManage ? <CustomerDialog /> : null}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard compactOnMobile label="Clientes" value={formatNumber(data.rows.length)} icon={Users}
+          hint={`${data.newOnes.length} nuevos en los últimos 30 días.`} />
+        <StatCard compactOnMobile label="Frecuentes" value={formatNumber(data.frequent.length)} icon={Repeat} tone="sales"
+          hint="Te compraron 3 veces o más en los últimos 60 días." />
+        <StatCard compactOnMobile label="Mejor cliente" value={best ? best.name : "—"} icon={Crown} tone="profit"
+          hint={best ? `${money(best.total)} en ${best.purchases} compras.` : "Aún no hay ventas con cliente."} />
+      </div>
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {SEGMENTS.map((s) => (
+            <Link
+              key={s.value}
+              href={hrefFor(s.value)}
+              scroll={false}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1 text-sm",
+                segment === s.value ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted",
+              )}
+            >
+              {s.label}
+            </Link>
+          ))}
+        </div>
+        <form className="flex gap-2" action="/dashboard/clientes">
+          {segment !== "todos" ? <input type="hidden" name="segmento" value={segment} /> : null}
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input name="q" defaultValue={q} placeholder="Buscar por nombre, teléfono o correo" className="h-9 pl-9 md:w-72" />
+          </div>
+          <Button type="submit" variant="outline" size="lg">
+            Buscar
+          </Button>
+        </form>
+      </div>
+
+      {data.rows.length === 0 && !q ? (
+        <EmptyState
+          icon={Users}
+          title="Aún no tienes clientes"
+          description="Agrégalos aquí o escribe el nombre del cliente al registrar una venta con detalle: se creará solo."
+          action={canManage ? <CustomerDialog /> : null}
+        />
+      ) : list.length === 0 ? (
+        <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          No hay clientes en esta vista.
+        </p>
+      ) : (
+        <ul className="grid gap-2">
+          {list.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/dashboard/clientes/${c.id}`}
+                className="flex items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {c.name
+                    .split(" ")
+                    .slice(0, 2)
+                    .map((p) => p[0]?.toUpperCase())
+                    .join("")}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 truncate font-medium">
+                    {c.name}
+                    {c.recentPurchases >= 3 ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Repeat className="size-3" />
+                        Frecuente
+                      </Badge>
+                    ) : null}
+                    {c.isNew ? (
+                      <Badge variant="outline" className="gap-1">
+                        <Sparkles className="size-3" />
+                        Nuevo
+                      </Badge>
+                    ) : null}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {c.purchases} {c.purchases === 1 ? "compra" : "compras"}
+                    {c.lastPurchase ? ` · última ${formatDate(c.lastPurchase, ctx.timezone)}` : ""}
+                    {c.phone ? ` · ${c.phone}` : ""}
+                  </p>
+                </div>
+                <span className="tabular shrink-0 font-semibold">{money(c.total)}</span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

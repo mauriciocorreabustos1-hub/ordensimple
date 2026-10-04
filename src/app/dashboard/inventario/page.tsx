@@ -1,16 +1,272 @@
 import type { Metadata } from "next"
-import { Boxes } from "lucide-react"
-import { ComingSoon } from "@/components/app/coming-soon"
+import Link from "next/link"
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes, ClipboardCheck, PackageX, Snail, TrendingUp } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { EmptyState } from "@/components/app/empty-state"
+import { Explainer } from "@/components/app/explainer"
+import { PageHeader } from "@/components/app/page-header"
+import { ProGate } from "@/components/app/pro-gate"
+import { StatCard } from "@/components/app/stat-card"
+import { MovementDialog } from "@/components/inventory/movement-dialog"
+import { formatMoney, formatNumber } from "@/lib/currency"
+import { formatDateTime } from "@/lib/dates"
+import { canUseFeature } from "@/lib/plans"
+import { can } from "@/lib/roles"
+import { cn } from "@/lib/utils"
+import { getInventory, type StockState } from "@/server/queries/inventory"
+import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Inventario" }
 
-export default function Page() {
+const FILTERS: { value: "todos" | StockState; label: string }[] = [
+  { value: "todos", label: "Todos" },
+  { value: "low", label: "Stock bajo" },
+  { value: "out", label: "Agotados" },
+  { value: "ok", label: "Con stock" },
+]
+
+const MOVEMENT = {
+  IN: { label: "Entrada", icon: ArrowDownToLine },
+  OUT: { label: "Salida", icon: ArrowUpFromLine },
+  ADJUSTMENT: { label: "Ajuste", icon: ClipboardCheck },
+} as const
+
+function StateBadge({ state }: { state: StockState }) {
+  if (state === "out")
+    return (
+      <Badge variant="destructive" className="gap-1">
+        <PackageX className="size-3" />
+        Agotado
+      </Badge>
+    )
+  if (state === "low")
+    return (
+      <Badge className="gap-1 border-warning/40 bg-warning/15 text-foreground">
+        <AlertTriangle className="size-3 text-warning" />
+        Bajo
+      </Badge>
+    )
+  return <Badge variant="secondary">OK</Badge>
+}
+
+export default async function InventoryPage({ searchParams }: PageProps<"/dashboard/inventario">) {
+  const ctx = await requireBusiness()
+  if (!canUseFeature(ctx.business.plan, "inventory")) {
+    return <ProGate title="Inventario" description="Controla tu stock, recibe alertas y registra movimientos." />
+  }
+  const params = await searchParams
+  const filter = FILTERS.some((f) => f.value === params.filtro) ? (params.filtro as (typeof FILTERS)[number]["value"]) : "todos"
+  const inv = await getInventory(ctx.businessId, ctx.timezone)
+  const money = (n: number) => formatMoney(n, ctx.currency)
+  const canManage = can(ctx.role, "inventory:manage")
+  const items = filter === "todos" ? inv.items : inv.items.filter((i) => i.state === filter)
+  const alerts = [...inv.out, ...inv.low]
+
   return (
-    <ComingSoon
-      title="Inventario"
-      icon={Boxes}
-      description="Controla tu stock, recibe alertas y registra entradas, salidas y ajustes."
-      features={["Stock actual, bajo y agotado de un vistazo", "Alertas como: Te quedan 4 unidades de Coca-Cola 1.5L", "Entradas, salidas y ajustes de mercadería", "Productos más vendidos y dinero inmovilizado"]}
-    />
+    <div className="space-y-6">
+      <PageHeader
+        title="Inventario"
+        description="Cuánto tienes de cada producto, qué se está acabando y qué no se mueve."
+        actions={canManage && inv.productOptions.length ? <MovementDialog products={inv.productOptions} /> : null}
+      />
+
+      {inv.productOptions.length === 0 ? (
+        <EmptyState
+          icon={Boxes}
+          title="Aún no tienes productos"
+          description="Crea tus productos con su stock y aquí verás cuánto te queda de cada uno."
+          action={
+            <Link href="/dashboard/productos" className="text-sm font-medium text-primary hover:underline">
+              Ir a Productos
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard compactOnMobile label="Valor del inventario" value={money(inv.value)} icon={Boxes} tone="sales"
+              hint={`Lo que pagaste por tu stock. A precio de venta son ${money(inv.valueAtPrice)}.`} />
+            <StatCard compactOnMobile label="Unidades en stock" value={formatNumber(inv.units)} icon={TrendingUp}
+              hint={`${inv.items.length} productos con control de stock.`} />
+            <StatCard compactOnMobile label="Stock bajo" value={formatNumber(inv.low.length)} icon={AlertTriangle}
+              tone={inv.low.length ? "expenses" : "default"} hint="Quedan menos unidades que tu mínimo." />
+            <StatCard compactOnMobile label="Agotados" value={formatNumber(inv.out.length)} icon={PackageX}
+              tone={inv.out.length ? "loss" : "default"} hint="Productos sin unidades disponibles." />
+          </div>
+
+          {alerts.length ? (
+            <Card className="border-warning/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="size-4 text-warning" />
+                  Por reponer
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {alerts.slice(0, 8).map((p) => (
+                    <li key={p.id} className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                      {p.state === "out"
+                        ? `Se agotó ${p.name}.`
+                        : `Te ${p.stock === 1 ? "queda 1 unidad" : `quedan ${formatNumber(p.stock)} unidades`} de ${p.name}.`}
+                    </li>
+                  ))}
+                </ul>
+                {alerts.length > 8 ? (
+                  <p className="mt-2 text-xs text-muted-foreground">Y {alerts.length - 8} productos más.</p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+            <section className="min-w-0 space-y-4">
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {FILTERS.map((f) => (
+                  <Link
+                    key={f.value}
+                    href={f.value === "todos" ? "/dashboard/inventario" : `/dashboard/inventario?filtro=${f.value}`}
+                    scroll={false}
+                    className={cn(
+                      "shrink-0 rounded-full border px-3 py-1 text-sm",
+                      filter === f.value ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted",
+                    )}
+                  >
+                    {f.label}
+                  </Link>
+                ))}
+              </div>
+
+              {items.length === 0 ? (
+                <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                  {inv.items.length === 0
+                    ? "Ninguno de tus productos tiene control de stock. Actívalo al editar un producto o registra una entrada."
+                    : "No hay productos en este filtro."}
+                </p>
+              ) : (
+                <ul className="grid gap-2">
+                  {items.map((p) => (
+                    <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{p.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Mínimo {formatNumber(p.minStock)} · vendiste {formatNumber(p.sold30)} en 30 días
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={cn("tabular text-lg font-semibold", p.state === "out" && "text-danger")}>
+                          {formatNumber(p.stock)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{money(Math.max(0, p.stock) * p.cost)}</p>
+                      </div>
+                      <StateBadge state={p.state} />
+                      {canManage ? <MovementDialog products={inv.productOptions} defaultProductId={p.id} compact /> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {inv.untrackedCount ? (
+                <p className="text-xs text-muted-foreground">
+                  {inv.untrackedCount} producto(s) sin control de stock (por ejemplo, servicios) no aparecen aquí.
+                </p>
+              ) : null}
+            </section>
+
+            <aside className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Más vendidos</CardTitle>
+                  <CardDescription>Unidades vendidas en los últimos 30 días.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {inv.topSellers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aún no hay ventas con productos.</p>
+                  ) : (
+                    <ol className="space-y-2.5">
+                      {inv.topSellers.map((p, i) => (
+                        <li key={p.id} className="flex items-center gap-3 text-sm">
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {i + 1}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                          <span className="tabular font-medium">{formatNumber(p.qty)}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Snail className="size-4 text-muted-foreground" />
+                    Sin movimiento
+                  </CardTitle>
+                  <CardDescription>Productos con stock que no se vendieron en 30 días.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {inv.idle.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">¡Bien! Todo tu stock se está moviendo.</p>
+                  ) : (
+                    <>
+                      <ul className="space-y-2">
+                        {inv.idle.slice(0, 5).map((p) => (
+                          <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                            <span className="min-w-0 truncate">{p.name}</span>
+                            <span className="tabular shrink-0 text-muted-foreground">{money(p.value)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Explainer title="Dinero inmovilizado">
+                        Tienes {money(inv.idleValue)} en productos que no se están vendiendo. Considera una oferta para
+                        convertirlos en plata.
+                      </Explainer>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </aside>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Últimos movimientos</CardTitle>
+              <CardDescription>Entradas, salidas, ajustes y ventas que cambiaron tu stock.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {inv.movements.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Todavía no hay movimientos.</p>
+              ) : (
+                <ul className="divide-y">
+                  {inv.movements.map((m) => {
+                    const meta = MOVEMENT[m.type]
+                    return (
+                      <li key={m.id} className="flex items-center gap-3 py-2.5 text-sm">
+                        <meta.icon className="size-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate">
+                            <span className="font-medium">{m.product.name}</span> · {m.reason ?? meta.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateTime(m.createdAt, ctx.timezone)}
+                            {m.createdBy ? ` · ${m.createdBy.name}` : ""}
+                          </p>
+                        </div>
+                        <span className={cn("tabular font-semibold", m.quantity > 0 ? "text-success" : "text-danger")}>
+                          {m.quantity > 0 ? "+" : ""}
+                          {formatNumber(m.quantity)}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
   )
 }

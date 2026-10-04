@@ -61,3 +61,8 @@ Reglas simples
   - Deja espacio libre alrededor (al menos el ancho de una barra).
   - No cambies los colores ni le agregues sombras o bordes.
   - Sobre fotos o fondos con mucho detalle, usa las versiones blancas.
+
+7-video/
+  ordensimple-tutorial.mp4 ..... Tutorial vertical de 32 s para TikTok, Reels y Shorts (sin música).
+  portada-video.png ............ Miniatura del video.
+  guion-y-texto-para-publicar .. Descripción, hashtags, guion para voz e ideas de próximos videos.

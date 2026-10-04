@@ -15,7 +15,7 @@ export default async function OnboardingPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-muted/40">
       <header className="flex items-center justify-between px-4 py-5 sm:px-8">
-        <Logo href="/onboarding" />
+        <Logo href="/" />
         <SignOutButton compact />
       </header>
       <main className="flex flex-1 items-start justify-center px-4 pb-10 sm:items-center">

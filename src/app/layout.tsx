@@ -24,7 +24,15 @@ export const metadata: Metadata = {
   // Código de Google Search Console (variable GOOGLE_SITE_VERIFICATION en Vercel).
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   appleWebApp: { capable: true, title: "OrdenSimple", statusBarStyle: "default" },
-  icons: { apple: "/pwa-icon/180" },
+  // El ícono debe declararse junto al de iPhone: si solo se pone "apple", Google no encuentra el favicon.
+  // (favicon.ico se agrega solo desde src/app/favicon.ico.)
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/pwa-icon/192", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/pwa-icon/180",
+  },
   openGraph: {
     type: "website",
     locale: "es_CL",

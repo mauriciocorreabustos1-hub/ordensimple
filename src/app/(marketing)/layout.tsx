@@ -9,6 +9,7 @@ const FOOTER = [
       { href: "/funciones", label: "Funciones" },
       { href: "/como-funciona", label: "Cómo funciona" },
       { href: "/precios", label: "Precios" },
+      { href: "/calculadoras", label: "Calculadoras gratis" },
     ],
   },
   {

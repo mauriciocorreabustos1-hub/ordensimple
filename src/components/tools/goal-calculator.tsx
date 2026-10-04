@@ -23,9 +23,12 @@ export function GoalCalculator({
   daysInMonth,
   dayOfMonth,
   defaults,
+  showProgress = true,
 }: {
   currency: string
   canSave: boolean
+  /** En la calculadora pública no hay ventas del mes que mostrar. */
+  showProgress?: boolean
   monthSales: number
   monthLabel: string
   daysInMonth: number
@@ -91,23 +94,25 @@ export function GoalCalculator({
               <MiniStat label="Por semana" value={money(result.weekly)} />
               <MiniStat label="Por día" value={money(result.daily)} />
             </div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Cómo vas en {monthLabel}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Progress value={progress * 100} className="h-3" aria-label="Avance de la meta" />
-                <div className="flex justify-between text-sm">
-                  <span className="tabular font-medium">{money(monthSales)}</span>
-                  <span className="text-muted-foreground">{formatPercent(progress, 0)} de la meta</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {remaining > 0
-                    ? `Te faltan ${money(remaining)}. Para llegar, necesitas vender unos ${money(Math.ceil(remaining / daysLeft))} diarios los ${daysLeft} días que quedan.`
-                    : "¡Ya alcanzaste las ventas necesarias para tu meta este mes!"}
-                </p>
-              </CardContent>
-            </Card>
+            {showProgress ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Cómo vas en {monthLabel}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Progress value={progress * 100} className="h-3" aria-label="Avance de la meta" />
+                  <div className="flex justify-between text-sm">
+                    <span className="tabular font-medium">{money(monthSales)}</span>
+                    <span className="text-muted-foreground">{formatPercent(progress, 0)} de la meta</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {remaining > 0
+                      ? `Te faltan ${money(remaining)}. Para llegar, necesitas vender unos ${money(Math.ceil(remaining / daysLeft))} diarios los ${daysLeft} días que quedan.`
+                      : "¡Ya alcanzaste las ventas necesarias para tu meta este mes!"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : null}
             <Explainer title="¿Cómo lo calculamos?">
               Para ganar {money(targetProfit)} primero tienes que cubrir {money(fixedCosts)} de gastos fijos. Como de
               cada venta te queda el {marginPct}%, necesitas vender {money(result.monthly)} para juntar ambos montos.

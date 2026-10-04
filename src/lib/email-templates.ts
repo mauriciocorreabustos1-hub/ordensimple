@@ -1,5 +1,6 @@
 import "server-only"
 import { getAppUrl } from "@/lib/app-url"
+import { formatMoney } from "@/lib/currency"
 
 // Plantillas HTML de correo. Usan tablas y estilos en línea porque los clientes de correo
 // (Gmail, Outlook) no soportan CSS moderno. Siempre van acompañadas de una versión en texto.
@@ -312,4 +313,132 @@ export function nudgeEmail({
       `---\nPara no recibir más consejos: ${unsubscribeUrl}`,
     ].join("\n\n"),
   }
+}
+
+// ─── Avisos del negocio (se activan o desactivan en Configuración) ──────────
+
+function alertFooter() {
+  return `Recibes este aviso porque lo tienes activado en OrdenSimple. <a href="${getAppUrl()}/dashboard/configuracion" style="color:${MUTED};">Cambiar mis avisos</a>.`
+}
+
+function statRow(label: string, value: string, color = INK) {
+  return `<tr>
+  <td style="padding:10px 0;font-size:15px;color:${MUTED};border-bottom:1px solid #eef2f0;">${label}</td>
+  <td align="right" style="padding:10px 0;font-size:17px;font-weight:700;color:${color};border-bottom:1px solid #eef2f0;">${value}</td>
+</tr>`
+}
+
+function change(current: number, previous: number) {
+  if (previous <= 0) return ""
+  const pct = Math.round(((current - previous) / previous) * 100)
+  if (pct === 0) return "igual que la semana anterior"
+  return pct > 0 ? `${pct}% más que la semana anterior` : `${Math.abs(pct)}% menos que la semana anterior`
+}
+
+export function weeklySummaryEmail(d: {
+  name: string
+  businessName: string
+  weekLabel: string
+  currency: string
+  sales: number
+  salesCount: number
+  expenses: number
+  profit: number
+  prevSales: number
+  topProducts: { name: string; qty: number }[]
+  debtTotal: number
+  debtCount: number
+  lowStockCount: number
+}) {
+  const appUrl = getAppUrl()
+  const money = (n: number) => formatMoney(n, d.currency)
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const salesChange = change(d.sales, d.prevSales)
+  const profitLabel = d.profit >= 0 ? "Te quedó (aprox.)" : "Perdiste (aprox.)"
+  const extras: string[] = []
+  if (d.topProducts.length) {
+    extras.push(`<strong>Lo más vendido:</strong> ${d.topProducts.map((p) => `${escapeHtml(p.name)} (${p.qty})`).join(", ")}.`)
+  }
+  if (d.debtTotal > 0) extras.push(`<strong>Fiado:</strong> te deben ${money(d.debtTotal)} entre ${d.debtCount} cliente${d.debtCount === 1 ? "" : "s"}.`)
+  if (d.lowStockCount > 0) extras.push(`<strong>Por reponer:</strong> ${d.lowStockCount} producto${d.lowStockCount === 1 ? "" : "s"} con stock bajo o agotado.`)
+
+  const html = layout({
+    preview: `Vendiste ${money(d.sales)} y te quedaron ${money(Math.abs(d.profit))}. ${salesChange}`,
+    body: [
+      h1(`Así le fue a ${escapeHtml(d.businessName)} esta semana`),
+      p(`Hola ${escapeHtml(first)}, este es tu resumen del ${escapeHtml(d.weekLabel)}.`),
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 16px;">
+${statRow(`Ventas (${d.salesCount})`, money(d.sales), GREEN)}
+${statRow("Gastos", money(d.expenses))}
+${statRow(profitLabel, money(Math.abs(d.profit)), d.profit >= 0 ? GREEN : "#c2410c")}
+</table>`,
+      salesChange ? p(`Vendiste ${escapeHtml(salesChange)}.`) : "",
+      ...extras.map((e) => p(e)),
+      button(`${appUrl}/dashboard/reportes`, "Ver el detalle"),
+    ].join(""),
+    footer: alertFooter(),
+  })
+
+  const text = [
+    `Hola ${first}, así le fue a ${d.businessName} (${d.weekLabel}):`,
+    `Ventas (${d.salesCount}): ${money(d.sales)}\nGastos: ${money(d.expenses)}\n${profitLabel}: ${money(Math.abs(d.profit))}`,
+    salesChange ? `Vendiste ${salesChange}.` : "",
+    ...extras.map((e) => e.replace(/<[^>]+>/g, "")),
+    `Ver el detalle: ${appUrl}/dashboard/reportes`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+
+  return { subject: `Tu semana en ${d.businessName}: vendiste ${money(d.sales)}`, html, text }
+}
+
+export function lowStockEmail(d: { name: string; businessName: string; items: { name: string; stock: number }[]; more: number }) {
+  const appUrl = getAppUrl()
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const line = (i: { name: string; stock: number }) => (i.stock <= 0 ? `${i.name}: agotado` : `${i.name}: quedan ${i.stock}`)
+  const html = layout({
+    preview: d.items.map(line).slice(0, 3).join(" · "),
+    body: [
+      h1("Hay productos por reponer"),
+      p(`Hola ${escapeHtml(first)}, en ${escapeHtml(d.businessName)} se están acabando estos productos:`),
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 16px;">${d.items
+        .map((i) => statRow(escapeHtml(i.name), i.stock <= 0 ? "Agotado" : `Quedan ${i.stock}`, i.stock <= 0 ? "#c2410c" : INK))
+        .join("")}</table>`,
+      d.more > 0 ? p(`Y ${d.more} producto${d.more === 1 ? "" : "s"} más.`) : "",
+      button(`${appUrl}/dashboard/inventario`, "Ver inventario"),
+    ].join(""),
+    footer: alertFooter(),
+  })
+  const text = [
+    `Hola ${first}, en ${d.businessName} se están acabando estos productos:`,
+    d.items.map(line).join("\n"),
+    d.more > 0 ? `Y ${d.more} más.` : "",
+    `Ver inventario: ${appUrl}/dashboard/inventario`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+  const firstItem = d.items[0]
+  return {
+    subject: firstItem && d.items.length + d.more === 1 ? `Se está acabando: ${firstItem.name}` : `Tienes ${d.items.length + d.more} productos por reponer`,
+    html,
+    text,
+  }
+}
+
+export function noSalesEmail(d: { name: string; businessName: string; days: number }) {
+  const appUrl = getAppUrl()
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const html = layout({
+    preview: "Si vendiste, anótalo para que tus números estén al día.",
+    body: [
+      h1(`Llevas ${d.days} días sin anotar ventas`),
+      p(`Hola ${escapeHtml(first)}, en ${escapeHtml(d.businessName)} no se han registrado ventas en los últimos ${d.days} días.`),
+      p("Si vendiste, anótalo: puedes poner el total de cada día como una sola venta. Así tus números y tu ganancia siguen al día."),
+      button(`${appUrl}/dashboard`, "Anotar ventas"),
+      small("Si cerraste por unos días, ignora este mensaje."),
+    ].join(""),
+    footer: alertFooter(),
+  })
+  const text = `Hola ${first}, en ${d.businessName} no se han registrado ventas en los últimos ${d.days} días.\n\nSi vendiste, anótalo (puede ser el total de cada día como una sola venta): ${appUrl}/dashboard\n\nSi cerraste por unos días, ignora este mensaje.`
+  return { subject: `${d.businessName}: llevas ${d.days} días sin anotar ventas`, html, text }
 }

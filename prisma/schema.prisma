@@ -188,8 +188,14 @@ model BusinessSettings {
   easyMode          Boolean  @default(false)
   lowStockAlerts    Boolean  @default(true)
   noSalesReminder   Boolean  @default(true)
-  weeklySummary     Boolean  @default(false)
+  weeklySummary     Boolean  @default(true)
   defaultPayment    PaymentMethod @default(CASH)
+  /// Últimos avisos enviados por correo (para no repetirlos).
+  lastWeeklySummaryAt   DateTime?
+  lastNoSalesReminderAt DateTime?
+  lastLowStockAlertAt   DateTime?
+  /// Productos incluidos en el último aviso de stock bajo: si no cambian, no se repite el correo.
+  lowStockAlertKey      String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

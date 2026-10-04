@@ -16,6 +16,7 @@ export const SITE_LINKS = [
   { href: "/funciones", label: "Funciones" },
   { href: "/como-funciona", label: "Cómo funciona" },
   { href: "/precios", label: "Precios" },
+  { href: "/calculadoras", label: "Calculadoras" },
   { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
 ]
 
@@ -31,7 +32,7 @@ export function SiteHeader() {
         <Logo />
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
           {SITE_LINKS.map((l) => {
-            const active = pathname === l.href
+            const active = pathname === l.href || (l.href !== "/" && pathname.startsWith(`${l.href}/`))
             return (
               <Link
                 key={l.href}

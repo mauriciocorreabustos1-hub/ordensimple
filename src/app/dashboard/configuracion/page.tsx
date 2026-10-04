@@ -110,28 +110,30 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Notificaciones</CardTitle>
-          <CardDescription>Elige de qué quieres que te avisemos.</CardDescription>
+          <CardTitle>Avisos por correo</CardTitle>
+          <CardDescription>
+            Elige de qué quieres que te avisemos. Llegan a {ctx.user.email} y a los administradores del negocio.
+          </CardDescription>
         </CardHeader>
         <CardContent className="divide-y">
           <PreferenceSwitch
             name="lowStockAlerts"
             label="Stock bajo"
-            description="Cuando a un producto le queden pocas unidades."
+            description="Cuando a un producto le queden menos unidades que el mínimo o se agote."
             checked={ctx.settings.lowStockAlerts}
             disabled={!canManage}
           />
           <PreferenceSwitch
             name="noSalesReminder"
             label="Días sin ventas"
-            description="Si pasan 3 días sin que registres ventas."
+            description="Si pasan 3 días sin ventas registradas, para que no se te olvide anotarlas."
             checked={ctx.settings.noSalesReminder}
             disabled={!canManage}
           />
           <PreferenceSwitch
             name="weeklySummary"
             label="Resumen semanal"
-            description="Un resumen de cómo te fue cada semana (próximamente por correo)."
+            description="Cada lunes: cuánto vendiste, gastaste y te quedó la semana anterior."
             checked={ctx.settings.weeklySummary}
             disabled={!canManage}
           />

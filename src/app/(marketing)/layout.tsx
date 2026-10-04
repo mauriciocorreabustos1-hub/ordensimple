@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { SocialLinks } from "@/components/landing/social-links"
 import { Logo } from "@/components/app/logo"
 import { SiteHeader } from "@/components/landing/site-header"
 
@@ -41,6 +42,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <p className="max-w-xs text-sm text-muted-foreground">
               Administra tu negocio sin complicarte. Hecho en Chile para emprendedores y pymes.
             </p>
+            <SocialLinks className="pt-1" />
           </div>
           {FOOTER.map((col) => (
             <div key={col.title} className="space-y-2 text-sm">

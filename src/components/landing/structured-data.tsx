@@ -1,4 +1,5 @@
 import { getAppUrl } from "@/lib/app-url"
+import { SOCIAL_LINKS } from "@/components/landing/social-links"
 
 /**
  * Datos estructurados (schema.org) para Google: nombre del sitio, logo y qué es OrdenSimple.
@@ -26,6 +27,7 @@ export function StructuredData() {
         logo: `${url}/pwa-icon/512`,
         email: "contacto@ordensimple.cl",
         areaServed: "CL",
+        sameAs: SOCIAL_LINKS.map((s) => s.href),
       },
       {
         "@type": "SoftwareApplication",

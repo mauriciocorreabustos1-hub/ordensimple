@@ -66,3 +66,11 @@ Reglas simples
   ordensimple-tutorial.mp4 ..... Tutorial vertical de 32 s para TikTok, Reels y Shorts (sin música).
   portada-video.png ............ Miniatura del video.
   guion-y-texto-para-publicar .. Descripción, hashtags, guion para voz e ideas de próximos videos.
+
+8-publicidad/  (con capturas reales de la app)
+  1-posts/ ..................... 7 publicaciones verticales (1080x1350) para el feed.
+  2-historias/ ................. 4 historias (1080x1920) para Instagram, Facebook y estados de WhatsApp.
+  3-carrusel-5-errores/ ........ Carrusel educativo de 7 imágenes ("5 errores que te hacen perder plata").
+  4-avisos-horizontales/ ....... 3 avisos (1200x628) para anuncios pagados.
+  5-volante-imprimir/ .......... Volante A5 con código QR (PDF para imprenta y PNG).
+  textos-para-publicar.txt ..... Texto para cada imagen, hashtags y calendario de 2 semanas.

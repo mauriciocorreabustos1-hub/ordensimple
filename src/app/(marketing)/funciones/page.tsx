@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import { Check } from "lucide-react"
 import { COMING_SOON, FEATURE_GROUPS, TOOLS } from "@/components/landing/content"
-import { CtaSection, FeatureGrid, PageHero, Section, SectionTitle } from "@/components/landing/sections"
+import { CtaSection, FeatureGrid, MoreLink, PageHero, Section, SectionTitle } from "@/components/landing/sections"
 
 export const metadata: Metadata = {
   title: "Funciones",
   description:
-    "Ventas, gastos, productos, panel de inicio y calculadoras para tu negocio, explicados en palabras simples.",
+    "Ventas, gastos, fiado, cierre de caja, inventario, avisos por correo, equipo y calculadoras para tu negocio, explicados en palabras simples.",
   alternates: { canonical: "/funciones" },
 }
 
@@ -16,7 +16,7 @@ export default function FeaturesPage() {
       <PageHero
         eyebrow="Funciones"
         title="Todo lo que tu negocio necesita, en un solo lugar"
-        description="Registra lo que vendes y lo que gastas, conoce cuánto ganas con cada producto y toma decisiones con calculadoras simples."
+        description="Registra lo que vendes y lo que gastas, lleva el fiado, cuadra la caja y sabe cuánto ganas, con avisos que te llegan solos al correo."
       />
 
       <Section muted>
@@ -54,6 +54,7 @@ export default function FeaturesPage() {
         <div className="mt-12">
           <FeatureGrid items={TOOLS} columns={4} />
         </div>
+        <MoreLink href="/calculadoras">Probar las calculadoras gratis</MoreLink>
       </Section>
 
       <Section muted>
@@ -62,7 +63,7 @@ export default function FeaturesPage() {
           title="Lo que viene"
           description="Seguimos construyendo OrdenSimple. Esto es lo próximo que llegará."
         />
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {COMING_SOON.map((f) => (
             <div key={f.title} className="space-y-2 rounded-2xl border border-dashed bg-card/60 p-5">
               <f.icon className="size-5 text-muted-foreground" />

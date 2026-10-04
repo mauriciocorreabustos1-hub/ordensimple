@@ -8,6 +8,8 @@ import {
   FlaskConical,
   HeartHandshake,
   LayoutDashboard,
+  Mail,
+  NotebookPen,
   Package,
   Receipt,
   Scale,
@@ -20,6 +22,7 @@ import {
   Truck,
   Users,
   UsersRound,
+  Vault,
   type LucideIcon,
 } from "lucide-react"
 
@@ -29,12 +32,15 @@ import {
 export type Feature = { icon: LucideIcon; title: string; text: string }
 
 export const HIGHLIGHTS: Feature[] = [
-  { icon: ShoppingBag, title: "Ventas en segundos", text: "Anota una venta con solo el monto, o con detalle de productos, cliente y forma de pago." },
+  { icon: ShoppingBag, title: "Ventas en segundos", text: "Anota una venta desde el celular con solo el monto, o con detalle de productos, cliente y forma de pago." },
+  { icon: NotebookPen, title: "Fiado sin cuaderno", text: "Anota lo que fías, registra los abonos y sabe al tiro cuánto te debe cada cliente." },
+  { icon: Vault, title: "Cierre de caja", text: "Al final del día cuentas el efectivo y te decimos si falta o sobra plata." },
   { icon: Receipt, title: "Gastos ordenados", text: "Arriendo, luz, proveedores, sueldos… todo en categorías para saber en qué se va tu plata." },
-  { icon: Package, title: "Productos con ganancia", text: "Ingresa costo y precio: te decimos cuánto ganas por unidad, sin fórmulas." },
   { icon: LayoutDashboard, title: "Tu negocio de un vistazo", text: "Ventas, gastos y ganancia de hoy y del mes, con gráficos simples y comparaciones." },
+  { icon: Mail, title: "Avisos por correo", text: "Te avisamos cuando algo se está acabando, si llevas días sin anotar ventas y cada lunes con tu resumen." },
+  { icon: Package, title: "Productos e inventario", text: "Costo, precio y stock de cada producto: cuánto ganas por unidad y qué tienes que reponer." },
+  { icon: UsersRound, title: "Tu equipo", text: "Invita a tus empleados: registran ventas y gastos sin ver tus ganancias." },
   { icon: Calculator, title: "Calculadoras simples", text: "Precio correcto, punto de equilibrio, metas y simulaciones, explicadas en palabras simples." },
-  { icon: Smartphone, title: "Hecho para el celular", text: "Botones grandes y un registro rápido pensado para usarlo detrás del mostrador." },
 ]
 
 export type FeatureGroup = {
@@ -54,8 +60,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     points: [
       "Venta rápida: escribe solo el monto y listo",
       "Venta con detalle: varios productos, cantidades y precios",
-      "Efectivo, débito, crédito, transferencia u otro",
-      "Cliente opcional en cada venta",
+      "Efectivo, débito, crédito, transferencia, otro o fiado",
+      "Cliente opcional en cada venta (obligatorio si es fiado)",
+      "Corrige o elimina una venta si te equivocaste",
       "Historial con filtros por fecha: hoy, 7 días, este mes o el que elijas",
       "El stock se descuenta solo al vender un producto",
     ],
@@ -69,8 +76,35 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Categorías listas: arriendo, luz, agua, internet, sueldos, publicidad y más",
       "Crea tus propias categorías",
       "Proveedor opcional en cada gasto",
+      "Corrige o elimina un gasto si te equivocaste",
       "Ranking de las categorías donde más gastas",
       "Qué porcentaje de tus ventas se va en gastos",
+    ],
+  },
+  {
+    id: "fiado",
+    icon: NotebookPen,
+    title: "Fiado",
+    description: "Lleva la cuenta de lo que te deben, sin cuaderno ni discusiones.",
+    points: [
+      "Marca una venta como fiado y escribe a quién le fiaste",
+      "Cuánto te debe cada cliente y cuánto te deben en total",
+      "Registra abonos parciales o el pago completo",
+      "Historial de lo fiado y lo abonado de cada cliente",
+      "Filtro para ver solo a los clientes que te deben",
+    ],
+  },
+  {
+    id: "caja",
+    icon: Vault,
+    title: "Cierre de caja",
+    description: "Cuadra el efectivo al final del día en un minuto.",
+    points: [
+      "Cuánto vendiste con cada medio de pago: efectivo, débito, transferencia…",
+      "Incluye los abonos de fiado que te pagaron en efectivo",
+      "Escribe cuánto contaste y te decimos si falta o sobra plata",
+      "Historial de cierres de los últimos días",
+      "Comparte el cierre del día por WhatsApp",
     ],
   },
   {
@@ -109,6 +143,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Punto de equilibrio: cuánto vender para no perder",
       "Meta de ganancia: cuánto vender al mes, a la semana y al día",
       "¿Qué pasa si…? Simula subir precios, contratar, hacer descuentos y más",
+      "Las calculadoras de precio, equilibrio y metas también son gratis en ordensimple.cl/calculadoras",
     ],
   },
   {
@@ -134,6 +169,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Total comprado, número de compras y última compra",
       "Clientes frecuentes, nuevos y los que más compran",
       "Historial de compras de cada cliente",
+      "Lo que te debe cada uno (fiado) y sus abonos",
       "Contacto directo por WhatsApp",
     ],
   },
@@ -162,6 +198,31 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
+    id: "avisos",
+    icon: Mail,
+    title: "Avisos por correo",
+    description: "Tú atiende el negocio: nosotros vigilamos los números.",
+    points: [
+      "Resumen semanal cada lunes: cuánto vendiste, gastaste y te quedó",
+      "Stock bajo: qué productos se están acabando o se agotaron",
+      "Días sin ventas: un recordatorio si pasan 3 días sin anotar",
+      "Actívalos o desactívalos cuando quieras en Configuración",
+    ],
+  },
+  {
+    id: "equipo",
+    icon: UsersRound,
+    title: "Tu equipo",
+    description: "Que otros registren, y tú tengas el control.",
+    points: [
+      "Invita por correo o por WhatsApp con un enlace",
+      "Administrador: casi todo, incluidos reportes y configuración",
+      "Empleado: registra ventas, gastos, stock y clientes, sin ver ganancias ni costos",
+      "Cambia el rol o quita el acceso cuando quieras",
+      "Si trabajas en más de un negocio, cambias entre ellos en un toque",
+    ],
+  },
+  {
     id: "seguridad",
     icon: ShieldCheck,
     title: "Seguridad y acceso",
@@ -184,7 +245,6 @@ export const TOOLS: Feature[] = [
 
 export const COMING_SOON: Feature[] = [
   { icon: CreditCard, title: "Planes Pro y Empresa", text: "Pago mensual con tarjeta y boleta electrónica." },
-  { icon: UsersRound, title: "Tu equipo", text: "Invita empleados con permisos limitados." },
   { icon: Store, title: "Sucursales", text: "Varios locales en una sola cuenta." },
   { icon: FileDown, title: "Reportes en PDF", text: "Resúmenes listos para imprimir o enviar." },
   { icon: Smartphone, title: "App instalable", text: "Ícono en tu celular y funciona con mala señal." },
@@ -258,7 +318,9 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       { q: "¿Puedo usarlo desde el celular?", a: "Sí, funciona en cualquier navegador: celular, tablet o computador. Pronto podrás instalarlo como app en tu pantalla de inicio." },
       { q: "¿Qué es el Modo Fácil?", a: "Una vista simplificada que muestra solo las ventas, gastos y ganancia de hoy, con botones grandes para registrar. Se activa en Configuración." },
-      { q: "¿Qué pasa si me equivoco al registrar una venta?", a: "Puedes eliminarla desde el historial de ventas. Si había descontado stock, se devuelve automáticamente." },
+      { q: "¿Qué pasa si me equivoco al registrar una venta?", a: "Puedes corregirla o eliminarla desde el historial de ventas. Si había descontado stock, se ajusta automáticamente." },
+      { q: "¿Cómo llevo el fiado?", a: "Al registrar una venta elige “Fiado” y escribe el nombre del cliente. En Clientes ves cuánto te debe cada uno y registras sus abonos cuando te pagan." },
+      { q: "¿Qué avisos me llegan por correo?", a: "Un resumen cada lunes con cómo te fue la semana, un aviso cuando un producto se está acabando y un recordatorio si pasan 3 días sin anotar ventas. Los activas o desactivas en Configuración." },
       { q: "¿Cómo calculan la ganancia?", a: "La ganancia aproximada es lo que vendiste menos lo que gastaste en el período. Es simple a propósito, para que siempre sepas de dónde sale el número." },
     ],
   },
@@ -266,7 +328,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     title: "Datos y seguridad",
     items: [
       { q: "¿Mis datos están seguros?", a: "Cada negocio está aislado: nadie más puede ver tu información. Las contraseñas nunca se guardan en texto plano." },
-      { q: "¿Quién puede ver la información de mi negocio?", a: "Solo tú. Más adelante podrás invitar a tu equipo con permisos limitados, por ejemplo para que un empleado registre ventas sin ver los reportes." },
+      { q: "¿Quién puede ver la información de mi negocio?", a: "Solo tú y las personas que invites. Un empleado puede registrar ventas y gastos sin ver tus ganancias, costos ni reportes." },
       { q: "¿Las calculadoras cambian mis datos?", a: "No. Las herramientas usan tus números para prellenar los cálculos, pero nunca modifican tus ventas, gastos ni productos." },
     ],
   },

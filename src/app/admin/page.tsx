@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
+import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { CouponManager, type CouponRow } from "@/components/admin/coupon-manager"
 import { PlanDialog } from "@/components/admin/plan-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { PageHeader } from "@/components/app/page-header"
 import { StatCard } from "@/components/app/stat-card"
+import { getAppUrl } from "@/lib/app-url"
 import { formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { couponSummary, effectivePlan, PLANS } from "@/lib/plans"
@@ -21,6 +23,7 @@ import {
   listCoupons,
   type AdminUserRow,
 } from "@/server/queries/admin"
+import { AUDIENCES, getAudienceCounts, listCampaigns, type Audience } from "@/server/queries/campaigns"
 
 const TZ = "America/Santiago"
 
@@ -33,12 +36,14 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : ""
   const page = Math.max(1, Number(params.pagina) || 1)
-  const [stats, users, errors, coupons, planCounts] = await Promise.all([
+  const [stats, users, errors, coupons, planCounts, audience, campaigns] = await Promise.all([
     getAdminStats(),
     listAdminUsers({ q: q || undefined, page }),
     getRecentErrors(),
     listCoupons(),
     getPlanCounts(),
+    getAudienceCounts(),
+    listCampaigns(),
   ])
   const now = new Date()
   const longDate = (d: Date) => formatDate(d, TZ, { day: "numeric", month: "long", year: "numeric" })
@@ -234,6 +239,53 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           </p>
         </div>
         <CouponManager coupons={couponRows} />
+      </section>
+
+      <section id="correos" className="scroll-mt-20 space-y-4">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Mail className="size-5 text-muted-foreground" />
+            Correos de promoción
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {formatNumber(audience.counts.ALL)} de {formatNumber(audience.totalUsers)} usuarios aceptaron recibir ofertas. Envíate
+            siempre una prueba antes de mandarlo a todos.
+          </p>
+        </div>
+        <CampaignComposer
+          appUrl={getAppUrl()}
+          audiences={(Object.keys(AUDIENCES) as Audience[]).map((key) => ({
+            value: key,
+            label: AUDIENCES[key],
+            count: audience.counts[key],
+          }))}
+          coupons={coupons
+            .filter((cp) => cp.active && !(cp.expiresAt && cp.expiresAt <= now))
+            .map((cp) => ({ code: cp.code, summary: couponSummary(cp) }))}
+        />
+        {campaigns.length ? (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Enviados</h3>
+            <ul className="grid gap-2">
+              {campaigns.map((cm) => (
+                <li key={cm.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{cm.subject}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {AUDIENCES[cm.audience as Audience] ?? cm.audience}
+                      {cm.couponCode ? ` · código ${cm.couponCode}` : ""}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateTime(cm.sentAt ?? cm.createdAt, TZ)} · {formatNumber(cm.sentCount)} enviados
+                    {cm.failedCount ? ` · ${formatNumber(cm.failedCount)} fallidos` : ""}
+                    {!cm.sentAt ? " · en curso o interrumpido" : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
       <section id="errores" className="scroll-mt-20 space-y-4">

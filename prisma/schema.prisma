@@ -525,3 +525,23 @@ model CouponRedemption {
   @@index([businessId])
   @@map("coupon_redemption")
 }
+
+// ─── Correos de promoción (los envía el administrador en /admin) ─────────────
+
+model EmailCampaign {
+  id          String    @id @default(cuid())
+  subject     String
+  body        String
+  buttonLabel String?
+  buttonUrl   String?
+  couponCode  String?
+  audience    String    @default("ALL")
+  recipients  Int       @default(0)
+  sentCount   Int       @default(0)
+  failedCount Int       @default(0)
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
+
+  @@map("email_campaign")
+}

@@ -17,7 +17,7 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;")
 }
 
-function layout({ preview, body }: { preview: string; body: string }) {
+function layout({ preview, body, footer }: { preview: string; body: string; footer?: string }) {
   const appUrl = getAppUrl()
   return `<!doctype html>
 <html lang="es">
@@ -42,7 +42,7 @@ function layout({ preview, body }: { preview: string; body: string }) {
         ${body}
       </td></tr>
       <tr><td style="padding:20px 4px 0;font-size:12px;line-height:18px;color:${MUTED};">
-        Recibes este correo porque tienes una cuenta en OrdenSimple.<br>
+        ${footer ?? "Recibes este correo porque tienes una cuenta en OrdenSimple."}<br>
         ¿Dudas? Responde este correo o escríbenos a contacto@ordensimple.cl.
       </td></tr>
     </table>
@@ -135,4 +135,61 @@ export function planGiftEmail({
     }),
     text: `¡Hola ${firstRaw}!\n\nActivamos el plan ${planName} para ${businessName}, ${until}. No tienes que pagar nada.\n\nEntra aquí: ${appUrl}/dashboard`,
   }
+}
+
+/** Correo de promoción escrito en /admin. El texto viene en párrafos separados por líneas en blanco. */
+export function promoEmail({
+  name,
+  subject,
+  body,
+  buttonLabel,
+  buttonUrl,
+  couponCode,
+  unsubscribeUrl,
+}: {
+  name: string
+  subject: string
+  body: string
+  buttonLabel?: string | null
+  buttonUrl?: string | null
+  couponCode?: string | null
+  unsubscribeUrl: string
+}) {
+  const first = name.split(" ")[0] || name
+  const personalize = (s: string) => s.replaceAll("{nombre}", first)
+  const paragraphs = personalize(body)
+    .split(/\n\s*\n/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+
+  const coupon = couponCode
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;width:100%;">
+  <tr><td align="center" style="border:2px dashed ${GREEN};border-radius:12px;padding:16px;">
+    <div style="font-size:13px;color:${MUTED};margin-bottom:4px;">Tu código</div>
+    <div style="font-size:24px;font-weight:700;letter-spacing:2px;color:${GREEN};font-family:Consolas,Menlo,monospace;">${escapeHtml(couponCode)}</div>
+    <div style="font-size:12px;color:${MUTED};margin-top:6px;">Canjéalo en Configuración → Tu plan</div>
+  </td></tr>
+</table>`
+    : ""
+
+  const html = layout({
+    preview: paragraphs[0]?.slice(0, 120) ?? subject,
+    body: [
+      ...paragraphs.map((para) => p(escapeHtml(para).replace(/\n/g, "<br>"))),
+      coupon,
+      buttonLabel && buttonUrl ? button(buttonUrl, escapeHtml(buttonLabel)) : "",
+    ].join(""),
+    footer: `Recibes este correo porque aceptaste recibir novedades y ofertas de OrdenSimple. <a href="${unsubscribeUrl}" style="color:${MUTED};">Dejar de recibirlos</a>.`,
+  })
+
+  const text = [
+    ...paragraphs,
+    couponCode ? `Tu código: ${couponCode} (canjéalo en Configuración → Tu plan)` : "",
+    buttonLabel && buttonUrl ? `${buttonLabel}: ${buttonUrl}` : "",
+    `---\nPara dejar de recibir ofertas: ${unsubscribeUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+
+  return { subject: personalize(subject), html, text }
 }

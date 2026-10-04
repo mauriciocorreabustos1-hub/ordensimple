@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
-import { sendEmail } from "@/lib/email"
-import { planGiftEmail } from "@/lib/email-templates"
+import { sendEmail, sendEmailBatch } from "@/lib/email"
+import { planGiftEmail, promoEmail } from "@/lib/email-templates"
+import { unsubscribeUrl } from "@/lib/unsubscribe"
 import { PLANS } from "@/lib/plans"
 import { requireAdmin } from "@/server/admin"
+import { audienceWhere } from "@/server/queries/campaigns"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 /** Borra el registro de errores (después de revisarlos). Solo administradores. */
@@ -138,6 +140,113 @@ export async function deleteCoupon(id: string): Promise<ActionResult> {
     await db.coupon.delete({ where: { id } })
     revalidatePath("/admin")
     return { ok: true, message: "Código eliminado" }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+// ─── Correos de promoción ───────────────────────────────────────────────────
+
+const campaignSchema = z.object({
+  subject: z.string().trim().min(3, "Escribe el asunto").max(150),
+  body: z.string().trim().min(10, "Escribe el mensaje").max(5000),
+  buttonLabel: z.string().trim().max(40).optional(),
+  buttonUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => !v || /^https?:\/\/\S+$/.test(v), "El enlace debe empezar con https://")
+    .optional(),
+  couponCode: z.string().trim().toUpperCase().max(30).optional(),
+  audience: z.enum(["ALL", "FREE", "PAID"]),
+})
+
+export type CampaignInput = z.input<typeof campaignSchema>
+
+async function parseCampaign(input: CampaignInput) {
+  const parsed = campaignSchema.safeParse(input)
+  if (!parsed.success) return { error: validationError(parsed.error) }
+  const d = parsed.data
+  if (Boolean(d.buttonLabel) !== Boolean(d.buttonUrl)) {
+    return { error: { ok: false as const, message: "Para el botón, escribe el texto y el enlace (o deja ambos vacíos)." } }
+  }
+  if (d.couponCode) {
+    const coupon = await db.coupon.findUnique({ where: { code: d.couponCode }, select: { active: true } })
+    if (!coupon || !coupon.active) {
+      return { error: { ok: false as const, message: `El código ${d.couponCode} no existe o está pausado.` } }
+    }
+  }
+  return { data: d }
+}
+
+function buildPromo(d: z.output<typeof campaignSchema>, user: { id: string; name: string; email: string }) {
+  const unsub = unsubscribeUrl(user.id)
+  const email = promoEmail({ ...d, name: user.name, unsubscribeUrl: unsub })
+  return {
+    to: user.email,
+    ...email,
+    headers: {
+      "List-Unsubscribe": `<${unsub.replace("/baja?", "/api/baja?")}>, <mailto:contacto@ordensimple.cl?subject=baja>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  }
+}
+
+/** Envía el correo solo al administrador, para revisarlo antes del envío masivo. */
+export async function sendTestCampaign(input: CampaignInput): Promise<ActionResult> {
+  const admin = await requireAdmin()
+  const r = await parseCampaign(input)
+  if (r.error) return r.error
+  try {
+    const email = buildPromo(r.data, { id: admin.id, name: admin.name, email: admin.email })
+    await sendEmail({ ...email, subject: `[Prueba] ${email.subject}` })
+    return { ok: true, message: `Te enviamos una prueba a ${admin.email}` }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+/** Envío masivo: solo a quienes aceptaron recibir ofertas, con enlace para darse de baja. */
+export async function sendCampaign(input: CampaignInput): Promise<ActionResult> {
+  const admin = await requireAdmin()
+  const r = await parseCampaign(input)
+  if (r.error) return r.error
+  const d = r.data
+
+  try {
+    const users = await db.user.findMany({
+      where: audienceWhere(d.audience),
+      select: { id: true, name: true, email: true },
+    })
+    if (users.length === 0) return { ok: false, message: "No hay personas que hayan aceptado recibir ofertas en ese grupo." }
+
+    const campaign = await db.emailCampaign.create({
+      data: {
+        subject: d.subject,
+        body: d.body,
+        buttonLabel: d.buttonLabel || null,
+        buttonUrl: d.buttonUrl || null,
+        couponCode: d.couponCode || null,
+        audience: d.audience,
+        recipients: users.length,
+        createdBy: admin.email,
+      },
+    })
+
+    const { sent, failed } = await sendEmailBatch(users.map((u) => buildPromo(d, u)))
+    await db.emailCampaign.update({
+      where: { id: campaign.id },
+      data: { sentCount: sent, failedCount: failed, sentAt: new Date() },
+    })
+
+    revalidatePath("/admin")
+    if (sent === 0) return { ok: false, message: "No se pudo enviar ningún correo. Revisa la configuración de Resend." }
+    return {
+      ok: true,
+      message: failed
+        ? `Se enviaron ${sent} correos; ${failed} fallaron`
+        : `¡Listo! Se enviaron ${sent} correo${sent === 1 ? "" : "s"}`,
+    }
   } catch (error) {
     return toActionError(error)
   }

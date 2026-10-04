@@ -13,7 +13,7 @@ import type { ProductFormValues } from "@/components/products/product-form"
 import { marginRatio } from "@/lib/calculations"
 import { formatMoney, formatNumber, formatPercent, referenceAmount } from "@/lib/currency"
 import { db } from "@/lib/db"
-import { PLANS } from "@/lib/plans"
+import { productLimit } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { deleteProduct } from "@/server/actions/products"
 import { requireBusiness, requirePermission } from "@/server/session"
@@ -62,7 +62,7 @@ export default async function ProductsPage() {
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "products:manage")
   const categoryNames = categories.map((c) => c.name)
-  const limit = PLANS[ctx.business.plan].maxProducts
+  const limit = productLimit(ctx.business.plan)
   const ref = referenceAmount(ctx.currency)
 
   const tracked = products.filter((p) => p.trackStock && p.active)

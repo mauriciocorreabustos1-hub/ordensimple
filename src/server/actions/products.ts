@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
-import { PLANS } from "@/lib/plans"
+import { PLANS, productLimit } from "@/lib/plans"
 import { idSchema, productSchema, type ProductInput } from "@/lib/validations"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -31,7 +31,7 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   try {
     assertCan(ctx, "products:manage")
 
-    const limit = PLANS[ctx.business.plan].maxProducts
+    const limit = productLimit(ctx.business.plan)
     if (limit !== null) {
       const count = await db.product.count({ where: { businessId: ctx.businessId } })
       if (count >= limit) {

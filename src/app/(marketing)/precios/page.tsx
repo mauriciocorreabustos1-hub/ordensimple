@@ -12,7 +12,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Precios",
-  description: "Empieza gratis con ventas, gastos, productos y calculadoras. Los planes Pro y Empresa llegan pronto.",
+  description: "Empieza gratis. Durante el lanzamiento, las funciones Pro (inventario, fiado, clientes, reportes y equipo) también son gratis.",
   alternates: { canonical: "/precios" },
 }
 
@@ -24,7 +24,7 @@ export default function PricingPage() {
       <PageHero
         eyebrow="Precios"
         title="Empieza gratis. Crece cuando lo necesites."
-        description="El plan Gratis no vence y no pide tarjeta. Cuando tu negocio crezca, podrás pasarte a Pro o Empresa."
+        description="El plan Gratis no vence y no pide tarjeta. Durante el lanzamiento, además, puedes usar todo lo de Pro sin pagar."
       />
 
       <Section muted className="border-t-0">

@@ -163,10 +163,13 @@ export function PricingCards() {
               </div>
               <p className="text-sm text-muted-foreground">{plan.description}</p>
             </div>
-            <p className="text-3xl font-semibold tracking-tight">
-              {plan.priceLabel}
-              {plan.id === "FREE" ? <span className="text-base font-normal text-muted-foreground"> /mes</span> : null}
-            </p>
+            <div className="space-y-1">
+              <p className="text-3xl font-semibold tracking-tight">
+                {plan.priceLabel}
+                {plan.id === "FREE" ? <span className="text-base font-normal text-muted-foreground"> /mes</span> : null}
+              </p>
+              {plan.priceNote ? <p className="text-xs text-muted-foreground">{plan.priceNote}</p> : null}
+            </div>
             <ul className="flex-1 space-y-2 text-sm">
               {plan.highlights.map((h) => (
                 <li key={h} className="flex items-start gap-2">
@@ -176,8 +179,12 @@ export function PricingCards() {
               ))}
             </ul>
             {plan.id === "FREE" ? (
-              <Button size="lg" className="h-11" asChild>
+              <Button size="lg" variant={featured ? "default" : "outline"} className="h-11" asChild>
                 <Link href="/registro">Comenzar gratis</Link>
+              </Button>
+            ) : plan.id === "PRO" ? (
+              <Button size="lg" className="h-11" asChild>
+                <Link href="/registro">Usar Pro gratis</Link>
               </Button>
             ) : (
               <Button size="lg" variant="outline" className="h-11" disabled>

@@ -244,7 +244,7 @@ export const TOOLS: Feature[] = [
 ]
 
 export const COMING_SOON: Feature[] = [
-  { icon: CreditCard, title: "Planes Pro y Empresa", text: "Pago mensual con tarjeta y boleta electrónica." },
+  { icon: CreditCard, title: "Pagar Pro y Empresa", text: "Pago mensual con tarjeta y boleta electrónica. Por ahora Pro es gratis." },
   { icon: Store, title: "Sucursales", text: "Varios locales en una sola cuenta." },
   { icon: FileDown, title: "Reportes en PDF", text: "Resúmenes listos para imprimir o enviar." },
   { icon: Smartphone, title: "App instalable", text: "Ícono en tu celular y funciona con mala señal." },
@@ -308,7 +308,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     title: "Cuenta y precios",
     items: [
       { q: "¿Es realmente gratis?", a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta." },
-      { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí. Durante el lanzamiento, inventario, clientes, proveedores, reportes y consejos están disponibles para todos. Te avisaremos con anticipación antes de empezar a cobrar el plan Pro." },
+      { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 30 días de anticipación antes de empezar a cobrar el plan Pro." },
       { q: "¿Necesito tarjeta de crédito para registrarme?", a: "No. Solo tu nombre, correo y una contraseña." },
       { q: "Olvidé mi contraseña, ¿qué hago?", a: "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y te enviaremos un enlace para crear una nueva." },
     ],

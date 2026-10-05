@@ -162,6 +162,7 @@ model Business {
   notifications     Notification[]
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
+  subscriptions     Subscription[]
 
   @@map("business")
 }
@@ -585,4 +586,33 @@ model Invitation {
   @@index([email])
   @@index([batchId])
   @@map("invitation")
+}
+
+// ─── Suscripciones pagadas (Mercado Pago) ──────────────────────────────────
+
+model Subscription {
+  id            String    @id @default(cuid())
+  businessId    String
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Quién se suscribió.
+  userId        String?
+  plan          Plan      @default(PRO)
+  provider      String    @default("MERCADOPAGO")
+  /// Id de la suscripción en Mercado Pago (preapproval).
+  externalId    String    @unique
+  /// pending, authorized, paused o cancelled (como los informa Mercado Pago).
+  status        String
+  /// Monto mensual, en la unidad mínima de la moneda.
+  amount        Int
+  currency      String    @default("CLP")
+  payerEmail    String
+  /// Enlace para completar el pago mientras está pendiente.
+  checkoutUrl   String?
+  lastChargedAt DateTime?
+  nextPaymentAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([businessId])
+  @@map("subscription")
 }

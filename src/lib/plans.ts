@@ -16,6 +16,8 @@ type PlanConfig = {
   priceLabel: string
   /** Texto bajo el precio (por ejemplo, mientras dura el lanzamiento). */
   priceNote?: string
+  /** Precio mensual en CLP para la suscripción (null = no se puede contratar todavía). */
+  monthlyPrice: number | null
   description: string
   maxBusinesses: number
   maxProducts: number | null
@@ -30,6 +32,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     id: "FREE",
     name: "Gratis",
     priceLabel: "$0",
+    monthlyPrice: null,
     description: "Para empezar a ordenar tu negocio.",
     maxBusinesses: 1,
     maxProducts: 50,
@@ -43,6 +46,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // Las funciones Pro ya están abiertas a todos; lo que falta es el cobro.
     priceLabel: "Gratis por ahora",
     priceNote: "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
+    monthlyPrice: 6990,
     description: "Para negocios que quieren crecer con datos.",
     maxBusinesses: 3,
     maxProducts: null,
@@ -63,6 +67,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: "Empresa",
     priceLabel: "Próximamente",
     priceNote: "Aún no se puede contratar. Por ahora puedes tener hasta 3 sucursales gratis.",
+    monthlyPrice: null,
     description: "Para equipos y varias sucursales.",
     maxBusinesses: 10,
     maxProducts: null,
@@ -77,6 +82,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
  * Para exigir el plan, definir ENFORCE_PLANS=true en las variables de entorno.
  */
 export const PLANS_ENFORCED = process.env.ENFORCE_PLANS === "true"
+
+/**
+ * Cobro con Mercado Pago. Apagado mientras Pro sea gratis por el lanzamiento: el botón "Suscribirme"
+ * aparece solo con BILLING_ENABLED=true (antes, avisar a los usuarios con 5 días de anticipación).
+ */
+export const BILLING_ENABLED = process.env.BILLING_ENABLED === "true"
+
+/** Precio con el descuento ganado con un código (redondeado a pesos). */
+export function discountedPrice(price: number, discountPercent: number | null | undefined) {
+  return discountPercent ? Math.round((price * (100 - discountPercent)) / 100) : price
+}
 
 export function planHas(plan: Plan, feature: PlanFeature) {
   return PLANS[plan].features.includes(feature)

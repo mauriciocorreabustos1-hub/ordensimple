@@ -13,18 +13,22 @@ import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { AccountSection } from "@/components/settings/account-section"
 import { RedeemCoupon } from "@/components/settings/redeem-coupon"
+import { SubscriptionPanel, type SubscriptionState } from "@/components/settings/subscription-panel"
+import { formatMoney } from "@/lib/currency"
+import { mercadoPagoConfigured } from "@/lib/mercadopago"
 import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
 import { getAppUrl } from "@/lib/app-url"
-import { memberLimit, PLANS } from "@/lib/plans"
+import { BILLING_ENABLED, discountedPrice, memberLimit, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Configuración" }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: PageProps<"/dashboard/configuracion">) {
   const ctx = await requireBusiness()
+  const subscriptionResult = (await searchParams).suscripcion
   const canManage = can(ctx.role, "settings:manage")
   const vat = vatInfo(ctx.business.country)
   const [categories, currentMembers, records, invitations, owned] = await Promise.all([
@@ -81,6 +85,28 @@ export default async function SettingsPage() {
       ? formatDate(ctx.business.planExpiresAt, ctx.timezone, { day: "numeric", month: "long", year: "numeric" })
       : null
   const hasRecords = records.some((n) => n > 0)
+
+  // Suscripción con Mercado Pago (solo si el cobro está encendido).
+  const proPrice = PLANS.PRO.monthlyPrice
+  const showBilling = BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP" && proPrice !== null
+  const sub = showBilling
+    ? await db.subscription.findFirst({
+        where: { businessId: ctx.businessId, status: { in: ["authorized", "paused", "pending"] } },
+        orderBy: { createdAt: "desc" },
+      })
+    : null
+  const subState: SubscriptionState = !sub
+    ? { kind: "none" }
+    : sub.status === "pending"
+      ? { kind: "pending", checkoutUrl: sub.checkoutUrl, payerEmail: sub.payerEmail }
+      : {
+          kind: "active",
+          status: sub.status,
+          amountLabel: formatMoney(sub.amount, sub.currency),
+          payerEmail: sub.payerEmail,
+          nextLabel: sub.nextPaymentAt ? formatDate(sub.nextPaymentAt, ctx.timezone, { day: "numeric", month: "long" }) : null,
+        }
+  const finalPrice = proPrice !== null ? discountedPrice(proPrice, ctx.business.discountPercent) : 0
 
   return (
     <div className="space-y-6">
@@ -243,7 +269,7 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="plan" className="scroll-mt-20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Crown className="size-4 text-warning" />
@@ -266,6 +292,22 @@ export default async function SettingsPage() {
                 </Badge>
               ) : null}
             </div>
+          ) : null}
+          {subscriptionResult === "ok" ? (
+            <p className="rounded-lg bg-success/10 p-3 text-sm">¡Listo! Tu suscripción a Pro quedó activa.</p>
+          ) : subscriptionResult === "pendiente" ? (
+            <p className="rounded-lg bg-warning/10 p-3 text-sm">
+              Mercado Pago todavía está procesando el pago. Apenas se confirme, tu plan se activará solo.
+            </p>
+          ) : null}
+          {showBilling ? (
+            <SubscriptionPanel
+              state={subState}
+              priceLabel={formatMoney(finalPrice, "CLP")}
+              fullPriceLabel={proPrice !== null && finalPrice !== proPrice ? formatMoney(proPrice, "CLP") : undefined}
+              defaultEmail={ctx.user.email}
+              canManage={ctx.role === "OWNER"}
+            />
           ) : null}
           {canManage ? (
             <>

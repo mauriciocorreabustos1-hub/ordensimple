@@ -1,0 +1,95 @@
+"use server"
+
+import { revalidatePath } from "next/cache"
+import { z } from "zod"
+import { db } from "@/lib/db"
+import { cancelPreapproval, createPreapproval, MercadoPagoError, mercadoPagoConfigured } from "@/lib/mercadopago"
+import { BILLING_ENABLED, discountedPrice, PLANS } from "@/lib/plans"
+import { subscriptionBackUrl, syncSubscription } from "@/server/billing"
+import { requireBusiness } from "@/server/session"
+import { toActionError, type ActionResult } from "@/server/actions/result"
+
+const subscribeSchema = z.object({
+  payerEmail: z.email("Escribe el correo de tu cuenta de Mercado Pago").trim().toLowerCase().max(200),
+})
+
+function mpMessage(error: unknown) {
+  if (error instanceof MercadoPagoError) {
+    if (/different site/i.test(error.message)) return "Ese correo es de una cuenta de Mercado Pago de otro país. Usa tu cuenta de Chile."
+    if (/bad request|payer/i.test(error.message)) return "Mercado Pago no reconoce ese correo. Escribe el correo con el que entras a Mercado Pago."
+    return "Mercado Pago no respondió bien. Intenta de nuevo en unos minutos."
+  }
+  return null
+}
+
+/** Crea la suscripción mensual a Pro y devuelve el enlace de pago de Mercado Pago. */
+export async function startSubscription(input: z.input<typeof subscribeSchema>): Promise<ActionResult<{ url: string }>> {
+  const ctx = await requireBusiness()
+  const parsed = subscribeSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Correo inválido." }
+
+  try {
+    if (!BILLING_ENABLED || !mercadoPagoConfigured()) return { ok: false, message: "Las suscripciones todavía no están disponibles." }
+    if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño del negocio puede contratar un plan." }
+    if (ctx.business.currency !== "CLP") return { ok: false, message: "Por ahora las suscripciones son solo en pesos chilenos." }
+    const price = PLANS.PRO.monthlyPrice
+    if (!price) return { ok: false, message: "Este plan aún no se puede contratar." }
+
+    const existing = await db.subscription.findMany({
+      where: { businessId: ctx.businessId, status: { in: ["authorized", "pending", "paused"] } },
+      orderBy: { createdAt: "desc" },
+    })
+    if (existing.some((s) => s.status === "authorized")) return { ok: false, message: "Ya tienes una suscripción activa." }
+    const pending = existing.find((s) => s.status === "pending" && s.payerEmail === parsed.data.payerEmail && s.checkoutUrl)
+    if (pending?.checkoutUrl) return { ok: true, data: { url: pending.checkoutUrl } }
+
+    const amount = discountedPrice(price, ctx.business.discountPercent)
+    const pre = await createPreapproval({
+      reason: `OrdenSimple Pro · ${ctx.business.name}`.slice(0, 120),
+      externalReference: ctx.businessId,
+      payerEmail: parsed.data.payerEmail,
+      amount,
+      currency: "CLP",
+      backUrl: subscriptionBackUrl(),
+    })
+    if (!pre.init_point) return { ok: false, message: "Mercado Pago no entregó el enlace de pago. Intenta de nuevo." }
+
+    await db.subscription.create({
+      data: {
+        businessId: ctx.businessId,
+        userId: ctx.user.id,
+        plan: "PRO",
+        externalId: pre.id,
+        status: pre.status,
+        amount,
+        currency: "CLP",
+        payerEmail: parsed.data.payerEmail,
+        checkoutUrl: pre.init_point,
+      },
+    })
+    return { ok: true, data: { url: pre.init_point } }
+  } catch (error) {
+    const message = mpMessage(error)
+    return message ? { ok: false, message } : toActionError(error)
+  }
+}
+
+/** Cancela la suscripción: no se cobra más, y Pro sigue hasta el final de lo que ya se pagó. */
+export async function cancelSubscription(): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  try {
+    if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño del negocio puede cancelar la suscripción." }
+    const sub = await db.subscription.findFirst({
+      where: { businessId: ctx.businessId, status: { in: ["authorized", "paused", "pending"] } },
+      orderBy: { createdAt: "desc" },
+    })
+    if (!sub) return { ok: false, message: "No tienes una suscripción activa." }
+    await cancelPreapproval(sub.externalId)
+    await syncSubscription(sub.externalId)
+  } catch (error) {
+    const message = mpMessage(error)
+    return message ? { ok: false, message } : toActionError(error)
+  }
+  revalidatePath("/dashboard", "layout")
+  return { ok: true, message: "Suscripción cancelada. No se te cobrará más." }
+}

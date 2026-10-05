@@ -4,14 +4,35 @@
     {
       "name": "ordensimple",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "ordensimple-sin-correos",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "env": { "RESEND_API_KEY": "" },
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "env": {
+        "RESEND_API_KEY": ""
+      },
+      "port": 3000
+    },
+    {
+      "name": "ordensimple-cobros-prueba",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "env": {
+        "RESEND_API_KEY": "",
+        "BILLING_ENABLED": "true"
+      },
       "port": 3000
     }
   ]

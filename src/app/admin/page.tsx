@@ -4,6 +4,8 @@ import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
 import { db } from "@/lib/db"
+import { mercadoPagoAccount } from "@/lib/mercadopago"
+import { BILLING_ENABLED, PLANS_ENFORCED } from "@/lib/plans"
 import { CouponManager, type CouponRow } from "@/components/admin/coupon-manager"
 import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
 import { PlanDialog } from "@/components/admin/plan-dialog"
@@ -49,7 +51,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const page = Math.max(1, Number(params.pagina) || 1)
   // ?para=<id> deja a esa persona elegida en "Correo a personas específicas".
   const para = typeof params.para === "string" ? params.para.slice(0, 40) : ""
-  const [stats, users, errors, coupons, planCounts, audience, campaigns, directTo] = await Promise.all([
+  const [stats, users, errors, coupons, planCounts, audience, campaigns, directTo, mpAccount, subCounts] = await Promise.all([
     getAdminStats(),
     listAdminUsers({ q: q || undefined, page }),
     getRecentErrors(),
@@ -60,7 +62,10 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     para
       ? db.user.findMany({ where: { id: para }, select: { id: true, name: true, email: true, marketingOptIn: true } })
       : Promise.resolve([]),
+    mercadoPagoAccount(),
+    db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
+  const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
   const now = new Date()
   const longDate = (d: Date) => formatDate(d, TZ, { day: "numeric", month: "long", year: "numeric" })
   const couponRows: CouponRow[] = coupons.map((cp) => ({
@@ -276,6 +281,40 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           </p>
         </div>
         <CouponManager coupons={couponRows} />
+      </section>
+
+      <section id="cobros" className="scroll-mt-20 space-y-3">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Crown className="size-5 text-muted-foreground" />
+          Cobros (Mercado Pago)
+        </h2>
+        <div className="grid gap-2 rounded-xl border bg-card p-4 text-sm sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Cuenta conectada</p>
+            {mpAccount.ok ? (
+              mpAccount.test ? (
+                <p className="font-medium text-danger">⚠ Es una cuenta de PRUEBA: no cobra plata real</p>
+              ) : (
+                <p className="font-medium text-success">✓ Cuenta real{mpAccount.site === "MLC" ? " de Chile" : ` (${mpAccount.site})`}</p>
+              )
+            ) : (
+              <p className="font-medium text-danger">✗ {mpAccount.reason}</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Cobro</p>
+            <p className="font-medium">
+              {BILLING_ENABLED ? "Encendido" : "Apagado (lanzamiento)"}
+              {PLANS_ENFORCED ? " · límites del plan Gratis activos" : ""}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Suscripciones</p>
+            <p className="font-medium">
+              {formatNumber(subsBy("authorized"))} activas · {formatNumber(subsBy("pending"))} pendientes · {formatNumber(subsBy("cancelled"))} canceladas
+            </p>
+          </div>
+        </div>
       </section>
 
       <section id="correos" className="scroll-mt-20 space-y-4">

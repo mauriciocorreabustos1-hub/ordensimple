@@ -104,3 +104,14 @@ export function validWebhookSignature(headers: Headers, dataId: string) {
   const b = Buffer.from(parts.v1)
   return a.length === b.length && timingSafeEqual(a, b)
 }
+
+/** Cuenta conectada (para revisar desde el admin que el token sea de producción y de Chile). */
+export async function mercadoPagoAccount() {
+  if (!mercadoPagoConfigured()) return { ok: false as const, reason: "Falta MERCADOPAGO_ACCESS_TOKEN." }
+  try {
+    const me = await mp<{ site_id?: string; tags?: string[] }>("/users/me")
+    return { ok: true as const, site: me.site_id ?? "?", test: Boolean(me.tags?.includes("test_user")) }
+  } catch (error) {
+    return { ok: false as const, reason: error instanceof Error ? error.message : "No responde." }
+  }
+}

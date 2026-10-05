@@ -13,14 +13,14 @@ import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { AccountSection } from "@/components/settings/account-section"
 import { RedeemCoupon } from "@/components/settings/redeem-coupon"
-import { SubscriptionPanel, type SubscriptionState } from "@/components/settings/subscription-panel"
+import { SubscriptionPanel, type PlanOption, type SubscriptionState } from "@/components/settings/subscription-panel"
 import { formatMoney } from "@/lib/currency"
 import { mercadoPagoConfigured } from "@/lib/mercadopago"
 import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
 import { getAppUrl } from "@/lib/app-url"
-import { BILLING_ENABLED, discountedPrice, memberLimit, PLANS } from "@/lib/plans"
+import { BILLING_ENABLED, discountedPrice, memberLimit, PAID_PLANS, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
@@ -87,8 +87,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
   const hasRecords = records.some((n) => n > 0)
 
   // Suscripción con Mercado Pago (solo si el cobro está encendido).
-  const proPrice = PLANS.PRO.monthlyPrice
-  const showBilling = BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP" && proPrice !== null
+  const showBilling = BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP"
   const sub = showBilling
     ? await db.subscription.findFirst({
         where: { businessId: ctx.businessId, status: { in: ["authorized", "paused", "pending"] } },
@@ -98,15 +97,29 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
   const subState: SubscriptionState = !sub
     ? { kind: "none" }
     : sub.status === "pending"
-      ? { kind: "pending", checkoutUrl: sub.checkoutUrl, payerEmail: sub.payerEmail }
+      ? { kind: "pending", plan: sub.plan === "BUSINESS" ? "BUSINESS" : "PRO", payerEmail: sub.payerEmail }
       : {
           kind: "active",
+          planName: PLANS[sub.plan].name,
           status: sub.status,
           amountLabel: formatMoney(sub.amount, sub.currency),
           payerEmail: sub.payerEmail,
           nextLabel: sub.nextPaymentAt ? formatDate(sub.nextPaymentAt, ctx.timezone, { day: "numeric", month: "long" }) : null,
         }
-  const finalPrice = proPrice !== null ? discountedPrice(proPrice, ctx.business.discountPercent) : 0
+  const planOptions: PlanOption[] = PAID_PLANS.flatMap((p) => {
+    const price = PLANS[p].monthlyPrice
+    if (price === null) return []
+    const final = discountedPrice(price, ctx.business.discountPercent)
+    return [
+      {
+        plan: p,
+        name: PLANS[p].name,
+        priceLabel: formatMoney(final, "CLP"),
+        fullPriceLabel: final !== price ? formatMoney(price, "CLP") : undefined,
+        summary: p === "PRO" ? "Tú + 20 trabajadores · hasta 3 sucursales" : "Más de 50 trabajadores · hasta 10 sucursales",
+      },
+    ]
+  })
 
   return (
     <div className="space-y-6">
@@ -294,7 +307,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             </div>
           ) : null}
           {subscriptionResult === "ok" ? (
-            <p className="rounded-lg bg-success/10 p-3 text-sm">¡Listo! Tu suscripción a Pro quedó activa.</p>
+            <p className="rounded-lg bg-success/10 p-3 text-sm">¡Listo! Tu suscripción quedó activa.</p>
           ) : subscriptionResult === "pendiente" ? (
             <p className="rounded-lg bg-warning/10 p-3 text-sm">
               Mercado Pago todavía está procesando el pago. Apenas se confirme, tu plan se activará solo.
@@ -303,8 +316,8 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
           {showBilling ? (
             <SubscriptionPanel
               state={subState}
-              priceLabel={formatMoney(finalPrice, "CLP")}
-              fullPriceLabel={proPrice !== null && finalPrice !== proPrice ? formatMoney(proPrice, "CLP") : undefined}
+              options={planOptions}
+              initialPlan={ctx.business.plan === "BUSINESS" ? "BUSINESS" : "PRO"}
               defaultEmail={ctx.user.email}
               canManage={ctx.role === "OWNER"}
             />

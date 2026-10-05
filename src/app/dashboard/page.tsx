@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
-import { CalendarClock, ChevronRight, Landmark, NotebookPen, PiggyBank, Receipt, ShoppingBag, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
+import { CalendarClock, ChevronRight, Crown, Landmark, NotebookPen, PiggyBank, Receipt, ShoppingBag, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard, ChangeBadge, DiffBadge } from "@/components/app/stat-card"
 import { Explainer } from "@/components/app/explainer"
@@ -18,7 +18,7 @@ import { getInsights } from "@/server/queries/insights"
 import { getDebtors } from "@/server/queries/fiado"
 import { getYearSummary } from "@/server/queries/results"
 import { InsightsCard } from "@/components/dashboard/insights-card"
-import { canUseFeature } from "@/lib/plans"
+import { canUseFeature, PLANS, PLANS_ENFORCED } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
@@ -108,6 +108,19 @@ export default async function DashboardPage() {
       </div>
 
       <HealthCard health={health} />
+
+      {PLANS_ENFORCED && ctx.business.plan === "FREE" && ctx.role === "OWNER" && PLANS.PRO.monthlyPrice ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
+          <span className="flex items-center gap-2">
+            <Crown className="size-4 shrink-0 text-warning" />
+            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) tienes inventario, fiado, reportes,
+            resultados e IVA y tu equipo.
+          </span>
+          <Link href="/dashboard/configuracion#plan" className="font-medium text-primary hover:underline">
+            Ver planes
+          </Link>
+        </div>
+      ) : null}
 
       {daysWithoutSales !== null && daysWithoutSales >= 3 ? (
         <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm">

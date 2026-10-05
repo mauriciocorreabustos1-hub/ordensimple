@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, Check, Minus, Sparkles } from "lucide-react"
+import { BILLING_ENABLED } from "@/lib/plans"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
@@ -184,7 +185,11 @@ export function PricingCards() {
               </Button>
             ) : plan.id === "PRO" ? (
               <Button size="lg" className="h-11" asChild>
-                <Link href="/registro">Usar Pro gratis</Link>
+                <Link href="/registro">{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</Link>
+              </Button>
+            ) : BILLING_ENABLED ? (
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/registro">Elegir Empresa</Link>
               </Button>
             ) : (
               <Button size="lg" variant="outline" className="h-11" disabled>

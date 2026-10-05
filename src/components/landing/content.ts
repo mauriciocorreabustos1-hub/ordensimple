@@ -25,6 +25,7 @@ import {
   Vault,
   type LucideIcon,
 } from "lucide-react"
+import { BILLING_ENABLED } from "@/lib/plans"
 
 // Textos de las páginas públicas. Solo se describe lo que el producto hace hoy;
 // lo que viene se marca como "Próximamente".
@@ -320,7 +321,12 @@ export const FAQ_GROUPS: FaqGroup[] = [
     title: "Cuenta y precios",
     items: [
       { q: "¿Es realmente gratis?", a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta." },
-      { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro." },
+      BILLING_ENABLED
+        ? { q: "¿Cuánto cuestan Pro y Empresa?", a: "Pro cuesta $6.990 al mes y Empresa $14.990 al mes. Se pagan con Mercado Pago (tarjeta de crédito o débito), se renuevan solos cada mes y los cancelas cuando quieras desde Configuración: tu plan sigue hasta el final del mes que pagaste." }
+        : { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro." },
+      ...(BILLING_ENABLED
+        ? [{ q: "¿Qué pasa con mis datos si dejo de pagar?", a: "Nada se borra. Vuelves al plan Gratis: sigues registrando ventas y gastos, y las funciones Pro quedan en pausa hasta que vuelvas a contratar." }]
+        : []),
       { q: "¿Necesito tarjeta de crédito para registrarme?", a: "No. Solo tu nombre, correo y una contraseña." },
       { q: "Olvidé mi contraseña, ¿qué hago?", a: "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y te enviaremos un enlace para crear una nueva." },
     ],

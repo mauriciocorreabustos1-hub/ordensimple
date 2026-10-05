@@ -10,9 +10,13 @@ import {
   SectionTitle,
 } from "@/components/landing/sections"
 
+import { BILLING_ENABLED } from "@/lib/plans"
+
 export const metadata: Metadata = {
   title: "Precios",
-  description: "Empieza gratis. Durante el lanzamiento, las funciones Pro (inventario, fiado, clientes, reportes y equipo) también son gratis.",
+  description: BILLING_ENABLED
+    ? "Empieza gratis, sin tarjeta. Pro desde $6.990 al mes con inventario, fiado, clientes, reportes y equipo. Cancelas cuando quieras."
+    : "Empieza gratis. Durante el lanzamiento, las funciones Pro (inventario, fiado, clientes, reportes y equipo) también son gratis.",
   alternates: { canonical: "/precios" },
 }
 
@@ -24,7 +28,11 @@ export default function PricingPage() {
       <PageHero
         eyebrow="Precios"
         title="Empieza gratis. Crece cuando lo necesites."
-        description="El plan Gratis no vence y no pide tarjeta. Durante el lanzamiento, además, puedes usar todo lo de Pro sin pagar."
+        description={
+          BILLING_ENABLED
+            ? "El plan Gratis no vence y no pide tarjeta. Cuando necesites más, Pro o Empresa se pagan mes a mes con Mercado Pago y los cancelas cuando quieras."
+            : "El plan Gratis no vence y no pide tarjeta. Durante el lanzamiento, además, puedes usar todo lo de Pro sin pagar."
+        }
       />
 
       <Section muted className="border-t-0">

@@ -26,7 +26,13 @@ type PlanConfig = {
   highlights: string[]
 }
 
-// Los cobros aún no están implementados: todos los negocios nuevos parten en FREE.
+/**
+ * Cobro con Mercado Pago (BILLING_ENABLED=true): se muestran los precios, se puede contratar Pro o Empresa
+ * y se aplican los límites del plan Gratis. Apagado = período de lanzamiento (todo abierto, sin precios).
+ */
+export const BILLING_ENABLED = process.env.BILLING_ENABLED === "true"
+
+// Todos los negocios nuevos parten en FREE; Pro y Empresa se contratan con Mercado Pago.
 export const PLANS: Record<Plan, PlanConfig> = {
   FREE: {
     id: "FREE",
@@ -44,8 +50,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     id: "PRO",
     name: "Pro",
     // Las funciones Pro ya están abiertas a todos; lo que falta es el cobro.
-    priceLabel: "Gratis por ahora",
-    priceNote: "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
+    priceLabel: BILLING_ENABLED ? "$6.990" : "Gratis por ahora",
+    priceNote: BILLING_ENABLED ? "al mes · cancelas cuando quieras" : "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
     monthlyPrice: 6990,
     description: "Para negocios que quieren crecer con datos.",
     maxBusinesses: 3,
@@ -65,9 +71,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
   BUSINESS: {
     id: "BUSINESS",
     name: "Empresa",
-    priceLabel: "Próximamente",
-    priceNote: "Aún no se puede contratar. Por ahora puedes tener hasta 3 sucursales gratis.",
-    monthlyPrice: null,
+    priceLabel: BILLING_ENABLED ? "$14.990" : "Próximamente",
+    priceNote: BILLING_ENABLED ? "al mes · cancelas cuando quieras" : "Aún no se puede contratar. Por ahora puedes tener hasta 3 sucursales gratis.",
+    monthlyPrice: 14990,
     description: "Para equipos y varias sucursales.",
     maxBusinesses: 10,
     maxProducts: null,
@@ -78,16 +84,16 @@ export const PLANS: Record<Plan, PlanConfig> = {
 }
 
 /**
- * Mientras no existan los cobros, todas las funciones están abiertas (período de lanzamiento).
- * Para exigir el plan, definir ENFORCE_PLANS=true en las variables de entorno.
+ * ¿Se exige el plan? Sí cuando el cobro está encendido y Mercado Pago configurado (nunca se bloquea a
+ * alguien que no tenga cómo pagar), o con ENFORCE_PLANS=true. Si no, todo abierto (lanzamiento).
  */
-export const PLANS_ENFORCED = process.env.ENFORCE_PLANS === "true"
+export const PLANS_ENFORCED =
+  process.env.ENFORCE_PLANS === "true" || (BILLING_ENABLED && Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN))
 
-/**
- * Cobro con Mercado Pago. Apagado mientras Pro sea gratis por el lanzamiento: el botón "Suscribirme"
- * aparece solo con BILLING_ENABLED=true (antes, avisar a los usuarios con 5 días de anticipación).
- */
-export const BILLING_ENABLED = process.env.BILLING_ENABLED === "true"
+/** Planes que se pueden contratar con suscripción mensual. */
+export const PAID_PLANS = ["PRO", "BUSINESS"] as const satisfies Plan[]
+export type PaidPlan = (typeof PAID_PLANS)[number]
+
 
 /** Precio con el descuento ganado con un código (redondeado a pesos). */
 export function discountedPrice(price: number, discountPercent: number | null | undefined) {

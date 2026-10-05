@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { cancelPreapproval, createPreapproval, MercadoPagoError, mercadoPagoConfigured } from "@/lib/mercadopago"
-import { BILLING_ENABLED, discountedPrice, PLANS } from "@/lib/plans"
+import { BILLING_ENABLED, discountedPrice, PAID_PLANS, PLANS } from "@/lib/plans"
 import { subscriptionBackUrl, syncSubscription } from "@/server/billing"
 import { requireBusiness } from "@/server/session"
 import { toActionError, type ActionResult } from "@/server/actions/result"
 
 const subscribeSchema = z.object({
   payerEmail: z.email("Escribe el correo de tu cuenta de Mercado Pago").trim().toLowerCase().max(200),
+  plan: z.enum(PAID_PLANS),
 })
 
 function mpMessage(error: unknown) {
@@ -22,7 +23,7 @@ function mpMessage(error: unknown) {
   return null
 }
 
-/** Crea la suscripción mensual a Pro y devuelve el enlace de pago de Mercado Pago. */
+/** Crea la suscripción mensual (Pro o Empresa) y devuelve el enlace de pago de Mercado Pago. */
 export async function startSubscription(input: z.input<typeof subscribeSchema>): Promise<ActionResult<{ url: string }>> {
   const ctx = await requireBusiness()
   const parsed = subscribeSchema.safeParse(input)
@@ -32,20 +33,30 @@ export async function startSubscription(input: z.input<typeof subscribeSchema>):
     if (!BILLING_ENABLED || !mercadoPagoConfigured()) return { ok: false, message: "Las suscripciones todavía no están disponibles." }
     if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño del negocio puede contratar un plan." }
     if (ctx.business.currency !== "CLP") return { ok: false, message: "Por ahora las suscripciones son solo en pesos chilenos." }
-    const price = PLANS.PRO.monthlyPrice
+    const plan = parsed.data.plan
+    const price = PLANS[plan].monthlyPrice
     if (!price) return { ok: false, message: "Este plan aún no se puede contratar." }
 
     const existing = await db.subscription.findMany({
       where: { businessId: ctx.businessId, status: { in: ["authorized", "pending", "paused"] } },
       orderBy: { createdAt: "desc" },
     })
-    if (existing.some((s) => s.status === "authorized")) return { ok: false, message: "Ya tienes una suscripción activa." }
-    const pending = existing.find((s) => s.status === "pending" && s.payerEmail === parsed.data.payerEmail && s.checkoutUrl)
+    const active = existing.find((s) => s.status === "authorized" || s.status === "paused")
+    if (active) {
+      return {
+        ok: false,
+        message:
+          active.plan === plan
+            ? "Ya tienes una suscripción activa a este plan."
+            : `Ya pagas el plan ${PLANS[active.plan].name}. Cancélalo primero para cambiarte de plan.`,
+      }
+    }
+    const pending = existing.find((s) => s.status === "pending" && s.plan === plan && s.payerEmail === parsed.data.payerEmail && s.checkoutUrl)
     if (pending?.checkoutUrl) return { ok: true, data: { url: pending.checkoutUrl } }
 
     const amount = discountedPrice(price, ctx.business.discountPercent)
     const pre = await createPreapproval({
-      reason: `OrdenSimple Pro · ${ctx.business.name}`.slice(0, 120),
+      reason: `OrdenSimple ${PLANS[plan].name} · ${ctx.business.name}`.slice(0, 120),
       externalReference: ctx.businessId,
       payerEmail: parsed.data.payerEmail,
       amount,
@@ -58,7 +69,7 @@ export async function startSubscription(input: z.input<typeof subscribeSchema>):
       data: {
         businessId: ctx.businessId,
         userId: ctx.user.id,
-        plan: "PRO",
+        plan,
         externalId: pre.id,
         status: pre.status,
         amount,

@@ -2,35 +2,47 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { CreditCard, Loader2 } from "lucide-react"
+import { Check, CreditCard, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
+import { cn } from "@/lib/utils"
 import { cancelSubscription, startSubscription } from "@/server/actions/billing"
 
-export type SubscriptionState =
-  | { kind: "none" }
-  | { kind: "pending"; checkoutUrl: string | null; payerEmail: string }
-  | { kind: "active"; amountLabel: string; nextLabel: string | null; payerEmail: string; status: string }
+type PaidPlan = "PRO" | "BUSINESS"
 
-/** Contratar o cancelar Pro con Mercado Pago (cobro mensual automático). */
-export function SubscriptionPanel({
-  state,
-  priceLabel,
-  fullPriceLabel,
-  defaultEmail,
-  canManage,
-}: {
-  state: SubscriptionState
+export type PlanOption = {
+  plan: PaidPlan
+  name: string
   /** Precio que se cobrará (con descuento si tiene). */
   priceLabel: string
   /** Precio sin descuento, si es distinto. */
   fullPriceLabel?: string
+  summary: string
+}
+
+export type SubscriptionState =
+  | { kind: "none" }
+  | { kind: "pending"; plan: PaidPlan; payerEmail: string }
+  | { kind: "active"; planName: string; amountLabel: string; nextLabel: string | null; payerEmail: string; status: string }
+
+/** Contratar o cancelar Pro o Empresa con Mercado Pago (cobro mensual automático). */
+export function SubscriptionPanel({
+  state,
+  options,
+  initialPlan,
+  defaultEmail,
+  canManage,
+}: {
+  state: SubscriptionState
+  options: PlanOption[]
+  initialPlan: PaidPlan
   defaultEmail: string
   canManage: boolean
 }) {
   const router = useRouter()
+  const [plan, setPlan] = React.useState<PaidPlan>(state.kind === "pending" ? state.plan : initialPlan)
   const [email, setEmail] = React.useState(state.kind === "pending" ? state.payerEmail : defaultEmail)
   const [pending, startTransition] = React.useTransition()
 
@@ -38,7 +50,7 @@ export function SubscriptionPanel({
     return (
       <div className="space-y-3 rounded-xl border border-success/30 bg-success/5 p-4 text-sm">
         <p className="font-medium">
-          {state.status === "authorized" ? "Suscripción activa" : "Suscripción pausada"} · {state.amountLabel} al mes
+          {state.status === "authorized" ? "Suscripción activa" : "Suscripción pausada"}: {state.planName} · {state.amountLabel} al mes
         </p>
         <p className="text-muted-foreground">
           Se cobra con Mercado Pago a {state.payerEmail}.
@@ -50,7 +62,7 @@ export function SubscriptionPanel({
             size="sm"
             disabled={pending}
             onClick={() => {
-              if (!window.confirm("¿Cancelar la suscripción? No se te cobrará más y Pro seguirá hasta el final del mes que ya pagaste.")) return
+              if (!window.confirm("¿Cancelar la suscripción? No se te cobrará más y tu plan seguirá hasta el final del mes que ya pagaste.")) return
               startTransition(async () => {
                 const r = await cancelSubscription()
                 if (r.ok) {
@@ -69,25 +81,52 @@ export function SubscriptionPanel({
   }
 
   if (!canManage) {
-    return <p className="text-sm text-muted-foreground">Solo el dueño del negocio puede contratar Pro.</p>
+    return <p className="text-sm text-muted-foreground">Solo el dueño del negocio puede contratar un plan.</p>
   }
+
+  const chosen = options.find((o) => o.plan === plan) ?? options[0]
 
   return (
     <form
-      className="space-y-3 rounded-xl border p-4"
+      className="space-y-4 rounded-xl border p-4"
       onSubmit={(e) => {
         e.preventDefault()
         startTransition(async () => {
-          const r = await startSubscription({ payerEmail: email })
+          const r = await startSubscription({ payerEmail: email, plan })
           if (!r.ok) return void toast.error(r.message)
           // Se completa el pago en Mercado Pago y se vuelve aquí.
           router.push(r.data!.url)
         })
       }}
     >
-      <div className="flex flex-wrap items-baseline gap-2">
-        <p className="text-base font-semibold">Pro: {priceLabel} al mes</p>
-        {fullPriceLabel ? <p className="text-sm text-muted-foreground line-through">{fullPriceLabel}</p> : null}
+      <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Elige tu plan">
+        {options.map((o) => {
+          const selected = o.plan === plan
+          return (
+            <button
+              key={o.plan}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setPlan(o.plan)}
+              className={cn(
+                "space-y-1 rounded-xl border p-3 text-left transition-colors",
+                selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-muted",
+              )}
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="font-semibold">{o.name}</span>
+                {selected ? <Check className="size-4 text-primary" /> : null}
+              </span>
+              <span className="flex flex-wrap items-baseline gap-1.5">
+                <span className="text-lg font-semibold">{o.priceLabel}</span>
+                <span className="text-xs text-muted-foreground">al mes</span>
+                {o.fullPriceLabel ? <span className="text-xs text-muted-foreground line-through">{o.fullPriceLabel}</span> : null}
+              </span>
+              <span className="block text-xs text-muted-foreground">{o.summary}</span>
+            </button>
+          )
+        })}
       </div>
       <p className="text-sm text-muted-foreground">
         Se cobra solo cada mes con Mercado Pago (tarjeta de crédito o débito). Puedes cancelar cuando quieras desde aquí.
@@ -100,7 +139,7 @@ export function SubscriptionPanel({
       </Field>
       <Button type="submit" size="lg" className="h-11 w-full sm:w-auto" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : <CreditCard />}
-        {state.kind === "pending" ? "Completar el pago en Mercado Pago" : "Suscribirme con Mercado Pago"}
+        {state.kind === "pending" && state.plan === plan ? "Completar el pago en Mercado Pago" : `Suscribirme a ${chosen.name} con Mercado Pago`}
       </Button>
     </form>
   )

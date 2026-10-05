@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { BILLING_ENABLED } from "@/lib/plans"
 import { LegalPage, LegalSection } from "@/components/landing/legal"
 
 export const metadata: Metadata = {
@@ -48,11 +49,20 @@ export default function TermsPage() {
       <LegalSection n={3} title="Planes y precios">
         <ul>
           <li>El plan Gratis no tiene costo ni requiere tarjeta.</li>
-          <li>
-            Durante el período de lanzamiento, algunas funciones del plan Pro están disponibles para todos sin costo. Antes
-            de empezar a cobrar por ellas te avisaremos con al menos 5 días de anticipación, y podrás decidir si contratas
-            un plan pagado o sigues en el plan Gratis.
-          </li>
+          {BILLING_ENABLED ? (
+            <li>
+              Los planes Pro ($6.990 al mes) y Empresa ($14.990 al mes) se pagan con Mercado Pago y se renuevan
+              automáticamente cada mes. Puedes cancelar en cualquier momento desde Configuración: no se te vuelve a cobrar
+              y el plan sigue vigente hasta el final del período pagado. Si dejas de pagar o vence un acceso de regalo,
+              vuelves al plan Gratis sin perder tus datos.
+            </li>
+          ) : (
+            <li>
+              Durante el período de lanzamiento, algunas funciones del plan Pro están disponibles para todos sin costo.
+              Antes de empezar a cobrar por ellas te avisaremos con al menos 5 días de anticipación, y podrás decidir si
+              contratas un plan pagado o sigues en el plan Gratis.
+            </li>
+          )}
           <li>
             Cuando existan planes pagados, sus precios, forma de pago, renovación y condiciones de término se informarán
             claramente antes de contratarlos, conforme a la Ley N° 19.496 sobre Protección de los Derechos de los

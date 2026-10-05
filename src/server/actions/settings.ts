@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { COUNTRIES } from "@/lib/constants"
+import { isPurchaseCategory } from "@/lib/income-statement"
 import {
   businessSettingsSchema,
   categoryNameSchema,
@@ -81,7 +82,10 @@ export async function createExpenseCategory(name: string): Promise<ActionResult>
 
   try {
     assertCan(ctx, "settings:manage")
-    await db.expenseCategory.create({ data: { businessId: ctx.businessId, name: parsed.data.name } })
+    await db.expenseCategory.create({
+      // Si es compra de mercadería (ej. "Mercadería", "Insumos"), su costo va al costo de venta y no se cuenta dos veces.
+      data: { businessId: ctx.businessId, name: parsed.data.name, isVariable: isPurchaseCategory(parsed.data.name) },
+    })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { ok: false, message: "Ya existe una categoría con ese nombre." }

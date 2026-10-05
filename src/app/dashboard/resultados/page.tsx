@@ -91,7 +91,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   const to = startOfMonth(from, ctx.timezone, 1)
   const lastMonth = year === today.year ? today.month : 12
 
-  const [{ statement: st, categories, salesCount }, { rows, totals }] = await Promise.all([
+  const [{ statement: st, categories, salesCount, raw }, { rows, totals }] = await Promise.all([
     getIncomeStatement(ctx.businessId, from, to, rate),
     getYearSummary(ctx.businessId, year, lastMonth, ctx.timezone, rate),
   ])
@@ -101,6 +101,8 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   const isCurrent = year === today.year && month === today.month
 
   const current = rows[month - 1]
+  // Si anotó el pago del IVA o del PPM como gasto, se estaría restando dos veces.
+  const taxes = chargesVat ? categories.find((c) => /impuesto/i.test(c.name) && c.total > 0) : undefined
   // Los meses vacíos antes de empezar a registrar no se muestran (el mes elegido siempre aparece).
   const firstActive = rows.findIndex((r) => r.s.sales !== 0 || r.s.costOfSales !== 0 || r.s.operatingExpenses !== 0 || r.s.purchasesToInventory !== 0)
   const visibleRows = rows.slice(Math.min(firstActive < 0 ? month - 1 : firstActive, month - 1))
@@ -261,9 +263,16 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 hint="Antes del impuesto a la renta"
                 value={st.profit}
               />
+              {taxes ? (
+                <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-foreground">
+                  En “{taxes.name}” tienes {money(taxes.total)}. Si ahí anotaste el pago del {L} o del PPM, no son gastos del
+                  negocio: el {L} ya lo calculamos aparte y el PPM es un adelanto del impuesto a la renta. Cámbialos de
+                  categoría o elimínalos para que tu utilidad sea correcta.
+                </p>
+              ) : null}
               {st.purchasesToInventory > 0 ? (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Compraste {money(st.purchasesToInventory)} en mercadería{chargesVat ? ` (sin ${L})` : ""}. No se resta aquí porque ya contamos el costo de
+                  Compraste {money(st.purchasesToInventory)} en mercadería{chargesVat && raw.purchasesInvoiced > 0 ? ` (sin el ${L} de las facturas)` : ""}. No se resta aquí porque ya contamos el costo de
                   lo que vendiste; lo que no vendiste sigue en tu inventario.
                 </p>
               ) : null}
@@ -296,7 +305,8 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
             {chargesVat ? (
               <p>
                 Con {L}, los montos se muestran sin {L}: el {L} de tus ventas no es ganancia, se paga al SII, y el de tus
-                gastos con factura lo recuperas. Suponemos que tus precios y el costo de tus productos incluyen {L}.
+                gastos con factura lo recuperas. El {L} de lo que compras sin factura no se recupera, así que es parte de tu
+                costo. Suponemos que tus precios y el costo de tus productos incluyen {L}.
               </p>
             ) : null}
             <p>Es un cálculo aproximado para ordenarte. Para tu declaración, la cifra oficial la revisa tu contador o el SII.</p>

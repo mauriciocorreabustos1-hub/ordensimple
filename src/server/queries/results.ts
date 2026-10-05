@@ -1,84 +1,8 @@
 import "server-only"
 import { db } from "@/lib/db"
 import { startOfMonth, zonedTimeToUtc } from "@/lib/dates"
+import { buildStatement, EMPTY_PERIOD, vatWithCarry, type RawPeriod } from "@/lib/income-statement"
 import { vatFromGross } from "@/lib/vat"
-
-/** Montos registrados en un período, tal como se cobraron y pagaron (con IVA incluido si lo hay). */
-export type RawPeriod = {
-  sales: number
-  /** Ventas de productos con costo registrado, y lo que costaron. */
-  knownRevenue: number
-  knownCost: number
-  /** Compras de mercadería (categorías de gasto que crecen con las ventas, como "Proveedores"). */
-  purchases: number
-  purchasesInvoiced: number
-  /** El resto de los gastos (arriendo, sueldos, cuentas…). */
-  otherExpenses: number
-  otherInvoiced: number
-}
-
-const EMPTY: RawPeriod = { sales: 0, knownRevenue: 0, knownCost: 0, purchases: 0, purchasesInvoiced: 0, otherExpenses: 0, otherInvoiced: 0 }
-
-export type CostMethod = "products" | "purchases" | "none"
-
-export type Statement = ReturnType<typeof buildStatement>
-
-/**
- * Estado de resultados simple.
- * Costo de venta:
- *  - "products": el costo guardado en cada venta de productos. Las ventas sin detalle (ventas rápidas) se
- *    estiman con el mismo margen. Las compras de mercadería no se restan como gasto: van al inventario.
- *  - "purchases": si casi no hay ventas con productos, el costo son las compras de mercadería.
- * Con IVA, todo se muestra sin IVA y el IVA se calcula aparte (débito de ventas − crédito de gastos con factura).
- */
-export function buildStatement(raw: RawPeriod, vatRate: number | null) {
-  const rate = vatRate ?? 0
-  const net = (n: number) => (rate ? n - vatFromGross(n, rate) : n)
-
-  const salesVat = rate ? vatFromGross(raw.sales, rate) : 0
-  const netSales = raw.sales - salesVat
-  const purchasesCredit = rate ? vatFromGross(raw.purchasesInvoiced, rate) : 0
-  const otherCredit = rate ? vatFromGross(raw.otherInvoiced, rate) : 0
-
-  let costMethod: CostMethod = "none"
-  if (raw.knownRevenue > 0 && (raw.knownRevenue >= raw.sales * 0.5 || raw.purchases === 0)) costMethod = "products"
-  else if (raw.purchases > 0) costMethod = "purchases"
-
-  let costOfSales = 0
-  let estimatedCost = 0
-  if (costMethod === "products") {
-    const unknownRevenue = Math.max(0, raw.sales - raw.knownRevenue)
-    estimatedCost = Math.round(unknownRevenue * (raw.knownCost / raw.knownRevenue))
-    // El costo de los productos se anota con IVA; para el resultado se usa sin IVA.
-    costOfSales = net(raw.knownCost + estimatedCost)
-    estimatedCost = net(estimatedCost)
-  } else if (costMethod === "purchases") {
-    costOfSales = raw.purchases - purchasesCredit
-  }
-
-  const grossProfit = netSales - costOfSales
-  const operatingExpenses = raw.otherExpenses - otherCredit
-  const profit = grossProfit - operatingExpenses
-  const vatCredit = purchasesCredit + otherCredit
-  const vatBalance = salesVat - vatCredit
-
-  return {
-    sales: raw.sales,
-    salesVat,
-    netSales,
-    costMethod,
-    costOfSales,
-    estimatedCost,
-    grossProfit,
-    grossMargin: netSales > 0 ? grossProfit / netSales : null,
-    operatingExpenses,
-    /** Compras de mercadería que no se restan (van al inventario) cuando el costo sale de los productos. */
-    purchasesToInventory: costMethod === "products" ? raw.purchases - purchasesCredit : 0,
-    profit,
-    margin: netSales > 0 ? profit / netSales : null,
-    vat: { debit: salesVat, credit: vatCredit, toPay: Math.max(0, vatBalance), inFavor: Math.max(0, -vatBalance) },
-  }
-}
 
 type ExpenseRow = { categoryId: string | null; isVariable: boolean | null; hasInvoice: boolean; total: bigint | number | null }
 
@@ -108,7 +32,7 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
   ])
 
   const raw: RawPeriod = {
-    ...EMPTY,
+    ...EMPTY_PERIOD,
     sales: sales._sum.total ?? 0,
     knownRevenue: Number(known[0]?.revenue ?? 0),
     knownCost: Number(known[0]?.cost ?? 0),
@@ -133,8 +57,8 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
   }
 }
 
-/** Estado de resultados de cada mes ("YYYY-MM") entre dos fechas, en la zona horaria del negocio. */
-export async function getMonthlyStatements(businessId: string, from: Date, to: Date, timezone: string, vatRate: number | null) {
+/** Montos de cada mes ("YYYY-MM") entre dos fechas, en la zona horaria del negocio. */
+async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone: string) {
   type Bucket = { bucket: string }
   const [sales, known, expenses] = await Promise.all([
     db.$queryRaw<(Bucket & { total: bigint | null })[]>`
@@ -159,7 +83,7 @@ export async function getMonthlyStatements(businessId: string, from: Date, to: D
   const months = new Map<string, RawPeriod>()
   const get = (key: string) => {
     let m = months.get(key)
-    if (!m) months.set(key, (m = { ...EMPTY }))
+    if (!m) months.set(key, (m = { ...EMPTY_PERIOD }))
     return m
   }
   for (const r of sales) get(r.bucket).sales = Number(r.total ?? 0)
@@ -168,28 +92,31 @@ export async function getMonthlyStatements(businessId: string, from: Date, to: D
     get(r.bucket).knownCost = Number(r.cost ?? 0)
   }
   for (const r of expenses) addExpense(get(r.bucket), { isVariable: r.isVariable, hasInvoice: r.hasInvoice, total: Number(r.total ?? 0) })
-
-  return (key: string) => buildStatement(months.get(key) ?? EMPTY, vatRate)
+  return (key: string) => months.get(key) ?? EMPTY_PERIOD
 }
+
+const monthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, "0")}`
 
 /**
  * Resumen de un año, mes a mes (de enero a `lastMonth`), con la suma del año.
- * El IVA a favor de un mes se descuenta del mes siguiente.
+ * El IVA a favor de un mes se descuenta del mes siguiente; para eso se parte desde enero del año anterior,
+ * así lo que quedó a favor en diciembre pasa a enero.
  */
 export async function getYearSummary(businessId: string, year: number, lastMonth: number, timezone: string, vatRate: number | null) {
-  const from = zonedTimeToUtc(year, 1, 1, timezone)
+  const from = zonedTimeToUtc(year - 1, 1, 1, timezone)
   const to = startOfMonth(zonedTimeToUtc(year, lastMonth, 1, timezone), timezone, 1)
-  const monthly = await getMonthlyStatements(businessId, from, to, timezone, vatRate)
+  const raw = await getMonthlyRaw(businessId, from, to, timezone)
 
-  let carry = 0
-  const rows = Array.from({ length: lastMonth }, (_, i) => {
-    const m = i + 1
-    const s = monthly(`${year}-${String(m).padStart(2, "0")}`)
-    const balance = s.vat.debit - s.vat.credit - carry
-    const carryIn = carry
-    carry = Math.max(0, -balance)
-    return { month: m, s, vatToPay: Math.max(0, balance), carryIn, carryOut: carry }
-  })
+  const months = [
+    ...Array.from({ length: 12 }, (_, i) => ({ year: year - 1, month: i + 1 })),
+    ...Array.from({ length: lastMonth }, (_, i) => ({ year, month: i + 1 })),
+  ]
+  const statements = months.map((m) => buildStatement(raw(monthKey(m.year, m.month)), vatRate))
+  const vat = vatWithCarry(statements)
+  const rows = months
+    .map((m, i) => ({ ...m, s: statements[i], ...vat[i] }))
+    .filter((r) => r.year === year)
+
   const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((acc, r) => acc + f(r), 0)
   const totals = {
     sales: sum((r) => r.s.sales),

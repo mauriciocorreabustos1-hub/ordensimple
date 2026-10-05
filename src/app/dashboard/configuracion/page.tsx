@@ -142,8 +142,8 @@ export default async function SettingsPage() {
               label={`Mi negocio cobra ${vat.label}`}
               description={
                 ctx.business.country === "CL"
-                  ? "Actívalo si tienes inicio de actividades en el SII y tus precios incluyen IVA (emites boletas o facturas)."
-                  : `Actívalo si tus precios incluyen ${vat.label} y lo declaras cada mes.`
+                  ? "Viene activado. Desactívalo si tu negocio no tiene inicio de actividades en el SII o no emite boletas ni facturas."
+                  : `Viene activado. Desactívalo si tus precios no incluyen ${vat.label} o no lo declaras cada mes.`
               }
               checked={ctx.settings.chargesVat}
               disabled={!canManage}

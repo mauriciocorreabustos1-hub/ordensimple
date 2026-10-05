@@ -53,7 +53,7 @@ export async function requireBusiness() {
     noSalesReminder: true,
     weeklySummary: false,
     defaultPayment: "CASH" as const,
-    chargesVat: false,
+    chargesVat: true,
     vatDueDay: 20,
   }
   return {

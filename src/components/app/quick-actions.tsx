@@ -28,6 +28,7 @@ export function QuickActionsProvider({
   defaultPayment,
   products,
   categories,
+  chargesVat,
   customers,
 }: {
   children: React.ReactNode
@@ -36,6 +37,7 @@ export function QuickActionsProvider({
   defaultPayment: PaymentMethod
   products: ProductOption[]
   categories: ExpenseCategoryOption[]
+  chargesVat: boolean
   customers: string[]
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
@@ -73,7 +75,7 @@ export function QuickActionsProvider({
         </Tabs>
       </AppModal>
       <AppModal open={action === "expense"} onOpenChange={(o) => !o && close()} title="Registrar gasto">
-        <ExpenseForm currency={currency} timezone={timezone} categories={categories} onDone={close} />
+        <ExpenseForm currency={currency} timezone={timezone} categories={categories} chargesVat={chargesVat} onDone={close} />
       </AppModal>
     </QuickActionsContext.Provider>
   )

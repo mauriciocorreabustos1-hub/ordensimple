@@ -44,6 +44,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       defaultPayment={ctx.settings.defaultPayment}
       products={products}
       categories={categories}
+      chargesVat={ctx.settings.chargesVat}
       customers={customers.map((c) => c.name)}
     >
       <AppSidebar

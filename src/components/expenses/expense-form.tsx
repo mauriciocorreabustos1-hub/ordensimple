@@ -4,6 +4,7 @@ import * as React from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
@@ -21,18 +22,22 @@ export type ExpenseEdit = {
   categoryId?: string
   date: string
   supplierName: string
+  hasInvoice?: boolean
 }
 
 export function ExpenseForm({
   currency,
   timezone,
   categories,
+  chargesVat = false,
   editing,
   onDone,
 }: {
   currency: string
   timezone: string
   categories: ExpenseCategoryOption[]
+  /** El negocio cobra IVA: se pregunta si el gasto tiene factura (su IVA se descuenta). */
+  chargesVat?: boolean
   /** Si viene, el formulario edita ese gasto en vez de crear uno nuevo. */
   editing?: ExpenseEdit
   onDone?: () => void
@@ -42,6 +47,7 @@ export function ExpenseForm({
   const [categoryId, setCategoryId] = React.useState<string | undefined>(editing?.categoryId)
   const [date, setDate] = React.useState(() => editing?.date ?? toDateKey(new Date(), timezone))
   const [supplierName, setSupplierName] = React.useState(editing?.supplierName ?? "")
+  const [hasInvoice, setHasInvoice] = React.useState(editing?.hasInvoice ?? false)
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
 
@@ -59,7 +65,7 @@ export function ExpenseForm({
     setErrors(errs)
     if (Object.keys(errs).length) return
     startTransition(async () => {
-      const input = { amount, description, categoryId, date, supplierName }
+      const input = { amount, description, categoryId, date, supplierName, ...(chargesVat ? { hasInvoice } : {}) }
       const result = editing ? await updateExpense(editing.id, input) : await createExpense(input)
       if (!result.ok) {
         toast.error(result.message)
@@ -74,6 +80,7 @@ export function ExpenseForm({
       setDescription("")
       setCategoryId(undefined)
       setSupplierName("")
+      setHasInvoice(false)
       onDone?.()
     })
   }
@@ -125,6 +132,15 @@ export function ExpenseForm({
           />
         </Field>
       </div>
+      {chargesVat ? (
+        <label htmlFor="e-invoice" className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">
+          <Checkbox id="e-invoice" checked={hasInvoice} onCheckedChange={(v) => setHasInvoice(v === true)} className="mt-0.5" />
+          <span className="space-y-0.5">
+            <span className="block font-medium">Tiene factura a nombre del negocio</span>
+            <span className="block text-xs text-muted-foreground">Su IVA se descuenta del IVA que tienes que pagar.</span>
+          </span>
+        </label>
+      ) : null}
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
         {editing ? "Guardar cambios" : "Guardar gasto"}

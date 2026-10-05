@@ -190,6 +190,10 @@ model BusinessSettings {
   noSalesReminder   Boolean  @default(true)
   weeklySummary     Boolean  @default(true)
   defaultPayment    PaymentMethod @default(CASH)
+  /// El negocio cobra IVA en sus ventas (inscrito en el SII): se calcula el IVA a pagar y los montos sin IVA.
+  chargesVat        Boolean  @default(false)
+  /// Día del mes siguiente en que vence el pago del IVA (en Chile, F29: día 20 con documentos electrónicos, si no día 12).
+  vatDueDay         Int      @default(20)
   /// Últimos avisos enviados por correo (para no repetirlos).
   lastWeeklySummaryAt   DateTime?
   lastNoSalesReminderAt DateTime?
@@ -311,6 +315,8 @@ model Expense {
   business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
   description String
   amount      Int
+  /// Tiene factura a nombre del negocio: su IVA se descuenta del IVA a pagar.
+  hasInvoice  Boolean          @default(false)
   date        DateTime         @default(now())
   categoryId  String?
   category    ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)

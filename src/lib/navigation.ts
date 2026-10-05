@@ -3,6 +3,7 @@ import {
   Boxes,
   Calculator,
   Home,
+  Landmark,
   Package,
   Receipt,
   Settings,
@@ -37,6 +38,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },
   { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator, permission: "finances:view" },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, pro: true, permission: "reports:view" },
+  { href: "/dashboard/resultados", label: "Resultados e IVA", icon: Landmark, pro: true, permission: "reports:view" },
   { href: "/dashboard/sucursales", label: "Sucursales", icon: Store, permission: "finances:view" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]

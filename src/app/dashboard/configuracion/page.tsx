@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/app/page-header"
 import { BusinessForm } from "@/components/settings/business-form"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
+import { VatDueDay } from "@/components/settings/vat-due-day"
+import { vatInfo } from "@/lib/vat"
 import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { AccountSection } from "@/components/settings/account-section"
@@ -24,6 +26,7 @@ export const metadata: Metadata = { title: "Configuración" }
 export default async function SettingsPage() {
   const ctx = await requireBusiness()
   const canManage = can(ctx.role, "settings:manage")
+  const vat = vatInfo(ctx.business.country)
   const [categories, currentMembers, records, invitations, owned] = await Promise.all([
     db.expenseCategory.findMany({
       where: { businessId: ctx.businessId },
@@ -123,6 +126,34 @@ export default async function SettingsPage() {
           />
         </CardContent>
       </Card>
+
+      {vat ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Impuestos ({vat.label})</CardTitle>
+            <CardDescription>
+              Para calcular cuánto {vat.label} pagar cada mes y ver tus resultados sin {vat.label}. Es una ayuda para
+              prepararte: la cifra oficial es la que declaras{vat.form ? ` en el ${vat.form}` : ""}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y">
+            <PreferenceSwitch
+              name="chargesVat"
+              label={`Mi negocio cobra ${vat.label}`}
+              description={
+                ctx.business.country === "CL"
+                  ? "Actívalo si tienes inicio de actividades en el SII y tus precios incluyen IVA (emites boletas o facturas)."
+                  : `Actívalo si tus precios incluyen ${vat.label} y lo declaras cada mes.`
+              }
+              checked={ctx.settings.chargesVat}
+              disabled={!canManage}
+            />
+            {ctx.settings.chargesVat ? (
+              <VatDueDay value={ctx.settings.vatDueDay} chile={ctx.business.country === "CL"} disabled={!canManage} />
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

@@ -88,6 +88,8 @@ export const preferencesSchema = z.object({
   lowStockAlerts: z.boolean().optional(),
   noSalesReminder: z.boolean().optional(),
   weeklySummary: z.boolean().optional(),
+  chargesVat: z.boolean().optional(),
+  vatDueDay: z.number().int().min(1).max(28).optional(),
 })
 export type PreferencesInput = z.input<typeof preferencesSchema>
 
@@ -134,6 +136,7 @@ export const expenseSchema = z.object({
   amount: positiveMoney,
   date: dateKey,
   supplierName: optionalText(80),
+  hasInvoice: z.boolean().optional(),
 })
 export type ExpenseInput = z.input<typeof expenseSchema>
 

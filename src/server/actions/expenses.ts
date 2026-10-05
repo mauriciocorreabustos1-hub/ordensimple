@@ -21,7 +21,7 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
   const ctx = await requireBusiness()
   const parsed = expenseSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { description, categoryId, amount, date, supplierName } = parsed.data
+  const { description, categoryId, amount, date, supplierName, hasInvoice } = parsed.data
 
   try {
     assertCan(ctx, id ? "expenses:edit" : "expenses:create")
@@ -54,6 +54,8 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
             : dateKeyToInstant(date, ctx.timezone),
         categoryId: categoryId ?? null,
         supplierId,
+        // Solo se envía si el negocio cobra IVA; si no, al editar se conserva lo que tenía.
+        ...(hasInvoice === undefined ? {} : { hasInvoice }),
       }
       if (current) await tx.expense.update({ where: { id: current.id }, data })
       else await tx.expense.create({ data: { ...data, businessId: ctx.businessId, createdById: ctx.user.id } })

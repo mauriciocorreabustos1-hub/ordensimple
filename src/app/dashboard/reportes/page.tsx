@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
-import { Download, PiggyBank, Receipt, ShoppingBag, TrendingDown } from "lucide-react"
+import Link from "next/link"
+import { Download, Landmark, PiggyBank, Receipt, ShoppingBag, TrendingDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DateRangeFilter } from "@/components/app/date-range-filter"
@@ -77,6 +78,12 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
         description="Cómo le fue a tu negocio en el período que elijas, comparado con el período anterior del mismo largo."
         actions={
           <>
+            <Button asChild>
+              <Link href="/dashboard/resultados">
+                <Landmark />
+                Resultados e IVA
+              </Link>
+            </Button>
             <Button variant="outline" asChild>
               <a href={exportHref("ventas")} download>
                 <Download />

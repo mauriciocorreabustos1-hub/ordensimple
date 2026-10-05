@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
-import { CalendarClock, PiggyBank, Receipt, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react"
+import { CalendarClock, ChevronRight, Landmark, NotebookPen, PiggyBank, Receipt, ShoppingBag, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard, ChangeBadge, DiffBadge } from "@/components/app/stat-card"
 import { Explainer } from "@/components/app/explainer"
@@ -11,9 +11,12 @@ import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { businessHealth, percentChange } from "@/lib/calculations"
 import { formatMoney, referenceAmount } from "@/lib/currency"
-import { greeting, monthName } from "@/lib/dates"
+import { greeting, monthName, zonedParts } from "@/lib/dates"
+import { daysUntil, formatDueDate, vatDueDate, vatInfo } from "@/lib/vat"
 import { getDashboardData } from "@/server/queries/dashboard"
 import { getInsights } from "@/server/queries/insights"
+import { getDebtors } from "@/server/queries/fiado"
+import { getYearSummary } from "@/server/queries/results"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
@@ -27,10 +30,22 @@ export default async function DashboardPage() {
   // Los empleados ven solo lo de hoy para registrar; las ganancias y comparaciones son del dueño.
   const showFinances = can(ctx.role, "finances:view")
   const showTips = showFinances && !ctx.settings.easyMode && canUseFeature(ctx.business.plan, "tips")
-  const [data, insights] = await Promise.all([
+  // Lo que te deben, el IVA del mes y la utilidad (estado de resultados) para el dueño o administrador.
+  const showMoneyBox = showFinances && !ctx.settings.easyMode
+  const showFiado = showMoneyBox && canUseFeature(ctx.business.plan, "customers")
+  const showResults = showMoneyBox && canUseFeature(ctx.business.plan, "reports") && can(ctx.role, "reports:view")
+  const vat = vatInfo(ctx.business.country)
+  const chargesVat = Boolean(vat && ctx.settings.chargesVat)
+  const today = zonedParts(now, ctx.timezone)
+  const [data, insights, debts, year] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
+    showFiado ? getDebtors(ctx.businessId) : Promise.resolve(null),
+    showResults ? getYearSummary(ctx.businessId, today.year, today.month, ctx.timezone, chargesVat ? vat!.rate : null) : Promise.resolve(null),
   ])
+  const thisMonth = year?.rows[today.month - 1] ?? null
+  const vatDue = vatDueDate(today.year, today.month, ctx.settings.vatDueDay, ctx.timezone)
+  const vatDaysLeft = daysUntil(vatDue, now, ctx.timezone)
   const money = (n: number) => formatMoney(n, ctx.currency)
   const easy = ctx.settings.easyMode
 
@@ -121,6 +136,52 @@ export default async function DashboardPage() {
           />
         </div>
       </section>
+
+      {debts || thisMonth ? (
+        <section aria-labelledby="cuentas" className="space-y-3">
+          <h2 id="cuentas" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Tus cuentas de {currentMonth}
+          </h2>
+          <div className={`grid gap-3 ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            {debts ? (
+              <LinkCard
+                href="/dashboard/clientes?segmento=deben"
+                icon={NotebookPen}
+                label="Te deben (fiado)"
+                value={money(debts.total)}
+                tone="text-warning"
+                hint={debts.count === 0 ? "Nadie te debe" : debts.count === 1 ? "1 cliente con deuda · ver quién" : `${debts.count} clientes con deuda · ver quiénes`}
+              />
+            ) : null}
+            {thisMonth ? (
+              <LinkCard
+                href="/dashboard/resultados"
+                icon={thisMonth.s.profit >= 0 ? PiggyBank : TrendingDown}
+                label={thisMonth.s.profit >= 0 ? "Utilidad del mes" : "Pérdida del mes"}
+                value={money(Math.abs(thisMonth.s.profit))}
+                tone={thisMonth.s.profit >= 0 ? "text-success" : "text-danger"}
+                hint={`Descontando lo que te costó lo vendido${chargesVat ? ` y sin ${vat!.label}` : ""} · ver estado de resultados`}
+              />
+            ) : null}
+            {chargesVat && thisMonth ? (
+              <LinkCard
+                href="/dashboard/resultados"
+                icon={Landmark}
+                label={`${vat!.label} a pagar (aprox.)`}
+                value={money(thisMonth.vatToPay)}
+                tone="text-primary"
+                hint={
+                  thisMonth.vatToPay > 0
+                    ? `Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
+                    : thisMonth.carryOut > 0
+                      ? `Por ahora no te toca pagar: tienes ${money(thisMonth.carryOut)} a favor`
+                      : "Este mes, por ahora, no te toca pagar"
+                }
+              />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {easy ? (
         <p className="text-center text-sm text-muted-foreground">
@@ -228,6 +289,39 @@ export default async function DashboardPage() {
         </>
       )}
     </div>
+  )
+}
+
+function LinkCard({
+  href,
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  href: string
+  icon: LucideIcon
+  label: string
+  value: string
+  hint: string
+  tone: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 md:p-5"
+    >
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Icon className={`size-4 ${tone}`} />
+          {label}
+        </p>
+        <p className="tabular text-2xl font-semibold tracking-tight">{value}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </Link>
   )
 }
 

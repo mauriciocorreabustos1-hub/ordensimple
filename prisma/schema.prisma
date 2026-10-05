@@ -551,8 +551,11 @@ model EmailCampaign {
   buttonLabel String?
   buttonUrl   String?
   couponCode  String?
+  /// ALL, FREE, PAID o DIRECT (personas específicas).
   audience    String    @default("ALL")
   recipients  Int       @default(0)
+  /// En los envíos a personas específicas: sus correos, separados por coma.
+  toEmails    String?
   sentCount   Int       @default(0)
   failedCount Int       @default(0)
   createdBy   String?

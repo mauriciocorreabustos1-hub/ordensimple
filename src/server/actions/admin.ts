@@ -5,7 +5,7 @@ import { z } from "zod"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { sendEmail, sendEmailBatch } from "@/lib/email"
-import { planGiftEmail, promoEmail } from "@/lib/email-templates"
+import { directEmail, planGiftEmail, promoEmail } from "@/lib/email-templates"
 import { unsubscribeUrl } from "@/lib/unsubscribe"
 import { PLANS } from "@/lib/plans"
 import { isAdminEmail, requireAdmin } from "@/server/admin"
@@ -247,6 +247,121 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
         ? `Se enviaron ${sent} correos; ${failed} fallaron`
         : `¡Listo! Se enviaron ${sent} correo${sent === 1 ? "" : "s"}`,
     }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+// ─── Correo a personas específicas ──────────────────────────────────────────
+
+/** Busca personas por nombre o correo para elegir a quién escribirle. */
+export async function searchUsersForEmail(q: string) {
+  await requireAdmin()
+  const term = String(q ?? "").trim().slice(0, 80)
+  if (term.length < 2) return []
+  return db.user.findMany({
+    where: { OR: [{ name: { contains: term, mode: "insensitive" } }, { email: { contains: term, mode: "insensitive" } }] },
+    select: { id: true, name: true, email: true, marketingOptIn: true },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+  })
+}
+
+const directSchema = z.object({
+  userIds: z.array(z.string().min(1)).max(50, "Máximo 50 personas por envío"),
+  subject: z.string().trim().min(3, "Escribe el asunto").max(150),
+  body: z.string().trim().min(10, "Escribe el mensaje").max(5000),
+  buttonLabel: z.string().trim().max(40).optional(),
+  buttonUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => !v || /^https?:\/\/\S+$/.test(v), "El enlace debe empezar con https://")
+    .optional(),
+  /** Si es promoción, solo llega a quien aceptó recibir ofertas y trae el enlace para darse de baja. */
+  promo: z.boolean(),
+})
+
+export type DirectEmailInput = z.input<typeof directSchema>
+
+function parseDirect(input: DirectEmailInput) {
+  const parsed = directSchema.safeParse(input)
+  if (!parsed.success) return { error: validationError(parsed.error) }
+  const d = parsed.data
+  if (Boolean(d.buttonLabel) !== Boolean(d.buttonUrl)) {
+    return { error: { ok: false as const, message: "Para el botón, escribe el texto y el enlace (o deja ambos vacíos)." } }
+  }
+  return { data: d }
+}
+
+function buildDirect(d: z.output<typeof directSchema>, user: { id: string; name: string; email: string }) {
+  if (d.promo) return buildPromo({ ...d, couponCode: undefined, audience: "ALL" }, user)
+  return { to: user.email, ...directEmail({ ...d, name: user.name }) }
+}
+
+/** Envía el correo solo al administrador, para revisarlo antes. */
+export async function sendTestDirectEmail(input: DirectEmailInput): Promise<ActionResult> {
+  const admin = await requireAdmin()
+  const r = parseDirect(input)
+  if (r.error) return r.error
+  try {
+    const email = buildDirect(r.data, { id: admin.id, name: admin.name, email: admin.email })
+    await sendEmail({ ...email, subject: `[Prueba] ${email.subject}` })
+    return { ok: true, message: `Te enviamos una prueba a ${admin.email}` }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+/** Envía un correo a las personas elegidas (máximo 50) y lo deja en el historial. */
+export async function sendDirectEmail(input: DirectEmailInput): Promise<ActionResult> {
+  const admin = await requireAdmin()
+  const r = parseDirect(input)
+  if (r.error) return r.error
+  const d = r.data
+  if (d.userIds.length === 0) return { ok: false, message: "Elige al menos una persona." }
+
+  try {
+    const found = await db.user.findMany({
+      where: { id: { in: d.userIds } },
+      select: { id: true, name: true, email: true, marketingOptIn: true },
+    })
+    // Una promoción no le llega a quien no quiere recibir ofertas.
+    const users = d.promo ? found.filter((u) => u.marketingOptIn) : found
+    const skipped = found.length - users.length
+    if (users.length === 0) {
+      return {
+        ok: false,
+        message: d.promo
+          ? "Ninguna de esas personas aceptó recibir ofertas. Si es un aviso o una respuesta, desmarca “Es una promoción”."
+          : "No encontramos a esas personas.",
+      }
+    }
+
+    const campaign = await db.emailCampaign.create({
+      data: {
+        subject: d.subject,
+        body: d.body,
+        buttonLabel: d.buttonLabel || null,
+        buttonUrl: d.buttonUrl || null,
+        audience: "DIRECT",
+        recipients: users.length,
+        toEmails: users.map((u) => u.email).join(", "),
+        createdBy: admin.email,
+      },
+    })
+    const { sent, failed } = await sendEmailBatch(users.map((u) => buildDirect(d, u)))
+    await db.emailCampaign.update({
+      where: { id: campaign.id },
+      data: { sentCount: sent, failedCount: failed, sentAt: new Date() },
+    })
+
+    revalidatePath("/admin")
+    if (sent === 0) return { ok: false, message: "No se pudo enviar el correo. Revisa la configuración de Resend." }
+    const parts = [`¡Listo! Se envi${sent === 1 ? "ó 1 correo" : `aron ${sent} correos`}`]
+    if (failed) parts.push(`${failed} fallaron`)
+    if (skipped) parts.push(`${skipped} no aceptan ofertas y se omitieron`)
+    return { ok: true, message: parts.join(" · ") }
   } catch (error) {
     return toActionError(error)
   }

@@ -196,6 +196,38 @@ export function promoEmail({
   return { subject: personalize(subject), html, text }
 }
 
+/** Correo escrito por el equipo para una persona: aviso, respuesta o seguimiento (no es publicidad). */
+export function directEmail({
+  name,
+  subject,
+  body,
+  buttonLabel,
+  buttonUrl,
+}: {
+  name: string
+  subject: string
+  body: string
+  buttonLabel?: string | null
+  buttonUrl?: string | null
+}) {
+  const first = name.split(" ")[0] || name
+  const personalize = (s: string) => s.replaceAll("{nombre}", first)
+  const paragraphs = personalize(body)
+    .split(/\n\s*\n/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+
+  const html = layout({
+    preview: paragraphs[0]?.slice(0, 120) ?? subject,
+    body: [
+      ...paragraphs.map((para) => p(escapeHtml(para).replace(/\n/g, "<br>"))),
+      buttonLabel && buttonUrl ? button(buttonUrl, escapeHtml(buttonLabel)) : "",
+    ].join(""),
+  })
+  const text = [...paragraphs, buttonLabel && buttonUrl ? `${buttonLabel}: ${buttonUrl}` : ""].filter(Boolean).join("\n\n")
+  return { subject: personalize(subject), html, text }
+}
+
 export function invitationEmail({
   inviterName,
   businessName,

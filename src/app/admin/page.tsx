@@ -2,6 +2,8 @@ import Link from "next/link"
 import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
+import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
+import { db } from "@/lib/db"
 import { CouponManager, type CouponRow } from "@/components/admin/coupon-manager"
 import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
 import { PlanDialog } from "@/components/admin/plan-dialog"
@@ -34,11 +36,20 @@ function lastSeen(u: AdminUserRow) {
   return at ? formatDateTime(at, TZ) : "—"
 }
 
+/** "a@x.cl, b@y.cl y 3 más" */
+function shortList(emails: string | null, count: number) {
+  const list = emails ? emails.split(", ") : []
+  if (list.length === 0) return `${count} personas`
+  return list.length > 3 ? `${list.slice(0, 3).join(", ")} y ${list.length - 3} más` : list.join(", ")
+}
+
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : ""
   const page = Math.max(1, Number(params.pagina) || 1)
-  const [stats, users, errors, coupons, planCounts, audience, campaigns] = await Promise.all([
+  // ?para=<id> deja a esa persona elegida en "Correo a personas específicas".
+  const para = typeof params.para === "string" ? params.para.slice(0, 40) : ""
+  const [stats, users, errors, coupons, planCounts, audience, campaigns, directTo] = await Promise.all([
     getAdminStats(),
     listAdminUsers({ q: q || undefined, page }),
     getRecentErrors(),
@@ -46,6 +57,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     getPlanCounts(),
     getAudienceCounts(),
     listCampaigns(),
+    para
+      ? db.user.findMany({ where: { id: para }, select: { id: true, name: true, email: true, marketingOptIn: true } })
+      : Promise.resolve([]),
   ])
   const now = new Date()
   const longDate = (d: Date) => formatDate(d, TZ, { day: "numeric", month: "long", year: "numeric" })
@@ -208,6 +222,12 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         Sin ventas aún
                       </Badge>
                     )}
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/admin?para=${u.id}#correo-directo`} aria-label={`Escribirle a ${u.name}`}>
+                        <Mail />
+                        Escribirle
+                      </Link>
+                    </Button>
                     {isAdminEmail(u.email) ? null : (
                       <DeleteUserDialog
                         userId={u.id}
@@ -280,6 +300,13 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             .filter((cp) => cp.active && !(cp.expiresAt && cp.expiresAt <= now))
             .map((cp) => ({ code: cp.code, summary: couponSummary(cp) }))}
         />
+        <div className="space-y-1 pt-2">
+          <h3 className="font-semibold">Correo a personas específicas</h3>
+          <p className="text-sm text-muted-foreground">
+            Para responderle a alguien, avisarle algo de su cuenta o enviarle una oferta solo a algunos.
+          </p>
+        </div>
+        <DirectEmailComposer key={para || "nadie"} appUrl={getAppUrl()} initial={directTo} />
         {campaigns.length ? (
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-muted-foreground">Enviados</h3>
@@ -289,7 +316,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                   <div className="min-w-0">
                     <p className="truncate font-medium">{cm.subject}</p>
                     <p className="text-xs text-muted-foreground">
-                      {AUDIENCES[cm.audience as Audience] ?? cm.audience}
+                      {cm.audience === "DIRECT" ? `Para: ${shortList(cm.toEmails, cm.recipients)}` : (AUDIENCES[cm.audience as Audience] ?? cm.audience)}
                       {cm.couponCode ? ` · código ${cm.couponCode}` : ""}
                     </p>
                   </div>

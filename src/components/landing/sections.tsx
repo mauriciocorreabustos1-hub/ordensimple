@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Check, Minus, Sparkles } from "lucide-react"
+import { ArrowRight, Check, Minus, Sparkles, Users } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
@@ -164,16 +164,19 @@ export function PricingCards() {
               </div>
               <p className="text-sm text-muted-foreground">{plan.description}</p>
             </div>
+            <p className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2 text-xs">
+              <Users className="mt-px size-3.5 shrink-0 text-primary" />
+              <span>
+                <span className="font-medium">Ideal para:</span> {plan.audience.charAt(0).toLowerCase() + plan.audience.slice(1)}
+              </span>
+            </p>
             <div className="space-y-1">
-              <p className="text-3xl font-semibold tracking-tight">
-                {plan.priceLabel}
-                {plan.id === "FREE" ? <span className="text-base font-normal text-muted-foreground"> /mes</span> : null}
-              </p>
+              <p className="text-3xl font-semibold tracking-tight">{plan.priceLabel}</p>
               {plan.priceNote ? <p className="text-xs text-muted-foreground">{plan.priceNote}</p> : null}
             </div>
             <ul className="flex-1 space-y-2 text-sm">
               {plan.highlights.map((h) => (
-                <li key={h} className="flex items-start gap-2">
+                <li key={h} className={cn("flex items-start gap-2", h.startsWith("Todo lo de") && "font-medium")}>
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {h}
                 </li>

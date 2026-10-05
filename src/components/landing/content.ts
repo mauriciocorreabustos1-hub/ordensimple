@@ -355,15 +355,22 @@ export const FAQ_GROUPS: FaqGroup[] = [
 export type ComparisonRow = { label: string; values: [string | boolean, string | boolean, string | boolean] }
 
 export const PLAN_COMPARISON: ComparisonRow[] = [
+  { label: "Ideal para", values: ["1 a 3 personas", "Pymes con equipo", "Empresas con varios locales"] },
+  { label: "Trabajadores (además de ti)", values: ["2", "20", "Más de 50"] },
   { label: "Negocios o sucursales", values: ["1", "Hasta 3", "Hasta 10"] },
   { label: "Productos", values: ["Hasta 50", "Ilimitados", "Ilimitados"] },
-  { label: "Trabajadores (además de ti)", values: ["5", "20", "Más de 50"] },
   { label: "Ventas y gastos", values: [true, true, true] },
-  { label: "Panel de inicio", values: [true, true, true] },
+  { label: "Cierre de caja", values: [true, true, true] },
+  { label: "Ganancia del día y del mes", values: [true, true, true] },
+  { label: "Avisos por correo y resumen semanal", values: [true, true, true] },
   { label: "Calculadoras", values: [true, true, true] },
-  { label: "Inventario completo", values: [false, true, true] },
-  { label: "Clientes y proveedores", values: [false, true, true] },
-  { label: "Reportes", values: [false, true, true] },
-  { label: "Consejos automáticos", values: [false, true, true] },
+  { label: "Descargar tus datos", values: [true, true, true] },
+  { label: "Inventario y alertas de stock", values: [false, true, true] },
+  { label: "Clientes y fiado con abonos", values: [false, true, true] },
+  { label: "Proveedores", values: [false, true, true] },
+  { label: "Reportes y consejos automáticos", values: [false, true, true] },
+  { label: "Resultados e IVA (utilidad y F29)", values: [false, true, true] },
+  { label: "Exportar a Excel", values: [false, true, true] },
+  { label: "Equipo por sucursal", values: [false, true, true] },
   { label: "Resumen de todas tus sucursales", values: [false, true, true] },
 ]

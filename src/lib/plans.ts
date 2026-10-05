@@ -19,6 +19,8 @@ type PlanConfig = {
   /** Precio mensual en CLP para la suscripción (null = no se puede contratar todavía). */
   monthlyPrice: number | null
   description: string
+  /** Para quién es (se muestra en precios). */
+  audience: string
   maxBusinesses: number
   maxProducts: number | null
   maxMembers: number
@@ -38,13 +40,25 @@ export const PLANS: Record<Plan, PlanConfig> = {
     id: "FREE",
     name: "Gratis",
     priceLabel: "$0",
+    priceNote: "Para siempre · sin tarjeta",
     monthlyPrice: null,
-    description: "Para empezar a ordenar tu negocio.",
+    description: "Para negocios que recién parten o tienen poco equipo.",
+    audience: "Emprendimientos y locales chicos de 1 a 3 personas",
     maxBusinesses: 1,
     maxProducts: 50,
-    maxMembers: 6, // tú + 5 trabajadores
+    maxMembers: 3, // tú + 2 trabajadores
     features: ["tools"],
-    highlights: ["1 negocio", "Tú + 5 trabajadores", "Hasta 50 productos", "Ventas y gastos", "Cierre de caja", "Panel de inicio", "Calculadoras"],
+    highlights: [
+      "1 negocio",
+      "Tú + 2 trabajadores",
+      "Hasta 50 productos",
+      "Ventas y gastos sin límite",
+      "Cierre de caja diario",
+      "Tu ganancia del día y del mes",
+      "Avisos por correo y resumen semanal",
+      "Calculadoras para tu negocio",
+      "Descarga tus datos cuando quieras",
+    ],
   },
   PRO: {
     id: "PRO",
@@ -53,19 +67,23 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceLabel: BILLING_ENABLED ? "$6.990" : "Gratis por ahora",
     priceNote: BILLING_ENABLED ? "al mes · cancelas cuando quieras" : "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
     monthlyPrice: 6990,
-    description: "Para negocios que quieren crecer con datos.",
+    description: "Para pymes que crecen y quieren tener todo ordenado.",
+    audience: "Pymes con equipo, inventario y clientes que compran fiado",
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
     features: ["inventory", "customers", "suppliers", "tools", "reports", "tips"],
     highlights: [
+      "Todo lo de Gratis",
+      "Tú + 20 trabajadores",
+      "Hasta 3 sucursales, con equipo por sucursal",
       "Productos ilimitados",
       "Inventario y alertas de stock",
-      "Clientes y fiado",
+      "Clientes y fiado con abonos",
       "Proveedores",
       "Reportes y consejos automáticos",
-      "Tú + 20 trabajadores",
-      "Hasta 3 sucursales",
+      "Resultados e IVA: tu utilidad y cuánto pagar en el F29",
+      "Ventas, gastos y resultados en Excel",
     ],
   },
   BUSINESS: {
@@ -74,12 +92,20 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceLabel: BILLING_ENABLED ? "$14.990" : "Próximamente",
     priceNote: BILLING_ENABLED ? "al mes · cancelas cuando quieras" : "Aún no se puede contratar. Por ahora puedes tener hasta 3 sucursales gratis.",
     monthlyPrice: 14990,
-    description: "Para equipos y varias sucursales.",
+    description: "Para empresas con varios locales y equipos grandes.",
+    audience: "Empresas con varias sucursales y más de 20 personas",
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // más de 50 trabajadores
     features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "multiUser", "branches"],
-    highlights: ["Todo lo de Pro", "Más de 50 trabajadores", "Hasta 10 sucursales", "Resumen de todas tus sucursales juntas"],
+    highlights: [
+      "Todo lo de Pro",
+      "Más de 50 trabajadores",
+      "Hasta 10 sucursales",
+      "Resumen de todas tus sucursales juntas",
+      "Cuál sucursal vende más, de un vistazo",
+      "Elige a qué sucursales entra cada trabajador",
+    ],
   },
 }
 

@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AppModal } from "@/components/app/app-modal"
 import { Field } from "@/components/app/field"
 import { ScanButton } from "@/components/app/barcode-scanner"
+import { findByCode } from "@/lib/barcodes"
 import { formatNumber } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { createInventoryMovement } from "@/server/actions/inventory"
 
-export type MovementProduct = { id: string; name: string; stock: number; trackStock: boolean; sku?: string | null }
+export type MovementProduct = { id: string; name: string; stock: number; trackStock: boolean; codes?: string[] }
 type MovementType = "IN" | "OUT" | "ADJUSTMENT" | "WASTE"
 
 const TYPES: { value: MovementType; label: string; help: string; icon: typeof Plus }[] = [
@@ -136,7 +137,7 @@ export function MovementDialog({
               size="icon"
               label="Escanear producto"
               onResult={(code) => {
-                const found = products.find((p) => p.sku && p.sku.trim().toLowerCase() === code.toLowerCase())
+                const found = findByCode(products, code)
                 if (found) {
                   setProductId(found.id)
                   toast.success(found.name)

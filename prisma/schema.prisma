@@ -169,6 +169,7 @@ model Business {
   invitations       Invitation[]
   subscriptions     Subscription[]
   payables          Payable[]
+  productBarcodes   ProductBarcode[]
 
   @@map("business")
 }
@@ -250,6 +251,8 @@ model Product {
 
   saleItems SaleItem[]
   movements InventoryMovement[]
+  /// Códigos de barras adicionales (el principal es `sku`).
+  barcodes  ProductBarcode[]
 
   @@unique([businessId, sku])
   @@index([businessId, active])
@@ -651,4 +654,20 @@ model Payable {
 
   @@index([businessId, paidAt, dueDate])
   @@map("payable")
+}
+
+// ─── Varios códigos de barras para un mismo producto ───────────────────────
+
+model ProductBarcode {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  code       String
+  createdAt  DateTime @default(now())
+
+  @@unique([businessId, code])
+  @@index([productId])
+  @@map("product_barcode")
 }

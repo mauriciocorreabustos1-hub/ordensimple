@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScanButton } from "@/components/app/barcode-scanner"
+import { findByCode } from "@/lib/barcodes"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { PaymentChips } from "@/components/app/payment-chips"
@@ -15,7 +16,7 @@ import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createSale, updateSale } from "@/server/actions/sales"
 
-export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; sku?: string | null }
+export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[] }
 
 type Line = { key: number; productId: string; description: string; quantity: number; unitPrice: number }
 
@@ -90,7 +91,7 @@ export function SaleForm({
 
   /** Producto escaneado: si ya está en la venta suma una unidad; si no, ocupa una línea vacía o agrega una. */
   function addScanned(code: string) {
-    const p = products.find((x) => x.sku && x.sku.trim().toLowerCase() === code.toLowerCase())
+    const p = findByCode(products, code)
     if (!p) return void toast.error(`No hay un producto con el código ${code}. Agrégalo en Productos con ese código.`)
     setLines((ls) => {
       const same = ls.find((l) => l.productId === p.id)
@@ -231,12 +232,17 @@ export function SaleForm({
             </div>
           )
         })}
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <Button type="button" variant="outline" onClick={() => setLines((ls) => [...ls, newLine()])}>
+        {/* Si no caben en una línea (celulares angostos), "Escanear" baja a la siguiente. */}
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" className="flex-1 basis-48" onClick={() => setLines((ls) => [...ls, newLine()])}>
             <Plus />
             Agregar otro producto
           </Button>
-          {products.some((p) => p.sku) ? <ScanButton label="Escanear" onResult={addScanned} /> : null}
+          {products.some((p) => p.codes?.length) ? (
+            <div className="flex flex-1 basis-28 *:w-full">
+              <ScanButton label="Escanear" onResult={addScanned} />
+            </div>
+          ) : null}
         </div>
       </div>
 

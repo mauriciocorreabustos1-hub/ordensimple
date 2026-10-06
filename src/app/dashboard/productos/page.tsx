@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { productCodes } from "@/lib/barcodes"
 import { toDateKey } from "@/lib/dates"
 import { AlertTriangle, Boxes, Package, PackageX } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -55,7 +56,7 @@ export default async function ProductsPage() {
   const [products, categories] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId },
-      include: { category: { select: { name: true } } },
+      include: { category: { select: { name: true } }, barcodes: { select: { code: true }, orderBy: { createdAt: "asc" } } },
       orderBy: [{ active: "desc" }, { name: "asc" }],
     }),
     db.category.findMany({ where: { businessId: ctx.businessId }, select: { name: true }, orderBy: { name: "asc" } }),
@@ -74,7 +75,7 @@ export default async function ProductsPage() {
 
   const toForm = (p: (typeof products)[number]): ProductFormValues => ({
     name: p.name,
-    sku: p.sku ?? "",
+    codes: productCodes(p),
     categoryName: p.category?.name ?? "",
     cost: p.cost,
     price: p.price,
@@ -111,7 +112,7 @@ export default async function ProductsPage() {
         />
       ) : (
         <>
-          <ul className="grid gap-2 md:hidden">
+          <ul className="grid grid-cols-1 gap-2 md:hidden">
             {products.map((p) => {
               const profit = p.price - p.cost
               return (
@@ -121,7 +122,7 @@ export default async function ProductsPage() {
                       <p className="truncate font-medium">{p.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {p.category?.name ?? "Sin categoría"}
-                        {p.sku ? ` · ${p.sku}` : ""}
+                        {p.sku ? ` · ${p.sku}${p.barcodes.length ? ` (+${p.barcodes.length})` : ""}` : ""}
                       </p>
                     </div>
                     {canManage ? (
@@ -177,7 +178,7 @@ export default async function ProductsPage() {
                         <p className="truncate font-medium">{p.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
                           {p.category?.name ?? "Sin categoría"}
-                          {p.sku ? ` · ${p.sku}` : ""}
+                          {p.sku ? ` · ${p.sku}${p.barcodes.length ? ` (+${p.barcodes.length})` : ""}` : ""}
                         </p>
                       </TableCell>
                       <TableCell className="tabular text-right text-muted-foreground">{money(p.cost)}</TableCell>

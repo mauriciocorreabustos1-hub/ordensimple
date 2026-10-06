@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,8 @@ import { createProduct, updateProduct } from "@/server/actions/products"
 
 export type ProductFormValues = {
   name: string
-  sku: string
+  /** Todos sus códigos de barras: el primero es el principal. */
+  codes: string[]
   categoryName: string
   cost: number
   price: number
@@ -31,7 +32,7 @@ export type ProductFormValues = {
 
 export const EMPTY_PRODUCT: ProductFormValues = {
   name: "",
-  sku: "",
+  codes: [],
   categoryName: "",
   cost: 0,
   price: 0,
@@ -63,6 +64,19 @@ export function ProductForm({
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
   const set = <K extends keyof ProductFormValues>(k: K, value: ProductFormValues[K]) => setV((s) => ({ ...s, [k]: value }))
+  const [newCode, setNewCode] = React.useState("")
+
+  /** Agrega un código a la lista (escaneado, escrito o desde un lector USB que termina con Enter). */
+  function addCode(raw: string) {
+    const code = raw.trim()
+    if (!code) return
+    if (v.codes.some((c) => c.toLowerCase() === code.toLowerCase())) {
+      toast.info("Ese código ya está agregado")
+    } else {
+      set("codes", [...v.codes, code])
+    }
+    setNewCode("")
+  }
   const money = (n: number) => formatMoney(n, currency)
 
   const profit = v.price - v.cost
@@ -76,7 +90,9 @@ export function ProductForm({
     if (v.price <= 0) errs.price = "Ingresa el precio de venta"
     setErrors(errs)
     if (Object.keys(errs).length) return
-    const input: ProductInput = { ...v }
+    // Lo que quedó escrito sin tocar "Agregar" también se guarda.
+    const codes = newCode.trim() && !v.codes.includes(newCode.trim()) ? [...v.codes, newCode.trim()] : v.codes
+    const input: ProductInput = { ...v, codes, sku: codes[0] }
     startTransition(async () => {
       const result = productId ? await updateProduct(productId, input) : await createProduct(input)
       if (!result.ok) {
@@ -96,7 +112,7 @@ export function ProductForm({
       <Field label="Nombre" htmlFor="p-name" error={errors.name}>
         <Input id="p-name" value={v.name} onChange={(e) => set("name", e.target.value)} placeholder="Ej: Coca-Cola 1.5L" className="h-10" maxLength={100} autoFocus />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3">
         <Field label="Categoría" htmlFor="p-cat" optional>
           <Input id="p-cat" list="product-categories" value={v.categoryName} onChange={(e) => set("categoryName", e.target.value)} placeholder="Ej: Bebidas" className="h-10" maxLength={40} />
           <datalist id="product-categories">
@@ -105,13 +121,55 @@ export function ProductForm({
             ))}
           </datalist>
         </Field>
-        <Field label="Código de barras" htmlFor="p-sku" optional>
-          <div className="flex gap-2">
-            <Input id="p-sku" value={v.sku} onChange={(e) => set("sku", e.target.value)} className="h-10" maxLength={40} />
-            <ScanButton size="icon" label="Escanear código de barras" onResult={(code) => set("sku", code)} />
-          </div>
-        </Field>
       </div>
+      <Field
+        label="Códigos de barras"
+        htmlFor="p-code"
+        optional
+        hint="Un producto puede tener varios códigos (otra presentación, otra planta o proveedor). Todos se venden al mismo precio."
+      >
+        <div className="space-y-2">
+          {v.codes.length ? (
+            <div className="flex flex-wrap gap-2">
+              {v.codes.map((c, i) => (
+                <span key={c} className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 py-1 pr-1 pl-3 font-mono text-xs">
+                  {c}
+                  {i === 0 && v.codes.length > 1 ? <span className="font-sans text-[10px] text-muted-foreground">principal</span> : null}
+                  <button
+                    type="button"
+                    onClick={() => set("codes", v.codes.filter((x) => x !== c))}
+                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label={`Quitar el código ${c}`}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex gap-2">
+            <Input
+              id="p-code"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  addCode(newCode)
+                }
+              }}
+              placeholder="Escribe o escanea un código"
+              className="h-10 font-mono"
+              maxLength={40}
+            />
+            <Button type="button" variant="outline" className="h-10" onClick={() => addCode(newCode)} aria-label="Agregar código">
+              <Plus />
+              <span className="max-sm:hidden">Agregar</span>
+            </Button>
+            <ScanButton size="icon" label="Escanear código de barras" onResult={addCode} />
+          </div>
+        </div>
+      </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="¿Cuánto te cuesta?" hint="Lo que pagas al proveedor por unidad." error={errors.cost}>
           <MoneyInput value={v.cost} onValueChange={(n) => set("cost", n)} currency={currency} aria-label="Costo" />

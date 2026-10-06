@@ -154,6 +154,8 @@ export const productSchema = z.object({
   active: z.boolean(),
   /** Próximo vencimiento (AAAA-MM-DD) o vacío. */
   expiresAt: z.union([dateKey, z.literal("")]).optional(),
+  /** Todos sus códigos de barras (el primero queda como principal). */
+  codes: z.array(z.string().trim().min(1).max(40)).max(30, "Máximo 30 códigos por producto").optional(),
 })
 export type ProductInput = z.input<typeof productSchema>
 

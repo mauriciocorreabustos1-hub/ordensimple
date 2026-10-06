@@ -5,6 +5,7 @@ import { zonedTimeToUtc } from "@/lib/dates"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { PLANS, productLimit } from "@/lib/plans"
+import { cleanCodes } from "@/lib/barcodes"
 import { idSchema, productSchema, type ProductInput } from "@/lib/validations"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -17,6 +18,30 @@ async function resolveCategory(ctx: BusinessContext, name: string | undefined) {
     update: {},
   })
   return category.id
+}
+
+/**
+ * Códigos del producto: el primero queda como principal (sku) y el resto como adicionales.
+ * Devuelve un mensaje si alguno ya lo usa otro producto del negocio.
+ */
+async function prepareCodes(ctx: BusinessContext, codesInput: string[] | undefined, sku: string | undefined, productId?: string) {
+  const codes = cleanCodes(codesInput ?? [sku])
+  if (codes.length) {
+    const notThis = productId ? { not: productId } : undefined
+    const [bySku, byBarcode] = await Promise.all([
+      db.product.findFirst({
+        where: { businessId: ctx.businessId, id: notThis, sku: { in: codes, mode: "insensitive" } },
+        select: { name: true, sku: true },
+      }),
+      db.productBarcode.findFirst({
+        where: { businessId: ctx.businessId, productId: notThis, code: { in: codes, mode: "insensitive" } },
+        select: { code: true, product: { select: { name: true } } },
+      }),
+    ])
+    const taken = bySku ? { code: bySku.sku, name: bySku.name } : byBarcode ? { code: byBarcode.code, name: byBarcode.product.name } : null
+    if (taken) return { error: `El código ${taken.code} ya está en el producto "${taken.name}".` }
+  }
+  return { sku: codes[0] ?? null, extra: codes.slice(1) }
 }
 
 function isUniqueSkuError(error: unknown) {
@@ -34,7 +59,7 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   const ctx = await requireBusiness()
   const parsed = productSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { categoryName, ...data } = parsed.data
+  const { categoryName, codes, ...data } = parsed.data
 
   try {
     assertCan(ctx, "products:manage")
@@ -50,11 +75,18 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
       }
     }
 
+    const prepared = await prepareCodes(ctx, codes, data.sku)
+    if ("error" in prepared) return { ok: false, message: prepared.error! }
     const categoryId = await resolveCategory(ctx, categoryName)
     await db.$transaction(async (tx) => {
       const product = await tx.product.create({
-        data: { ...data, sku: data.sku ?? null, expiresAt: expiryDate(data.expiresAt, ctx.timezone), categoryId, businessId: ctx.businessId },
+        data: { ...data, sku: prepared.sku, expiresAt: expiryDate(data.expiresAt, ctx.timezone), categoryId, businessId: ctx.businessId },
       })
+      if (prepared.extra.length) {
+        await tx.productBarcode.createMany({
+          data: prepared.extra.map((code) => ({ businessId: ctx.businessId, productId: product.id, code })),
+        })
+      }
       if (data.trackStock && data.stock > 0) {
         await tx.inventoryMovement.create({
           data: {
@@ -69,7 +101,7 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
       }
     })
   } catch (error) {
-    if (isUniqueSkuError(error)) return { ok: false, message: "Ya tienes otro producto con ese código (SKU)." }
+    if (isUniqueSkuError(error)) return { ok: false, message: "Ese código de barras ya está en otro producto." }
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
@@ -82,19 +114,28 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
   const parsed = productSchema.safeParse(input)
   if (!parsedId.success) return { ok: false, message: "Producto no encontrado." }
   if (!parsed.success) return validationError(parsed.error)
-  const { categoryName, ...data } = parsed.data
+  const { categoryName, codes, ...data } = parsed.data
 
   try {
     assertCan(ctx, "products:manage")
     const current = await db.product.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId } })
     if (!current) return { ok: false, message: "Producto no encontrado." }
 
+    const prepared = await prepareCodes(ctx, codes, data.sku, current.id)
+    if ("error" in prepared) return { ok: false, message: prepared.error! }
     const categoryId = await resolveCategory(ctx, categoryName)
     await db.$transaction(async (tx) => {
       await tx.product.update({
         where: { id: current.id },
-        data: { ...data, sku: data.sku ?? null, expiresAt: expiryDate(data.expiresAt, ctx.timezone), categoryId },
+        data: { ...data, sku: prepared.sku, expiresAt: expiryDate(data.expiresAt, ctx.timezone), categoryId },
       })
+      // Se reemplazan los códigos adicionales por la lista nueva (si no vino la lista, se dejan como están).
+      if (codes !== undefined) await tx.productBarcode.deleteMany({ where: { productId: current.id } })
+      if (codes !== undefined && prepared.extra.length) {
+        await tx.productBarcode.createMany({
+          data: prepared.extra.map((code) => ({ businessId: ctx.businessId, productId: current.id, code })),
+        })
+      }
       const diff = data.stock - current.stock
       if (data.trackStock && diff !== 0) {
         await tx.inventoryMovement.create({
@@ -110,7 +151,7 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
       }
     })
   } catch (error) {
-    if (isUniqueSkuError(error)) return { ok: false, message: "Ya tienes otro producto con ese código (SKU)." }
+    if (isUniqueSkuError(error)) return { ok: false, message: "Ese código de barras ya está en otro producto." }
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")

@@ -1,4 +1,5 @@
 import "server-only"
+import { productCodes } from "@/lib/barcodes"
 import { db } from "@/lib/db"
 import { addDays, startOfDay, startOfMonth } from "@/lib/dates"
 
@@ -19,7 +20,7 @@ export async function getInventory(businessId: string, timezone: string, now = n
   const [products, sold, movements, waste] = await Promise.all([
     db.product.findMany({
       where: { businessId, active: true },
-      select: { id: true, name: true, sku: true, stock: true, minStock: true, cost: true, price: true, trackStock: true, expiresAt: true },
+      select: { id: true, name: true, sku: true, stock: true, minStock: true, cost: true, price: true, trackStock: true, expiresAt: true, barcodes: { select: { code: true } } },
       orderBy: { name: "asc" },
     }),
     db.saleItem.groupBy({
@@ -106,6 +107,6 @@ export async function getInventory(businessId: string, timezone: string, now = n
     idle,
     idleValue: idle.reduce((s, p) => s + p.value, 0),
     movements,
-    productOptions: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku, stock: p.stock, trackStock: p.trackStock })),
+    productOptions: products.map((p) => ({ id: p.id, name: p.name, codes: productCodes(p), stock: p.stock, trackStock: p.trackStock })),
   }
 }

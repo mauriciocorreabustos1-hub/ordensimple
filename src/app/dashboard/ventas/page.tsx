@@ -106,7 +106,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
         ) : (
           <>
             {/* Celular: tarjetas */}
-            <ul className="grid gap-2 md:hidden">
+            <ul className="grid grid-cols-1 gap-2 md:hidden">
               {list.rows.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
                   <div className="min-w-0 flex-1 space-y-0.5">

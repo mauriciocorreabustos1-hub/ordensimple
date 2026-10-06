@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/app/app-sidebar"
 import { Logo } from "@/components/app/logo"
 import { MobileNav } from "@/components/app/mobile-nav"
+import { productCodes } from "@/lib/barcodes"
 import { QuickActionsProvider } from "@/components/app/quick-actions"
 import { UserMenu } from "@/components/app/user-menu"
 import { db } from "@/lib/db"
@@ -14,7 +15,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const [products, categories, customers, memberships] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
-      select: { id: true, name: true, price: true, stock: true, trackStock: true, sku: true },
+      select: { id: true, name: true, price: true, stock: true, trackStock: true, sku: true, barcodes: { select: { code: true } } },
       orderBy: { name: "asc" },
       take: 500,
     }),
@@ -42,7 +43,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       currency={ctx.currency}
       timezone={ctx.timezone}
       defaultPayment={ctx.settings.defaultPayment}
-      products={products}
+      products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
       categories={categories}
       chargesVat={ctx.settings.chargesVat}
       customers={customers.map((c) => c.name)}

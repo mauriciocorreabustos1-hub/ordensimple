@@ -7,6 +7,10 @@ export type PlanFeature =
   | "tools"
   | "reports"
   | "tips"
+  /** Resultados e IVA (estado de resultados, utilidad y F29). */
+  | "results"
+  /** Descargar ventas, gastos y resultados en Excel. */
+  | "exports"
   | "multiUser"
   | "branches"
 
@@ -47,19 +51,19 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 1,
     maxProducts: 50,
     maxMembers: 3, // tú + 2 trabajadores
-    // El fiado es básico para un almacén o minimarket: va incluido gratis (con la lista de clientes).
-    features: ["tools", "customers"],
+    // Lo esencial para un almacén o minimarket va gratis: fiado, inventario, reportes y consejos.
+    features: ["tools", "customers", "inventory", "reports", "tips"],
     highlights: [
       "1 negocio",
       "Tú + 2 trabajadores",
       "Hasta 50 productos",
       "Ventas y gastos sin límite",
       "Fiado: quién te debe, cuánto y sus abonos",
+      "Inventario y alertas de stock",
       "Cierre de caja diario",
-      "Tu ganancia del día y del mes",
+      "Reportes y consejos automáticos",
       "Avisos por correo y resumen semanal",
-      "Calculadoras para tu negocio",
-      "Descarga tus datos cuando quieras",
+      "Calculadoras y descarga de tus datos",
     ],
   },
   PRO: {
@@ -70,19 +74,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceNote: BILLING_ENABLED ? "al mes · cancelas cuando quieras" : "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
     monthlyPrice: 6990,
     description: "Para pymes que crecen y quieren tener todo ordenado.",
-    audience: "Pymes con equipo, inventario y proveedores",
+    audience: "Pymes con equipo, proveedores y que declaran IVA",
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports"],
     highlights: [
       "Todo lo de Gratis",
       "Tú + 20 trabajadores",
       "Hasta 3 sucursales, con equipo por sucursal",
       "Productos ilimitados",
-      "Inventario y alertas de stock",
       "Proveedores",
-      "Reportes y consejos automáticos",
       "Resultados e IVA: tu utilidad y cuánto pagar en el F29",
       "Ventas, gastos y resultados en Excel",
     ],
@@ -98,7 +100,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // más de 50 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Más de 50 trabajadores",
@@ -154,14 +156,16 @@ export function couponSummary(c: { kind: "FREE_DAYS" | "PERCENT"; plan: Plan; da
 /**
  * Personas que pueden usar un negocio (incluido el dueño). Durante el lanzamiento todos
  * pueden invitar como en Pro; con ENFORCE_PLANS=true se aplica el límite de cada plan.
+ * `extra` = cupos regalados por el admin a ese negocio.
  */
-export function memberLimit(plan: Plan) {
-  return PLANS_ENFORCED ? PLANS[plan].maxMembers : Math.max(PLANS[plan].maxMembers, PLANS.PRO.maxMembers)
+export function memberLimit(plan: Plan, extra = 0) {
+  return (PLANS_ENFORCED ? PLANS[plan].maxMembers : Math.max(PLANS[plan].maxMembers, PLANS.PRO.maxMembers)) + extra
 }
 
-/** Máximo de productos (null = sin límite). Durante el lanzamiento no hay límite, como en Pro. */
-export function productLimit(plan: Plan) {
-  return PLANS_ENFORCED ? PLANS[plan].maxProducts : null
+/** Máximo de productos (null = sin límite) más los cupos extra del admin. Durante el lanzamiento no hay límite. */
+export function productLimit(plan: Plan, extra = 0) {
+  const base = PLANS_ENFORCED ? PLANS[plan].maxProducts : null
+  return base === null ? null : base + extra
 }
 
 /** Negocios o sucursales que una persona puede tener como dueña. Durante el lanzamiento, como en Pro. */

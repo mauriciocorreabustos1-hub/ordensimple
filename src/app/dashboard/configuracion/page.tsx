@@ -274,7 +274,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             businessName={ctx.business.name}
             canManage={can(ctx.role, "members:manage")}
             isOwner={ctx.role === "OWNER"}
-            limit={memberLimit(ctx.business.plan)}
+            limit={memberLimit(ctx.business.plan, ctx.business.extraMembers)}
             planName={plan.name}
             branches={ctx.role === "OWNER" ? owned.map((o) => ({ id: o.business.id, name: o.business.name })) : []}
             currentBranchId={ctx.businessId}

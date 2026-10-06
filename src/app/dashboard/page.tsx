@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   // Lo que te deben, el IVA del mes y la utilidad (estado de resultados) para el dueño o administrador.
   const showMoneyBox = showFinances && !ctx.settings.easyMode
   const showFiado = showMoneyBox && canUseFeature(ctx.business.plan, "customers")
-  const showResults = showMoneyBox && canUseFeature(ctx.business.plan, "reports") && can(ctx.role, "reports:view")
+  const showResults = showMoneyBox && canUseFeature(ctx.business.plan, "results") && can(ctx.role, "reports:view")
   const vat = vatInfo(ctx.business.country)
   const chargesVat = Boolean(vat && ctx.settings.chargesVat)
   const today = zonedParts(now, ctx.timezone)
@@ -113,8 +113,8 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <span className="flex items-center gap-2">
             <Crown className="size-4 shrink-0 text-warning" />
-            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) tienes inventario, proveedores, reportes,
-            resultados e IVA y tu equipo.
+            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) tienes proveedores, resultados e IVA,
+            Excel, productos ilimitados y un equipo más grande.
           </span>
           <Link href="/dashboard/configuracion#plan" className="font-medium text-primary hover:underline">
             Ver planes

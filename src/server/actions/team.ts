@@ -31,7 +31,7 @@ function invitationUrl(token: string) {
 async function ownedBusinesses(userId: string) {
   const owned = await db.businessMember.findMany({
     where: { userId, role: "OWNER" },
-    select: { business: { select: { id: true, name: true, plan: true, planExpiresAt: true } } },
+    select: { business: { select: { id: true, name: true, plan: true, planExpiresAt: true, extraMembers: true } } },
     orderBy: { createdAt: "asc" },
   })
   return owned.map((o) => o.business)
@@ -65,7 +65,7 @@ export async function inviteMember(input: z.input<typeof inviteSchema>): Promise
         db.invitation.findFirst({ where: { businessId: b.id, email, acceptedAt: null, expiresAt: { gt: now } }, select: { id: true } }),
       ])
       if (alreadyMember) return { ok: false, message: `Esa persona ya tiene acceso a ${b.name}.` }
-      const limit = memberLimit(effectivePlan(b))
+      const limit = memberLimit(effectivePlan(b), b.extraMembers)
       if (members + pending - (previous ? 1 : 0) >= limit) {
         return {
           ok: false,
@@ -158,7 +158,7 @@ export async function setMemberBranches(input: z.input<typeof branchesSchema>): 
     for (const id of toAdd) {
       const b = owned.find((x) => x.id === id)!
       const members = await db.businessMember.count({ where: { businessId: id } })
-      const limit = memberLimit(effectivePlan(b))
+      const limit = memberLimit(effectivePlan(b), b.extraMembers)
       if (members >= limit) return { ok: false, message: `${b.name} ya tiene el máximo de trabajadores de tu plan.` }
     }
 

@@ -136,6 +136,9 @@ model Business {
   /// Hasta cuándo dura el plan pagado o regalado. null = no vence.
   planExpiresAt       DateTime?
   /// Descuento ganado con un código, para aplicarlo cuando se cobre la suscripción.
+  /// Cupos regalados por el admin, que se suman a los del plan.
+  extraProducts       Int      @default(0)
+  extraMembers        Int      @default(0)
   discountPercent     Int?
   discountCode        String?
   hasProducts         Boolean?

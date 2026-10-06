@@ -31,13 +31,13 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   try {
     assertCan(ctx, "products:manage")
 
-    const limit = productLimit(ctx.business.plan)
+    const limit = productLimit(ctx.business.plan, ctx.business.extraProducts)
     if (limit !== null) {
       const count = await db.product.count({ where: { businessId: ctx.businessId } })
       if (count >= limit) {
         return {
           ok: false,
-          message: `El plan ${PLANS[ctx.business.plan].name} permite hasta ${limit} productos. Pronto podrás pasarte a Pro.`,
+          message: `El plan ${PLANS[ctx.business.plan].name} permite hasta ${limit} productos. Con Pro tienes productos ilimitados.`,
         }
       }
     }

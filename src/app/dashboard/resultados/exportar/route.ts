@@ -18,7 +18,7 @@ function cell(value: string | number) {
 
 export async function GET(request: Request) {
   const ctx = await requireBusiness()
-  if (!can(ctx.role, "reports:view") || !canUseFeature(ctx.business.plan, "reports")) {
+  if (!can(ctx.role, "reports:view") || !canUseFeature(ctx.business.plan, "exports")) {
     return new Response("No tienes acceso a los reportes.", { status: 403 })
   }
 

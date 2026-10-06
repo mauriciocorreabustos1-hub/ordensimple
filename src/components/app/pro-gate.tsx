@@ -18,8 +18,8 @@ export function ProGate({ title, description }: { title: string; description: st
         <div className="space-y-1">
           <p className="text-lg font-semibold">Esta función es parte del plan Pro</p>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            Mejora tu plan para usar inventario, proveedores, reportes, resultados e IVA, consejos automáticos y un
-            equipo más grande.
+            Con Pro tienes proveedores, resultados e IVA, Excel, productos ilimitados, sucursales y un equipo más
+            grande.
             {BILLING_ENABLED && price ? ` Pro cuesta ${formatMoney(price, "CLP")} al mes y lo cancelas cuando quieras.` : ""}
           </p>
           <p className="mx-auto max-w-md text-xs text-muted-foreground">Tus datos están a salvo: nada se borra.</p>

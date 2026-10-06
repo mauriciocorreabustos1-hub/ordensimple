@@ -84,6 +84,8 @@ export async function listAdminUsers({ q, page }: { q?: string; page: number }) 
                 name: true,
                 planExpiresAt: true,
                 discountPercent: true,
+                extraProducts: true,
+                extraMembers: true,
                 type: true,
                 plan: true,
                 onboardingCompleted: true,

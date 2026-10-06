@@ -3,6 +3,7 @@ import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, Search,
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
+import { ExtrasDialog } from "@/components/admin/extras-dialog"
 import { db } from "@/lib/db"
 import { mercadoPagoAccount } from "@/lib/mercadopago"
 import { BILLING_ENABLED, PLANS_ENFORCED } from "@/lib/plans"
@@ -195,6 +196,14 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         {b.discountPercent ? (
                           <p className="text-xs text-muted-foreground">Descuento guardado: {b.discountPercent}%</p>
                         ) : null}
+                        {b.extraProducts || b.extraMembers ? (
+                          <p className="text-xs text-muted-foreground">
+                            Cupos extra:{" "}
+                            {[b.extraProducts ? `+${b.extraProducts} productos` : null, b.extraMembers ? `+${b.extraMembers} trabajadores` : null]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        ) : null}
                         <p className="text-xs text-muted-foreground">
                           {b.type ?? "Sin rubro"} · {formatNumber(b._count.sales)} ventas · {formatNumber(b._count.expenses)} gastos ·{" "}
                           {formatNumber(b._count.products)} productos
@@ -218,6 +227,17 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         businessName={b.name}
                         currentPlan={effectivePlan(b, now)}
                         expiresLabel={b.planExpiresAt && b.planExpiresAt > now ? longDate(b.planExpiresAt) : null}
+                      />
+                    ) : null}
+                    {b && m.role === "OWNER" ? (
+                      <ExtrasDialog
+                        businessId={b.id}
+                        businessName={b.name}
+                        planName={PLANS[effectivePlan(b, now)].name}
+                        baseProducts={PLANS[effectivePlan(b, now)].maxProducts}
+                        baseMembers={PLANS[effectivePlan(b, now)].maxMembers - 1}
+                        extraProducts={b.extraProducts}
+                        extraMembers={b.extraMembers}
                       />
                     ) : null}
                     {b?._count.sales ? (

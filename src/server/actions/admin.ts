@@ -252,6 +252,33 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
   }
 }
 
+// ─── Cupos extra ────────────────────────────────────────────────────────────
+
+const extrasSchema = z.object({
+  businessId: z.string().min(1),
+  extraProducts: z.number().int().min(0).max(100_000),
+  extraMembers: z.number().int().min(0).max(1_000),
+})
+
+/** Regala productos o trabajadores extra a un negocio, por sobre lo que da su plan. */
+export async function setBusinessExtras(input: z.input<typeof extrasSchema>): Promise<ActionResult> {
+  await requireAdmin()
+  const parsed = extrasSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Usa números enteros (0 o más)." }
+  const { businessId, extraProducts, extraMembers } = parsed.data
+  try {
+    const b = await db.business.update({ where: { id: businessId }, data: { extraProducts, extraMembers }, select: { name: true } })
+    revalidatePath("/admin")
+    const parts = [
+      extraProducts ? `+${extraProducts} productos` : null,
+      extraMembers ? `+${extraMembers} trabajador${extraMembers === 1 ? "" : "es"}` : null,
+    ].filter(Boolean)
+    return { ok: true, message: parts.length ? `${b.name}: ${parts.join(" y ")}` : `${b.name} quedó sin cupos extra` }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
 // ─── Correo a personas específicas ──────────────────────────────────────────
 
 /** Busca personas por nombre o correo para elegir a quién escribirle. */

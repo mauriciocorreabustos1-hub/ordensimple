@@ -62,7 +62,7 @@ export default async function ProductsPage() {
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "products:manage")
   const categoryNames = categories.map((c) => c.name)
-  const limit = productLimit(ctx.business.plan)
+  const limit = productLimit(ctx.business.plan, ctx.business.extraProducts)
   const ref = referenceAmount(ctx.currency)
 
   const tracked = products.filter((p) => p.trackStock && p.active)

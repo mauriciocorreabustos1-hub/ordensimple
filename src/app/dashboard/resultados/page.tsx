@@ -66,7 +66,7 @@ function Line({
 export default async function ResultsPage({ searchParams }: PageProps<"/dashboard/resultados">) {
   const ctx = await requireBusiness()
   requirePermission(ctx, "reports:view")
-  if (!canUseFeature(ctx.business.plan, "reports")) {
+  if (!canUseFeature(ctx.business.plan, "results")) {
     return <ProGate title="Resultados e IVA" description="Tu estado de resultados, tu utilidad y el IVA que te toca pagar." />
   }
 

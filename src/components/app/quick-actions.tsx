@@ -48,10 +48,10 @@ export function QuickActionsProvider({
     <QuickActionsContext.Provider value={value}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
-        <Tabs defaultValue="quick" className="gap-5">
+        <Tabs defaultValue="detailed" className="gap-5">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="quick">Venta rápida</TabsTrigger>
             <TabsTrigger value="detailed">Con detalle</TabsTrigger>
+            <TabsTrigger value="quick">Venta rápida</TabsTrigger>
           </TabsList>
           <TabsContent value="quick">
             <QuickSaleForm

@@ -146,6 +146,11 @@ export function SaleForm({
   return (
     <form onSubmit={submit} className="grid gap-5">
       <div className="grid gap-3">
+        {products.length ? (
+          <div className="flex *:h-11 *:w-full *:text-base">
+            <ScanButton label="Escanear producto" onResult={addScanned} />
+          </div>
+        ) : null}
         {lines.map((line, index) => {
           const product = byId.get(line.productId)
           const lowStock = product?.trackStock && product.stock < line.quantity
@@ -232,18 +237,10 @@ export function SaleForm({
             </div>
           )
         })}
-        {/* Si no caben en una línea (celulares angostos), "Escanear" baja a la siguiente. */}
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="flex-1 basis-48" onClick={() => setLines((ls) => [...ls, newLine()])}>
-            <Plus />
-            Agregar otro producto
-          </Button>
-          {products.some((p) => p.codes?.length) ? (
-            <div className="flex flex-1 basis-28 *:w-full">
-              <ScanButton label="Escanear" onResult={addScanned} />
-            </div>
-          ) : null}
-        </div>
+        <Button type="button" variant="outline" onClick={() => setLines((ls) => [...ls, newLine()])}>
+          <Plus />
+          Agregar otro producto
+        </Button>
       </div>
 
       <Field label="¿Cómo te pagaron?">

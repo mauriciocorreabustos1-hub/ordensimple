@@ -135,6 +135,8 @@ function Scanner({ onResult }: { onResult: (code: string) => void }) {
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault()
+          // El modal vive dentro de otro formulario (venta, producto): sin esto, "Usar" también lo enviaría.
+          e.stopPropagation()
           if (manual.trim()) onResult(manual.trim())
         }}
       >

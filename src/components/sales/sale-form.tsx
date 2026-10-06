@@ -7,7 +7,7 @@ import type { PaymentMethod } from "@/generated/prisma/enums"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ScanButton } from "@/components/app/barcode-scanner"
+import { ScanButton, type ScanFeedback } from "@/components/app/barcode-scanner"
 import { findByCode } from "@/lib/barcodes"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
@@ -90,9 +90,10 @@ export function SaleForm({
   }
 
   /** Producto escaneado: si ya está en la venta suma una unidad; si no, ocupa una línea vacía o agrega una. */
-  function addScanned(code: string) {
+  function addScanned(code: string): ScanFeedback {
     const p = findByCode(products, code)
-    if (!p) return void toast.error(`No hay un producto con el código ${code}. Agrégalo en Productos con ese código.`)
+    if (!p) return { ok: false, message: `No hay un producto con el código ${code}. Agrégalo en Productos con ese código.` }
+    const inSale = (lines.find((l) => l.productId === p.id)?.quantity ?? 0) + 1
     setLines((ls) => {
       const same = ls.find((l) => l.productId === p.id)
       if (same) return ls.map((l) => (l.key === same.key ? { ...l, quantity: l.quantity + 1 } : l))
@@ -101,7 +102,8 @@ export function SaleForm({
       if (empty) return ls.map((l) => (l.key === empty.key ? { ...l, ...filled } : l))
       return [...ls, { ...newLine(), ...filled }]
     })
-    toast.success(`${p.name} agregado`)
+    const stock = p.trackStock ? ` · quedan ${p.stock - inSale}` : ""
+    return { ok: true, message: `${p.name} ×${inSale} · ${formatMoney(p.price, currency)}${stock}` }
   }
 
   function submit(e: React.FormEvent) {
@@ -148,7 +150,7 @@ export function SaleForm({
       <div className="grid gap-3">
         {products.length ? (
           <div className="flex *:h-11 *:w-full *:text-base">
-            <ScanButton label="Escanear producto" onResult={addScanned} />
+            <ScanButton continuous label="Escanear productos" onResult={addScanned} />
           </div>
         ) : null}
         {lines.map((line, index) => {
@@ -232,6 +234,10 @@ export function SaleForm({
               {lowStock ? (
                 <p className="text-xs text-warning">
                   Solo te quedan {product.stock} unidades registradas de este producto.
+                </p>
+              ) : product?.trackStock && !editing ? (
+                <p className="text-xs text-muted-foreground">
+                  En stock: {product.stock} · después de esta venta quedan {product.stock - line.quantity}
                 </p>
               ) : null}
             </div>

@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, ScanBarcode } from "lucide-react"
+import { CheckCircle2, Loader2, ScanBarcode, XCircle } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AppModal } from "@/components/app/app-modal"
+import { cn } from "@/lib/utils"
 
 type Detector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> }
 
@@ -18,50 +20,147 @@ async function createDetector(): Promise<Detector> {
   return new BarcodeDetector({ formats: FORMATS as never }) as unknown as Detector
 }
 
+/** Lo que muestra el lector después de leer un código (ej. "Coca-Cola 1.5L agregado"). */
+export type ScanFeedback = { ok: boolean; message: string }
+
+// Sonido de "bip". Se prepara al tocar el botón porque el celular no deja sonar sin que la persona toque algo.
+let audio: AudioContext | null = null
+function unlockAudio() {
+  try {
+    audio ??= new AudioContext()
+    void audio.resume()
+  } catch {
+    audio = null
+  }
+}
+function beep(ok: boolean) {
+  if (!audio) return
+  try {
+    const osc = audio.createOscillator()
+    const gain = audio.createGain()
+    osc.frequency.value = ok ? 1650 : 330
+    gain.gain.setValueAtTime(0.18, audio.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + (ok ? 0.12 : 0.3))
+    osc.connect(gain).connect(audio.destination)
+    osc.start()
+    osc.stop(audio.currentTime + (ok ? 0.12 : 0.3))
+  } catch {
+    // sin sonido no pasa nada
+  }
+}
+
 /**
  * Botón "Escanear" que abre la cámara y lee un código de barras.
  * Un lector USB o Bluetooth también sirve: escribe el código en el recuadro como si fuera un teclado.
+ * Con `continuous` la cámara queda abierta y se pueden pasar varios productos seguidos, como en una caja.
  */
 export function ScanButton({
   onResult,
   label = "Escanear",
   size = "default",
+  continuous = false,
 }: {
-  onResult: (code: string) => void
+  onResult: (code: string) => ScanFeedback | void
   label?: string
   size?: "default" | "sm" | "icon"
+  continuous?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   return (
     <>
-      <Button type="button" variant="outline" size={size} onClick={() => setOpen(true)} aria-label={label}>
+      <Button
+        type="button"
+        variant="outline"
+        size={size}
+        onClick={() => {
+          unlockAudio()
+          setOpen(true)
+        }}
+        aria-label={label}
+      >
         <ScanBarcode />
         {size === "icon" ? null : label}
       </Button>
-      <AppModal open={open} onOpenChange={setOpen} title="Escanear código de barras" description="Apunta la cámara al código del producto.">
+      <AppModal
+        open={open}
+        onOpenChange={setOpen}
+        title="Escanear código de barras"
+        description={continuous ? "Pasa los productos uno por uno frente a la cámara. Toca «Listo» al terminar." : "Apunta la cámara al código del producto."}
+      >
         {open ? (
-          <Scanner
-            onResult={(code) => {
-              setOpen(false)
-              onResult(code)
-            }}
-          />
+          continuous ? (
+            <Scanner continuous onResult={onResult} onClose={() => setOpen(false)} />
+          ) : (
+            <Scanner
+              onResult={(code) => {
+                setOpen(false)
+                const fb = onResult(code)
+                if (fb) {
+                  if (fb.ok) toast.success(fb.message)
+                  else toast.error(fb.message)
+                }
+                return fb
+              }}
+            />
+          )
         ) : null}
       </AppModal>
     </>
   )
 }
 
-function Scanner({ onResult }: { onResult: (code: string) => void }) {
+/** Un mismo código leído de nuevo antes de este tiempo es el mismo producto frente a la cámara, no otro. */
+const SAME_CODE_MS = 1500
+
+function Scanner({
+  onResult,
+  continuous = false,
+  onClose,
+}: {
+  onResult: (code: string) => ScanFeedback | void
+  continuous?: boolean
+  onClose?: () => void
+}) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const [status, setStatus] = React.useState<"starting" | "scanning" | "error">("starting")
   const [error, setError] = React.useState("")
   const [manual, setManual] = React.useState("")
+  const [feedback, setFeedback] = React.useState<(ScanFeedback & { key: number }) | null>(null)
+  const [count, setCount] = React.useState(0)
   const done = React.useRef(false)
+  const last = React.useRef({ code: "", at: 0 })
   // La cámara se abre una sola vez aunque cambie la función que recibe el código.
   const resultRef = React.useRef(onResult)
   React.useEffect(() => {
     resultRef.current = onResult
+  })
+
+  /** Entrega un código leído; en modo continuo muestra el resultado y sigue escaneando. */
+  const handle = React.useCallback(
+    (code: string, fromCamera: boolean) => {
+      if (!continuous) {
+        done.current = true
+        navigator.vibrate?.(80)
+        resultRef.current(code)
+        return
+      }
+      const now = Date.now()
+      if (fromCamera && last.current.code === code && now - last.current.at < SAME_CODE_MS) {
+        last.current.at = now
+        return
+      }
+      last.current = { code, at: now }
+      const fb = resultRef.current(code) ?? { ok: true, message: `Código ${code}` }
+      beep(fb.ok)
+      navigator.vibrate?.(fb.ok ? 80 : [60, 60, 60])
+      setFeedback({ ...fb, key: now })
+      if (fb.ok) setCount((c) => c + 1)
+    },
+    [continuous],
+  )
+  const handleRef = React.useRef(handle)
+  React.useEffect(() => {
+    handleRef.current = handle
   })
 
   React.useEffect(() => {
@@ -85,10 +184,8 @@ function Scanner({ onResult }: { onResult: (code: string) => void }) {
             const found = await detector.detect(video)
             const code = found[0]?.rawValue?.trim()
             if (code && !done.current) {
-              done.current = true
-              navigator.vibrate?.(80)
-              resultRef.current(code)
-              return
+              handleRef.current(code, true)
+              if (done.current) return
             }
           } catch {
             // un cuadro sin código: se sigue intentando
@@ -137,7 +234,9 @@ function Scanner({ onResult }: { onResult: (code: string) => void }) {
           e.preventDefault()
           // El modal vive dentro de otro formulario (venta, producto): sin esto, "Usar" también lo enviaría.
           e.stopPropagation()
-          if (manual.trim()) onResult(manual.trim())
+          if (!manual.trim()) return
+          handle(manual.trim(), false)
+          setManual("")
         }}
       >
         <Input
@@ -150,9 +249,32 @@ function Scanner({ onResult }: { onResult: (code: string) => void }) {
           aria-label="Código de barras"
         />
         <Button type="submit" variant="outline" className="h-10">
-          Usar
+          {continuous ? "Agregar" : "Usar"}
         </Button>
       </form>
+      {continuous ? (
+        <>
+          <div aria-live="polite" className="min-h-12">
+            {feedback ? (
+              <p
+                key={feedback.key}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg p-3 text-sm font-medium animate-in fade-in-0 zoom-in-95",
+                  feedback.ok ? "bg-primary/10 text-primary" : "bg-danger/10 text-danger",
+                )}
+              >
+                {feedback.ok ? <CheckCircle2 className="size-4 shrink-0" /> : <XCircle className="size-4 shrink-0" />}
+                {feedback.message}
+              </p>
+            ) : (
+              <p className="p-3 text-center text-sm text-muted-foreground">Escanea el primer producto.</p>
+            )}
+          </div>
+          <Button type="button" size="lg" className="h-11 text-base" onClick={onClose}>
+            Listo{count ? ` · ${count} ${count === 1 ? "producto escaneado" : "productos escaneados"}` : ""}
+          </Button>
+        </>
+      ) : null}
     </div>
   )
 }

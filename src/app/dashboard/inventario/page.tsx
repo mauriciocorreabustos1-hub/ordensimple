@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
 import { StatCard } from "@/components/app/stat-card"
 import { MovementDialog } from "@/components/inventory/movement-dialog"
+import { ProductLookup, type LookupProduct } from "@/components/inventory/product-lookup"
 import { formatMoney, formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { daysUntil } from "@/lib/vat"
@@ -66,13 +67,30 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
   const showCosts = can(ctx.role, "finances:view")
   const items = filter === "todos" ? inv.items : inv.items.filter((i) => i.state === filter)
   const alerts = [...inv.out, ...inv.low]
+  const now = new Date()
+  const lookup: LookupProduct[] = inv.lookup.map((p) => ({
+    ...p,
+    cost: showCosts ? p.cost : null,
+    expires: p.expiresAt
+      ? { label: formatDate(p.expiresAt, ctx.timezone, { day: "numeric", month: "long" }), days: daysUntil(p.expiresAt, now, ctx.timezone) }
+      : null,
+  }))
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Inventario"
         description="Cuánto tienes de cada producto, qué se está acabando y qué no se mueve."
-        actions={canManage && inv.productOptions.length ? <MovementDialog products={inv.productOptions} /> : null}
+        actions={
+          inv.productOptions.length ? (
+            <>
+              {lookup.some((p) => p.codes.length) ? (
+                <ProductLookup products={lookup} currency={ctx.currency} movementProducts={canManage ? inv.productOptions : undefined} />
+              ) : null}
+              {canManage ? <MovementDialog products={inv.productOptions} /> : null}
+            </>
+          ) : null
+        }
       />
 
       {inv.productOptions.length === 0 ? (

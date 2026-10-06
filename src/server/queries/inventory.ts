@@ -108,5 +108,18 @@ export async function getInventory(businessId: string, timezone: string, now = n
     idleValue: idle.reduce((s, p) => s + p.value, 0),
     movements,
     productOptions: products.map((p) => ({ id: p.id, name: p.name, codes: productCodes(p), stock: p.stock, trackStock: p.trackStock })),
+    // Para "Consultar producto": todo lo que se quiere saber al escanear algo.
+    lookup: products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      codes: productCodes(p),
+      price: p.price,
+      cost: p.cost,
+      stock: p.stock,
+      minStock: p.minStock,
+      trackStock: p.trackStock,
+      expiresAt: p.expiresAt,
+      sold30: soldById.get(p.id)?.qty ?? 0,
+    })),
   }
 }

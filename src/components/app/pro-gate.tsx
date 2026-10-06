@@ -25,7 +25,7 @@ export function ProGate({ title, description }: { title: string; description: st
           <p className="mx-auto max-w-md text-xs text-muted-foreground">Tus datos están a salvo: nada se borra.</p>
         </div>
         <Button asChild>
-          <Link href={BILLING_ENABLED ? "/dashboard/configuracion#plan" : "/precios"}>
+          <Link href={BILLING_ENABLED ? "/dashboard/plan#contratar" : "/precios"}>
             {BILLING_ENABLED ? "Contratar Pro" : "Ver planes"}
           </Link>
         </Button>

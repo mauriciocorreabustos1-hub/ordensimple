@@ -116,7 +116,7 @@ export default async function DashboardPage() {
             Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) tienes proveedores, resultados e IVA,
             Excel, productos ilimitados y un equipo más grande.
           </span>
-          <Link href="/dashboard/configuracion#plan" className="font-medium text-primary hover:underline">
+          <Link href="/dashboard/plan" className="font-medium text-primary hover:underline">
             Ver planes
           </Link>
         </div>

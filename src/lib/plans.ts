@@ -181,5 +181,5 @@ export function parsePlanChoice(value: unknown): PlanChoice | null {
 export const PLAN_OF_CHOICE: Record<PlanChoice, PaidPlan> = { pro: "PRO", empresa: "BUSINESS" }
 /** Dónde se paga el plan elegido. */
 export function checkoutPath(choice: PlanChoice) {
-  return `/dashboard/configuracion?plan=${choice}#plan`
+  return `/dashboard/plan?plan=${choice}#contratar`
 }

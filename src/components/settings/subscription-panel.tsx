@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
 import { cn } from "@/lib/utils"
 import { cancelSubscription, startSubscription } from "@/server/actions/billing"
+import { CardPayment } from "@/components/settings/card-payment"
 
 type PaidPlan = "PRO" | "BUSINESS"
 
@@ -19,6 +20,8 @@ export type PlanOption = {
   priceLabel: string
   /** Precio sin descuento, si es distinto. */
   fullPriceLabel?: string
+  /** Monto mensual en pesos que se cobrará. */
+  amount: number
   summary: string
 }
 
@@ -34,17 +37,28 @@ export function SubscriptionPanel({
   initialPlan,
   defaultEmail,
   canManage,
+  publicKey,
 }: {
   state: SubscriptionState
   options: PlanOption[]
   initialPlan: PaidPlan
   defaultEmail: string
   canManage: boolean
+  /** Clave pública de Mercado Pago: con ella se paga con tarjeta aquí mismo, sin cuenta de Mercado Pago. */
+  publicKey?: string
 }) {
   const router = useRouter()
   const [plan, setPlan] = React.useState<PaidPlan>(state.kind === "pending" ? state.plan : initialPlan)
   const [email, setEmail] = React.useState(state.kind === "pending" ? state.payerEmail : defaultEmail)
   const [pending, startTransition] = React.useTransition()
+  // Por defecto, tarjeta aquí mismo; el pago con cuenta de Mercado Pago queda como alternativa.
+  const [method, setMethod] = React.useState<"card" | "account">(state.kind === "pending" ? "account" : "card")
+  const [cardUnavailable, setCardUnavailable] = React.useState(false)
+  const cardFailed = React.useCallback(() => {
+    setCardUnavailable(true)
+    toast.error("No se pudo cargar el pago con tarjeta. Puedes pagar con tu cuenta de Mercado Pago.")
+  }, [])
+  const useCard = Boolean(publicKey) && method === "card" && !cardUnavailable
 
   if (state.kind === "active") {
     return (
@@ -87,18 +101,7 @@ export function SubscriptionPanel({
   const chosen = options.find((o) => o.plan === plan) ?? options[0]
 
   return (
-    <form
-      className="space-y-4 rounded-xl border p-4"
-      onSubmit={(e) => {
-        e.preventDefault()
-        startTransition(async () => {
-          const r = await startSubscription({ payerEmail: email, plan })
-          if (!r.ok) return void toast.error(r.message)
-          // Se completa el pago en Mercado Pago y se vuelve aquí.
-          router.push(r.data!.url)
-        })
-      }}
-    >
+    <div className="space-y-4 rounded-xl border p-4">
       <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Elige tu plan">
         {options.map((o) => {
           const selected = o.plan === plan
@@ -131,16 +134,47 @@ export function SubscriptionPanel({
       <p className="text-sm text-muted-foreground">
         Se cobra solo cada mes con Mercado Pago (tarjeta de crédito o débito). Puedes cancelar cuando quieras desde aquí.
       </p>
-      {state.kind === "pending" ? (
-        <p className="rounded-lg bg-warning/10 p-3 text-xs">Empezaste una suscripción y falta completar el pago en Mercado Pago.</p>
-      ) : null}
-      <Field label="¿Con qué correo entras a Mercado Pago?" htmlFor="mp-email" hint="Tiene que ser tu cuenta de Mercado Pago de Chile.">
-        <Input id="mp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} className="h-10" />
-      </Field>
-      <Button type="submit" size="lg" className="h-11 w-full sm:w-auto" disabled={pending}>
-        {pending ? <Loader2 className="animate-spin" /> : <CreditCard />}
-        {state.kind === "pending" && state.plan === plan ? "Completar el pago en Mercado Pago" : `Suscribirme a ${chosen.name} con Mercado Pago`}
-      </Button>
-    </form>
+
+      {useCard ? (
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Paga {chosen.name} con tu tarjeta</p>
+          <CardPayment key={plan} publicKey={publicKey!} plan={plan} amount={chosen.amount} payerEmail={defaultEmail} onUnavailable={cardFailed} />
+          <button type="button" onClick={() => setMethod("account")} className="text-xs text-primary hover:underline">
+            Prefiero pagar con mi cuenta de Mercado Pago
+          </button>
+        </div>
+      ) : (
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            startTransition(async () => {
+              const r = await startSubscription({ payerEmail: email, plan })
+              if (!r.ok) return void toast.error(r.message)
+              // Se completa el pago en Mercado Pago y se vuelve aquí.
+              router.push(r.data!.url)
+            })
+          }}
+        >
+          {state.kind === "pending" ? (
+            <p className="rounded-lg bg-warning/10 p-3 text-xs">Empezaste una suscripción y falta completar el pago en Mercado Pago.</p>
+          ) : null}
+          <Field label="¿Con qué correo entras a Mercado Pago?" htmlFor="mp-email" hint="Tiene que ser tu cuenta de Mercado Pago de Chile.">
+            <Input id="mp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} className="h-10" />
+          </Field>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button type="submit" size="lg" className="h-11 w-full sm:w-auto" disabled={pending}>
+              {pending ? <Loader2 className="animate-spin" /> : <CreditCard />}
+              {state.kind === "pending" && state.plan === plan ? "Completar el pago en Mercado Pago" : `Suscribirme a ${chosen.name} con Mercado Pago`}
+            </Button>
+            {publicKey && !cardUnavailable ? (
+              <button type="button" onClick={() => setMethod("card")} className="text-xs text-primary hover:underline">
+                Pagar con tarjeta aquí mismo (sin cuenta de Mercado Pago)
+              </button>
+            ) : null}
+          </div>
+        </form>
+      )}
+    </div>
   )
 }

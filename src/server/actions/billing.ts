@@ -85,6 +85,67 @@ export async function startSubscription(input: z.input<typeof subscribeSchema>):
   }
 }
 
+const cardSchema = z.object({
+  plan: z.enum(PAID_PLANS),
+  cardToken: z.string().min(10).max(200),
+  payerEmail: z.email().trim().toLowerCase().max(200),
+})
+
+/**
+ * Suscripción pagando con tarjeta dentro de OrdenSimple (formulario seguro de Mercado Pago):
+ * no hace falta cuenta de Mercado Pago ni salir de la página. Los datos de la tarjeta nunca llegan aquí,
+ * solo un código de un solo uso que entrega Mercado Pago.
+ */
+export async function startCardSubscription(input: z.input<typeof cardSchema>): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  const parsed = cardSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Revisa los datos de la tarjeta e intenta de nuevo." }
+  const { plan, cardToken, payerEmail } = parsed.data
+
+  try {
+    if (!BILLING_ENABLED || !mercadoPagoConfigured()) return { ok: false, message: "Las suscripciones todavía no están disponibles." }
+    if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño del negocio puede contratar un plan." }
+    if (ctx.business.currency !== "CLP") return { ok: false, message: "Por ahora las suscripciones son solo en pesos chilenos." }
+    const price = PLANS[plan].monthlyPrice
+    if (!price) return { ok: false, message: "Este plan aún no se puede contratar." }
+
+    const active = await db.subscription.findFirst({
+      where: { businessId: ctx.businessId, status: { in: ["authorized", "paused"] } },
+    })
+    if (active) {
+      return {
+        ok: false,
+        message: active.plan === plan ? "Ya tienes una suscripción activa a este plan." : `Ya pagas el plan ${PLANS[active.plan].name}. Cancélalo primero para cambiarte de plan.`,
+      }
+    }
+
+    const amount = discountedPrice(price, ctx.business.discountPercent)
+    const pre = await createPreapproval({
+      reason: `OrdenSimple ${PLANS[plan].name} · ${ctx.business.name}`.slice(0, 120),
+      externalReference: ctx.businessId,
+      payerEmail,
+      amount,
+      currency: "CLP",
+      backUrl: subscriptionBackUrl(),
+      cardTokenId: cardToken,
+    })
+
+    await db.subscription.create({
+      data: { businessId: ctx.businessId, userId: ctx.user.id, plan, externalId: pre.id, status: pre.status, amount, currency: "CLP", payerEmail },
+    })
+    // Activa el plan de inmediato; cada cobro mensual aprobado lo va renovando.
+    await syncSubscription(pre.id)
+  } catch (error) {
+    if (error instanceof MercadoPagoError) {
+      console.error("[billing] tarjeta rechazada o error de Mercado Pago:", error.status, error.message)
+      return { ok: false, message: "No se pudo cobrar a esa tarjeta. Revisa los datos o prueba con otra tarjeta." }
+    }
+    return toActionError(error)
+  }
+  revalidatePath("/dashboard", "layout")
+  return { ok: true, message: `¡Listo! Ya tienes ${PLANS[plan].name}.` }
+}
+
 /** Cancela la suscripción: no se cobra más, y Pro sigue hasta el final de lo que ya se pagó. */
 export async function cancelSubscription(): Promise<ActionResult> {
   const ctx = await requireBusiness()

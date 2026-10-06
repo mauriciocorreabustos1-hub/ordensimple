@@ -19,5 +19,5 @@ export async function GET(request: Request) {
       if (updated?.status === "authorized") result = "ok"
     }
   }
-  return NextResponse.redirect(new URL(`/dashboard/configuracion?suscripcion=${result}#plan`, url))
+  return NextResponse.redirect(new URL(`/dashboard/plan?suscripcion=${result}`, url))
 }

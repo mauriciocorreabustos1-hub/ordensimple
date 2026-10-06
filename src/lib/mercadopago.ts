@@ -51,6 +51,8 @@ export function createPreapproval(input: {
   amount: number
   currency: string
   backUrl: string
+  /** Tarjeta tokenizada en el navegador (formulario de Mercado Pago): la suscripción queda autorizada al tiro. */
+  cardTokenId?: string
 }) {
   return mp<Preapproval>("/preapproval", {
     method: "POST",
@@ -59,7 +61,7 @@ export function createPreapproval(input: {
       external_reference: input.externalReference,
       payer_email: input.payerEmail,
       back_url: input.backUrl,
-      status: "pending",
+      ...(input.cardTokenId ? { card_token_id: input.cardTokenId, status: "authorized" } : { status: "pending" }),
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: input.amount, currency_id: input.currency },
     },
   })

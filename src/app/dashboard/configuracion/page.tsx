@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
+import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Crown } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/app/page-header"
 import { BusinessForm } from "@/components/settings/business-form"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
@@ -12,15 +12,11 @@ import { vatInfo } from "@/lib/vat"
 import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { AccountSection } from "@/components/settings/account-section"
-import { RedeemCoupon } from "@/components/settings/redeem-coupon"
-import { SubscriptionPanel, type PlanOption, type SubscriptionState } from "@/components/settings/subscription-panel"
-import { formatMoney } from "@/lib/currency"
-import { mercadoPagoConfigured } from "@/lib/mercadopago"
 import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
 import { getAppUrl } from "@/lib/app-url"
-import { BILLING_ENABLED, discountedPrice, memberLimit, PAID_PLANS, parsePlanChoice, PLAN_OF_CHOICE, PLANS } from "@/lib/plans"
+import { memberLimit, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
@@ -28,10 +24,11 @@ export const metadata: Metadata = { title: "Configuración" }
 
 export default async function SettingsPage({ searchParams }: PageProps<"/dashboard/configuracion">) {
   const ctx = await requireBusiness()
+  // Enlaces antiguos al plan (?plan= o ?suscripcion=) ahora van a "Tu plan".
   const params = await searchParams
-  const subscriptionResult = params.suscripcion
-  // Viene de "Elegir Pro / Empresa" en precios: ese plan queda marcado para pagar.
-  const planChoice = parsePlanChoice(params.plan)
+  if (params.plan || params.suscripcion) {
+    redirect(`/dashboard/plan?${new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => typeof e[1] === "string"))}`)
+  }
   const canManage = can(ctx.role, "settings:manage")
   const vat = vatInfo(ctx.business.country)
   const [categories, currentMembers, records, invitations, owned] = await Promise.all([
@@ -82,47 +79,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
     : currentMembers
   const branchesOf = (userId: string) =>
     access.length ? access.filter((a) => a.userId === userId).map((a) => a.businessId) : [ctx.businessId]
-  const plan = PLANS[ctx.business.plan]
-  const planEnds =
-    ctx.business.plan !== "FREE" && ctx.business.planExpiresAt
-      ? formatDate(ctx.business.planExpiresAt, ctx.timezone, { day: "numeric", month: "long", year: "numeric" })
-      : null
   const hasRecords = records.some((n) => n > 0)
-
-  // Suscripción con Mercado Pago (solo si el cobro está encendido).
-  const showBilling = BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP"
-  const sub = showBilling
-    ? await db.subscription.findFirst({
-        where: { businessId: ctx.businessId, status: { in: ["authorized", "paused", "pending"] } },
-        orderBy: { createdAt: "desc" },
-      })
-    : null
-  const subState: SubscriptionState = !sub
-    ? { kind: "none" }
-    : sub.status === "pending"
-      ? { kind: "pending", plan: sub.plan === "BUSINESS" ? "BUSINESS" : "PRO", payerEmail: sub.payerEmail }
-      : {
-          kind: "active",
-          planName: PLANS[sub.plan].name,
-          status: sub.status,
-          amountLabel: formatMoney(sub.amount, sub.currency),
-          payerEmail: sub.payerEmail,
-          nextLabel: sub.nextPaymentAt ? formatDate(sub.nextPaymentAt, ctx.timezone, { day: "numeric", month: "long" }) : null,
-        }
-  const planOptions: PlanOption[] = PAID_PLANS.flatMap((p) => {
-    const price = PLANS[p].monthlyPrice
-    if (price === null) return []
-    const final = discountedPrice(price, ctx.business.discountPercent)
-    return [
-      {
-        plan: p,
-        name: PLANS[p].name,
-        priceLabel: formatMoney(final, "CLP"),
-        fullPriceLabel: final !== price ? formatMoney(price, "CLP") : undefined,
-        summary: p === "PRO" ? "Tú + 20 trabajadores · hasta 3 sucursales" : "Más de 50 trabajadores · hasta 10 sucursales",
-      },
-    ]
-  })
 
   return (
     <div className="space-y-6">
@@ -278,67 +235,25 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             canManage={can(ctx.role, "members:manage")}
             isOwner={ctx.role === "OWNER"}
             limit={memberLimit(ctx.business.plan, ctx.business.extraMembers)}
-            planName={plan.name}
+            planName={PLANS[ctx.business.plan].name}
             branches={ctx.role === "OWNER" ? owned.map((o) => ({ id: o.business.id, name: o.business.name })) : []}
             currentBranchId={ctx.businessId}
           />
         </CardContent>
       </Card>
 
-      <Card id="plan" className="scroll-mt-20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      {canManage ? (
+        <Link
+          href="/dashboard/plan"
+          className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
+        >
+          <span className="flex items-center gap-2 font-medium">
             <Crown className="size-4 text-warning" />
-            Tu plan: {plan.name}
-          </CardTitle>
-          <CardDescription>{plan.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ul className="grid gap-1 text-sm sm:grid-cols-2">
-            {plan.highlights.map((h) => (
-              <li key={h}>· {h}</li>
-            ))}
-          </ul>
-          {planEnds || ctx.business.discountPercent ? (
-            <div className="flex flex-wrap gap-2">
-              {planEnds ? <Badge variant="secondary">Vigente hasta el {planEnds}</Badge> : null}
-              {ctx.business.discountPercent ? (
-                <Badge variant="secondary">
-                  {ctx.business.discountPercent}% de descuento guardado ({ctx.business.discountCode})
-                </Badge>
-              ) : null}
-            </div>
-          ) : null}
-          {subscriptionResult === "ok" ? (
-            <p className="rounded-lg bg-success/10 p-3 text-sm">¡Listo! Tu suscripción quedó activa.</p>
-          ) : subscriptionResult === "pendiente" ? (
-            <p className="rounded-lg bg-warning/10 p-3 text-sm">
-              Mercado Pago todavía está procesando el pago. Apenas se confirme, tu plan se activará solo.
-            </p>
-          ) : null}
-          {showBilling && planChoice && subState.kind !== "active" ? (
-            <p className="rounded-lg border border-primary/30 bg-accent/50 p-3 text-sm">
-              ¡Ya casi! Elegiste <strong>{PLANS[PLAN_OF_CHOICE[planChoice]].name}</strong>. Escribe el correo de tu cuenta de Mercado
-              Pago y toca el botón para pagar.
-            </p>
-          ) : null}
-          {showBilling ? (
-            <SubscriptionPanel
-              state={subState}
-              options={planOptions}
-              initialPlan={planChoice ? PLAN_OF_CHOICE[planChoice] : ctx.business.plan === "BUSINESS" ? "BUSINESS" : "PRO"}
-              defaultEmail={ctx.user.email}
-              canManage={ctx.role === "OWNER"}
-            />
-          ) : null}
-          {canManage ? (
-            <>
-              <Separator />
-              <RedeemCoupon />
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
+            Tu plan: {PLANS[ctx.business.plan].name}
+          </span>
+          <span className="text-sm text-primary">Ver o cambiar plan →</span>
+        </Link>
+      ) : null}
 
       <Card>
         <CardHeader>

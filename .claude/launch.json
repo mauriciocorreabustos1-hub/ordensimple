@@ -34,6 +34,19 @@
         "BILLING_ENABLED": "true"
       },
       "port": 3000
+    },
+    {
+      "name": "ordensimple-asistente",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "env": {
+        "RESEND_API_KEY": "",
+        "ASSISTANT_ENABLED": "true"
+      },
+      "port": 3000
     }
   ]
 }

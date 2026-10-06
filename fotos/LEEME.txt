@@ -146,3 +146,8 @@ Reglas simples
 
 OJO: las piezas de las carpetas 12 y 14 que dicen "Pro gratis" o "gratis por ahora" ya no corresponden
 (desde octubre 2026 Pro cuesta $6.990 y Empresa $14.990 al mes). No las uses más.
+
+16-publicidad-premium-5/  (el día a día del negocio)
+  1-videos/ .................... 6 videos premium verticales con su portada: antes vs. ahora, un día con
+                                 OrdenSimple, consultar stock, alertas de stock, consejos automáticos, tu equipo.
+  textos-para-publicar.txt ..... Texto y hashtags de cada video, orden sugerido y qué usar en anuncios.

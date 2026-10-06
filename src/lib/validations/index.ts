@@ -90,6 +90,7 @@ export const preferencesSchema = z.object({
   weeklySummary: z.boolean().optional(),
   chargesVat: z.boolean().optional(),
   vatDueDay: z.number().int().min(1).max(28).optional(),
+  ppmRate: z.number().min(0).max(0.05).optional(),
 })
 export type PreferencesInput = z.input<typeof preferencesSchema>
 
@@ -188,6 +189,10 @@ export const payableSchema = z.object({
   supplierName: optionalText(80),
   amount: positiveMoney,
   dueDate: dateKey,
+  /** Es una factura a nombre del negocio (su IVA se descuenta en el mes de la factura). */
+  hasInvoice: z.boolean().optional(),
+  /** Fecha de la factura (si no viene, hoy). */
+  invoiceDate: dateKey.optional(),
 })
 export type PayableInput = z.input<typeof payableSchema>
 

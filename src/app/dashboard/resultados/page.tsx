@@ -12,7 +12,7 @@ import { formatDate, startOfMonth, zonedParts, zonedTimeToUtc } from "@/lib/date
 import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
-import { daysUntil, formatDueDate, vatDueDate, vatInfo } from "@/lib/vat"
+import { daysUntil, formatDueDate, ppmAmount, vatDueDate, vatInfo } from "@/lib/vat"
 import { getIncomeStatement, getYearSummary } from "@/server/queries/results"
 import { requireBusiness, requirePermission } from "@/server/session"
 
@@ -106,7 +106,12 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   // Los meses vacíos antes de empezar a registrar no se muestran (el mes elegido siempre aparece).
   const firstActive = rows.findIndex((r) => r.s.sales !== 0 || r.s.costOfSales !== 0 || r.s.operatingExpenses !== 0 || r.s.purchasesToInventory !== 0)
   const visibleRows = rows.slice(Math.min(firstActive < 0 ? month - 1 : firstActive, month - 1))
-  const due = vatDueDate(year, month, ctx.settings.vatDueDay, ctx.timezone)
+  const due = vatDueDate(year, month, ctx.settings.vatDueDay, ctx.timezone, ctx.business.country)
+  // PPM: va en el mismo F29 que el IVA (solo Chile), sobre las ventas sin IVA.
+  const ppmRate = chargesVat && ctx.business.country === "CL" ? ctx.settings.ppmRate : 0
+  const ppm = ppmAmount(st.netSales, ppmRate)
+  const f29 = current.vatToPay + ppm
+  const ppmLabel = `PPM (${(ppmRate * 100).toLocaleString("es-CL", { maximumFractionDigits: 3 })}% de tus ventas sin ${L})`
   const left = daysUntil(due, now, ctx.timezone)
 
   const prev = month === 1 ? key(year - 1, 12) : key(year, month - 1)
@@ -164,7 +169,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
               {`${L} de ${formatDate(from, ctx.timezone, { month: "long" })}`}
             </CardTitle>
             <CardDescription>
-              {current.vatToPay > 0 ? (
+              {f29 > 0 ? (
                 <>
                   Pagas hasta el <strong className="text-foreground">{formatDueDate(due, ctx.timezone)}</strong>
                   {vat!.form ? ` (${vat!.form})` : ""}
@@ -172,7 +177,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                   {isCurrent ? ". El monto puede cambiar hasta que termine el mes." : "."}
                 </>
               ) : st.vat.debit === 0 && st.vat.credit === 0 ? (
-                "Todavía no hay ventas ni gastos con factura este mes."
+                "Todavía no hay ventas ni gastos con factura este mes. Igual tienes que presentar el F29 (sin movimiento)."
               ) : (
                 `Este mes no te toca pagar: lo que puedes descontar es mayor que el ${L} de tus ventas.`
               )}
@@ -181,10 +186,15 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           <CardContent>
             <div className="grid gap-6 md:grid-cols-[1fr_1.4fr] md:items-center">
               <div>
-                <p className="text-sm text-muted-foreground">{current.vatToPay > 0 ? `${L} a pagar (aprox.)` : `${L} a favor para el mes siguiente`}</p>
-                <p className={cn("tabular text-4xl font-semibold tracking-tight", current.vatToPay > 0 ? "text-foreground" : "text-success")}>
-                  {money(current.vatToPay > 0 ? current.vatToPay : current.carryOut)}
+                <p className="text-sm text-muted-foreground">
+                  {f29 > 0 ? (ppm > 0 ? "Total a pagar en el F29 (aprox.)" : `${L} a pagar (aprox.)`) : `${L} a favor para el mes siguiente`}
                 </p>
+                <p className={cn("tabular text-4xl font-semibold tracking-tight", f29 > 0 ? "text-foreground" : "text-success")}>
+                  {money(f29 > 0 ? f29 : current.carryOut)}
+                </p>
+                {f29 > 0 && current.carryOut > 0 ? (
+                  <p className="mt-1 text-xs text-muted-foreground">Y te quedan {money(current.carryOut)} de {L} a favor para el mes siguiente.</p>
+                ) : null}
               </div>
               <div className="divide-y rounded-xl border px-4">
                 <Line money={money} label={`${L} de tus ventas`} hint="Lo que va dentro de tus precios" value={st.vat.debit} />
@@ -192,7 +202,13 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 {current.carryIn > 0 ? (
                   <Line money={money} kind="minus" label="A favor del mes anterior" value={current.carryIn} />
                 ) : null}
-                <Line money={money} kind="subtotal" label={current.vatToPay > 0 ? `${L} a pagar` : `${L} a favor`} value={current.vatToPay > 0 ? current.vatToPay : current.carryOut} />
+                <Line money={money} kind="subtotal" label={current.vatToPay > 0 || current.carryOut === 0 ? `${L} a pagar` : `${L} a favor`} value={current.vatToPay > 0 || current.carryOut === 0 ? current.vatToPay : current.carryOut} />
+                {ppm > 0 ? (
+                  <>
+                    <Line money={money} label={ppmLabel} hint="Pago provisional del impuesto a la renta" value={ppm} />
+                    <Line money={money} kind="subtotal" label="Total F29" value={f29} />
+                  </>
+                ) : null}
               </div>
             </div>
           </CardContent>
@@ -312,6 +328,14 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 costo. Suponemos que tus precios y el costo de tus productos incluyen {L}.
               </p>
             ) : null}
+            {chargesVat && ctx.business.country === "CL" ? (
+              <p>
+                <strong>F29:</strong> el {L} de las ventas se cuenta en el mes de la venta (también lo fiado, aunque te paguen
+                después) y el de una factura de compra, en el mes de la factura. Sueldos, honorarios, impuestos y
+                contribuciones nunca descuentan {L}. Si pagas boletas de honorarios, la retención también va en el F29 y no
+                está incluida aquí. Lo que sacas del negocio para consumo propio también paga {L}.
+              </p>
+            ) : null}
             <p>Es un cálculo aproximado para ordenarte. Para tu declaración, la cifra oficial la revisa tu contador o el SII.</p>
           </div>
         </div>
@@ -341,7 +365,8 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                   <th className="py-2 pr-3 text-right font-medium">Utilidad bruta</th>
                   <th className="py-2 pr-3 text-right font-medium">Gastos</th>
                   <th className="py-2 pr-3 text-right font-medium">Utilidad</th>
-                  {chargesVat ? <th className="py-2 text-right font-medium">{L} a pagar</th> : null}
+                  {chargesVat ? <th className="py-2 pr-3 text-right font-medium">{L} a pagar</th> : null}
+                  {ppmRate > 0 ? <th className="py-2 text-right font-medium">PPM</th> : null}
                 </tr>
               </thead>
               <tbody className="tabular">
@@ -357,7 +382,8 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                     <td className="py-2 pr-3 text-right">{money(r.s.grossProfit)}</td>
                     <td className="py-2 pr-3 text-right">{money(r.s.operatingExpenses + r.s.waste)}</td>
                     <td className={cn("py-2 pr-3 text-right font-medium", r.s.profit < 0 && "text-danger")}>{money(r.s.profit)}</td>
-                    {chargesVat ? <td className="py-2 text-right">{money(r.vatToPay)}</td> : null}
+                    {chargesVat ? <td className="py-2 pr-3 text-right">{money(r.vatToPay)}</td> : null}
+                    {ppmRate > 0 ? <td className="py-2 text-right">{money(ppmAmount(r.s.netSales, ppmRate))}</td> : null}
                   </tr>
                 ))}
               </tbody>
@@ -369,7 +395,8 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                   <td className="py-3 pr-3 text-right">{money(totals.grossProfit)}</td>
                   <td className="py-3 pr-3 text-right">{money(totals.operatingExpenses)}</td>
                   <td className={cn("py-3 pr-3 text-right", totals.profit < 0 ? "text-danger" : "text-success")}>{money(totals.profit)}</td>
-                  {chargesVat ? <td className="py-3 text-right">{money(totals.vatToPay)}</td> : null}
+                  {chargesVat ? <td className="py-3 pr-3 text-right">{money(totals.vatToPay)}</td> : null}
+                  {ppmRate > 0 ? <td className="py-3 text-right">{money(rows.reduce((acc, r) => acc + ppmAmount(r.s.netSales, ppmRate), 0))}</td> : null}
                 </tr>
               </tfoot>
             </table>

@@ -1,12 +1,16 @@
 import "server-only"
 import { db } from "@/lib/db"
 import { startOfMonth, zonedTimeToUtc } from "@/lib/dates"
-import { buildStatement, EMPTY_PERIOD, vatWithCarry, type RawPeriod } from "@/lib/income-statement"
+import { buildStatement, EMPTY_PERIOD, vatWithCarry, withoutVatCredit, type RawPeriod } from "@/lib/income-statement"
 import { vatFromGross } from "@/lib/vat"
 
-type ExpenseRow = { categoryId: string | null; isVariable: boolean | null; hasInvoice: boolean; total: bigint | number | null }
+type ExpenseRow = { categoryId: string | null; name: string | null; isVariable: boolean | null; hasInvoice: boolean; total: bigint | number | null }
 
-function addExpense(raw: RawPeriod, row: { isVariable: boolean | null; hasInvoice: boolean; total: number }) {
+/** ¿Este gasto descuenta IVA? Solo con factura y si es un gasto que puede traer IVA. */
+const creditsVat = (row: { name: string | null; hasInvoice: boolean }) => row.hasInvoice && !withoutVatCredit(row.name)
+
+function addExpense(raw: RawPeriod, row: { name: string | null; isVariable: boolean | null; hasInvoice: boolean; total: number }) {
+  row = { ...row, hasInvoice: creditsVat(row) }
   if (row.isVariable) {
     raw.purchases += row.total
     if (row.hasInvoice) raw.purchasesInvoiced += row.total
@@ -24,7 +28,7 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
       SELECT SUM(i."subtotal") AS revenue, SUM(i."quantity" * i."unitCost") AS cost
       FROM "sale_item" i JOIN "sale" s ON s."id" = i."saleId"
       WHERE s."businessId" = ${businessId} AND s."date" >= ${from} AND s."date" < ${to} AND i."unitCost" > 0`,
-    db.$queryRaw<(ExpenseRow & { name: string | null })[]>`
+    db.$queryRaw<ExpenseRow[]>`
       SELECT e."categoryId", c."name", c."isVariable", e."hasInvoice", SUM(e."amount") AS total
       FROM "expense" e LEFT JOIN "expense_category" c ON c."id" = e."categoryId"
       WHERE e."businessId" = ${businessId} AND e."date" >= ${from} AND e."date" < ${to}
@@ -45,11 +49,11 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
   const byCategory = new Map<string, { name: string; isVariable: boolean; total: number }>()
   for (const row of expenses) {
     const total = Number(row.total ?? 0)
-    addExpense(raw, { isVariable: row.isVariable, hasInvoice: row.hasInvoice, total })
+    addExpense(raw, { name: row.name, isVariable: row.isVariable, hasInvoice: row.hasInvoice, total })
     const key = row.categoryId ?? "none"
     const cat = byCategory.get(key) ?? { name: row.name ?? "Sin categoría", isVariable: Boolean(row.isVariable), total: 0 }
     // Sin IVA cuando el gasto tiene factura (ese IVA se recupera).
-    cat.total += rate && row.hasInvoice ? total - vatFromGross(total, rate) : total
+    cat.total += rate && creditsVat(row) ? total - vatFromGross(total, rate) : total
     byCategory.set(key, cat)
   }
 
@@ -78,10 +82,10 @@ async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone:
       GROUP BY bucket`,
     db.$queryRaw<(Bucket & ExpenseRow)[]>`
       SELECT to_char((e."date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM') AS bucket,
-             c."isVariable", e."hasInvoice", SUM(e."amount") AS total
+             c."name", c."isVariable", e."hasInvoice", SUM(e."amount") AS total
       FROM "expense" e LEFT JOIN "expense_category" c ON c."id" = e."categoryId"
       WHERE e."businessId" = ${businessId} AND e."date" >= ${from} AND e."date" < ${to}
-      GROUP BY bucket, c."isVariable", e."hasInvoice"`,
+      GROUP BY bucket, c."name", c."isVariable", e."hasInvoice"`,
     db.$queryRaw<(Bucket & { cost: bigint | null })[]>`
       SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM') AS bucket, SUM(-"quantity" * "unitCost") AS cost
       FROM "inventory_movement"
@@ -100,7 +104,7 @@ async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone:
     get(r.bucket).knownRevenue = Number(r.revenue ?? 0)
     get(r.bucket).knownCost = Number(r.cost ?? 0)
   }
-  for (const r of expenses) addExpense(get(r.bucket), { isVariable: r.isVariable, hasInvoice: r.hasInvoice, total: Number(r.total ?? 0) })
+  for (const r of expenses) addExpense(get(r.bucket), { name: r.name, isVariable: r.isVariable, hasInvoice: r.hasInvoice, total: Number(r.total ?? 0) })
   for (const r of waste) get(r.bucket).waste = Number(r.cost ?? 0)
   return (key: string) => months.get(key) ?? EMPTY_PERIOD
 }

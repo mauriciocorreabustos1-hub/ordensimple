@@ -10,6 +10,7 @@ import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
+import { withoutVatCredit } from "@/lib/income-statement"
 import { cn } from "@/lib/utils"
 import { createExpense, updateExpense } from "@/server/actions/expenses"
 
@@ -50,6 +51,9 @@ export function ExpenseForm({
   const [hasInvoice, setHasInvoice] = React.useState(editing?.hasInvoice ?? false)
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
+  const categoryName = categories.find((c) => c.id === categoryId)?.name ?? ""
+  // Sueldos, impuestos, honorarios…: nunca traen IVA que se pueda descontar.
+  const noVat = withoutVatCredit(categoryName)
 
   function pickCategory(cat: ExpenseCategoryOption) {
     setCategoryId(cat.id === categoryId ? undefined : cat.id)
@@ -65,7 +69,7 @@ export function ExpenseForm({
     setErrors(errs)
     if (Object.keys(errs).length) return
     startTransition(async () => {
-      const input = { amount, description, categoryId, date, supplierName, ...(chargesVat ? { hasInvoice } : {}) }
+      const input = { amount, description, categoryId, date, supplierName, ...(chargesVat ? { hasInvoice: hasInvoice && !noVat } : {}) }
       const result = editing ? await updateExpense(editing.id, input) : await createExpense(input)
       if (!result.ok) {
         toast.error(result.message)
@@ -132,12 +136,16 @@ export function ExpenseForm({
           />
         </Field>
       </div>
-      {chargesVat ? (
+      {chargesVat && !noVat ? (
         <label htmlFor="e-invoice" className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">
           <Checkbox id="e-invoice" checked={hasInvoice} onCheckedChange={(v) => setHasInvoice(v === true)} className="mt-0.5" />
           <span className="space-y-0.5">
-            <span className="block font-medium">Tiene factura a nombre del negocio</span>
-            <span className="block text-xs text-muted-foreground">Su IVA se descuenta del IVA que tienes que pagar.</span>
+            <span className="block font-medium">Tiene factura con IVA a nombre del negocio</span>
+            <span className="block text-xs text-muted-foreground">
+              {/arriendo/i.test(categoryName)
+                ? "El arriendo de un local sin muebles ni instalaciones normalmente no lleva IVA: márcalo solo si la factura trae IVA."
+                : "Su IVA se descuenta del IVA que tienes que pagar. Con boleta no se descuenta."}
+            </span>
           </span>
         </label>
       ) : null}

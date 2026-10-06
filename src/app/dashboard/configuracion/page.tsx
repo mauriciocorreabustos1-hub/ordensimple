@@ -8,6 +8,7 @@ import { BusinessForm } from "@/components/settings/business-form"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
+import { PpmRate } from "@/components/settings/ppm-rate"
 import { vatInfo } from "@/lib/vat"
 import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
@@ -150,6 +151,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             {ctx.settings.chargesVat ? (
               <VatDueDay value={ctx.settings.vatDueDay} chile={ctx.business.country === "CL"} disabled={!canManage} />
             ) : null}
+            {ctx.settings.chargesVat && ctx.business.country === "CL" ? <PpmRate value={ctx.settings.ppmRate} disabled={!canManage} /> : null}
           </CardContent>
         </Card>
       ) : null}

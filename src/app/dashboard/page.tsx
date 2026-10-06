@@ -12,7 +12,7 @@ import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { businessHealth, percentChange } from "@/lib/calculations"
 import { formatMoney, referenceAmount } from "@/lib/currency"
 import { greeting, monthName, zonedParts } from "@/lib/dates"
-import { daysUntil, formatDueDate, vatDueDate, vatInfo } from "@/lib/vat"
+import { daysUntil, formatDueDate, ppmAmount, vatDueDate, vatInfo } from "@/lib/vat"
 import { getDashboardData } from "@/server/queries/dashboard"
 import { getInsights } from "@/server/queries/insights"
 import { getDebtors } from "@/server/queries/fiado"
@@ -50,7 +50,10 @@ export default async function DashboardPage() {
   const payablesTotal = payables.reduce((sum, p) => sum + p.amount, 0)
   const overduePayables = payables.filter((p) => p.dueDate < startOfDay(now, ctx.timezone)).length
   const thisMonth = year?.rows[today.month - 1] ?? null
-  const vatDue = vatDueDate(today.year, today.month, ctx.settings.vatDueDay, ctx.timezone)
+  const vatDue = vatDueDate(today.year, today.month, ctx.settings.vatDueDay, ctx.timezone, ctx.business.country)
+  // En Chile el F29 junta el IVA y el PPM.
+  const ppm = thisMonth && ctx.business.country === "CL" ? ppmAmount(thisMonth.s.netSales, ctx.settings.ppmRate) : 0
+  const f29 = (thisMonth?.vatToPay ?? 0) + ppm
   const vatDaysLeft = daysUntil(vatDue, now, ctx.timezone)
   const money = (n: number) => formatMoney(n, ctx.currency)
   const easy = ctx.settings.easyMode
@@ -202,12 +205,12 @@ export default async function DashboardPage() {
               <LinkCard
                 href="/dashboard/resultados"
                 icon={Landmark}
-                label={`${vat!.label} a pagar (aprox.)`}
-                value={money(thisMonth.vatToPay)}
+                label={ppm > 0 ? "F29 a pagar (aprox.)" : `${vat!.label} a pagar (aprox.)`}
+                value={money(f29)}
                 tone="text-primary"
                 hint={
-                  thisMonth.vatToPay > 0
-                    ? `Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
+                  f29 > 0
+                    ? `${ppm > 0 ? `${vat!.label} ${money(thisMonth.vatToPay)} + PPM ${money(ppm)} · ` : ""}Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
                     : thisMonth.carryOut > 0
                       ? `Por ahora no te toca pagar: tienes ${money(thisMonth.carryOut)} a favor`
                       : "Este mes, por ahora, no te toca pagar"

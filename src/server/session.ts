@@ -55,6 +55,7 @@ export async function requireBusiness() {
     defaultPayment: "CASH" as const,
     chargesVat: true,
     vatDueDay: 20,
+    ppmRate: 0.00125,
   }
   return {
     user,

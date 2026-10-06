@@ -203,6 +203,9 @@ model BusinessSettings {
   chargesVat        Boolean  @default(true)
   /// Día del mes siguiente en que vence el pago del IVA (en Chile, F29: día 20 con documentos electrónicos, si no día 12).
   vatDueDay         Int      @default(20)
+  /// Tasa del pago provisional mensual (PPM) que va en el mismo F29, sobre las ventas sin IVA. 0 = no mostrarlo.
+  /// Pro Pyme General 0,125% (rebaja transitoria 2025-2027, Ley 21.755); Pro Pyme Transparente 0,2%.
+  ppmRate           Float    @default(0.00125)
   /// Últimos avisos enviados por correo (para no repetirlos).
   lastWeeklySummaryAt   DateTime?
   lastNoSalesReminderAt DateTime?
@@ -643,6 +646,10 @@ model Payable {
   amount      Int
   /// Hasta cuándo hay que pagar.
   dueDate     DateTime
+  /// Es una factura a nombre del negocio: su IVA se descuenta en el mes de la factura (no en el del pago).
+  hasInvoice  Boolean   @default(true)
+  /// Fecha de la factura. Al pagarla, el gasto queda en esta fecha.
+  invoiceDate DateTime?
   /// Cuándo se pagó (se registra también como gasto).
   paidAt      DateTime?
   expenseId   String?

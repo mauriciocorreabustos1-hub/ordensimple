@@ -4,6 +4,7 @@ import * as React from "react"
 import { Check, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { AppModal } from "@/components/app/app-modal"
 import { Field } from "@/components/app/field"
@@ -12,19 +13,32 @@ import { toDateKey } from "@/lib/dates"
 import { createPayable, deletePayable, markPayablePaid } from "@/server/actions/payables"
 
 /** "Agregar pago pendiente": una factura o deuda con un proveedor y su fecha de vencimiento. */
-export function PayableDialog({ currency, timezone, suppliers }: { currency: string; timezone: string; suppliers: string[] }) {
+export function PayableDialog({
+  currency,
+  timezone,
+  suppliers,
+  chargesVat = false,
+}: {
+  currency: string
+  timezone: string
+  suppliers: string[]
+  /** El negocio declara IVA: se pregunta si es factura y su fecha. */
+  chargesVat?: boolean
+}) {
   const [open, setOpen] = React.useState(false)
   const [description, setDescription] = React.useState("")
   const [supplierName, setSupplierName] = React.useState("")
   const [amount, setAmount] = React.useState(0)
   const [dueDate, setDueDate] = React.useState(() => toDateKey(new Date(), timezone))
+  const [hasInvoice, setHasInvoice] = React.useState(true)
+  const [invoiceDate, setInvoiceDate] = React.useState(() => toDateKey(new Date(), timezone))
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     startTransition(async () => {
-      const r = await createPayable({ description, supplierName, amount, dueDate })
+      const r = await createPayable({ description, supplierName, amount, dueDate, hasInvoice: chargesVat && hasInvoice, invoiceDate: chargesVat && hasInvoice ? invoiceDate : undefined })
       if (!r.ok) {
         setErrors(Object.fromEntries(Object.entries(r.fieldErrors ?? {}).map(([k, v]) => [k, v?.[0]])))
         return void toast.error(r.message)
@@ -34,6 +48,8 @@ export function PayableDialog({ currency, timezone, suppliers }: { currency: str
       setDescription("")
       setSupplierName("")
       setAmount(0)
+      setHasInvoice(true)
+      setInvoiceDate(toDateKey(new Date(), timezone))
       setErrors({})
     })
   }
@@ -65,6 +81,24 @@ export function PayableDialog({ currency, timezone, suppliers }: { currency: str
               <Input id="pay-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-10" />
             </Field>
           </div>
+          {chargesVat ? (
+            <div className="grid gap-3 rounded-xl border p-3">
+              <label htmlFor="pay-invoice" className="flex cursor-pointer items-start gap-3 text-sm">
+                <Checkbox id="pay-invoice" checked={hasInvoice} onCheckedChange={(v) => setHasInvoice(v === true)} className="mt-0.5" />
+                <span className="space-y-0.5">
+                  <span className="block font-medium">Es una factura con IVA a nombre del negocio</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Su IVA se descuenta en el mes de la factura, aunque la pagues después.
+                  </span>
+                </span>
+              </label>
+              {hasInvoice ? (
+                <Field label="Fecha de la factura" htmlFor="pay-invoice-date" error={errors.invoiceDate}>
+                  <Input id="pay-invoice-date" type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="h-10" />
+                </Field>
+              ) : null}
+            </div>
+          ) : null}
           <Button type="submit" size="lg" className="h-11" disabled={pending}>
             {pending ? <Loader2 className="animate-spin" /> : null}
             Guardar pago pendiente

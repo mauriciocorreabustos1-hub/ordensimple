@@ -3,7 +3,7 @@ import { CalendarClock, Mail, Phone, Receipt, Truck, Wallet } from "lucide-react
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PayableActions, PayableDialog } from "@/components/contacts/payables"
-import { daysUntil } from "@/lib/vat"
+import { daysUntil, vatInfo } from "@/lib/vat"
 import { getPayables } from "@/server/queries/payables"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
 import { EmptyState } from "@/components/app/empty-state"
@@ -56,7 +56,7 @@ export default async function SuppliersPage() {
                 : "Anota las facturas que tienes que pagar y te avisamos antes de que venzan."}
             </CardDescription>
           </div>
-          {canManage ? <PayableDialog currency={ctx.currency} timezone={ctx.timezone} suppliers={suppliers.map((x) => x.name)} /> : null}
+          {canManage ? <PayableDialog currency={ctx.currency} timezone={ctx.timezone} suppliers={suppliers.map((x) => x.name)} chargesVat={Boolean(vatInfo(ctx.business.country) && ctx.settings.chargesVat)} /> : null}
         </CardHeader>
         {payables.pending.length || payables.paid.length ? (
           <CardContent className="space-y-3">

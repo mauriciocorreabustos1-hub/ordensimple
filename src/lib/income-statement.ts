@@ -37,6 +37,14 @@ export function isPurchaseCategory(name: string) {
 }
 
 /**
+ * Gastos que nunca traen IVA recuperable aunque se marquen "con factura": sueldos y leyes sociales,
+ * honorarios (boleta de honorarios, sin IVA), impuestos, contribuciones, patentes, multas e intereses.
+ */
+export function withoutVatCredit(name: string | null | undefined) {
+  return Boolean(name && /sueldo|remunera|honorario|imposic|cotizac|previsi|impuesto|contribuci|patente|multa|inter[eé]s/i.test(name))
+}
+
+/**
  * Estado de resultados simple.
  *
  * Costo de venta:

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { zonedTimeToUtc } from "@/lib/dates"
+import { formatDate, zonedTimeToUtc } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
 import { idSchema, payableSchema, type PayableInput } from "@/lib/validations"
 import { assertCan, requireBusiness } from "@/server/session"
@@ -13,7 +13,7 @@ export async function createPayable(input: PayableInput): Promise<ActionResult> 
   const ctx = await requireBusiness()
   const parsed = payableSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { description, supplierName, amount, dueDate } = parsed.data
+  const { description, supplierName, amount, dueDate, hasInvoice = true, invoiceDate } = parsed.data
 
   try {
     assertCan(ctx, "suppliers:manage")
@@ -27,6 +27,7 @@ export async function createPayable(input: PayableInput): Promise<ActionResult> 
       supplierId = existing ? existing.id : (await db.supplier.create({ data: { businessId: ctx.businessId, name: supplierName } })).id
     }
     const [y, m, d] = dueDate.split("-").map(Number)
+    const [iy, im, id] = invoiceDate ? invoiceDate.split("-").map(Number) : []
     await db.payable.create({
       data: {
         businessId: ctx.businessId,
@@ -35,6 +36,8 @@ export async function createPayable(input: PayableInput): Promise<ActionResult> 
         amount,
         // A mediodía del día de vencimiento, en la zona del negocio.
         dueDate: zonedTimeToUtc(y, m, d, ctx.timezone, 12),
+        hasInvoice,
+        invoiceDate: hasInvoice ? (invoiceDate ? zonedTimeToUtc(iy, im, id, ctx.timezone, 12) : new Date()) : null,
         createdById: ctx.user.id,
       },
     })
@@ -51,6 +54,7 @@ export async function markPayablePaid(id: string): Promise<ActionResult> {
   const parsedId = idSchema.safeParse(id)
   if (!parsedId.success) return { ok: false, message: "Pago no encontrado." }
 
+  let expenseDate: Date | null = null
   try {
     assertCan(ctx, "suppliers:manage")
     const payable = await db.payable.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId, paidAt: null } })
@@ -60,13 +64,16 @@ export async function markPayablePaid(id: string): Promise<ActionResult> {
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
       select: { id: true },
     })
+    // Una factura va en el mes de la factura (ahí se descuenta su IVA en el F29), no en el del pago.
+    expenseDate = payable.hasInvoice ? (payable.invoiceDate ?? payable.createdAt) : new Date()
     await db.$transaction(async (tx) => {
       const expense = await tx.expense.create({
         data: {
           businessId: ctx.businessId,
           description: payable.description,
           amount: payable.amount,
-          date: new Date(),
+          date: expenseDate!,
+          hasInvoice: payable.hasInvoice,
           categoryId: category?.id ?? null,
           supplierId: payable.supplierId,
           createdById: ctx.user.id,
@@ -78,7 +85,13 @@ export async function markPayablePaid(id: string): Promise<ActionResult> {
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: "Pagado. Quedó registrado como gasto de hoy." }
+  const sameDay = expenseDate && formatDate(expenseDate, ctx.timezone) === formatDate(new Date(), ctx.timezone)
+  return {
+    ok: true,
+    message: sameDay
+      ? "Pagado. Quedó registrado como gasto de hoy."
+      : `Pagado. Quedó como gasto del ${formatDate(expenseDate!, ctx.timezone, { day: "numeric", month: "long" })}, la fecha de la factura.`,
+  }
 }
 
 export async function deletePayable(id: string): Promise<ActionResult> {

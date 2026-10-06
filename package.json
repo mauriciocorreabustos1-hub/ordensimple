@@ -20,6 +20,7 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@vercel/analytics": "^2.0.1",
+    "ai": "^7.0.129",
     "barcode-detector": "^3.2.2",
     "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",

@@ -2,7 +2,9 @@ import "server-only"
 import { db } from "@/lib/db"
 import { addDays, formatDate, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
 import { sendEmailBatch } from "@/lib/email"
-import { lowStockEmail, noSalesEmail, weeklySummaryEmail } from "@/lib/email-templates"
+import { lowStockEmail, noSalesEmail, payablesEmail, weeklySummaryEmail } from "@/lib/email-templates"
+import { formatMoney } from "@/lib/currency"
+import { payablesDueBefore } from "@/server/queries/payables"
 import { totalsBetween } from "@/server/queries/aggregates"
 import { getDebtors } from "@/server/queries/fiado"
 import { productStats } from "@/server/queries/reports"
@@ -41,7 +43,7 @@ export async function sendBusinessAlerts(now = new Date()) {
   })
 
   const emails: Email[] = []
-  const counts = { weekly: 0, lowStock: 0, noSales: 0 }
+  const counts = { weekly: 0, lowStock: 0, noSales: 0, payables: 0 }
 
   for (const b of businesses) {
     const s = b.settings!
@@ -130,6 +132,29 @@ export async function sendBusinessAlerts(now = new Date()) {
           counts.noSales++
         }
       }
+    }
+
+    // ─── Pagos a proveedores: los que vencen hoy o mañana, y los atrasados (cada 3 días) ──
+    const dueSoon = await payablesDueBefore(b.id, addDays(today, 2, tz))
+    const toRemind = dueSoon.filter((x) => {
+      const overdue = x.dueDate < today
+      const last = x.remindedAt
+      return overdue ? !last || now.getTime() - last.getTime() >= 3 * DAY : !last || last < today
+    })
+    if (toRemind.length) {
+      const items = toRemind.map((x) => {
+        const days = Math.round((startOfDay(x.dueDate, tz).getTime() - today.getTime()) / DAY)
+        return {
+          description: x.description,
+          supplier: x.supplier?.name ?? null,
+          amount: formatMoney(x.amount, b.currency),
+          when: days < 0 ? `venció hace ${-days} día${days === -1 ? "" : "s"}` : days === 0 ? "vence hoy" : "vence mañana",
+          overdue: days < 0,
+        }
+      })
+      await db.payable.updateMany({ where: { id: { in: toRemind.map((x) => x.id) } }, data: { remindedAt: now } })
+      for (const r of recipients) emails.push({ to: r.email, ...payablesEmail({ name: r.name, businessName: b.name, items }) })
+      counts.payables++
     }
   }
 

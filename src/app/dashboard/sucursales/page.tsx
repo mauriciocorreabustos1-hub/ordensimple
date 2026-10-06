@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/app/page-header"
 import { StatCard } from "@/components/app/stat-card"
-import { AddBranchButton, EnterBranchButton } from "@/components/branches/branch-actions"
+import { AddBranchButton, DeleteBranchButton, EnterBranchButton } from "@/components/branches/branch-actions"
 import { formatMoney } from "@/lib/currency"
 import { addDays, monthName, startOfDay, startOfMonth } from "@/lib/dates"
 import { businessLimit } from "@/lib/plans"
@@ -107,7 +107,10 @@ export default async function BranchesPage() {
                       {r.type ?? "Sin rubro"} · {ROLE_LABEL[r.role]}
                     </p>
                   </div>
-                  {r.id === ctx.businessId ? null : <EnterBranchButton businessId={r.id} />}
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                    {r.id === ctx.businessId ? null : <EnterBranchButton businessId={r.id} />}
+                    {r.role === "OWNER" && owned.length > 1 ? <DeleteBranchButton businessId={r.id} name={r.name} /> : null}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">

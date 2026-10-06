@@ -42,10 +42,10 @@ export async function GET(request: Request) {
   const header = chargesVat
     ? ["Mes", "Ventas totales", `${L} de las ventas`, `Ventas sin ${L}`, "Costo de venta", "Utilidad bruta", "Gastos", "Utilidad", `${L} a pagar`]
     : ["Mes", "Ventas", "Costo de venta", "Utilidad bruta", "Gastos", "Utilidad"]
-  const line = (label: string, v: { sales: number; salesVat: number; netSales: number; costOfSales: number; grossProfit: number; operatingExpenses: number; profit: number }, vatToPay: number) =>
+  const line = (label: string, v: { sales: number; salesVat: number; netSales: number; costOfSales: number; grossProfit: number; operatingExpenses: number; profit: number; waste?: number }, vatToPay: number) =>
     chargesVat
-      ? [label, amount(v.sales), amount(v.salesVat), amount(v.netSales), amount(v.costOfSales), amount(v.grossProfit), amount(v.operatingExpenses), amount(v.profit), amount(vatToPay)]
-      : [label, amount(v.netSales), amount(v.costOfSales), amount(v.grossProfit), amount(v.operatingExpenses), amount(v.profit)]
+      ? [label, amount(v.sales), amount(v.salesVat), amount(v.netSales), amount(v.costOfSales), amount(v.grossProfit), amount(v.operatingExpenses + (v.waste ?? 0)), amount(v.profit), amount(vatToPay)]
+      : [label, amount(v.netSales), amount(v.costOfSales), amount(v.grossProfit), amount(v.operatingExpenses + (v.waste ?? 0)), amount(v.profit)]
 
   const data = [
     [`Estado de resultados ${year} — ${ctx.business.name}`],

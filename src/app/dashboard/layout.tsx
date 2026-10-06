@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const [products, categories, customers, memberships] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
-      select: { id: true, name: true, price: true, stock: true, trackStock: true },
+      select: { id: true, name: true, price: true, stock: true, trackStock: true, sku: true },
       orderBy: { name: "asc" },
       take: 500,
     }),

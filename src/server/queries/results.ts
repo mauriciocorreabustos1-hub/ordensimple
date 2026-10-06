@@ -18,7 +18,7 @@ function addExpense(raw: RawPeriod, row: { isVariable: boolean | null; hasInvoic
 
 /** Estado de resultados de un período, con el detalle de gastos por categoría. */
 export async function getIncomeStatement(businessId: string, from: Date, to: Date, vatRate: number | null) {
-  const [sales, known, expenses] = await Promise.all([
+  const [sales, known, expenses, waste] = await Promise.all([
     db.sale.aggregate({ where: { businessId, date: { gte: from, lt: to } }, _sum: { total: true }, _count: true }),
     db.$queryRaw<{ revenue: bigint | null; cost: bigint | null }[]>`
       SELECT SUM(i."subtotal") AS revenue, SUM(i."quantity" * i."unitCost") AS cost
@@ -29,6 +29,9 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
       FROM "expense" e LEFT JOIN "expense_category" c ON c."id" = e."categoryId"
       WHERE e."businessId" = ${businessId} AND e."date" >= ${from} AND e."date" < ${to}
       GROUP BY e."categoryId", c."name", c."isVariable", e."hasInvoice"`,
+    db.$queryRaw<{ cost: bigint | null }[]>`
+      SELECT SUM(-"quantity" * "unitCost") AS cost FROM "inventory_movement"
+      WHERE "businessId" = ${businessId} AND "type" = 'WASTE' AND "createdAt" >= ${from} AND "createdAt" < ${to}`,
   ])
 
   const raw: RawPeriod = {
@@ -36,6 +39,7 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
     sales: sales._sum.total ?? 0,
     knownRevenue: Number(known[0]?.revenue ?? 0),
     knownCost: Number(known[0]?.cost ?? 0),
+    waste: Number(waste[0]?.cost ?? 0),
   }
   const rate = vatRate ?? 0
   const byCategory = new Map<string, { name: string; isVariable: boolean; total: number }>()
@@ -60,7 +64,7 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
 /** Montos de cada mes ("YYYY-MM") entre dos fechas, en la zona horaria del negocio. */
 async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone: string) {
   type Bucket = { bucket: string }
-  const [sales, known, expenses] = await Promise.all([
+  const [sales, known, expenses, waste] = await Promise.all([
     db.$queryRaw<(Bucket & { total: bigint | null })[]>`
       SELECT to_char(("date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM') AS bucket, SUM("total") AS total
       FROM "sale"
@@ -78,6 +82,11 @@ async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone:
       FROM "expense" e LEFT JOIN "expense_category" c ON c."id" = e."categoryId"
       WHERE e."businessId" = ${businessId} AND e."date" >= ${from} AND e."date" < ${to}
       GROUP BY bucket, c."isVariable", e."hasInvoice"`,
+    db.$queryRaw<(Bucket & { cost: bigint | null })[]>`
+      SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM') AS bucket, SUM(-"quantity" * "unitCost") AS cost
+      FROM "inventory_movement"
+      WHERE "businessId" = ${businessId} AND "type" = 'WASTE' AND "createdAt" >= ${from} AND "createdAt" < ${to}
+      GROUP BY bucket`,
   ])
 
   const months = new Map<string, RawPeriod>()
@@ -92,6 +101,7 @@ async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone:
     get(r.bucket).knownCost = Number(r.cost ?? 0)
   }
   for (const r of expenses) addExpense(get(r.bucket), { isVariable: r.isVariable, hasInvoice: r.hasInvoice, total: Number(r.total ?? 0) })
+  for (const r of waste) get(r.bucket).waste = Number(r.cost ?? 0)
   return (key: string) => months.get(key) ?? EMPTY_PERIOD
 }
 
@@ -124,7 +134,7 @@ export async function getYearSummary(businessId: string, year: number, lastMonth
     netSales: sum((r) => r.s.netSales),
     costOfSales: sum((r) => r.s.costOfSales),
     grossProfit: sum((r) => r.s.grossProfit),
-    operatingExpenses: sum((r) => r.s.operatingExpenses),
+    operatingExpenses: sum((r) => r.s.operatingExpenses + r.s.waste),
     profit: sum((r) => r.s.profit),
     vatToPay: sum((r) => r.vatToPay),
   }

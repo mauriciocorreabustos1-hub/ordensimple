@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { toDateKey } from "@/lib/dates"
 import { AlertTriangle, Boxes, Package, PackageX } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -81,6 +82,7 @@ export default async function ProductsPage() {
     minStock: p.minStock,
     trackStock: p.trackStock,
     active: p.active,
+    expiresAt: p.expiresAt ? toDateKey(p.expiresAt, ctx.timezone) : "",
   })
 
   return (

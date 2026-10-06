@@ -17,6 +17,8 @@ import { getDashboardData } from "@/server/queries/dashboard"
 import { getInsights } from "@/server/queries/insights"
 import { getDebtors } from "@/server/queries/fiado"
 import { getYearSummary } from "@/server/queries/results"
+import { payablesDueBefore } from "@/server/queries/payables"
+import { addDays, startOfDay } from "@/lib/dates"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature, PLANS, PLANS_ENFORCED } from "@/lib/plans"
 import { can } from "@/lib/roles"
@@ -37,12 +39,16 @@ export default async function DashboardPage() {
   const vat = vatInfo(ctx.business.country)
   const chargesVat = Boolean(vat && ctx.settings.chargesVat)
   const today = zonedParts(now, ctx.timezone)
-  const [data, insights, debts, year] = await Promise.all([
+  const showPayables = showFinances && canUseFeature(ctx.business.plan, "suppliers") && can(ctx.role, "suppliers:manage")
+  const [data, insights, debts, year, payables] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
     showFiado ? getDebtors(ctx.businessId) : Promise.resolve(null),
     showResults ? getYearSummary(ctx.businessId, today.year, today.month, ctx.timezone, chargesVat ? vat!.rate : null) : Promise.resolve(null),
+    showPayables ? payablesDueBefore(ctx.businessId, addDays(startOfDay(now, ctx.timezone), 8, ctx.timezone)) : Promise.resolve([]),
   ])
+  const payablesTotal = payables.reduce((sum, p) => sum + p.amount, 0)
+  const overduePayables = payables.filter((p) => p.dueDate < startOfDay(now, ctx.timezone)).length
   const thisMonth = year?.rows[today.month - 1] ?? null
   const vatDue = vatDueDate(today.year, today.month, ctx.settings.vatDueDay, ctx.timezone)
   const vatDaysLeft = daysUntil(vatDue, now, ctx.timezone)
@@ -127,6 +133,22 @@ export default async function DashboardPage() {
           <CalendarClock className="size-4 shrink-0 text-warning" />
           No has registrado ventas durante {daysWithoutSales} días. Si vendiste, anótalo para que tus números estén al día.
         </div>
+      ) : null}
+
+      {payables.length ? (
+        <Link
+          href="/dashboard/proveedores#pagos"
+          className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors hover:bg-accent/40 ${overduePayables ? "border-danger/40 bg-danger/5" : "bg-card"}`}
+        >
+          <CalendarClock className={`size-4 shrink-0 ${overduePayables ? "text-danger" : "text-warning"}`} />
+          <span className="flex-1">
+            {overduePayables
+              ? `Tienes ${overduePayables} pago${overduePayables === 1 ? "" : "s"} a proveedores atrasado${overduePayables === 1 ? "" : "s"}.`
+              : `Esta semana vence${payables.length === 1 ? "" : "n"} ${payables.length} pago${payables.length === 1 ? "" : "s"} a proveedores.`}{" "}
+            Total: <strong className="tabular">{money(payablesTotal)}</strong>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </Link>
       ) : null}
 
       <QuickButtons />

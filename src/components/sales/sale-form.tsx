@@ -7,6 +7,7 @@ import type { PaymentMethod } from "@/generated/prisma/enums"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ScanButton } from "@/components/app/barcode-scanner"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { PaymentChips } from "@/components/app/payment-chips"
@@ -14,7 +15,7 @@ import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createSale, updateSale } from "@/server/actions/sales"
 
-export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean }
+export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; sku?: string | null }
 
 type Line = { key: number; productId: string; description: string; quantity: number; unitPrice: number }
 
@@ -85,6 +86,21 @@ export function SaleForm({
   function chooseProduct(key: number, productId: string) {
     const p = byId.get(productId)
     update(key, p ? { productId, description: p.name, unitPrice: p.price } : { productId: CUSTOM, description: "" })
+  }
+
+  /** Producto escaneado: si ya está en la venta suma una unidad; si no, ocupa una línea vacía o agrega una. */
+  function addScanned(code: string) {
+    const p = products.find((x) => x.sku && x.sku.trim().toLowerCase() === code.toLowerCase())
+    if (!p) return void toast.error(`No hay un producto con el código ${code}. Agrégalo en Productos con ese código.`)
+    setLines((ls) => {
+      const same = ls.find((l) => l.productId === p.id)
+      if (same) return ls.map((l) => (l.key === same.key ? { ...l, quantity: l.quantity + 1 } : l))
+      const empty = ls.find((l) => !l.productId)
+      const filled = { productId: p.id, description: p.name, unitPrice: p.price, quantity: 1 }
+      if (empty) return ls.map((l) => (l.key === empty.key ? { ...l, ...filled } : l))
+      return [...ls, { ...newLine(), ...filled }]
+    })
+    toast.success(`${p.name} agregado`)
   }
 
   function submit(e: React.FormEvent) {
@@ -215,10 +231,13 @@ export function SaleForm({
             </div>
           )
         })}
-        <Button type="button" variant="outline" onClick={() => setLines((ls) => [...ls, newLine()])}>
-          <Plus />
-          Agregar otro producto
-        </Button>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <Button type="button" variant="outline" onClick={() => setLines((ls) => [...ls, newLine()])}>
+            <Plus />
+            Agregar otro producto
+          </Button>
+          {products.some((p) => p.sku) ? <ScanButton label="Escanear" onResult={addScanned} /> : null}
+        </div>
       </div>
 
       <Field label="¿Cómo te pagaron?">

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight, Crown, NotebookPen, Repeat, Search, Sparkles, Users } from "lucide-react"
+import { ChevronRight, Crown, NotebookPen, Repeat, Search, Sparkles, Users, MessageCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import { getCustomers, type CustomerSegment } from "@/server/queries/contacts"
 import { getDebtors } from "@/server/queries/fiado"
 import { requireBusiness } from "@/server/session"
+import { fiadoReminderText, whatsappLink } from "@/lib/whatsapp"
 
 export const metadata: Metadata = { title: "Clientes" }
 
@@ -127,10 +128,10 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
       ) : (
         <ul className="grid gap-2">
           {list.map((c) => (
-            <li key={c.id}>
+            <li key={c.id} className="flex items-stretch gap-2">
               <Link
                 href={`/dashboard/clientes/${c.id}`}
-                className="flex items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
               >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                   {c.name
@@ -170,6 +171,19 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                 <span className="tabular shrink-0 font-semibold">{money(c.total)}</span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
               </Link>
+              {owes(c.id) > 0 && c.phone ? (
+                <a
+                  href={whatsappLink(c.phone, fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(owes(c.id)) }))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-card text-[11px] font-medium text-success transition-colors hover:border-success/40 hover:bg-success/10"
+                  aria-label={`Cobrar a ${c.name} por WhatsApp`}
+                  title="Cobrar por WhatsApp"
+                >
+                  <MessageCircle className="size-5" />
+                  Cobrar
+                </a>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -256,6 +256,9 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 .map((c) => (
                   <Line key={c.name} money={money} kind="detail" label={c.name} value={c.total} />
                 ))}
+              {st.waste > 0 ? (
+                <Line money={money} kind="minus" label="Merma y vencidos" hint="Productos vencidos, dañados o perdidos, a costo" value={st.waste} />
+              ) : null}
               <Line
                 money={money}
                 kind="total"
@@ -285,7 +288,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
             {st.netSales > 0 ? (
               <>
                 De cada {money(10_000)} que vendiste{chargesVat ? ` (sin ${L})` : ""}, {money(Math.round((st.costOfSales / st.netSales) * 10_000))} se fueron en
-                el costo de lo que vendiste, {money(Math.round((st.operatingExpenses / st.netSales) * 10_000))} en los gastos del negocio y{" "}
+                el costo de lo que vendiste, {money(Math.round(((st.operatingExpenses + st.waste) / st.netSales) * 10_000))} en los gastos del negocio{st.waste > 0 ? " y la merma" : ""} y{" "}
                 {st.profit >= 0 ? (
                   <>te quedaron {money(Math.round((st.profit / st.netSales) * 10_000))} de utilidad.</>
                 ) : (
@@ -352,7 +355,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                     <td className="py-2 pr-3 text-right">{money(r.s.netSales)}</td>
                     <td className="py-2 pr-3 text-right">{money(r.s.costOfSales)}</td>
                     <td className="py-2 pr-3 text-right">{money(r.s.grossProfit)}</td>
-                    <td className="py-2 pr-3 text-right">{money(r.s.operatingExpenses)}</td>
+                    <td className="py-2 pr-3 text-right">{money(r.s.operatingExpenses + r.s.waste)}</td>
                     <td className={cn("py-2 pr-3 text-right font-medium", r.s.profit < 0 && "text-danger")}>{money(r.s.profit)}</td>
                     {chargesVat ? <td className="py-2 text-right">{money(r.vatToPay)}</td> : null}
                   </tr>

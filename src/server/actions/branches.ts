@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { DEFAULT_EXPENSE_CATEGORIES } from "@/lib/constants"
+import { cancelPreapproval } from "@/lib/mercadopago"
 import { businessLimit, PLANS } from "@/lib/plans"
 import { requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -70,4 +71,63 @@ export async function createBranch(input: z.input<typeof branchSchema>): Promise
   } catch (error) {
     return toActionError(error)
   }
+}
+
+const deleteBranchSchema = z.object({
+  businessId: z.string().min(1),
+  /** Se escribe el nombre para confirmar: evita borrar la sucursal equivocada. */
+  confirmName: z.string().trim(),
+})
+
+/**
+ * Elimina una sucursal para siempre, con todas sus ventas, gastos, productos, clientes y cierres de caja.
+ * Solo el dueño, y solo si le queda al menos otra sucursal (para borrar todo está "Eliminar mi cuenta").
+ */
+export async function deleteBranch(input: z.input<typeof deleteBranchSchema>): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  const parsed = deleteBranchSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Datos inválidos." }
+  const { businessId, confirmName } = parsed.data
+
+  try {
+    const owned = await db.businessMember.findMany({
+      where: { userId: ctx.user.id, role: "OWNER", business: { onboardingCompleted: true } },
+      select: { business: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    })
+    const target = owned.find((o) => o.business.id === businessId)?.business
+    if (!target) return { ok: false, message: "Solo el dueño puede eliminar una sucursal." }
+    if (owned.length < 2) {
+      return { ok: false, message: "Es tu única sucursal. Para borrar todo, usa “Eliminar mi cuenta” en Configuración." }
+    }
+    if (confirmName.toLowerCase() !== target.name.trim().toLowerCase()) {
+      return { ok: false, message: "El nombre no coincide. Escríbelo tal como aparece." }
+    }
+
+    // Si pagaba una suscripción, se cancela antes para que Mercado Pago no le siga cobrando.
+    const subs = await db.subscription.findMany({
+      where: { businessId, status: { in: ["authorized", "paused", "pending"] } },
+      select: { externalId: true },
+    })
+    for (const s of subs) {
+      try {
+        await cancelPreapproval(s.externalId)
+      } catch (error) {
+        console.error("[branches] no se pudo cancelar la suscripción", s.externalId, error)
+        return { ok: false, message: "No pudimos cancelar la suscripción de esta sucursal. Cancélala en Tu plan e intenta de nuevo." }
+      }
+    }
+
+    const next = owned.find((o) => o.business.id !== businessId)!.business
+    await db.$transaction([
+      // Quien la tenía abierta entra a otra de sus sucursales.
+      db.user.updateMany({ where: { activeBusinessId: businessId }, data: { activeBusinessId: null } }),
+      db.user.update({ where: { id: ctx.user.id }, data: { activeBusinessId: next.id } }),
+      db.business.delete({ where: { id: businessId } }),
+    ])
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidatePath("/dashboard", "layout")
+  return { ok: true, message: "Sucursal eliminada" }
 }

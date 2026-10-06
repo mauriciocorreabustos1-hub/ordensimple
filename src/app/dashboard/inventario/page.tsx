@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes, ClipboardCheck, PackageX, Snail, TrendingUp } from "lucide-react"
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes, CalendarClock, ClipboardCheck, PackageX, Snail, Trash2, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { EmptyState } from "@/components/app/empty-state"
@@ -10,7 +10,8 @@ import { ProGate } from "@/components/app/pro-gate"
 import { StatCard } from "@/components/app/stat-card"
 import { MovementDialog } from "@/components/inventory/movement-dialog"
 import { formatMoney, formatNumber } from "@/lib/currency"
-import { formatDateTime } from "@/lib/dates"
+import { formatDate, formatDateTime } from "@/lib/dates"
+import { daysUntil } from "@/lib/vat"
 import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
@@ -30,6 +31,7 @@ const MOVEMENT = {
   IN: { label: "Entrada", icon: ArrowDownToLine },
   OUT: { label: "Salida", icon: ArrowUpFromLine },
   ADJUSTMENT: { label: "Ajuste", icon: ClipboardCheck },
+  WASTE: { label: "Merma", icon: Trash2 },
 } as const
 
 function StateBadge({ state }: { state: StockState }) {
@@ -98,6 +100,69 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
             <StatCard compactOnMobile label="Agotados" value={formatNumber(inv.out.length)} icon={PackageX}
               tone={inv.out.length ? "loss" : "default"} hint="Productos sin unidades disponibles." />
           </div>
+
+          <Card className={inv.expiring.some((p) => daysUntil(p.expiresAt, new Date(), ctx.timezone) < 0) ? "border-danger/40" : undefined}>
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarClock className="size-4 text-warning" />
+                  Merma y vencidos
+                </CardTitle>
+                <CardDescription>
+                  {inv.waste.units
+                    ? `Este mes perdiste ${formatNumber(inv.waste.units)} ${inv.waste.units === 1 ? "unidad" : "unidades"}${showCosts ? ` (${money(inv.waste.cost)} a costo)` : ""}.`
+                    : "Este mes no has registrado merma."}
+                </CardDescription>
+              </div>
+              {canManage ? <MovementDialog products={inv.productOptions} defaultType="WASTE" compact label="Registrar merma" /> : null}
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Por vencer (7 días)</p>
+                {inv.expiring.length ? (
+                  <ul className="space-y-1.5">
+                    {inv.expiring.slice(0, 8).map((p) => {
+                      const days = daysUntil(p.expiresAt, new Date(), ctx.timezone)
+                      return (
+                        <li key={p.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                          <span className="min-w-0 truncate">
+                            {p.name}
+                            <span className="text-xs text-muted-foreground"> · {formatNumber(p.stock)} u. · {formatDate(p.expiresAt, ctx.timezone, { day: "numeric", month: "short" })}</span>
+                          </span>
+                          {days < 0 ? (
+                            <Badge variant="destructive">Vencido</Badge>
+                          ) : days === 0 ? (
+                            <Badge variant="destructive">Vence hoy</Badge>
+                          ) : (
+                            <Badge className="border-warning/40 bg-warning/15 text-foreground">{days === 1 ? "Mañana" : `En ${days} días`}</Badge>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nada por vencer. Agrega la fecha de vencimiento al editar cada producto.</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Merma del mes por motivo</p>
+                {inv.waste.byReason.length ? (
+                  <ul className="space-y-1.5">
+                    {inv.waste.byReason.map((r) => (
+                      <li key={r.reason} className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                        <span>{r.reason}</span>
+                        <span className="tabular text-muted-foreground">
+                          {formatNumber(r.units)} u.{showCosts ? ` · ${money(r.cost)}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Cuando algo se venza o se dañe, regístralo como merma para saber cuánta plata se pierde.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {alerts.length ? (
             <Card className="border-warning/40">

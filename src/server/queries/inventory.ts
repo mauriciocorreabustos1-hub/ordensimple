@@ -1,6 +1,6 @@
 import "server-only"
 import { db } from "@/lib/db"
-import { addDays, startOfDay } from "@/lib/dates"
+import { addDays, startOfDay, startOfMonth } from "@/lib/dates"
 
 export type StockState = "ok" | "low" | "out"
 
@@ -13,10 +13,13 @@ export function stockStateOf(p: { stock: number; minStock: number }): StockState
 export async function getInventory(businessId: string, timezone: string, now = new Date()) {
   const since = addDays(startOfDay(now, timezone), -29, timezone)
 
-  const [products, sold, movements] = await Promise.all([
+  const monthStart = startOfMonth(now, timezone)
+  const expiryLimit = addDays(startOfDay(now, timezone), 8, timezone)
+
+  const [products, sold, movements, waste] = await Promise.all([
     db.product.findMany({
       where: { businessId, active: true },
-      select: { id: true, name: true, sku: true, stock: true, minStock: true, cost: true, price: true, trackStock: true },
+      select: { id: true, name: true, sku: true, stock: true, minStock: true, cost: true, price: true, trackStock: true, expiresAt: true },
       orderBy: { name: "asc" },
     }),
     db.saleItem.groupBy({
@@ -37,6 +40,11 @@ export async function getInventory(businessId: string, timezone: string, now = n
         product: { select: { name: true } },
         createdBy: { select: { name: true } },
       },
+    }),
+    // Merma del mes (vencidos, dañados, perdidos…), valorizada al costo.
+    db.inventoryMovement.findMany({
+      where: { businessId, type: "WASTE", createdAt: { gte: monthStart } },
+      select: { quantity: true, unitCost: true, reason: true },
     }),
   ])
 
@@ -65,8 +73,29 @@ export async function getInventory(businessId: string, timezone: string, now = n
     .map((p) => ({ id: p.id, name: p.name, stock: p.stock, value: p.stock * p.cost }))
     .sort((a, b) => b.value - a.value)
 
+  const wasteByReason = new Map<string, { units: number; cost: number }>()
+  for (const w of waste) {
+    const key = w.reason || "Merma"
+    const r = wasteByReason.get(key) ?? { units: 0, cost: 0 }
+    r.units += -w.quantity
+    r.cost += -w.quantity * w.unitCost
+    wasteByReason.set(key, r)
+  }
+
+  // Lo que vence en los próximos 7 días (o ya venció) y todavía tiene stock.
+  const expiring = products
+    .filter((p) => p.expiresAt && p.expiresAt < expiryLimit && (!p.trackStock || p.stock > 0))
+    .map((p) => ({ id: p.id, name: p.name, stock: p.stock, expiresAt: p.expiresAt!, value: Math.max(0, p.stock) * p.cost }))
+    .sort((a, b) => a.expiresAt.getTime() - b.expiresAt.getTime())
+
   return {
     items,
+    waste: {
+      cost: [...wasteByReason.values()].reduce((s, r) => s + r.cost, 0),
+      units: [...wasteByReason.values()].reduce((s, r) => s + r.units, 0),
+      byReason: [...wasteByReason.entries()].map(([reason, r]) => ({ reason, ...r })).sort((a, b) => b.cost - a.cost),
+    },
+    expiring,
     untrackedCount: products.length - tracked.length,
     value,
     valueAtPrice,
@@ -77,6 +106,6 @@ export async function getInventory(businessId: string, timezone: string, now = n
     idle,
     idleValue: idle.reduce((s, p) => s + p.value, 0),
     movements,
-    productOptions: products.map((p) => ({ id: p.id, name: p.name, stock: p.stock, trackStock: p.trackStock })),
+    productOptions: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku, stock: p.stock, trackStock: p.trackStock })),
   }
 }

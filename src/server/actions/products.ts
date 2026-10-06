@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { zonedTimeToUtc } from "@/lib/dates"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { PLANS, productLimit } from "@/lib/plans"
@@ -20,6 +21,13 @@ async function resolveCategory(ctx: BusinessContext, name: string | undefined) {
 
 function isUniqueSkuError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
+}
+
+/** "AAAA-MM-DD" → fecha (a mediodía en la zona del negocio); vacío = sin fecha. */
+function expiryDate(key: string | undefined, timezone: string) {
+  if (!key) return null
+  const [y, m, d] = key.split("-").map(Number)
+  return zonedTimeToUtc(y, m, d, timezone, 12)
 }
 
 export async function createProduct(input: ProductInput): Promise<ActionResult> {
@@ -45,7 +53,7 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
     const categoryId = await resolveCategory(ctx, categoryName)
     await db.$transaction(async (tx) => {
       const product = await tx.product.create({
-        data: { ...data, sku: data.sku ?? null, categoryId, businessId: ctx.businessId },
+        data: { ...data, sku: data.sku ?? null, expiresAt: expiryDate(data.expiresAt, ctx.timezone), categoryId, businessId: ctx.businessId },
       })
       if (data.trackStock && data.stock > 0) {
         await tx.inventoryMovement.create({
@@ -85,7 +93,7 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
     await db.$transaction(async (tx) => {
       await tx.product.update({
         where: { id: current.id },
-        data: { ...data, sku: data.sku ?? null, categoryId },
+        data: { ...data, sku: data.sku ?? null, expiresAt: expiryDate(data.expiresAt, ctx.timezone), categoryId },
       })
       const diff = data.stock - current.stock
       if (data.trackStock && diff !== 0) {

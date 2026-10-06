@@ -8,7 +8,7 @@ import { inventoryMovementSchema, type InventoryMovementInput } from "@/lib/vali
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
-const DEFAULT_REASON = { IN: "Entrada de mercadería", OUT: "Salida", ADJUSTMENT: "Ajuste por conteo" } as const
+const DEFAULT_REASON = { IN: "Entrada de mercadería", OUT: "Salida", ADJUSTMENT: "Ajuste por conteo", WASTE: "Merma" } as const
 
 export async function createInventoryMovement(input: InventoryMovementInput): Promise<ActionResult> {
   const ctx = await requireBusiness()
@@ -29,7 +29,7 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
 
     let delta: number
     if (type === "IN") delta = quantity
-    else if (type === "OUT") {
+    else if (type === "OUT" || type === "WASTE") {
       if (product.stock < quantity) {
         return {
           ok: false,
@@ -53,6 +53,8 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
           productId: product.id,
           type,
           quantity: delta,
+          // La merma se valoriza al costo del producto (para saber cuánta plata se perdió).
+          unitCost: product.cost,
           reason: reason ?? DEFAULT_REASON[type],
           createdById: ctx.user.id,
         },
@@ -62,5 +64,5 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: "Movimiento registrado" }
+  return { ok: true, message: type === "WASTE" ? "Merma registrada" : "Movimiento registrado" }
 }

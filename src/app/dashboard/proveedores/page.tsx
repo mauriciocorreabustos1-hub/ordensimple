@@ -1,5 +1,10 @@
 import type { Metadata } from "next"
-import { Mail, Phone, Receipt, Truck, Wallet } from "lucide-react"
+import { CalendarClock, Mail, Phone, Receipt, Truck, Wallet } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PayableActions, PayableDialog } from "@/components/contacts/payables"
+import { daysUntil } from "@/lib/vat"
+import { getPayables } from "@/server/queries/payables"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageHeader } from "@/components/app/page-header"
@@ -23,7 +28,8 @@ export default async function SuppliersPage() {
   if (!canUseFeature(ctx.business.plan, "suppliers")) {
     return <ProGate title="Proveedores" description="Ordena a tus proveedores y descubre cuál te conviene más." />
   }
-  const suppliers = await getSuppliers(ctx.businessId)
+  const [suppliers, payables] = await Promise.all([getSuppliers(ctx.businessId), getPayables(ctx.businessId)])
+  const now = new Date()
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "suppliers:manage")
   const totalSpent = suppliers.reduce((s, x) => s + x.spent, 0)
@@ -36,6 +42,61 @@ export default async function SuppliersPage() {
         description="A quién le compras, cuánto le has comprado y cuál te conviene. Los gastos con proveedor se suman solos aquí."
         actions={canManage ? <SupplierDialog currency={ctx.currency} /> : null}
       />
+
+      <Card id="pagos" className={`scroll-mt-20 ${payables.pending.some((p) => daysUntil(p.dueDate, now, ctx.timezone) < 0) ? "border-danger/40" : ""}`}>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2">
+              <CalendarClock className="size-4 text-warning" />
+              Pagos pendientes
+            </CardTitle>
+            <CardDescription>
+              {payables.pending.length
+                ? `Debes ${money(payables.total)} a tus proveedores. Te avisamos por correo antes de cada vencimiento.`
+                : "Anota las facturas que tienes que pagar y te avisamos antes de que venzan."}
+            </CardDescription>
+          </div>
+          {canManage ? <PayableDialog currency={ctx.currency} timezone={ctx.timezone} suppliers={suppliers.map((x) => x.name)} /> : null}
+        </CardHeader>
+        {payables.pending.length || payables.paid.length ? (
+          <CardContent className="space-y-3">
+            {payables.pending.length ? (
+              <ul className="divide-y rounded-xl border">
+                {payables.pending.map((p) => {
+                  const days = daysUntil(p.dueDate, now, ctx.timezone)
+                  return (
+                    <li key={p.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{p.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.supplier?.name ? `${p.supplier.name} · ` : ""}vence el {formatDate(p.dueDate, ctx.timezone, { day: "numeric", month: "long" })}
+                        </p>
+                      </div>
+                      {days < 0 ? (
+                        <Badge variant="destructive">Atrasado {-days} {days === -1 ? "día" : "días"}</Badge>
+                      ) : days === 0 ? (
+                        <Badge variant="destructive">Vence hoy</Badge>
+                      ) : days <= 3 ? (
+                        <Badge className="border-warning/40 bg-warning/15 text-foreground">{days === 1 ? "Mañana" : `En ${days} días`}</Badge>
+                      ) : (
+                        <Badge variant="secondary">En {days} días</Badge>
+                      )}
+                      <span className="tabular w-24 text-right font-semibold">{money(p.amount)}</span>
+                      {canManage ? <PayableActions id={p.id} label={p.description} /> : null}
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : null}
+            {payables.paid.length ? (
+              <p className="text-xs text-muted-foreground">
+                Últimos pagados:{" "}
+                {payables.paid.map((p) => `${p.description} (${money(p.amount)})`).join(" · ")}. Quedaron registrados en Gastos.
+              </p>
+            ) : null}
+          </CardContent>
+        ) : null}
+      </Card>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard compactOnMobile label="Proveedores" value={formatNumber(suppliers.length)} icon={Truck} />

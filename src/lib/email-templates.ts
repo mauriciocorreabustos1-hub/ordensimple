@@ -425,6 +425,44 @@ ${statRow(profitLabel, money(Math.abs(d.profit)), d.profit >= 0 ? GREEN : "#c241
   return { subject: `Tu semana en ${d.businessName}: vendiste ${money(d.sales)}`, html, text }
 }
 
+/** Recordatorio de pagos a proveedores que vencen pronto o ya vencieron. */
+export function payablesEmail(d: {
+  name: string
+  businessName: string
+  items: { description: string; supplier: string | null; amount: string; when: string; overdue: boolean }[]
+}) {
+  const appUrl = getAppUrl()
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const label = (i: (typeof d.items)[number]) => (i.supplier ? `${i.description} (${i.supplier})` : i.description)
+  const html = layout({
+    preview: d.items.map((i) => `${label(i)}: ${i.amount}, ${i.when}`).slice(0, 3).join(" · "),
+    body: [
+      h1(d.items.length === 1 ? "Tienes un pago a proveedor por vencer" : `Tienes ${d.items.length} pagos a proveedores por vencer`),
+      p(`Hola ${escapeHtml(first)}, te recordamos estos pagos de ${escapeHtml(d.businessName)}:`),
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 16px;">${d.items
+        .map((i) => statRow(`${escapeHtml(label(i))}<br><span style="font-size:13px;">${escapeHtml(i.when)}</span>`, i.amount, i.overdue ? "#c2410c" : INK))
+        .join("")}</table>`,
+      p("Cuando pagues, márcalo como pagado y quedará registrado como gasto."),
+      button(`${appUrl}/dashboard/proveedores#pagos`, "Ver pagos pendientes"),
+    ].join(""),
+    footer: alertFooter(),
+  })
+  const text = [
+    `Hola ${first}, te recordamos estos pagos de ${d.businessName}:`,
+    d.items.map((i) => `- ${label(i)}: ${i.amount}, ${i.when}`).join("\n"),
+    `Ver pagos pendientes: ${appUrl}/dashboard/proveedores#pagos`,
+  ].join("\n\n")
+  const firstItem = d.items[0]
+  return {
+    subject:
+      d.items.length === 1 && firstItem
+        ? `${firstItem.overdue ? "Pago atrasado" : "Pago por vencer"}: ${label(firstItem)} · ${firstItem.amount}`
+        : `Tienes ${d.items.length} pagos a proveedores por vencer`,
+    html,
+    text,
+  }
+}
+
 export function lowStockEmail(d: { name: string; businessName: string; items: { name: string; stock: number }[]; more: number }) {
   const appUrl = getAppUrl()
   const first = (d.name.split(" ")[0] || d.name).trim()

@@ -12,6 +12,8 @@ export type RawPeriod = {
   /** El resto de los gastos (arriendo, sueldos, cuentas…). */
   otherExpenses: number
   otherInvoiced: number
+  /** Merma (vencidos, dañados, perdidos) valorizada al costo, con IVA si el costo lo incluye. */
+  waste: number
 }
 
 export const EMPTY_PERIOD: RawPeriod = {
@@ -22,6 +24,7 @@ export const EMPTY_PERIOD: RawPeriod = {
   purchasesInvoiced: 0,
   otherExpenses: 0,
   otherInvoiced: 0,
+  waste: 0,
 }
 
 export type CostMethod = "products" | "purchases" | "none"
@@ -62,6 +65,9 @@ export function buildStatement(raw: RawPeriod, vatRate: number | null) {
 
   let costOfSales = 0
   let estimatedCost = 0
+  // La merma solo se resta aparte cuando el costo sale de los productos vendidos;
+  // si el costo son las compras de mercadería, la merma ya está ahí.
+  let waste = 0
   if (costMethod === "products") {
     const unknownRevenue = Math.max(0, raw.sales - raw.knownRevenue)
     const estimatedGross = Math.round(unknownRevenue * (raw.knownCost / raw.knownRevenue))
@@ -69,13 +75,16 @@ export function buildStatement(raw: RawPeriod, vatRate: number | null) {
     const netOf = (gross: number) => gross - Math.round(vat(gross) * invoicedShare)
     costOfSales = netOf(raw.knownCost + estimatedGross)
     estimatedCost = netOf(estimatedGross)
+    waste = netOf(raw.waste)
   } else if (costMethod === "purchases") {
     costOfSales = raw.purchases - purchasesCredit
+  } else {
+    waste = rate ? raw.waste - vat(raw.waste) : raw.waste
   }
 
   const grossProfit = netSales - costOfSales
   const operatingExpenses = raw.otherExpenses - otherCredit
-  const profit = grossProfit - operatingExpenses
+  const profit = grossProfit - operatingExpenses - waste
   const vatCredit = purchasesCredit + otherCredit
 
   return {
@@ -88,6 +97,7 @@ export function buildStatement(raw: RawPeriod, vatRate: number | null) {
     grossProfit,
     grossMargin: netSales > 0 ? grossProfit / netSales : null,
     operatingExpenses,
+    waste,
     /** Compras de mercadería que no se restan (van al inventario) cuando el costo sale de los productos. */
     purchasesToInventory: costMethod === "products" ? raw.purchases - purchasesCredit : 0,
     profit,

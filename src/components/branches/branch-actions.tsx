@@ -2,13 +2,13 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight, Loader2, Plus } from "lucide-react"
+import { ArrowRight, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AppModal } from "@/components/app/app-modal"
 import { Field } from "@/components/app/field"
-import { createBranch } from "@/server/actions/branches"
+import { createBranch, deleteBranch } from "@/server/actions/branches"
 import { switchBusiness } from "@/server/actions/team"
 
 /** Botón "Agregar sucursal" con su formulario. */
@@ -99,5 +99,57 @@ export function EnterBranchButton({ businessId }: { businessId: string }) {
       Entrar
       <ArrowRight />
     </Button>
+  )
+}
+
+/** Eliminar una sucursal: se confirma escribiendo su nombre. */
+export function DeleteBranchButton({ businessId, name }: { businessId: string; name: string }) {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [confirm, setConfirm] = React.useState("")
+  const [pending, startTransition] = React.useTransition()
+  const matches = confirm.trim().toLowerCase() === name.trim().toLowerCase()
+
+  return (
+    <>
+      <Button variant="ghost" size="sm" className="text-danger hover:bg-danger/10 hover:text-danger" onClick={() => setOpen(true)}>
+        <Trash2 />
+        Eliminar
+      </Button>
+      <AppModal
+        open={open}
+        onOpenChange={(v) => {
+          setOpen(v)
+          if (!v) setConfirm("")
+        }}
+        title={`Eliminar ${name}`}
+        description="Se borran para siempre sus ventas, gastos, productos, clientes, fiado y cierres de caja. Tus otras sucursales no se tocan. Esto no se puede deshacer."
+      >
+        <form
+          className="grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            startTransition(async () => {
+              const r = await deleteBranch({ businessId, confirmName: confirm })
+              if (!r.ok) return void toast.error(r.message)
+              toast.success(r.message ?? "Sucursal eliminada")
+              setOpen(false)
+              router.refresh()
+            })
+          }}
+        >
+          <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+            ¿Quieres guardar sus datos? Antes descárgalos en Configuración → Tu cuenta → Descargar mis datos (estando en esta sucursal).
+          </p>
+          <Field label={`Para confirmar, escribe: ${name}`} htmlFor="del-branch">
+            <Input id="del-branch" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="h-10" autoComplete="off" />
+          </Field>
+          <Button type="submit" variant="destructive" size="lg" className="h-11" disabled={!matches || pending}>
+            {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            Eliminar sucursal para siempre
+          </Button>
+        </form>
+      </AppModal>
+    </>
   )
 }

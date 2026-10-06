@@ -152,6 +152,8 @@ export const productSchema = z.object({
   minStock: z.number().int("Usa números enteros").min(0).max(10_000_000),
   trackStock: z.boolean(),
   active: z.boolean(),
+  /** Próximo vencimiento (AAAA-MM-DD) o vacío. */
+  expiresAt: z.union([dateKey, z.literal("")]).optional(),
 })
 export type ProductInput = z.input<typeof productSchema>
 
@@ -170,12 +172,22 @@ export const idSchema = z.string().min(1).max(64)
 
 export const inventoryMovementSchema = z.object({
   productId: z.string().min(1, "Elige un producto"),
-  type: z.enum(["IN", "OUT", "ADJUSTMENT"]),
+  type: z.enum(["IN", "OUT", "ADJUSTMENT", "WASTE"]),
   /** Entrada/salida: unidades que entran o salen. Ajuste: unidades contadas en total. */
   quantity: z.number().int("Usa números enteros").min(0).max(10_000_000),
   reason: optionalText(120),
 })
 export type InventoryMovementInput = z.input<typeof inventoryMovementSchema>
+
+// ─── Pagos pendientes a proveedores ─────────────────────────────────────────
+
+export const payableSchema = z.object({
+  description: z.string().trim().min(2, "Escribe qué tienes que pagar").max(120),
+  supplierName: optionalText(80),
+  amount: positiveMoney,
+  dueDate: dateKey,
+})
+export type PayableInput = z.input<typeof payableSchema>
 
 // ─── Clientes y proveedores ─────────────────────────────────────────────────
 

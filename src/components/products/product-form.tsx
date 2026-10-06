@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Field } from "@/components/app/field"
+import { ScanButton } from "@/components/app/barcode-scanner"
 import { MoneyInput } from "@/components/app/money-input"
 import { Explainer } from "@/components/app/explainer"
 import { marginRatio } from "@/lib/calculations"
@@ -24,6 +25,8 @@ export type ProductFormValues = {
   minStock: number
   trackStock: boolean
   active: boolean
+  /** Próximo vencimiento "AAAA-MM-DD" o "". */
+  expiresAt: string
 }
 
 export const EMPTY_PRODUCT: ProductFormValues = {
@@ -36,6 +39,7 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   minStock: 0,
   trackStock: true,
   active: true,
+  expiresAt: "",
 }
 
 function intValue(v: string) {
@@ -101,8 +105,11 @@ export function ProductForm({
             ))}
           </datalist>
         </Field>
-        <Field label="Código (SKU)" htmlFor="p-sku" optional>
-          <Input id="p-sku" value={v.sku} onChange={(e) => set("sku", e.target.value)} className="h-10" maxLength={40} />
+        <Field label="Código de barras" htmlFor="p-sku" optional>
+          <div className="flex gap-2">
+            <Input id="p-sku" value={v.sku} onChange={(e) => set("sku", e.target.value)} className="h-10" maxLength={40} />
+            <ScanButton size="icon" label="Escanear código de barras" onResult={(code) => set("sku", code)} />
+          </div>
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -142,6 +149,9 @@ export function ProductForm({
           </Field>
           <Field label="Avisarme si quedan menos de" htmlFor="p-min">
             <Input id="p-min" inputMode="numeric" value={v.minStock} onChange={(e) => set("minStock", intValue(e.target.value))} className="tabular h-10" />
+          </Field>
+          <Field label="Próximo vencimiento" htmlFor="p-exp" optional hint="Te avisamos en Inventario cuando falten 7 días.">
+            <Input id="p-exp" type="date" value={v.expiresAt} onChange={(e) => set("expiresAt", e.target.value)} className="h-10" />
           </Field>
         </div>
       ) : null}

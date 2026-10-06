@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, CalendarDays, HandCoins, Mail, NotebookPen, Phone, ReceiptText, ShoppingBag, Wallet } from "lucide-react"
+import { ArrowLeft, CalendarDays, HandCoins, Mail, MessageCircle, NotebookPen, Phone, ReceiptText, ShoppingBag, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
@@ -19,13 +19,9 @@ import { getCustomerBalance, getCustomerFiadoHistory } from "@/server/queries/fi
 import { PaymentDialog } from "@/components/contacts/payment-dialog"
 import { deleteCustomerPayment } from "@/server/actions/fiado"
 import { requireBusiness } from "@/server/session"
+import { fiadoReminderText, whatsappLink } from "@/lib/whatsapp"
 
 export const metadata: Metadata = { title: "Cliente" }
-
-function waLink(phone: string) {
-  const digits = phone.replace(/\D/g, "")
-  return `https://wa.me/${digits.length === 9 ? `56${digits}` : digits}`
-}
 
 export default async function CustomerDetailPage({ params }: PageProps<"/dashboard/clientes/[id]">) {
   const ctx = await requireBusiness()
@@ -57,7 +53,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{c.name}</h1>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             {c.phone ? (
-              <a href={waLink(c.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <a href={whatsappLink(c.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-primary">
                 <Phone className="size-4" />
                 {c.phone} · WhatsApp
               </a>
@@ -113,16 +109,33 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
                   "Está al día: no te debe nada."
                 )}
               </p>
+              {balance > 0 && !c.phone ? (
+                <p className="text-xs text-muted-foreground">Agrega su teléfono (botón Editar) para cobrarle por WhatsApp.</p>
+              ) : null}
             </div>
-            {balance > 0 && canRegisterPayment ? (
-              <PaymentDialog
-                customerId={c.id}
-                customerName={c.name}
-                balance={balance}
-                currency={ctx.currency}
-                timezone={ctx.timezone}
-              />
-            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {balance > 0 && c.phone ? (
+                <Button variant="outline" asChild>
+                  <a
+                    href={whatsappLink(c.phone, fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(balance) }))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle />
+                    Cobrar por WhatsApp
+                  </a>
+                </Button>
+              ) : null}
+              {balance > 0 && canRegisterPayment ? (
+                <PaymentDialog
+                  customerId={c.id}
+                  customerName={c.name}
+                  balance={balance}
+                  currency={ctx.currency}
+                  timezone={ctx.timezone}
+                />
+              ) : null}
+            </div>
           </CardHeader>
           <CardContent>
             <ul className="divide-y">

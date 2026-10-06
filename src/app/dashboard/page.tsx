@@ -23,8 +23,6 @@ import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature, PLANS, PLANS_ENFORCED } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
-import { AssistantCard } from "@/components/dashboard/assistant-card"
-import { assistantEnabledFor, assistantQuestionsLeft, assistantSuggestions } from "@/server/assistant"
 
 export const metadata: Metadata = { title: "Inicio" }
 
@@ -59,14 +57,6 @@ export default async function DashboardPage() {
   const vatDaysLeft = daysUntil(vatDue, now, ctx.timezone)
   const money = (n: number) => formatMoney(n, ctx.currency)
   const easy = ctx.settings.easyMode
-  // Asistente con IA: en prueba solo para los administradores de OrdenSimple.
-  const assistant = assistantEnabledFor(ctx.user.email) ? (
-    <AssistantCard
-      suggestions={assistantSuggestions(ctx)}
-      questionsLeft={await assistantQuestionsLeft(ctx.businessId, ctx.timezone)}
-      trial={process.env.ASSISTANT_ENABLED !== "true"}
-    />
-  ) : null
 
   const health = businessHealth({
     sales: data.last30.sales,
@@ -92,7 +82,6 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{ctx.business.name}</h1>
         </div>
         <QuickButtons />
-        {assistant}
         <section aria-labelledby="hoy" className="space-y-3">
           <h2 id="hoy" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
             Hoy en el negocio
@@ -166,8 +155,6 @@ export default async function DashboardPage() {
       ) : null}
 
       <QuickButtons />
-
-      {assistant}
 
       <section aria-labelledby="hoy" className="space-y-3">
         <h2 id="hoy" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">

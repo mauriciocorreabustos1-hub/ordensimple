@@ -170,7 +170,6 @@ model Business {
   subscriptions     Subscription[]
   payables          Payable[]
   productBarcodes   ProductBarcode[]
-  assistantUsage    AssistantUsage[]
 
   @@map("business")
 }
@@ -678,18 +677,4 @@ model ProductBarcode {
   @@unique([businessId, code])
   @@index([productId])
   @@map("product_barcode")
-}
-
-/// Cada pregunta al asistente con IA (para limitar el uso diario y saber cuánto cuesta). No se guarda el texto.
-model AssistantUsage {
-  id           String   @id @default(cuid())
-  businessId   String
-  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  userId       String
-  inputTokens  Int      @default(0)
-  outputTokens Int      @default(0)
-  createdAt    DateTime @default(now())
-
-  @@index([businessId, createdAt])
-  @@map("assistant_usage")
 }

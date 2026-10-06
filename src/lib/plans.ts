@@ -43,16 +43,18 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceNote: "Para siempre · sin tarjeta",
     monthlyPrice: null,
     description: "Para negocios que recién parten o tienen poco equipo.",
-    audience: "Emprendimientos y locales chicos de 1 a 3 personas",
+    audience: "Almacenes, minimarkets y emprendimientos de 1 a 3 personas",
     maxBusinesses: 1,
     maxProducts: 50,
     maxMembers: 3, // tú + 2 trabajadores
-    features: ["tools"],
+    // El fiado es básico para un almacén o minimarket: va incluido gratis (con la lista de clientes).
+    features: ["tools", "customers"],
     highlights: [
       "1 negocio",
       "Tú + 2 trabajadores",
       "Hasta 50 productos",
       "Ventas y gastos sin límite",
+      "Fiado: quién te debe, cuánto y sus abonos",
       "Cierre de caja diario",
       "Tu ganancia del día y del mes",
       "Avisos por correo y resumen semanal",
@@ -68,7 +70,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceNote: BILLING_ENABLED ? "al mes · cancelas cuando quieras" : "Durante el lanzamiento. Te avisaremos 5 días antes de empezar a cobrar.",
     monthlyPrice: 6990,
     description: "Para pymes que crecen y quieren tener todo ordenado.",
-    audience: "Pymes con equipo, inventario y clientes que compran fiado",
+    audience: "Pymes con equipo, inventario y proveedores",
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
@@ -79,7 +81,6 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Hasta 3 sucursales, con equipo por sucursal",
       "Productos ilimitados",
       "Inventario y alertas de stock",
-      "Clientes y fiado con abonos",
       "Proveedores",
       "Reportes y consejos automáticos",
       "Resultados e IVA: tu utilidad y cuánto pagar en el F29",

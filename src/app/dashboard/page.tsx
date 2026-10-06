@@ -113,7 +113,7 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <span className="flex items-center gap-2">
             <Crown className="size-4 shrink-0 text-warning" />
-            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) tienes inventario, fiado, reportes,
+            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) tienes inventario, proveedores, reportes,
             resultados e IVA y tu equipo.
           </span>
           <Link href="/dashboard/configuracion#plan" className="font-medium text-primary hover:underline">

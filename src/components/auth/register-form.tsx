@@ -17,7 +17,15 @@ import { authErrorMessage, safeNext } from "@/lib/auth-errors"
 import { registerSchema } from "@/lib/validations"
 
 /** next: a dónde ir después de crear la cuenta (por ejemplo, una invitación). Sin next, va a configurar su negocio. */
-export function RegisterForm({ next, defaultEmail }: { next?: string; defaultEmail?: string }) {
+export function RegisterForm({
+  next,
+  defaultEmail,
+  submitLabel = "Crear cuenta gratis",
+}: {
+  next?: string
+  defaultEmail?: string
+  submitLabel?: string
+}) {
   const router = useRouter()
   const [pending, setPending] = React.useState(false)
   const [marketing, setMarketing] = React.useState(false)
@@ -87,7 +95,7 @@ export function RegisterForm({ next, defaultEmail }: { next?: string; defaultEma
       </div>
       <Button type="submit" size="lg" className="h-11 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
-        Crear cuenta gratis
+        {submitLabel}
       </Button>
       <p className="text-center text-xs leading-relaxed text-muted-foreground">
         Al crear tu cuenta aceptas los{" "}

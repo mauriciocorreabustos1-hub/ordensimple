@@ -20,7 +20,7 @@ import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
 import { getAppUrl } from "@/lib/app-url"
-import { BILLING_ENABLED, discountedPrice, memberLimit, PAID_PLANS, PLANS } from "@/lib/plans"
+import { BILLING_ENABLED, discountedPrice, memberLimit, PAID_PLANS, parsePlanChoice, PLAN_OF_CHOICE, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
@@ -28,7 +28,10 @@ export const metadata: Metadata = { title: "Configuración" }
 
 export default async function SettingsPage({ searchParams }: PageProps<"/dashboard/configuracion">) {
   const ctx = await requireBusiness()
-  const subscriptionResult = (await searchParams).suscripcion
+  const params = await searchParams
+  const subscriptionResult = params.suscripcion
+  // Viene de "Elegir Pro / Empresa" en precios: ese plan queda marcado para pagar.
+  const planChoice = parsePlanChoice(params.plan)
   const canManage = can(ctx.role, "settings:manage")
   const vat = vatInfo(ctx.business.country)
   const [categories, currentMembers, records, invitations, owned] = await Promise.all([
@@ -313,11 +316,17 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
               Mercado Pago todavía está procesando el pago. Apenas se confirme, tu plan se activará solo.
             </p>
           ) : null}
+          {showBilling && planChoice && subState.kind !== "active" ? (
+            <p className="rounded-lg border border-primary/30 bg-accent/50 p-3 text-sm">
+              ¡Ya casi! Elegiste <strong>{PLANS[PLAN_OF_CHOICE[planChoice]].name}</strong>. Escribe el correo de tu cuenta de Mercado
+              Pago y toca el botón para pagar.
+            </p>
+          ) : null}
           {showBilling ? (
             <SubscriptionPanel
               state={subState}
               options={planOptions}
-              initialPlan={ctx.business.plan === "BUSINESS" ? "BUSINESS" : "PRO"}
+              initialPlan={planChoice ? PLAN_OF_CHOICE[planChoice] : ctx.business.plan === "BUSINESS" ? "BUSINESS" : "PRO"}
               defaultEmail={ctx.user.email}
               canManage={ctx.role === "OWNER"}
             />

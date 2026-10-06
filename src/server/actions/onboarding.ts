@@ -1,13 +1,17 @@
 "use server"
 
 import { redirect } from "next/navigation"
+import { BILLING_ENABLED, checkoutPath, parsePlanChoice } from "@/lib/plans"
 import { db } from "@/lib/db"
 import { COUNTRIES, DEFAULT_EXPENSE_CATEGORIES } from "@/lib/constants"
 import { onboardingSchema, type OnboardingInput } from "@/lib/validations"
 import { requireUser } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
-export async function completeOnboarding(input: OnboardingInput): Promise<ActionResult> {
+export async function completeOnboarding(input: OnboardingInput, planChoice?: string): Promise<ActionResult> {
+  // Si eligió Pro o Empresa en precios, al terminar va directo a pagarlo.
+  const choice = BILLING_ENABLED ? parsePlanChoice(planChoice) : null
+  const finish = (): never => (choice ? redirect(checkoutPath(choice)) : redirectToDashboard())
   const user = await requireUser()
   const parsed = onboardingSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
@@ -21,7 +25,7 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
   })
 
   // Plan gratis: un negocio. Si ya terminó el onboarding, no se crea otro.
-  if (existing?.business.onboardingCompleted) redirectToDashboard()
+  if (existing?.business.onboardingCompleted) return finish()
 
   try {
     const businessData = {
@@ -70,7 +74,7 @@ export async function completeOnboarding(input: OnboardingInput): Promise<Action
     return toActionError(error)
   }
 
-  redirectToDashboard()
+  return finish()
 }
 
 function redirectToDashboard(): never {

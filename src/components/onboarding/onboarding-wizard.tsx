@@ -28,7 +28,7 @@ const STEPS = [
   { title: "Tamaño del negocio", description: "Nos ayuda a darte mejores consejos más adelante." },
 ]
 
-export function OnboardingWizard({ firstName }: { firstName: string }) {
+export function OnboardingWizard({ firstName, planChoice }: { firstName: string; planChoice?: string }) {
   const [step, setStep] = React.useState(0)
   const [pending, setPending] = React.useState(false)
   const [nameError, setNameError] = React.useState<string | null>(null)
@@ -49,7 +49,7 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
 
   async function finish() {
     setPending(true)
-    const result = await completeOnboarding(data)
+    const result = await completeOnboarding(data, planChoice)
     // Si todo sale bien, la acción redirige al dashboard.
     if (result && !result.ok) {
       setPending(false)

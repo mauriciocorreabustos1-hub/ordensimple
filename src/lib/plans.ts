@@ -172,3 +172,14 @@ export function productLimit(plan: Plan, extra = 0) {
 export function businessLimit(plan: Plan) {
   return PLANS_ENFORCED ? PLANS[plan].maxBusinesses : Math.max(PLANS[plan].maxBusinesses, PLANS.PRO.maxBusinesses)
 }
+
+/** Plan elegido en la página de precios (?plan=pro | empresa), que se recuerda durante el registro. */
+export type PlanChoice = "pro" | "empresa"
+export function parsePlanChoice(value: unknown): PlanChoice | null {
+  return value === "pro" || value === "empresa" ? value : null
+}
+export const PLAN_OF_CHOICE: Record<PlanChoice, PaidPlan> = { pro: "PRO", empresa: "BUSINESS" }
+/** Dónde se paga el plan elegido. */
+export function checkoutPath(choice: PlanChoice) {
+  return `/dashboard/configuracion?plan=${choice}#plan`
+}

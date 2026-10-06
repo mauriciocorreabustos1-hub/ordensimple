@@ -188,11 +188,11 @@ export function PricingCards() {
               </Button>
             ) : plan.id === "PRO" ? (
               <Button size="lg" className="h-11" asChild>
-                <Link href="/registro">{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</Link>
+                <Link href={BILLING_ENABLED ? "/registro?plan=pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</Link>
               </Button>
             ) : BILLING_ENABLED ? (
               <Button size="lg" variant="outline" className="h-11" asChild>
-                <Link href="/registro">Elegir Empresa</Link>
+                <Link href="/registro?plan=empresa">Elegir Empresa</Link>
               </Button>
             ) : (
               <Button size="lg" variant="outline" className="h-11" disabled>

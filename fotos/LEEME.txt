@@ -137,3 +137,12 @@ Reglas simples
   4-anuncios-cuadrados/ ........ 4 anuncios 1080x1080: Pro gratis, sucursales, fiado, cierre de caja.
   5-anuncios-horizontales/ ..... 3 anuncios 1200x628: Pro gratis, sucursales, fiado.
   textos-para-publicar.txt ..... Textos, y qué poner en cada anuncio pagado de Meta.
+
+15-publicidad-premium-4/  (lo nuevo y los planes con precio; reemplaza a todo lo que decía "Pro gratis")
+  1-videos/ .................... 6 videos premium verticales (~16-18 s) con su portada:
+                                 planes, escanear códigos, fiado por WhatsApp, merma y vencidos,
+                                 pagos a proveedores, resultados e IVA.
+  textos-para-publicar.txt ..... Texto y hashtags de cada video, orden sugerido y qué usar en anuncios.
+
+OJO: las piezas de las carpetas 12 y 14 que dicen "Pro gratis" o "gratis por ahora" ya no corresponden
+(desde octubre 2026 Pro cuesta $6.990 y Empresa $14.990 al mes). No las uses más.

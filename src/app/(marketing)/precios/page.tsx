@@ -44,7 +44,9 @@ export default function PricingPage() {
         <div className="mx-auto mt-12 max-w-4xl">
           <PricingComparison />
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Los planes Pro y Empresa están en desarrollo. Todavía no se realizan cobros.
+            {BILLING_ENABLED
+              ? "Precios mensuales en pesos chilenos. Pro y Empresa se pagan con Mercado Pago (tarjeta de crédito o débito), se renuevan solos cada mes y los cancelas cuando quieras."
+              : "Durante el lanzamiento todavía no se realizan cobros."}
           </p>
         </div>
       </Section>

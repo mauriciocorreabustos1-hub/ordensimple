@@ -89,6 +89,11 @@ export default function PrivacyPage() {
           <li>
             <strong>Resend</strong>: envío de correos.
           </li>
+          <li>
+            <strong>Mercado Pago</strong>: cobro de los planes Pro y Empresa. Los datos de tu tarjeta los ingresas
+            directamente en Mercado Pago; OrdenSimple no los ve ni los guarda. Solo recibimos el estado de tu suscripción
+            (activa, cancelada o pendiente), el monto y el correo de tu cuenta de Mercado Pago.
+          </li>
         </ul>
         <p>
           Estos proveedores pueden tener servidores fuera de Chile (por ejemplo, en Estados Unidos o Brasil). Al usarlos,

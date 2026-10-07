@@ -21,6 +21,7 @@ import { formatMoney, formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { couponSummary, effectivePlan, PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
+import { cn } from "@/lib/utils"
 import { isAdminEmail } from "@/server/admin"
 import {
   ACTIVITY_FILTERS,
@@ -201,22 +202,35 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             <Button type="submit" variant="outline" size="lg">Buscar</Button>
           </form>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {ACTIVITY_FILTERS.map((a) => (
-            <Button key={a.value} variant={activity === a.value ? "default" : "outline"} size="sm" className="rounded-full" asChild>
-              <Link href={filterHref(a.value, role)}>{a.label}</Link>
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {ROLE_FILTERS.map((r) => (
-            <Button key={r.value} variant={role === r.value ? "secondary" : "ghost"} size="sm" className="rounded-full" asChild>
-              <Link href={filterHref(activity, r.value)}>
-                {r.label}
-                {r.value !== "todos" ? <span className="tabular text-muted-foreground">{formatNumber(roleCounts[r.value])}</span> : null}
-              </Link>
-            </Button>
-          ))}
+        <div className="grid gap-2 rounded-xl border bg-card p-3 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-x-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase">Actividad</p>
+          <div className="flex flex-wrap gap-2">
+            {ACTIVITY_FILTERS.map((a) => (
+              <Button key={a.value} variant={activity === a.value ? "default" : "outline"} size="sm" className="rounded-full" asChild>
+                <Link href={filterHref(a.value, role)} aria-current={activity === a.value ? "true" : undefined}>
+                  {a.label}
+                </Link>
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs font-medium text-muted-foreground uppercase">Rol</p>
+          <div className="flex flex-wrap gap-2">
+            {ROLE_FILTERS.map((r) => {
+              const on = role === r.value
+              return (
+                <Button key={r.value} variant={on ? "default" : "outline"} size="sm" className="rounded-full" asChild>
+                  <Link href={filterHref(activity, r.value)} aria-current={on ? "true" : undefined}>
+                    {r.label}
+                    {r.value !== "todos" ? (
+                      <span className={cn("tabular rounded-full px-1.5 text-xs", on ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground")}>
+                        {formatNumber(roleCounts[r.value])}
+                      </span>
+                    ) : null}
+                  </Link>
+                </Button>
+              )
+            })}
+          </div>
         </div>
 
         {users.rows.length === 0 ? (

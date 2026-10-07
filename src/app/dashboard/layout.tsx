@@ -5,6 +5,7 @@ import { productCodes } from "@/lib/barcodes"
 import { QuickActionsProvider } from "@/components/app/quick-actions"
 import { UserMenu } from "@/components/app/user-menu"
 import { db } from "@/lib/db"
+import { canUseFeature } from "@/lib/plans"
 import { isAdminEmail } from "@/server/admin"
 import { requireBusiness } from "@/server/session"
 
@@ -43,6 +44,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       currency={ctx.currency}
       timezone={ctx.timezone}
       defaultPayment={ctx.settings.defaultPayment}
+      continuousScan={canUseFeature(ctx.business.plan, "fastScan")}
       products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
       categories={categories}
       chargesVat={ctx.settings.chargesVat}

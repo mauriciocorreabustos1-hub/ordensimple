@@ -5,13 +5,19 @@ import { formatMoney } from "@/lib/currency"
 
 export type ChartPoint = { key: string; label: string; fullLabel: string; sales: number; expenses: number }
 
-const SERIES = [
-  { key: "sales", label: "Ventas", color: "var(--chart-1)" },
-  { key: "expenses", label: "Gastos", color: "var(--chart-2)" },
-] as const
+/** Nombres de las dos series y del resultado (se pueden cambiar, por ejemplo a "Entradas" y "Salidas"). */
+export type ChartLabels = { sales: string; expenses: string; gain: string; loss: string }
+const DEFAULT_LABELS: ChartLabels = { sales: "Ventas", expenses: "Gastos", gain: "Te quedó", loss: "Perdiste" }
 
-function ChartTooltip({ active, payload, currency }: TooltipContentProps<number, string> & { currency: string }) {
+const series = (l: ChartLabels) =>
+  [
+    { key: "sales", label: l.sales, color: "var(--chart-1)" },
+    { key: "expenses", label: l.expenses, color: "var(--chart-2)" },
+  ] as const
+
+function ChartTooltip({ active, payload, currency, labels }: TooltipContentProps<number, string> & { currency: string; labels: ChartLabels }) {
   if (!active || !payload?.length) return null
+  const SERIES = series(labels)
   const point = payload[0].payload as ChartPoint
   const diff = point.sales - point.expenses
   return (
@@ -27,7 +33,7 @@ function ChartTooltip({ active, payload, currency }: TooltipContentProps<number,
         </div>
       ))}
       <div className="mt-1.5 flex items-center justify-between gap-4 border-t pt-1.5">
-        <span className="text-muted-foreground">{diff >= 0 ? "Te quedó" : "Perdiste"}</span>
+        <span className="text-muted-foreground">{diff >= 0 ? labels.gain : labels.loss}</span>
         <span className="tabular font-semibold text-foreground">{formatMoney(Math.abs(diff), currency)}</span>
       </div>
     </div>
@@ -40,12 +46,15 @@ export function SalesExpensesChart({
   currency,
   height = 240,
   caption,
+  labels = DEFAULT_LABELS,
 }: {
   data: ChartPoint[]
   currency: string
   height?: number
   caption: string
+  labels?: ChartLabels
 }) {
+  const SERIES = series(labels)
   if (data.every((d) => d.sales === 0 && d.expenses === 0)) {
     return (
       <div
@@ -76,7 +85,8 @@ export function SalesExpensesChart({
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-              interval={0}
+              interval={data.length > 14 ? "preserveStartEnd" : 0}
+              minTickGap={6}
               tickMargin={8}
             />
             <YAxis
@@ -88,7 +98,7 @@ export function SalesExpensesChart({
             />
             <Tooltip
               cursor={{ fill: "var(--muted)", opacity: 0.6 }}
-              content={(props) => <ChartTooltip {...(props as TooltipContentProps<number, string>)} currency={currency} />}
+              content={(props) => <ChartTooltip {...(props as TooltipContentProps<number, string>)} currency={currency} labels={labels} />}
             />
             {SERIES.map((s) => (
               <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color} radius={[4, 4, 0, 0]} maxBarSize={28} />
@@ -103,8 +113,8 @@ export function SalesExpensesChart({
           <thead className="text-muted-foreground">
             <tr>
               <th className="py-1 font-medium">Período</th>
-              <th className="py-1 text-right font-medium">Ventas</th>
-              <th className="py-1 text-right font-medium">Gastos</th>
+              <th className="py-1 text-right font-medium">{labels.sales}</th>
+              <th className="py-1 text-right font-medium">{labels.expenses}</th>
               <th className="py-1 text-right font-medium">Diferencia</th>
             </tr>
           </thead>

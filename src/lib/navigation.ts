@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   BarChart3,
   Crown,
   Boxes,
@@ -33,6 +34,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/ventas", label: "Ventas", icon: ShoppingBag },
   { href: "/dashboard/gastos", label: "Gastos", icon: Receipt },
   { href: "/dashboard/caja", label: "Cierre de caja", icon: Vault },
+  { href: "/dashboard/flujo-caja", label: "Flujo de caja", icon: ArrowLeftRight, permission: "finances:view" },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },

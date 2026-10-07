@@ -33,7 +33,10 @@ export function MovementDialog({
   defaultType = "IN",
   compact = false,
   label,
+  allowWaste = true,
 }: {
+  /** El plan incluye merma y vencidos (si no, la opción aparece con la etiqueta Pro). */
+  allowWaste?: boolean
   products: MovementProduct[]
   defaultProductId?: string
   defaultType?: MovementType
@@ -101,19 +104,21 @@ export function MovementDialog({
                   type="button"
                   role="radio"
                   aria-checked={type === t.value}
+                  disabled={t.value === "WASTE" && !allowWaste}
+                  title={t.value === "WASTE" && !allowWaste ? "Merma y vencidos es parte del plan Pro" : undefined}
                   onClick={() => {
                     setType(t.value)
                     if (t.value === "WASTE" && !reason) setReason(WASTE_REASONS[0])
                     if (t.value !== "WASTE" && WASTE_REASONS.includes(reason)) setReason("")
                   }}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-xl border bg-card px-2 py-3 text-center text-sm font-medium transition-colors hover:border-primary/50",
+                    "flex flex-col items-center gap-1 rounded-xl border bg-card px-2 py-3 text-center text-sm font-medium transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-50",
                     type === t.value && "border-primary bg-accent text-accent-foreground ring-1 ring-primary",
                   )}
                 >
                   <t.icon className="size-4" />
                   {t.label}
-                  <span className="text-[11px] font-normal text-muted-foreground">{t.help}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">{t.value === "WASTE" && !allowWaste ? "Plan Pro" : t.help}</span>
                 </button>
               ))}
             </div>

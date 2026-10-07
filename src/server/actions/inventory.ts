@@ -23,6 +23,9 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
     if (!canUseFeature(ctx.business.plan, "inventory")) {
       return { ok: false, message: "El inventario es parte del plan Pro." }
     }
+    if (type === "WASTE" && !canUseFeature(ctx.business.plan, "waste")) {
+      return { ok: false, message: "Registrar merma y vencidos es parte del plan Pro." }
+    }
 
     const product = await db.product.findFirst({ where: { id: productId, businessId: ctx.businessId } })
     if (!product) return { ok: false, message: "Ese producto ya no existe. Recarga la página." }

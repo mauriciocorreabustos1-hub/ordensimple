@@ -41,7 +41,10 @@ export function SaleForm({
   customers = [],
   editing,
   onDone,
+  continuousScan = true,
 }: {
+  /** Escaneo continuo (Pro): la cámara queda abierta. Si no, se escanea de a un producto. */
+  continuousScan?: boolean
   currency: string
   timezone: string
   defaultPayment: PaymentMethod
@@ -150,7 +153,7 @@ export function SaleForm({
       <div className="grid gap-3">
         {products.length ? (
           <div className="flex *:h-11 *:w-full *:text-base">
-            <ScanButton continuous label="Escanear productos" onResult={addScanned} />
+            <ScanButton continuous={continuousScan} label={continuousScan ? "Escanear productos" : "Escanear producto"} onResult={addScanned} />
           </div>
         ) : null}
         {lines.map((line, index) => {

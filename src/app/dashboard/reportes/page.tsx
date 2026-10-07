@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DateRangeFilter } from "@/components/app/date-range-filter"
 import { PageHeader } from "@/components/app/page-header"
-import { ProGate } from "@/components/app/pro-gate"
+import { ProGate, ProUpsell } from "@/components/app/pro-gate"
 import { DiffBadge, StatCard } from "@/components/app/stat-card"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { percentChange } from "@/lib/calculations"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney, formatNumber, formatPercent } from "@/lib/currency"
-import { addDays, formatDate } from "@/lib/dates"
+import { addDays, formatDate, startOfMonth, toDateKey } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { getInsights } from "@/server/queries/insights"
@@ -60,6 +60,14 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
 
   const params = await searchParams
   const range = parseRange({ desde: params.desde as string, hasta: params.hasta as string }, ctx.timezone)
+  // En Gratis: desde el mes pasado. Con Pro, cualquier fecha.
+  const oldest = startOfMonth(new Date(), ctx.timezone, -1)
+  const limited = !canUseFeature(ctx.business.plan, "history") && range.from < oldest
+  if (limited) {
+    range.from = oldest
+    range.desde = toDateKey(oldest, ctx.timezone)
+    if (range.to <= range.from) range.to = addDays(range.from, 1, ctx.timezone)
+  }
   const [report, insights] = await Promise.all([
     getReport(ctx.businessId, range.from, range.to, ctx.timezone),
     canUseFeature(ctx.business.plan, "tips") ? getInsights(ctx.businessId, ctx.timezone, ctx.currency) : Promise.resolve([]),
@@ -106,6 +114,13 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
       />
 
       <DateRangeFilter desde={range.desde} hasta={range.hasta} timezone={ctx.timezone} />
+
+      {limited ? (
+        <ProUpsell
+          title="Te mostramos desde el mes pasado"
+          text="En el plan Gratis ves los reportes de este mes y el anterior. Con Pro revisas todo tu historial y comparas cualquier período."
+        />
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Ventas" value={money(cur.sales)} icon={ShoppingBag} tone="sales"

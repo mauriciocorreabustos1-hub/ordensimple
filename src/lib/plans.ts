@@ -11,6 +11,14 @@ export type PlanFeature =
   | "results"
   /** Descargar ventas, gastos y resultados en Excel. */
   | "exports"
+  /** Flujo de caja de meses anteriores y lo que viene (pagos a proveedores y fiado por cobrar). */
+  | "cashflowPlus"
+  /** Merma y vencidos: registrar pérdidas y avisos de productos por vencer. */
+  | "waste"
+  /** Reportes de cualquier fecha (en Gratis: este mes y el anterior). */
+  | "history"
+  /** Escaneo continuo al vender (la cámara queda abierta, como en una caja). */
+  | "fastScan"
   | "multiUser"
   | "branches"
 
@@ -54,16 +62,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // Lo esencial para un almacén o minimarket va gratis: fiado, inventario, reportes y consejos.
     features: ["tools", "customers", "inventory", "reports", "tips"],
     highlights: [
-      "1 negocio",
-      "Tú + 2 trabajadores",
+      "1 negocio · tú + 2 trabajadores",
       "Hasta 50 productos",
       "Ventas y gastos sin límite",
-      "Fiado: quién te debe, cuánto y sus abonos",
-      "Inventario y alertas de stock",
+      "Fiado con abonos y cobro por WhatsApp",
+      "Inventario, escaneo y alertas de stock",
       "Cierre de caja diario",
-      "Reportes y consejos automáticos",
+      "Flujo de caja del mes",
+      "Reportes y consejos de este mes y el anterior",
       "Avisos por correo y resumen semanal",
-      "Calculadoras y descarga de tus datos",
     ],
   },
   PRO: {
@@ -78,14 +85,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan"],
     highlights: [
-      "Todo lo de Gratis",
-      "Tú + 20 trabajadores",
-      "Hasta 3 sucursales, con equipo por sucursal",
+      "Todo lo de Gratis, y además:",
+      "Tú + 20 trabajadores y hasta 3 sucursales",
       "Productos ilimitados",
-      "Proveedores",
-      "Resultados e IVA: tu utilidad y cuánto pagar en el F29",
+      "Resultados e IVA: tu utilidad real y tu F29 (IVA + PPM)",
+      "Flujo de caja con lo que viene: pagos y fiado por cobrar",
+      "Todo tu historial de reportes, sin límite de fechas",
+      "Proveedores y pagos pendientes con recordatorio",
+      "Merma y vencidos: cuánto pierdes y aviso antes de que venza",
+      "Escaneo continuo: vende como en caja de supermercado",
       "Ventas, gastos y resultados en Excel",
     ],
   },
@@ -100,7 +110,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // más de 50 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Más de 50 trabajadores",

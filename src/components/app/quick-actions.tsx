@@ -30,6 +30,7 @@ export function QuickActionsProvider({
   categories,
   chargesVat,
   customers,
+  continuousScan = true,
 }: {
   children: React.ReactNode
   currency: string
@@ -39,6 +40,8 @@ export function QuickActionsProvider({
   categories: ExpenseCategoryOption[]
   chargesVat: boolean
   customers: string[]
+  /** El plan incluye escaneo continuo al vender. */
+  continuousScan?: boolean
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
   const value = React.useMemo(() => ({ open: (a: Action) => setAction(a) }), [])
@@ -69,6 +72,7 @@ export function QuickActionsProvider({
               defaultPayment={defaultPayment}
               products={products}
               customers={customers}
+              continuousScan={continuousScan}
               onDone={close}
             />
           </TabsContent>

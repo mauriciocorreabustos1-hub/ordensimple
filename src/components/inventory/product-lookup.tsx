@@ -29,7 +29,9 @@ export function ProductLookup({
   products,
   currency,
   movementProducts,
+  allowWaste = true,
 }: {
+  allowWaste?: boolean
   products: LookupProduct[]
   currency: string
   /** Si viene, se puede registrar un movimiento desde la ficha. */
@@ -91,7 +93,7 @@ export function ProductLookup({
             ) : null}
             {movementProducts && found.trackStock ? (
               <div className="flex justify-end">
-                <MovementDialog products={movementProducts} defaultProductId={found.id} compact label="Registrar movimiento" />
+                <MovementDialog products={movementProducts} defaultProductId={found.id} compact label="Registrar movimiento" allowWaste={allowWaste} />
               </div>
             ) : null}
           </div>

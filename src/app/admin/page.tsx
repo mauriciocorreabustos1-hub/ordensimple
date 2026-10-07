@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -17,12 +17,15 @@ import { Input } from "@/components/ui/input"
 import { PageHeader } from "@/components/app/page-header"
 import { StatCard } from "@/components/app/stat-card"
 import { getAppUrl } from "@/lib/app-url"
-import { formatNumber } from "@/lib/currency"
+import { formatMoney, formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { couponSummary, effectivePlan, PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
 import { isAdminEmail } from "@/server/admin"
 import {
+  ACTIVITY_FILTERS,
+  getBusinessActivity,
+  type ActivityFilter,
   getAdminStats,
   getPlanCounts,
   getRecentErrors,
@@ -34,9 +37,30 @@ import { AUDIENCES, getAudienceCounts, listCampaigns, type Audience } from "@/se
 
 const TZ = "America/Santiago"
 
-function lastSeen(u: AdminUserRow) {
-  const at = u.sessions[0]?.updatedAt
-  return at ? formatDateTime(at, TZ) : "—"
+/** "hace 5 min", "hace 3 h", "ayer", "hace 12 días". */
+function ago(d: Date, now = new Date()) {
+  const min = Math.floor((now.getTime() - d.getTime()) / 60_000)
+  if (min < 2) return "ahora"
+  if (min < 60) return `hace ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `hace ${h} h`
+  const days = Math.floor(h / 24)
+  if (days === 1) return "ayer"
+  if (days < 60) return `hace ${days} días`
+  return `hace ${Math.floor(days / 30)} meses`
+}
+
+function lastSeen(u: AdminUserRow, now: Date) {
+  const at = u.lastActiveAt ?? u.sessions[0]?.updatedAt
+  return at ? { label: ago(at, now), title: formatDateTime(at, TZ), days: (now.getTime() - at.getTime()) / 86_400_000 } : null
+}
+
+/** Desde qué equipo entró la última vez (según el navegador). */
+function device(userAgent: string | null | undefined) {
+  if (!userAgent) return null
+  const os = /iPhone|iPad/i.test(userAgent) ? "iPhone" : /Android/i.test(userAgent) ? "Android" : /Windows/i.test(userAgent) ? "Windows" : /Mac OS/i.test(userAgent) ? "Mac" : null
+  const mobile = /Mobile|Android|iPhone|iPad/i.test(userAgent)
+  return `${mobile ? "Celular" : "Computador"}${os ? ` (${os})` : ""}`
 }
 
 /** "a@x.cl, b@y.cl y 3 más" */
@@ -50,11 +74,12 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : ""
   const page = Math.max(1, Number(params.pagina) || 1)
+  const activity = (ACTIVITY_FILTERS.some((a) => a.value === params.actividad) ? params.actividad : "todos") as ActivityFilter
   // ?para=<id> deja a esa persona elegida en "Correo a personas específicas".
   const para = typeof params.para === "string" ? params.para.slice(0, 40) : ""
   const [stats, users, errors, coupons, planCounts, audience, campaigns, directTo, mpAccount, subCounts] = await Promise.all([
     getAdminStats(),
-    listAdminUsers({ q: q || undefined, page }),
+    listAdminUsers({ q: q || undefined, page, activity }),
     getRecentErrors(),
     listCoupons(),
     getPlanCounts(),
@@ -66,6 +91,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     mercadoPagoAccount(),
     db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
+  const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
+  const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
   const now = new Date()
   const longDate = (d: Date) => formatDate(d, TZ, { day: "numeric", month: "long", year: "numeric" })
@@ -82,7 +109,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   }))
   const maxSignups = Math.max(1, ...stats.signupsByDay.map((d) => d.count))
 
-  const pageHref = (p: number) => `/admin?${new URLSearchParams({ ...(q ? { q } : {}), pagina: String(p) })}`
+  const pageHref = (p: number) =>
+    `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), pagina: String(p) })}`
+  const activityHref = (a: ActivityFilter) => `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(a !== "todos" ? { actividad: a } : {}) })}#usuarios`
 
   return (
     <div className="space-y-6">
@@ -91,7 +120,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         description="Cuentas, negocios y uso de OrdenSimple. Solo los administradores pueden ver esta página."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard compactOnMobile label="Entraron hoy" value={formatNumber(stats.usedToday)} icon={MonitorSmartphone} tone="sales"
+          hint={`${stats.used7} ${stats.used7 === 1 ? "persona" : "personas"} en 7 días · ${stats.used30} en 30 días`} />
         <StatCard compactOnMobile label="Usuarios" value={formatNumber(stats.users)} icon={Users} tone="profit"
           hint={`${stats.users7} nuevos esta semana · ${stats.users30} en 30 días`} />
         <StatCard compactOnMobile label="Negocios creados" value={formatNumber(stats.businesses)} icon={Building2}
@@ -149,7 +180,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         </CardContent>
       </Card>
 
-      <section className="space-y-4">
+      <section id="usuarios" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">
             Usuarios <span className="font-normal text-muted-foreground">({formatNumber(users.total)})</span>
@@ -159,8 +190,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input name="q" defaultValue={q} placeholder="Buscar por nombre o correo" className="h-9 w-64 pl-9" />
             </div>
+            {activity !== "todos" ? <input type="hidden" name="actividad" value={activity} /> : null}
             <Button type="submit" variant="outline" size="lg">Buscar</Button>
           </form>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ACTIVITY_FILTERS.map((a) => (
+            <Button key={a.value} variant={activity === a.value ? "default" : "outline"} size="sm" className="rounded-full" asChild>
+              <Link href={activityHref(a.value)}>{a.label}</Link>
+            </Button>
+          ))}
         </div>
 
         {users.rows.length === 0 ? (
@@ -170,6 +209,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             {users.rows.map((u) => {
               const m = u.memberships[0]
               const b = m?.business
+              const seen = lastSeen(u, now)
+              const act = b ? usage.get(b.id) : undefined
+              const lastSaleDays = act?.lastSaleAt ? (now.getTime() - act.lastSaleAt.getTime()) / 86_400_000 : null
               return (
                 <div key={u.id} className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1.3fr_1.5fr_1fr_auto] md:items-center">
                   <div className="min-w-0">
@@ -206,8 +248,22 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         ) : null}
                         <p className="text-xs text-muted-foreground">
                           {b.type ?? "Sin rubro"} · {formatNumber(b._count.sales)} ventas · {formatNumber(b._count.expenses)} gastos ·{" "}
-                          {formatNumber(b._count.products)} productos
+                          {formatNumber(b._count.products)} productos · {formatNumber(b._count.members)} {b._count.members === 1 ? "persona" : "personas"}
                         </p>
+                        {act?.lastSaleAt ? (
+                          <p className="text-xs text-muted-foreground" title={formatDateTime(act.lastSaleAt, TZ)}>
+                            Última venta: <span className="text-foreground">{ago(act.lastSaleAt, now)}</span>
+                            {act.sales30
+                              ? ` · 30 días: ${formatNumber(act.sales30)} ventas por ${clp(act.total30)}, en ${act.days30} ${act.days30 === 1 ? "día" : "días"} distintos`
+                              : " · sin ventas en 30 días"}
+                          </p>
+                        ) : null}
+                        {act?.bestProduct ? (
+                          <p className="truncate text-xs text-muted-foreground">
+                            Producto estrella (90 días): <span className="text-foreground">{act.bestProduct.name}</span> ·{" "}
+                            {formatNumber(act.bestProduct.qty)} u. · {clp(act.bestProduct.revenue)}
+                          </p>
+                        ) : null}
                       </>
                     ) : (
                       <p className="text-muted-foreground">Sin negocio (no terminó la configuración)</p>
@@ -218,7 +274,13 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     <p>Registro: {formatDate(u.createdAt, TZ)}</p>
-                    <p>Última vez: {lastSeen(u)}</p>
+                    <p title={seen?.title}>
+                      Última vez activo:{" "}
+                      <span className={seen && seen.days < 1 ? "font-medium text-success" : seen && seen.days > 14 ? "text-warning" : "text-foreground"}>
+                        {seen?.label ?? "nunca"}
+                      </span>
+                    </p>
+                    {device(u.sessions[0]?.userAgent) ? <p>Desde: {device(u.sessions[0]?.userAgent)}</p> : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 md:justify-end">
                     {b && m.role === "OWNER" ? (
@@ -240,8 +302,12 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         extraMembers={b.extraMembers}
                       />
                     ) : null}
-                    {b?._count.sales ? (
+                    {lastSaleDays !== null && lastSaleDays <= 7 ? (
                       <Badge className="bg-success/15 text-success">Usando la app</Badge>
+                    ) : lastSaleDays !== null ? (
+                      <Badge variant="outline" className="border-warning/40 text-warning">
+                        Sin vender hace {Math.floor(lastSaleDays)} días
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="text-muted-foreground">
                         Sin ventas aún

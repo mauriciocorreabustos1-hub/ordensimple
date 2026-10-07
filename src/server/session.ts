@@ -2,6 +2,7 @@ import "server-only"
 import { cache } from "react"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { after } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { effectivePlan } from "@/lib/plans"
@@ -11,9 +12,23 @@ export const getSession = cache(async () => {
   return auth.api.getSession({ headers: await headers() })
 })
 
+/** Anota que la persona está usando la app (para el panel de administración). Como máximo cada 5 minutos. */
+const touchActivity = cache((userId: string) => {
+  after(async () => {
+    const now = new Date()
+    await db.user
+      .updateMany({
+        where: { id: userId, OR: [{ lastActiveAt: null }, { lastActiveAt: { lt: new Date(now.getTime() - 5 * 60_000) } }] },
+        data: { lastActiveAt: now },
+      })
+      .catch(() => {})
+  })
+})
+
 export async function requireUser() {
   const session = await getSession()
   if (!session) redirect("/login")
+  touchActivity(session.user.id)
   return session.user
 }
 

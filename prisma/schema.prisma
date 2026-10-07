@@ -64,6 +64,8 @@ model User {
   marketingOptIn   Boolean  @default(false)
   /// Correos de bienvenida enviados (1, 2, 3). 99 = no quiere recibirlos.
   nudgeStep        Int       @default(0)
+  /// Última vez que usó la app (se actualiza como máximo cada 5 minutos).
+  lastActiveAt     DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

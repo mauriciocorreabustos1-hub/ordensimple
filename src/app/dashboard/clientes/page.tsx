@@ -126,7 +126,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
           No hay clientes en esta vista.
         </p>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="grid grid-cols-1 gap-2">
           {list.map((c) => (
             <li key={c.id} className="flex items-stretch gap-2">
               <Link
@@ -171,14 +171,14 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                 <span className="tabular shrink-0 font-semibold">{money(c.total)}</span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
               </Link>
-              {owes(c.id) > 0 && c.phone ? (
+              {owes(c.id) > 0 ? (
                 <a
                   href={whatsappLink(c.phone, fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(owes(c.id)) }))}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-card text-[11px] font-medium text-success transition-colors hover:border-success/40 hover:bg-success/10"
                   aria-label={`Cobrar a ${c.name} por WhatsApp`}
-                  title="Cobrar por WhatsApp"
+                  title={c.phone ? "Cobrar por WhatsApp" : "Cobrar por WhatsApp (eliges el contacto)"}
                 >
                   <MessageCircle className="size-5" />
                   Cobrar

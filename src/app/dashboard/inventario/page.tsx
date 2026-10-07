@@ -191,7 +191,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="grid gap-2 sm:grid-cols-2">
+                <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {alerts.slice(0, 8).map((p) => (
                     <li key={p.id} className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
                       {p.state === "out"
@@ -232,7 +232,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                     : "No hay productos en este filtro."}
                 </p>
               ) : (
-                <ul className="grid gap-2">
+                <ul className="grid grid-cols-1 gap-2">
                   {items.map((p) => (
                     <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
                       <div className="min-w-0 flex-1">

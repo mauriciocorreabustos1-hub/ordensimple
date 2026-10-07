@@ -116,7 +116,7 @@ export default async function SuppliersPage() {
               action={canManage ? <SupplierDialog currency={ctx.currency} /> : null}
             />
           ) : (
-            <ul className="grid gap-2">
+            <ul className="grid grid-cols-1 gap-2">
               {suppliers.map((s) => (
                 <li key={s.id} className="space-y-2 rounded-xl border bg-card p-4">
                   <div className="flex items-start justify-between gap-2">

@@ -114,8 +114,8 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {balance > 0 && c.phone ? (
-                <Button variant="outline" asChild>
+              {balance > 0 ? (
+                <Button variant="outline" asChild title={c.phone ? undefined : "No tiene teléfono guardado: en WhatsApp eliges el contacto"}>
                   <a
                     href={whatsappLink(c.phone, fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(balance) }))}
                     target="_blank"

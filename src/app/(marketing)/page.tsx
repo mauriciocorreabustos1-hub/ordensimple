@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Check, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { FAQ_GROUPS, HIGHLIGHTS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
+import { VideoDemo } from "@/components/landing/video-demo"
 import {
   BenefitsSection,
   Container,
@@ -22,6 +23,12 @@ import {
 export const metadata: Metadata = { alternates: { canonical: "/" } }
 
 const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 5)
+
+const DAY = [
+  { time: "08:30", text: "Abres y ves al tiro cómo va tu negocio." },
+  { time: "13:00", text: "Vendes escaneando los productos con el celular." },
+  { time: "21:00", text: "Cierras la caja en 1 minuto y sabes cuánto ganaste." },
+]
 
 export default function LandingPage() {
   return (
@@ -61,6 +68,42 @@ export default function LandingPage() {
           </div>
         </Container>
       </section>
+
+      <Section id="video" className="overflow-hidden">
+        <div className="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
+          <div className="space-y-6">
+            <SectionTitle
+              align="left"
+              eyebrow="Míralo en 20 segundos"
+              title="Un día en tu negocio con OrdenSimple"
+              description="Sin cuadernos, sin planillas y sin calculadora. Así se ve tu día a día:"
+            />
+            <ul className="space-y-3">
+              {DAY.map((d) => (
+                <li key={d.time} className="flex items-start gap-3">
+                  <span className="tabular mt-0.5 rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">{d.time}</span>
+                  <span className="text-pretty">{d.text}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Check className="size-4 text-primary" />
+              Funciona en el celular y en el computador.
+            </p>
+            <Button size="lg" className="h-12 px-6 text-base" asChild>
+              <Link href="/registro">
+                Pruébalo gratis
+                <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+          <VideoDemo
+            src="/videos/un-dia-con-ordensimple.mp4"
+            poster="/videos/un-dia-con-ordensimple.jpg"
+            label="Video: un día en un negocio usando OrdenSimple, desde abrir en la mañana hasta cerrar la caja en la noche."
+          />
+        </div>
+      </Section>
 
       <Section muted>
         <SectionTitle eyebrow="Funciones" title="Todo lo que necesitas, nada que te complique" />

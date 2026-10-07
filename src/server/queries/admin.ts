@@ -67,7 +67,36 @@ export const ACTIVITY_FILTERS = [
 ] as const
 export type ActivityFilter = (typeof ACTIVITY_FILTERS)[number]["value"]
 
-export async function listAdminUsers({ q, page, activity = "todos" }: { q?: string; page: number; activity?: ActivityFilter }) {
+export const ROLE_FILTERS = [
+  { value: "todos", label: "Todos los roles" },
+  { value: "OWNER", label: "Dueños" },
+  { value: "ADMIN", label: "Administradores" },
+  { value: "EMPLOYEE", label: "Empleados" },
+  { value: "ninguno", label: "Sin negocio" },
+] as const
+export type RoleFilter = (typeof ROLE_FILTERS)[number]["value"]
+
+const roleWhere = (role: RoleFilter) =>
+  role === "ninguno" ? { memberships: { none: {} } } : role === "todos" ? {} : { memberships: { some: { role } } }
+
+/** Cuántas cuentas hay de cada rol (una persona con varios negocios cuenta en cada rol que tenga). */
+export async function countUsersByRole() {
+  const roles = ROLE_FILTERS.filter((r) => r.value !== "todos")
+  const counts = await Promise.all(roles.map((r) => db.user.count({ where: roleWhere(r.value) })))
+  return Object.fromEntries(roles.map((r, i) => [r.value, counts[i]])) as Record<Exclude<RoleFilter, "todos">, number>
+}
+
+export async function listAdminUsers({
+  q,
+  page,
+  activity = "todos",
+  role = "todos",
+}: {
+  q?: string
+  page: number
+  activity?: ActivityFilter
+  role?: RoleFilter
+}) {
   const today = startOfDay(new Date(), TZ)
   const byActivity =
     activity === "hoy"
@@ -88,6 +117,7 @@ export async function listAdminUsers({ q, page, activity = "todos" }: { q?: stri
           }
         : {},
       byActivity,
+      roleWhere(role),
     ],
   }
 

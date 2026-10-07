@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Field } from "@/components/app/field"
-import { BUSINESS_TYPES, COUNTRIES } from "@/lib/constants"
+import { COUNTRIES } from "@/lib/constants"
+import { BusinessTypePicker } from "@/components/app/business-type-picker"
 import { CURRENCIES, CURRENCY_CODES } from "@/lib/currency"
 import { updateBusiness } from "@/server/actions/settings"
 
@@ -44,19 +45,8 @@ export function BusinessForm({
         <Field label="Nombre del negocio" htmlFor="b-name" error={error}>
           <Input id="b-name" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} className="h-10" maxLength={80} disabled={disabled} />
         </Field>
-        <Field label="Tipo de negocio">
-          <Select value={v.type || undefined} onValueChange={(type) => setV({ ...v, type })} disabled={disabled}>
-            <SelectTrigger className="h-10 w-full">
-              <SelectValue placeholder="Elige uno" />
-            </SelectTrigger>
-            <SelectContent>
-              {BUSINESS_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Field label="Tipo de negocio" className="sm:col-span-2">
+          <BusinessTypePicker value={v.type} onChange={(type) => setV({ ...v, type })} disabled={disabled} />
         </Field>
         <Field label="País">
           <Select value={v.country} onValueChange={(country) => setV({ ...v, country })} disabled={disabled}>

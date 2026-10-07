@@ -9,7 +9,8 @@ import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Field } from "@/components/app/field"
 import { ChoiceChips } from "@/components/app/choice-chips"
-import { BUSINESS_TYPES, COUNTRIES, REVENUE_RANGES } from "@/lib/constants"
+import { COUNTRIES, REVENUE_RANGES } from "@/lib/constants"
+import { BusinessTypePicker } from "@/components/app/business-type-picker"
 import { CURRENCIES, CURRENCY_CODES } from "@/lib/currency"
 import type { OnboardingInput } from "@/lib/validations"
 import { completeOnboarding } from "@/server/actions/onboarding"
@@ -89,12 +90,7 @@ export function OnboardingWizard({ firstName, planChoice }: { firstName: string;
               />
             </Field>
             <Field label="¿Qué tipo de negocio es?" optional>
-              <ChoiceChips
-                name="Tipo de negocio"
-                options={BUSINESS_TYPES.map((t) => ({ value: t, label: t }))}
-                value={data.type}
-                onChange={(v) => set("type", v)}
-              />
+              <BusinessTypePicker value={data.type ?? ""} onChange={(v) => set("type", v)} />
             </Field>
           </div>
         ) : null}

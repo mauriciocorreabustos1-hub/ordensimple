@@ -24,8 +24,11 @@ import { ROLE_LABEL } from "@/lib/roles"
 import { isAdminEmail } from "@/server/admin"
 import {
   ACTIVITY_FILTERS,
+  ROLE_FILTERS,
+  countUsersByRole,
   getBusinessActivity,
   type ActivityFilter,
+  type RoleFilter,
   getAdminStats,
   getPlanCounts,
   getRecentErrors,
@@ -75,11 +78,12 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : ""
   const page = Math.max(1, Number(params.pagina) || 1)
   const activity = (ACTIVITY_FILTERS.some((a) => a.value === params.actividad) ? params.actividad : "todos") as ActivityFilter
+  const role = (ROLE_FILTERS.some((r) => r.value === params.rol) ? params.rol : "todos") as RoleFilter
   // ?para=<id> deja a esa persona elegida en "Correo a personas específicas".
   const para = typeof params.para === "string" ? params.para.slice(0, 40) : ""
   const [stats, users, errors, coupons, planCounts, audience, campaigns, directTo, mpAccount, subCounts] = await Promise.all([
     getAdminStats(),
-    listAdminUsers({ q: q || undefined, page, activity }),
+    listAdminUsers({ q: q || undefined, page, activity, role }),
     getRecentErrors(),
     listCoupons(),
     getPlanCounts(),
@@ -91,6 +95,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     mercadoPagoAccount(),
     db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
+  const roleCounts = await countUsersByRole()
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -110,8 +115,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const maxSignups = Math.max(1, ...stats.signupsByDay.map((d) => d.count))
 
   const pageHref = (p: number) =>
-    `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), pagina: String(p) })}`
-  const activityHref = (a: ActivityFilter) => `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(a !== "todos" ? { actividad: a } : {}) })}#usuarios`
+    `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), ...(role !== "todos" ? { rol: role } : {}), pagina: String(p) })}`
+  const filterHref = (a: ActivityFilter, r: RoleFilter) =>
+    `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(a !== "todos" ? { actividad: a } : {}), ...(r !== "todos" ? { rol: r } : {}) })}#usuarios`
 
   return (
     <div className="space-y-6">
@@ -191,13 +197,24 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               <Input name="q" defaultValue={q} placeholder="Buscar por nombre o correo" className="h-9 w-64 pl-9" />
             </div>
             {activity !== "todos" ? <input type="hidden" name="actividad" value={activity} /> : null}
+            {role !== "todos" ? <input type="hidden" name="rol" value={role} /> : null}
             <Button type="submit" variant="outline" size="lg">Buscar</Button>
           </form>
         </div>
         <div className="flex flex-wrap gap-2">
           {ACTIVITY_FILTERS.map((a) => (
             <Button key={a.value} variant={activity === a.value ? "default" : "outline"} size="sm" className="rounded-full" asChild>
-              <Link href={activityHref(a.value)}>{a.label}</Link>
+              <Link href={filterHref(a.value, role)}>{a.label}</Link>
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ROLE_FILTERS.map((r) => (
+            <Button key={r.value} variant={role === r.value ? "secondary" : "ghost"} size="sm" className="rounded-full" asChild>
+              <Link href={filterHref(activity, r.value)}>
+                {r.label}
+                {r.value !== "todos" ? <span className="tabular text-muted-foreground">{formatNumber(roleCounts[r.value])}</span> : null}
+              </Link>
             </Button>
           ))}
         </div>
@@ -226,7 +243,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                           <Badge variant={effectivePlan(b, now) === "FREE" ? "secondary" : "default"}>
                             {PLANS[effectivePlan(b, now)].name}
                           </Badge>
-                          {m.role !== "OWNER" ? <Badge variant="outline">{ROLE_LABEL[m.role]}</Badge> : null}
+                          <Badge variant="outline" className={m.role === "OWNER" ? "border-primary/40 text-primary" : m.role === "ADMIN" ? "border-warning/40" : undefined}>
+                            {ROLE_LABEL[m.role]}
+                          </Badge>
                         </p>
                         {b.plan !== "FREE" && b.planExpiresAt ? (
                           <p className="text-xs text-muted-foreground">

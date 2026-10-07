@@ -65,7 +65,7 @@ const currencyCode = z.enum(CURRENCY_CODES as [string, ...string[]])
 
 export const onboardingSchema = z.object({
   name: z.string().trim().min(2, "Escribe el nombre de tu negocio").max(80),
-  type: optionalText(80),
+  type: optionalText(200),
   country: countryCode.default("CL"),
   currency: currencyCode.default("CLP"),
   hasProducts: z.boolean().nullable().optional(),
@@ -77,7 +77,7 @@ export type OnboardingInput = z.input<typeof onboardingSchema>
 
 export const businessSettingsSchema = z.object({
   name: z.string().trim().min(2, "Escribe el nombre de tu negocio").max(80),
-  type: optionalText(80),
+  type: optionalText(200),
   country: countryCode,
   currency: currencyCode,
 })

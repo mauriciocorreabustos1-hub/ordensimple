@@ -7,6 +7,7 @@ import { Explainer } from "@/components/app/explainer"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
 import { StatCard } from "@/components/app/stat-card"
+import { VatCoverage } from "@/components/results/vat-coverage"
 import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth, zonedParts, zonedTimeToUtc } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
@@ -211,6 +212,11 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 ) : null}
               </div>
             </div>
+            <VatCoverage
+              label={L}
+              chile={ctx.business.country === "CL"}
+              ppm={ppmRate > 0 ? `${(ppmRate * 100).toLocaleString("es-CL", { maximumFractionDigits: 3 })}%` : null}
+            />
           </CardContent>
         </Card>
       ) : vat && can(ctx.role, "settings:manage") ? (
@@ -328,14 +334,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 costo. Suponemos que tus precios y el costo de tus productos incluyen {L}.
               </p>
             ) : null}
-            {chargesVat && ctx.business.country === "CL" ? (
-              <p>
-                <strong>F29:</strong> el {L} de las ventas se cuenta en el mes de la venta (también lo fiado, aunque te paguen
-                después) y el de una factura de compra, en el mes de la factura. Sueldos, honorarios, impuestos y
-                contribuciones nunca descuentan {L}. Si pagas boletas de honorarios, la retención también va en el F29 y no
-                está incluida aquí. Lo que sacas del negocio para consumo propio también paga {L}.
-              </p>
-            ) : null}
+            {chargesVat ? <p>Qué incluye y qué no el cálculo del {L}: está explicado en la tarjeta del {L}, más arriba.</p> : null}
             <p>Es un cálculo aproximado para ordenarte. Para tu declaración, la cifra oficial la revisa tu contador o el SII.</p>
           </div>
         </div>

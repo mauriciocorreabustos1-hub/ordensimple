@@ -77,7 +77,7 @@ export function AppSidebar({
       <div className="flex-1 overflow-y-auto px-3 py-2">
         <NavLinks role={role} />
       </div>
-      <div className="grid gap-1 border-t p-3">
+      <div className="grid grid-cols-1 gap-1 border-t p-3">
         <UserMenu name={userName} email={userEmail} image={userImage} businesses={businesses} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />
         <SignOutButton className="w-full justify-start hover:bg-sidebar-accent" />
       </div>

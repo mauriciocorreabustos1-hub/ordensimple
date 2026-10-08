@@ -9,6 +9,11 @@ import "./globals.css"
 // Debe coincidir con src/lib/theme.ts (misma clave y valores).
 const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;if(d)r.classList.add("dark");r.style.colorScheme=d?"dark":"light"}catch(e){}})()`
 
+// Navegadores antiguos (sin @layer, anteriores a 2022) descartan todos los estilos de Tailwind y la página se ve
+// sin formato. Solo en esos casos se carga una copia compatible (src/app/estilos-compatibles.css). Escrito en
+// JavaScript antiguo a propósito, para que esos navegadores lo puedan ejecutar.
+const LEGACY_CSS_SCRIPT = `(function(){try{if(window.CSSLayerBlockRule)return;var add=function(){var h=[].map.call(document.querySelectorAll('link[rel="stylesheet"][href*="/_next/static/"]'),function(l){return l.getAttribute("href")});if(!h.length)return;var l=document.createElement("link");l.rel="stylesheet";l.href="/estilos-compatibles.css?f="+encodeURIComponent(h.join(","));document.head.appendChild(l)};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",add);else add()}catch(e){}})()`
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
@@ -66,6 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: LEGACY_CSS_SCRIPT }} />
       </head>
       <body className="min-h-full">
         <Providers>{children}</Providers>

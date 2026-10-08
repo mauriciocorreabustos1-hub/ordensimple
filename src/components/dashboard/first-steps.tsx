@@ -59,16 +59,17 @@ export function FirstSteps({ businessId, steps }: { businessId: string; steps: F
         {steps.map((s) => {
           const body = (
             <>
-              {s.done ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" /> : <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" />}
+              {s.done ? <CheckCircle2 className="size-5 shrink-0 text-success" /> : <Circle className="size-5 shrink-0 text-muted-foreground" />}
               <span className="min-w-0">
                 <span className={cn("block text-sm font-medium", s.done && "text-muted-foreground line-through")}>{s.label}</span>
-                {s.done ? null : <span className="block text-xs text-muted-foreground">{s.hint}</span>}
+                <span className={cn("block text-xs", s.done ? "text-success" : "text-muted-foreground")}>{s.done ? "¡Listo!" : s.hint}</span>
               </span>
             </>
           )
-          const cls = cn("flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-left", !s.done && "transition-colors hover:border-primary/50")
+          const cls = cn("flex h-full w-full items-center gap-3 rounded-xl border bg-card p-3 text-left", s.done ? "bg-card/60" : "transition-colors hover:border-primary/50")
           return (
-            <li key={s.key}>
+            // Si el último queda solo en su fila, ocupa todo el ancho.
+            <li key={s.key} className="sm:[&:last-child:nth-child(odd)]:col-span-2">
               {s.done ? (
                 <div className={cls}>{body}</div>
               ) : s.action ? (

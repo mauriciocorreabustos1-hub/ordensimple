@@ -64,6 +64,7 @@ export const ACTIVITY_FILTERS = [
   { value: "hoy", label: "Activos hoy" },
   { value: "semana", label: "Activos 7 días" },
   { value: "inactivos", label: "Sin entrar hace 14+ días" },
+  { value: "sin-confirmar", label: "Correo sin confirmar" },
 ] as const
 export type ActivityFilter = (typeof ACTIVITY_FILTERS)[number]["value"]
 
@@ -108,7 +109,9 @@ export async function listAdminUsers({
         ? { lastActiveAt: { gte: addDays(today, -6, TZ) } }
         : activity === "inactivos"
           ? { OR: [{ lastActiveAt: null }, { lastActiveAt: { lt: addDays(today, -13, TZ) } }] }
-          : {}
+          : activity === "sin-confirmar"
+            ? { emailVerified: false }
+            : {}
   const where = {
     AND: [
       q

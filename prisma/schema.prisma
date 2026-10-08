@@ -71,6 +71,8 @@ model User {
   signupMedium     String?
   signupCampaign   String?
   signupReferrer   String?
+  /// Cuándo se le mandó el recordatorio de confirmar el correo (se manda una sola vez).
+  verifyRemindedAt DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

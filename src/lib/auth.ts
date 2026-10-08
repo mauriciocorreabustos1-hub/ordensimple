@@ -6,7 +6,7 @@ import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { parseOrigin } from "@/lib/signup-source"
-import { resetPasswordEmail, welcomeEmail } from "@/lib/email-templates"
+import { resetPasswordEmail, verifyEmail, welcomeEmail } from "@/lib/email-templates"
 
 export const auth = betterAuth({
   appName: "OrdenSimple",
@@ -25,6 +25,22 @@ export const auth = betterAuth({
       await sendEmail({ to: user.email, ...resetPasswordEmail({ name: user.name, url }) })
     },
   },
+  // Verificación "suave": se puede usar la app sin confirmar, pero se pide confirmar el correo.
+  // Al registrarse, el enlace va dentro del correo de bienvenida (no se gasta un correo aparte).
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 60 * 60 * 24 * 7,
+    sendVerificationEmail: async ({ user, url }) => {
+      const isNew = Date.now() - new Date(user.createdAt).getTime() < 10 * 60_000
+      // Si la cuenta tiene más de 2 días, el correo dice "te falta confirmar" (recordatorio).
+      const reminder = !isNew && Date.now() - new Date(user.createdAt).getTime() > 2 * 86_400_000
+      await sendEmail({
+        to: user.email,
+        ...(isNew ? welcomeEmail({ name: user.name, verifyUrl: url }) : verifyEmail({ name: user.name, url, reminder })),
+      }).catch((error) => console.error("[email] No se pudo enviar la confirmación:", error))
+    },
+  },
   databaseHooks: {
     user: {
       create: {
@@ -34,16 +50,12 @@ export const auth = betterAuth({
           const cookie = context?.headers?.get("cookie") ?? context?.request?.headers.get("cookie")
           return { data: { ...user, termsAcceptedAt: new Date(), ...(parseOrigin(cookie) ?? {}) } }
         },
-        // Correo de bienvenida. Si falla, el registro no se interrumpe.
-        after: async (user) => {
-          await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name }) }).catch((error) =>
-            console.error("[email] No se pudo enviar la bienvenida:", error),
-          )
-        },
       },
     },
   },
   user: {
+    // Quien todavía no confirma su correo puede corregirlo (por ejemplo si lo escribió mal al registrarse).
+    changeEmail: { enabled: true, updateEmailWithoutVerification: true },
     additionalFields: {
       activeBusinessId: { type: "string", required: false, input: false },
       // Consentimiento para recibir promociones: lo marca la persona al registrarse (desmarcado por defecto).
@@ -75,6 +87,9 @@ export const auth = betterAuth({
       // Evita usar "olvidé mi contraseña" para llenar la bandeja de alguien.
       "/request-password-reset": { window: 60 * 15, max: 3 },
       "/reset-password": { window: 60 * 15, max: 5 },
+      // "Reenviar correo de confirmación" y "corregir correo": pocas veces por hora.
+      "/send-verification-email": { window: 60 * 60, max: 3 },
+      "/change-email": { window: 60 * 60, max: 3 },
     },
   },
   plugins: [nextCookies()],

@@ -48,7 +48,8 @@ export function RegisterForm({
     }
     setFieldErrors({})
     setPending(true)
-    const { error } = await authClient.signUp.email(parsed.data)
+    // El enlace para confirmar el correo (en la bienvenida) vuelve al negocio.
+    const { error } = await authClient.signUp.email({ ...parsed.data, callbackURL: "/dashboard?correo=confirmado" })
     if (error) {
       setPending(false)
       setError(authErrorMessage(error))

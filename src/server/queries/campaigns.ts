@@ -16,9 +16,10 @@ export function audienceWhere(audience: Audience, now = new Date()): Prisma.User
     plan: { not: "FREE" },
     OR: [{ planExpiresAt: null }, { planExpiresAt: { gt: now } }],
   }
-  if (audience === "PAID") return { marketingOptIn: true, memberships: { some: { business: paid } } }
-  if (audience === "FREE") return { marketingOptIn: true, NOT: { memberships: { some: { business: paid } } } }
-  return { marketingOptIn: true }
+  // Solo a correos confirmados: escribirle a direcciones que no existen hace que los correos terminen en spam.
+  if (audience === "PAID") return { marketingOptIn: true, emailVerified: true, memberships: { some: { business: paid } } }
+  if (audience === "FREE") return { marketingOptIn: true, emailVerified: true, NOT: { memberships: { some: { business: paid } } } }
+  return { marketingOptIn: true, emailVerified: true }
 }
 
 export async function getAudienceCounts() {

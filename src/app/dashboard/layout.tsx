@@ -3,6 +3,7 @@ import { Logo } from "@/components/app/logo"
 import { MobileNav } from "@/components/app/mobile-nav"
 import { productCodes } from "@/lib/barcodes"
 import { QuickActionsProvider } from "@/components/app/quick-actions"
+import { EmailConfirmedToast, EmailVerifyBanner } from "@/components/app/email-verify-banner"
 import { UserMenu } from "@/components/app/user-menu"
 import { db } from "@/lib/db"
 import { canUseFeature } from "@/lib/plans"
@@ -66,7 +67,11 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           <Logo href="/" />
           <UserMenu name={ctx.user.name} email={ctx.user.email} image={ctx.user.image} businesses={businesses} isAdmin={isAdmin} />
         </header>
-        <main className="mx-auto w-full max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
+        <main className="mx-auto w-full max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">
+          {ctx.user.emailVerified ? null : <EmailVerifyBanner email={ctx.user.email} />}
+          <EmailConfirmedToast />
+          {children}
+        </main>
       </div>
       <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} />
     </QuickActionsProvider>

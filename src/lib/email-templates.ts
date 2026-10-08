@@ -87,24 +87,51 @@ export function resetPasswordEmail({ name, url }: { name: string; url: string })
   }
 }
 
-export function welcomeEmail({ name }: { name: string }) {
+/**
+ * Bienvenida. Si viene verifyUrl, el botón principal confirma el correo (y entra al negocio): así la verificación
+ * no gasta un correo aparte.
+ */
+export function welcomeEmail({ name, verifyUrl }: { name: string; verifyUrl?: string }) {
   const appUrl = getAppUrl()
   const first = escapeHtml(name.split(" ")[0] ?? name)
   return {
     subject: "¡Bienvenido a OrdenSimple!",
     html: layout({
-      preview: "Tu cuenta está lista. Así empiezas a ordenar tu negocio en 2 minutos.",
+      preview: verifyUrl ? "Confirma tu correo y empieza a ordenar tu negocio." : "Tu cuenta está lista. Así empiezas a ordenar tu negocio en 2 minutos.",
       body: [
         h1(`¡Hola ${first}, bienvenido a OrdenSimple!`),
-        p("Tu cuenta ya está lista. Para sacarle provecho desde el primer día:"),
+        verifyUrl
+          ? p("Tu cuenta ya está lista. Confirma que este es tu correo: así te llegan tus avisos y puedes recuperar tu cuenta si olvidas la contraseña.")
+          : p("Tu cuenta ya está lista. Para sacarle provecho desde el primer día:"),
+        verifyUrl ? button(verifyUrl, "Confirmar mi correo") : "",
+        verifyUrl ? p("Para sacarle provecho desde el primer día:") : "",
         p(
           "1. <strong>Registra tus ventas</strong> con el botón verde. Basta con el monto.<br>2. <strong>Anota tus gastos</strong>: arriendo, luz, proveedores…<br>3. <strong>Mira cómo te va</strong> en el panel de inicio.",
         ),
-        button(`${appUrl}/dashboard`, "Ir a mi negocio"),
+        verifyUrl ? "" : button(`${appUrl}/dashboard`, "Ir a mi negocio"),
         small("¿Recién empiezas? Activa el <strong>Modo Fácil</strong> en Configuración para ver solo lo esencial."),
+        verifyUrl ? small("Si no creaste una cuenta en OrdenSimple, ignora este correo.") : "",
       ].join(""),
     }),
-    text: `¡Hola ${name.split(" ")[0] ?? name}, bienvenido a OrdenSimple!\n\nTu cuenta ya está lista:\n1. Registra tus ventas con el botón verde.\n2. Anota tus gastos.\n3. Mira cómo te va en el panel de inicio.\n\nEntra aquí: ${appUrl}/dashboard`,
+    text: `¡Hola ${name.split(" ")[0] ?? name}, bienvenido a OrdenSimple!\n\n${verifyUrl ? `Confirma tu correo aquí: ${verifyUrl}\n\n` : ""}Tu cuenta ya está lista:\n1. Registra tus ventas con el botón verde.\n2. Anota tus gastos.\n3. Mira cómo te va en el panel de inicio.\n\nEntra aquí: ${appUrl}/dashboard`,
+  }
+}
+
+/** Confirmar el correo (cuando la persona lo pide de nuevo, cambia su correo o como recordatorio). */
+export function verifyEmail({ name, url, reminder = false }: { name: string; url: string; reminder?: boolean }) {
+  const first = escapeHtml(name.split(" ")[0] ?? name)
+  return {
+    subject: reminder ? "Te falta confirmar tu correo en OrdenSimple" : "Confirma tu correo en OrdenSimple",
+    html: layout({
+      preview: "Un toque y listo: así te llegan tus avisos y puedes recuperar tu cuenta.",
+      body: [
+        h1(reminder ? `${first}, te falta un paso` : `Hola ${first}, confirma tu correo`),
+        p("Toca el botón para confirmar que este es tu correo. Así te llegan tus avisos (pagos, stock, resumen semanal) y puedes recuperar tu cuenta si olvidas la contraseña."),
+        button(url, "Confirmar mi correo"),
+        small("El enlace dura 7 días. Si no tienes una cuenta en OrdenSimple, ignora este correo."),
+      ].join(""),
+    }),
+    text: `Hola ${name.split(" ")[0] ?? name}, confirma tu correo en OrdenSimple: ${url}\n\nEl enlace dura 7 días.`,
   }
 }
 

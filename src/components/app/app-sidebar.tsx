@@ -6,6 +6,7 @@ import { Logo } from "@/components/app/logo"
 import { SignOutButton, UserMenu, type BusinessOption } from "@/components/app/user-menu"
 import type { Role } from "@/generated/prisma/enums"
 import { isActive, navItemsFor } from "@/lib/navigation"
+import { BusinessLogo } from "@/components/app/business-logo"
 import { cn } from "@/lib/utils"
 
 export function NavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
@@ -42,6 +43,8 @@ export function NavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => 
 }
 
 export function AppSidebar({
+  businessId,
+  logoUpdatedAt,
   businessName,
   role,
   userName,
@@ -49,6 +52,8 @@ export function AppSidebar({
   businesses = [],
   isAdmin = false,
 }: {
+  businessId: string
+  logoUpdatedAt: Date | null
   businessName: string
   role: Role
   userName: string
@@ -62,8 +67,9 @@ export function AppSidebar({
         <Logo href="/" />
       </div>
       <div className="px-5 pb-3">
-        <p className="truncate rounded-lg bg-muted px-3 py-2 text-xs font-medium text-muted-foreground" title={businessName}>
-          {businessName}
+        <p className="flex items-center gap-2 rounded-lg bg-muted px-2 py-1.5 text-xs font-medium text-muted-foreground" title={businessName}>
+          <BusinessLogo businessId={businessId} name={businessName} logoUpdatedAt={logoUpdatedAt} className="size-7 rounded-md text-[10px]" />
+          <span className="truncate">{businessName}</span>
         </p>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">

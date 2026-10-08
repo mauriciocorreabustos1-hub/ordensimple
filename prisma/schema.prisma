@@ -182,6 +182,9 @@ model Business {
   ownerWithdrawals  OwnerWithdrawal[]
   loans             Loan[]
   balanceSnapshots  BalanceSnapshot[]
+  logo              BusinessLogo?
+  /// Cuándo se cambió el logo (null = sin logo). Sirve para saber si hay y para que el navegador no muestre uno viejo.
+  logoUpdatedAt     DateTime?
 
   @@map("business")
 }
@@ -777,4 +780,15 @@ model BalanceSnapshot {
 
   @@id([businessId, month])
   @@map("balance_snapshot")
+}
+
+/// Logo del negocio, ya achicado en el navegador (máximo 256 px). Va aparte para no cargarlo con cada consulta del negocio.
+model BusinessLogo {
+  businessId String   @id
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  data       Bytes
+  type       String
+  updatedAt  DateTime @updatedAt
+
+  @@map("business_logo")
 }

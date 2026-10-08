@@ -5,6 +5,7 @@ import { Crown } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/app/page-header"
 import { BusinessForm } from "@/components/settings/business-form"
+import { LogoUploader } from "@/components/settings/logo-uploader"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
@@ -111,9 +112,15 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
       <Card>
         <CardHeader>
           <CardTitle>Datos del negocio</CardTitle>
-          <CardDescription>Nombre, país y moneda en la que llevas tus cuentas.</CardDescription>
+          <CardDescription>Logo, nombre, país y moneda en la que llevas tus cuentas.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <LogoUploader
+            businessId={ctx.businessId}
+            name={ctx.business.name}
+            logoUpdatedAt={ctx.business.logoUpdatedAt?.toISOString() ?? null}
+            disabled={!canManage}
+          />
           <BusinessForm
             initial={{
               name: ctx.business.name,

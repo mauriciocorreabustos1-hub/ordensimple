@@ -25,6 +25,7 @@ import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 import { db } from "@/lib/db"
 import { FirstSteps, type FirstStep } from "@/components/dashboard/first-steps"
+import { BusinessLogo } from "@/components/app/business-logo"
 
 export const metadata: Metadata = { title: "Inicio" }
 
@@ -97,7 +98,12 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             {greeting(now, ctx.timezone)}, {ctx.user.name.split(" ")[0]}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{ctx.business.name}</h1>
+          <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          {ctx.business.logoUpdatedAt ? (
+            <BusinessLogo businessId={ctx.businessId} name={ctx.business.name} logoUpdatedAt={ctx.business.logoUpdatedAt} className="size-11 rounded-xl border" />
+          ) : null}
+          <span className="min-w-0">{ctx.business.name}</span>
+        </h1>
         </div>
         <QuickButtons />
         <section aria-labelledby="hoy" className="space-y-3">
@@ -131,7 +137,12 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted-foreground">
           {greeting(now, ctx.timezone)}, {ctx.user.name.split(" ")[0]}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{ctx.business.name}</h1>
+        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          {ctx.business.logoUpdatedAt ? (
+            <BusinessLogo businessId={ctx.businessId} name={ctx.business.name} logoUpdatedAt={ctx.business.logoUpdatedAt} className="size-11 rounded-xl border" />
+          ) : null}
+          <span className="min-w-0">{ctx.business.name}</span>
+        </h1>
       </div>
 
       {firstSteps ? <FirstSteps businessId={ctx.businessId} steps={firstSteps} /> : null}

@@ -51,6 +51,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       customers={customers.map((c) => c.name)}
     >
       <AppSidebar
+        businessId={ctx.businessId}
+        logoUpdatedAt={ctx.business.logoUpdatedAt}
         businessName={ctx.business.name}
         role={ctx.role}
         userName={ctx.user.name}

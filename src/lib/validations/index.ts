@@ -188,7 +188,7 @@ export type InventoryMovementInput = z.input<typeof inventoryMovementSchema>
 
 export const withdrawalSchema = z
   .object({
-    kind: z.enum(["MONEY", "GOODS"]),
+    kind: z.enum(["MONEY", "GOODS", "DEPOSIT"]),
     amount: money.optional(),
     date: dateKey,
     source: z.enum(["CASH", "BANK"]).default("CASH"),
@@ -196,7 +196,7 @@ export const withdrawalSchema = z
     quantity: z.number().int().min(1, "Al menos 1 unidad").max(100_000).optional(),
     note: optionalText(200),
   })
-  .refine((v) => (v.kind === "MONEY" ? (v.amount ?? 0) > 0 : Boolean(v.productId && v.quantity)), {
+  .refine((v) => (v.kind === "GOODS" ? Boolean(v.productId && v.quantity) : (v.amount ?? 0) > 0), {
     message: "Completa el monto o el producto y la cantidad",
     path: ["amount"],
   })
@@ -204,6 +204,8 @@ export type WithdrawalInput = z.input<typeof withdrawalSchema>
 
 export const loanSchema = z.object({
   lender: z.string().trim().min(2, "¿A quién le debes?").max(80),
+  /** Al anotar un préstamo nuevo: si la plata entró recién, a la caja o al banco. */
+  receivedTo: z.enum(["CASH", "BANK"]).optional(),
   balance: money,
   installment: money.optional(),
   dueDay: z.number().int().min(1).max(31).optional(),

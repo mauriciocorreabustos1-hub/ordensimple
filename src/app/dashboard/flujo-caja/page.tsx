@@ -85,7 +85,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard compactOnMobile label="Entró" value={money(flow.inflow)} icon={ArrowDownLeft} tone="sales" hint="Ventas cobradas y abonos de fiado." />
+        <StatCard compactOnMobile label="Entró" value={money(flow.inflow)} icon={ArrowDownLeft} tone="sales" hint="Ventas cobradas, abonos de fiado y plata que pusiste." />
         <StatCard compactOnMobile label="Salió" value={money(flow.outflow)} icon={ArrowUpRight} tone="expenses" hint="Gastos pagados y retiros del dueño." />
         <StatCard
           compactOnMobile
@@ -141,6 +141,14 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
                 <span>Abonos de fiado</span>
                 <span className="tabular font-medium">{money(flow.abonos)}</span>
               </li>
+              {flow.deposits ? (
+                <li className="flex justify-between gap-3 py-2.5">
+                  <span>
+                    Plata que pusiste <span className="text-xs text-muted-foreground">(no es venta)</span>
+                  </span>
+                  <span className="tabular font-medium">{money(flow.deposits)}</span>
+                </li>
+              ) : null}
               <li className="flex justify-between gap-3 pt-3 font-semibold">
                 <span>Total que entró</span>
                 <span className="tabular">{money(flow.inflow)}</span>

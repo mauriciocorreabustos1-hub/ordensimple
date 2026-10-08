@@ -21,7 +21,7 @@ export async function saveCashClosing(input: CashClosingInput): Promise<ActionRe
     assertCan(ctx, "sales:create")
     const d = await getCashDay(ctx.businessId, ctx.timezone, day)
     const cashOut = expensesFromCash ? d.expensesTotal : 0
-    const expected = opening + d.cashSales + d.cashPayments - cashOut - d.withdrawalsCash
+    const expected = opening + d.cashSales + d.cashPayments + d.depositsCash - cashOut - d.withdrawalsCash
     const data = {
       opening,
       cashSales: d.cashSales,

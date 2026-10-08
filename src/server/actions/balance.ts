@@ -42,11 +42,11 @@ export async function createWithdrawal(input: WithdrawalInput): Promise<ActionRe
     // A mediodía del día elegido, para que no se corra de día por la zona horaria.
     const date = new Date(dateKeyToUtc(v.date, ctx.timezone).getTime() + 12 * 3_600_000)
 
-    if (v.kind === "MONEY") {
+    if (v.kind !== "GOODS") {
       await db.ownerWithdrawal.create({
-        data: { businessId: ctx.businessId, amount: v.amount!, date, source: v.source, kind: "MONEY", note: v.note, createdById: ctx.user.id },
+        data: { businessId: ctx.businessId, amount: v.amount!, date, source: v.source, kind: v.kind, note: v.note, createdById: ctx.user.id },
       })
-      return done("Retiro anotado")
+      return done(v.kind === "DEPOSIT" ? "Anotado: pusiste plata en el negocio" : "Retiro anotado")
     }
 
     const product = await db.product.findFirst({ where: { id: v.productId!, businessId: ctx.businessId } })
@@ -150,7 +150,14 @@ export async function saveLoan(input: LoanInput, id?: string): Promise<ActionRes
   try {
     const ctx = await ctxForBalance()
     if (!canUseFeature(ctx.business.plan, "balance")) return { ok: false, message: PRO_MESSAGE }
-    const data = { ...parsed.data, installment: parsed.data.installment || null, dueDay: parsed.data.dueDay ?? null }
+    const { receivedTo, ...fields } = parsed.data
+    const data = { ...fields, installment: fields.installment || null, dueDay: fields.dueDay ?? null }
+    // Un préstamo nuevo que se acaba de recibir: la plata entra a la caja o al banco.
+    if (!id && receivedTo && fields.balance > 0) {
+      await db.ownerWithdrawal.create({
+        data: { businessId: ctx.businessId, amount: fields.balance, date: new Date(), source: receivedTo, kind: "DEPOSIT", note: `Préstamo: ${fields.lender}`, createdById: ctx.user.id },
+      })
+    }
     if (id) {
       const { count } = await db.loan.updateMany({ where: { id, businessId: ctx.businessId }, data })
       if (!count) return { ok: false, message: "Préstamo no encontrado." }

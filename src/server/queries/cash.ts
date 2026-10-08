@@ -9,7 +9,7 @@ export async function getCashDay(businessId: string, timezone: string, day: stri
   const to = addDays(from, 1, timezone)
   const range = { gte: from, lt: to }
 
-  const [sales, payments, expenses, closing, history, withdrawals] = await Promise.all([
+  const [sales, payments, expenses, closing, history, withdrawals, deposits] = await Promise.all([
     db.sale.groupBy({ by: ["paymentMethod"], where: { businessId, date: range }, _sum: { total: true }, _count: true }),
     db.customerPayment.groupBy({ by: ["paymentMethod"], where: { businessId, date: range }, _sum: { amount: true }, _count: true }),
     db.expense.aggregate({ where: { businessId, date: range }, _sum: { amount: true }, _count: true }),
@@ -17,6 +17,8 @@ export async function getCashDay(businessId: string, timezone: string, day: stri
     db.cashClosing.findMany({ where: { businessId }, orderBy: { day: "desc" }, take: 14 }),
     // Plata que el dueño sacó de la caja ese día (no es gasto, pero sale del efectivo).
     db.ownerWithdrawal.aggregate({ where: { businessId, date: range, kind: "MONEY", source: "CASH" }, _sum: { amount: true } }),
+    // Plata que el dueño puso en la caja ese día (sencillo, ahorros).
+    db.ownerWithdrawal.aggregate({ where: { businessId, date: range, kind: "DEPOSIT", source: "CASH" }, _sum: { amount: true } }),
   ])
 
   const salesBy = Object.fromEntries(sales.map((s) => [s.paymentMethod, { total: s._sum.total ?? 0, count: s._count }])) as Partial<
@@ -38,6 +40,7 @@ export async function getCashDay(businessId: string, timezone: string, day: stri
     expensesTotal: expenses._sum.amount ?? 0,
     expensesCount: expenses._count,
     withdrawalsCash: withdrawals._sum.amount ?? 0,
+    depositsCash: deposits._sum.amount ?? 0,
     closing,
     history,
   }

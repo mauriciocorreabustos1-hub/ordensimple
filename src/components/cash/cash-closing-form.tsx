@@ -22,6 +22,7 @@ export function CashClosingForm({
   cashPayments,
   expensesTotal,
   withdrawalsCash = 0,
+  depositsCash = 0,
   salesTotal,
   summaryLines,
   initial,
@@ -35,6 +36,8 @@ export function CashClosingForm({
   expensesTotal: number
   /** Retiros del dueño sacados de la caja ese día. */
   withdrawalsCash?: number
+  /** Plata que el dueño puso en la caja ese día. */
+  depositsCash?: number
   salesTotal: number
   /** Líneas de resumen por método de pago, para compartir por WhatsApp. */
   summaryLines: string[]
@@ -49,7 +52,7 @@ export function CashClosingForm({
   const [pending, startTransition] = React.useTransition()
 
   const cashOut = expensesFromCash ? expensesTotal : 0
-  const expected = opening + cashSales + cashPayments - cashOut - withdrawalsCash
+  const expected = opening + cashSales + cashPayments + depositsCash - cashOut - withdrawalsCash
   const difference = counted - expected
 
   const status =
@@ -72,6 +75,7 @@ export function CashClosingForm({
     cashPayments ? `Abonos de fiado en efectivo: ${money(cashPayments)}` : null,
     expensesFromCash && expensesTotal ? `Gastos pagados con caja: ${money(expensesTotal)}` : null,
     withdrawalsCash ? `Retiros del dueño: ${money(withdrawalsCash)}` : null,
+    depositsCash ? `Plata que puso el dueño: ${money(depositsCash)}` : null,
     "",
     `Efectivo esperado: ${money(expected)}`,
     hasCounted ? `Efectivo contado: ${money(counted)}` : null,
@@ -111,6 +115,9 @@ export function CashClosingForm({
           <div className="flex justify-between"><span className="text-muted-foreground">+ Ventas en efectivo</span><span className="tabular">{money(cashSales)}</span></div>
           {cashPayments ? (
             <div className="flex justify-between"><span className="text-muted-foreground">+ Abonos de fiado en efectivo</span><span className="tabular">{money(cashPayments)}</span></div>
+          ) : null}
+          {depositsCash ? (
+            <div className="flex justify-between"><span className="text-muted-foreground">+ Plata que pusiste</span><span className="tabular">{money(depositsCash)}</span></div>
           ) : null}
           {cashOut ? (
             <div className="flex justify-between"><span className="text-muted-foreground">− Gastos pagados con la caja</span><span className="tabular">{money(cashOut)}</span></div>

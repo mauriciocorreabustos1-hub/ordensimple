@@ -11,7 +11,7 @@ type Row = { bucket: string; total: bigint | number | null }
  * hasta que lo pagan) y la que salió (gastos), día a día.
  */
 export async function getCashFlow(businessId: string, from: Date, to: Date, timezone: string) {
-  const [salesIn, paymentsIn, out, byMethod, abonosBy, byCategory, fiadoSold, withdrawalsOut] = await Promise.all([
+  const [salesIn, paymentsIn, out, byMethod, abonosBy, byCategory, fiadoSold, withdrawalsOut, depositsIn] = await Promise.all([
     db.$queryRaw<Row[]>`
       SELECT to_char(("date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM-DD') AS bucket, SUM("total") AS total
       FROM "sale" WHERE "businessId" = ${businessId} AND "date" >= ${from} AND "date" < ${to} AND "paymentMethod" <> 'FIADO'
@@ -41,6 +41,11 @@ export async function getCashFlow(businessId: string, from: Date, to: Date, time
       SELECT to_char(("date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM-DD') AS bucket, SUM("amount") AS total
       FROM "owner_withdrawal" WHERE "businessId" = ${businessId} AND "date" >= ${from} AND "date" < ${to} AND "kind" = 'MONEY'
       GROUP BY bucket`,
+    // Plata que puso el dueño (ahorros, un préstamo, sencillo): entra, pero no es venta.
+    db.$queryRaw<Row[]>`
+      SELECT to_char(("date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM-DD') AS bucket, SUM("amount") AS total
+      FROM "owner_withdrawal" WHERE "businessId" = ${businessId} AND "date" >= ${from} AND "date" < ${to} AND "kind" = 'DEPOSIT'
+      GROUP BY bucket`,
   ])
 
   const map = (rows: Row[]) => new Map(rows.map((r) => [r.bucket, Number(r.total ?? 0)]))
@@ -48,6 +53,7 @@ export async function getCashFlow(businessId: string, from: Date, to: Date, time
   const pIn = map(paymentsIn)
   const sOut = map(out)
   const wOut = map(withdrawalsOut)
+  const dIn = map(depositsIn)
 
   // Días del mes hasta hoy (o hasta el final del mes, si ya pasó).
   const today = startOfDay(new Date(), timezone)
@@ -56,7 +62,7 @@ export async function getCashFlow(businessId: string, from: Date, to: Date, time
   let balance = 0
   for (let d = from; d < last; d = addDays(d, 1, timezone)) {
     const key = toDateKey(d, timezone)
-    const inflow = (sIn.get(key) ?? 0) + (pIn.get(key) ?? 0)
+    const inflow = (sIn.get(key) ?? 0) + (pIn.get(key) ?? 0) + (dIn.get(key) ?? 0)
     const outflow = (sOut.get(key) ?? 0) + (wOut.get(key) ?? 0)
     balance += inflow - outflow
     days.push({
@@ -82,6 +88,8 @@ export async function getCashFlow(businessId: string, from: Date, to: Date, time
     byCategory: byCategory.map((c) => ({ name: c.name ?? "Sin categoría", total: Number(c.total ?? 0) })),
     /** Retiros del dueño en plata (salen de la caja o del banco). */
     withdrawals: [...wOut.values()].reduce((s, n) => s + n, 0),
+    /** Plata que puso el dueño (no es venta). */
+    deposits: [...dIn.values()].reduce((s, n) => s + n, 0),
     /** Lo que se vendió fiado este mes: es venta, pero la plata todavía no entra. */
     fiadoSold: fiadoSold._sum.total ?? 0,
     worstDay: days.reduce<(typeof days)[number] | null>((w, d) => (d.sales - d.expenses < (w ? w.sales - w.expenses : 0) ? d : w), null),

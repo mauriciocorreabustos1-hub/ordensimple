@@ -729,7 +729,7 @@ model OwnerWithdrawal {
   date        DateTime
   /// De dónde salió la plata: CASH (caja) o BANK (banco). Los productos salen del stock.
   source      String   @default("CASH")
-  /// MONEY (plata) o GOODS (productos).
+  /// MONEY (saca plata), GOODS (saca productos) o DEPOSIT (pone plata en el negocio: ahorros, un préstamo, sencillo).
   kind        String   @default("MONEY")
   productId   String?
   quantity    Int?

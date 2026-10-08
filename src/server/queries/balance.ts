@@ -21,7 +21,7 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
   const chargesVat = Boolean(vat && s.chargesVat)
   const since = s.openingCashAt ?? null
 
-  const [inventory, debtors, payables, loans, year, cashIn, abonos, cashOut, withdrawalsOut, monthWithdrawals, recentWithdrawals, history] =
+  const [inventory, debtors, payables, loans, year, cashIn, abonos, cashOut, withdrawalsOut, monthWithdrawals, recentWithdrawals, history, depositsIn] =
     await Promise.all([
       getInventory(businessId, timezone, now),
       getDebtors(businessId),
@@ -36,9 +36,10 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
       db.ownerWithdrawal.findMany({ where: { businessId, date: { gte: monthStart } }, orderBy: { date: "desc" } }),
       db.$queryRaw<{ month: string; total: bigint }[]>`
         SELECT to_char(("date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM') AS month, SUM("amount") AS total
-        FROM "owner_withdrawal" WHERE "businessId" = ${businessId} AND "date" >= ${startOfMonth(now, timezone, -5)}
+        FROM "owner_withdrawal" WHERE "businessId" = ${businessId} AND "date" >= ${startOfMonth(now, timezone, -5)} AND "kind" <> 'DEPOSIT'
         GROUP BY month ORDER BY month`,
       db.balanceSnapshot.findMany({ where: { businessId }, orderBy: { month: "desc" }, take: 12 }),
+      since ? db.ownerWithdrawal.aggregate({ where: { businessId, createdAt: { gte: since }, kind: "DEPOSIT" }, _sum: { amount: true } }) : null,
     ])
 
   // Plata en caja y banco: lo declarado + lo que entró − lo que salió desde ese momento.
@@ -47,7 +48,8 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
       ? null
       : s.openingCash +
         (cashIn?._sum.total ?? 0) +
-        (abonos?._sum.amount ?? 0) -
+        (abonos?._sum.amount ?? 0) +
+        (depositsIn?._sum.amount ?? 0) -
         (cashOut?._sum.amount ?? 0) -
         (withdrawalsOut?._sum.amount ?? 0)
 
@@ -87,7 +89,8 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
       return { month: h.month, label: formatDate(new Date(Date.UTC(y, m - 1, 15)), "UTC", { month: "short" }).replace(".", ""), net: h.assets - h.liabilities }
     })
 
-  const withdrawnThisMonth = monthWithdrawals.reduce((sum, w) => sum + w.amount, 0)
+  const withdrawnThisMonth = monthWithdrawals.filter((w) => w.kind !== "DEPOSIT").reduce((sum, w) => sum + w.amount, 0)
+  const depositedThisMonth = monthWithdrawals.filter((w) => w.kind === "DEPOSIT").reduce((sum, w) => sum + w.amount, 0)
   // Utilidad del mes: la de Resultados (sin IVA, con costo de venta).
   const profit = row.s.profit
 
@@ -103,6 +106,7 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
     withdrawals: {
       list: monthWithdrawals,
       total: withdrawnThisMonth,
+      deposited: depositedThisMonth,
       profit,
       leftInBusiness: profit - withdrawnThisMonth,
       salary: s.ownerSalary ?? null,

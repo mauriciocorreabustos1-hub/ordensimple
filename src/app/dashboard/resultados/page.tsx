@@ -99,7 +99,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
     getIncomeStatement(ctx.businessId, from, to, rate),
     getYearSummary(ctx.businessId, year, lastMonth, ctx.timezone, rate),
     canUseFeature(ctx.business.plan, "balance")
-      ? db.ownerWithdrawal.aggregate({ where: { businessId: ctx.businessId, date: { gte: from, lt: to } }, _sum: { amount: true } })
+      ? db.ownerWithdrawal.aggregate({ where: { businessId: ctx.businessId, date: { gte: from, lt: to }, kind: { not: "DEPOSIT" } }, _sum: { amount: true } })
       : Promise.resolve(null),
   ])
   const withdrawnTotal = withdrawn?._sum.amount ?? 0

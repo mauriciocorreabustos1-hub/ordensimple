@@ -91,11 +91,14 @@ export async function listAdminUsers({
   page,
   activity = "todos",
   role = "todos",
+  all = false,
 }: {
   q?: string
   page: number
   activity?: ActivityFilter
   role?: RoleFilter
+  /** Todos los que coinciden, sin páginas (para descargar). */
+  all?: boolean
 }) {
   const today = startOfDay(new Date(), TZ)
   const byActivity =
@@ -126,15 +129,17 @@ export async function listAdminUsers({
     db.user.findMany({
       where,
       orderBy: activity === "todos" ? { createdAt: "desc" } : { lastActiveAt: { sort: "desc", nulls: "last" } },
-      skip: (page - 1) * ADMIN_PAGE_SIZE,
-      take: ADMIN_PAGE_SIZE,
+      skip: all ? 0 : (page - 1) * ADMIN_PAGE_SIZE,
+      take: all ? 10_000 : ADMIN_PAGE_SIZE,
       select: {
         id: true,
         name: true,
         email: true,
         emailVerified: true,
         createdAt: true,
+        marketingOptIn: true,
         lastActiveAt: true,
+        _count: { select: { adminNotes: true } },
         sessions: { orderBy: { updatedAt: "desc" }, take: 1, select: { updatedAt: true, userAgent: true } },
         memberships: {
           select: {

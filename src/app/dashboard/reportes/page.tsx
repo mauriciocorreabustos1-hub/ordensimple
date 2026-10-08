@@ -18,6 +18,7 @@ import { can } from "@/lib/roles"
 import { getInsights } from "@/server/queries/insights"
 import { parseRange } from "@/server/queries/records"
 import { getReport } from "@/server/queries/reports"
+import { trackFeature } from "@/server/feature-usage"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Reportes" }
@@ -59,6 +60,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
   }
 
   const params = await searchParams
+  trackFeature(ctx.businessId, ctx.timezone, "reportes")
   const range = parseRange({ desde: params.desde as string, hasta: params.hasta as string }, ctx.timezone)
   // En Gratis: desde el mes pasado. Con Pro, cualquier fecha.
   const oldest = startOfMonth(new Date(), ctx.timezone, -1)

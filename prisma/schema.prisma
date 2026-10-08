@@ -76,6 +76,7 @@ model User {
   expenses      Expense[]
   movements     InventoryMovement[]
   notifications Notification[]
+  adminNotes    AdminNote[]
 
   @@map("user")
 }
@@ -172,6 +173,7 @@ model Business {
   subscriptions     Subscription[]
   payables          Payable[]
   productBarcodes   ProductBarcode[]
+  featureUsage      FeatureUsage[]
 
   @@map("business")
 }
@@ -679,4 +681,32 @@ model ProductBarcode {
   @@unique([businessId, code])
   @@index([productId])
   @@map("product_barcode")
+}
+
+/// Notas internas del administrador sobre un usuario (solo las ve el admin).
+model AdminNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Correo del administrador que la escribió.
+  author    String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("admin_note")
+}
+
+/// Uso de funciones que no dejan registro propio (ver flujo de caja, escanear…): una fila por negocio, función y día.
+model FeatureUsage {
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  feature    String
+  /// Día "AAAA-MM-DD" en la zona horaria del negocio.
+  day        String
+  count      Int      @default(1)
+
+  @@id([businessId, feature, day])
+  @@index([feature, day])
+  @@map("feature_usage")
 }

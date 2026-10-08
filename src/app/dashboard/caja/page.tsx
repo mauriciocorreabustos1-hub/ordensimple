@@ -12,6 +12,7 @@ import { formatMoney, formatNumber } from "@/lib/currency"
 import { addDays, dateKeyToUtc, formatDate, toDateKey } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 import { getCashDay } from "@/server/queries/cash"
+import { trackFeature } from "@/server/feature-usage"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Cierre de caja" }
@@ -20,6 +21,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export default async function CashPage({ searchParams }: PageProps<"/dashboard/caja">) {
   const ctx = await requireBusiness()
+  trackFeature(ctx.businessId, ctx.timezone, "caja")
   const params = await searchParams
   const today = toDateKey(new Date(), ctx.timezone)
   const requested = typeof params.dia === "string" && DATE_RE.test(params.dia) ? params.dia : today

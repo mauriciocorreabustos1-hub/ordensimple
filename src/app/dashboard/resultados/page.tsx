@@ -15,6 +15,7 @@ import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import { daysUntil, formatDueDate, ppmAmount, vatDueDate, vatInfo } from "@/lib/vat"
 import { getIncomeStatement, getYearSummary } from "@/server/queries/results"
+import { trackFeature } from "@/server/feature-usage"
 import { requireBusiness, requirePermission } from "@/server/session"
 
 export const metadata: Metadata = { title: "Resultados e IVA" }
@@ -84,6 +85,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   }
 
   const vat = vatInfo(ctx.business.country)
+  trackFeature(ctx.businessId, ctx.timezone, "resultados")
   const chargesVat = Boolean(vat && ctx.settings.chargesVat)
   const rate = chargesVat ? vat!.rate : null
   const L = vat?.label ?? "IVA"

@@ -7,6 +7,7 @@ import { AppModal } from "@/components/app/app-modal"
 import { ScanButton } from "@/components/app/barcode-scanner"
 import { MovementDialog, type MovementProduct } from "@/components/inventory/movement-dialog"
 import { findByCode } from "@/lib/barcodes"
+import { noteFeatureUse } from "@/server/actions/usage"
 import { formatMoney, formatNumber, formatPercent } from "@/lib/currency"
 import { marginRatio } from "@/lib/calculations"
 
@@ -45,6 +46,7 @@ export function ProductLookup({
       <ScanButton
         label="Consultar producto"
         onResult={(code) => {
+          void noteFeatureUse("consultar").catch(() => {})
           const p = findByCode(products, code)
           if (!p) return { ok: false, message: `No hay un producto con el código ${code}.` }
           setFound(p)

@@ -439,3 +439,33 @@ export async function deleteUserAccount(input: z.input<typeof deleteUserSchema>)
     return toActionError(error)
   }
 }
+
+// ─── Notas internas sobre un usuario ────────────────────────────────────────
+
+const noteSchema = z.object({ userId: z.string().min(1).max(60), text: z.string().trim().min(2, "Escribe la nota").max(1000) })
+
+export async function addAdminNote(input: z.input<typeof noteSchema>): Promise<ActionResult> {
+  const admin = await requireAdmin()
+  const parsed = noteSchema.safeParse(input)
+  if (!parsed.success) return validationError(parsed.error)
+  try {
+    await db.adminNote.create({ data: { userId: parsed.data.userId, text: parsed.data.text, author: admin.email } })
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidatePath(`/admin/usuarios/${parsed.data.userId}`)
+  revalidatePath("/admin")
+  return { ok: true, message: "Nota guardada" }
+}
+
+export async function deleteAdminNote(id: string): Promise<ActionResult> {
+  await requireAdmin()
+  try {
+    const note = await db.adminNote.delete({ where: { id: z.string().min(1).max(60).parse(id) }, select: { userId: true } })
+    revalidatePath(`/admin/usuarios/${note.userId}`)
+    revalidatePath("/admin")
+  } catch (error) {
+    return toActionError(error)
+  }
+  return { ok: true, message: "Nota borrada" }
+}

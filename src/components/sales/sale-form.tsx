@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScanButton, type ScanFeedback } from "@/components/app/barcode-scanner"
 import { findByCode } from "@/lib/barcodes"
+import { noteFeatureUse } from "@/server/actions/usage"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { PaymentChips } from "@/components/app/payment-chips"
@@ -93,7 +94,12 @@ export function SaleForm({
   }
 
   /** Producto escaneado: si ya está en la venta suma una unidad; si no, ocupa una línea vacía o agrega una. */
+  const scanNoted = React.useRef(false)
   function addScanned(code: string): ScanFeedback {
+    if (!scanNoted.current) {
+      scanNoted.current = true
+      void noteFeatureUse("escaneo").catch(() => {})
+    }
     const p = findByCode(products, code)
     if (!p) return { ok: false, message: `No hay un producto con el código ${code}. Agrégalo en Productos con ese código.` }
     const inSale = (lines.find((l) => l.productId === p.id)?.quantity ?? 0) + 1

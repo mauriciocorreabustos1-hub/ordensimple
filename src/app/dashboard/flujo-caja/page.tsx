@@ -14,6 +14,7 @@ import { formatDate, startOfMonth, zonedParts, zonedTimeToUtc } from "@/lib/date
 import { canUseFeature } from "@/lib/plans"
 import { redirect } from "next/navigation"
 import { can } from "@/lib/roles"
+import { trackFeature } from "@/server/feature-usage"
 import { requireBusiness } from "@/server/session"
 import { getCashFlow, getCashOutlook } from "@/server/queries/cashflow"
 import { daysUntil } from "@/lib/vat"
@@ -26,6 +27,7 @@ const key = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`
 export default async function CashFlowPage({ searchParams }: PageProps<"/dashboard/flujo-caja">) {
   const ctx = await requireBusiness()
   if (!can(ctx.role, "finances:view")) redirect("/dashboard")
+  trackFeature(ctx.businessId, ctx.timezone, "flujo-caja")
   const params = await searchParams
   const now = new Date()
   const today = zonedParts(now, ctx.timezone)

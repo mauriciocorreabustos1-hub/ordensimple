@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Download, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -22,7 +22,9 @@ import { formatDate, formatDateTime } from "@/lib/dates"
 import { couponSummary, effectivePlan, PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
 import { cn } from "@/lib/utils"
+import { ago, device } from "@/lib/activity-format"
 import { isAdminEmail } from "@/server/admin"
+import { getFeatureAdoption } from "@/server/queries/admin-detail"
 import {
   ACTIVITY_FILTERS,
   ROLE_FILTERS,
@@ -41,31 +43,11 @@ import { AUDIENCES, getAudienceCounts, listCampaigns, type Audience } from "@/se
 
 const TZ = "America/Santiago"
 
-/** "hace 5 min", "hace 3 h", "ayer", "hace 12 días". */
-function ago(d: Date, now = new Date()) {
-  const min = Math.floor((now.getTime() - d.getTime()) / 60_000)
-  if (min < 2) return "ahora"
-  if (min < 60) return `hace ${min} min`
-  const h = Math.floor(min / 60)
-  if (h < 24) return `hace ${h} h`
-  const days = Math.floor(h / 24)
-  if (days === 1) return "ayer"
-  if (days < 60) return `hace ${days} días`
-  return `hace ${Math.floor(days / 30)} meses`
-}
-
 function lastSeen(u: AdminUserRow, now: Date) {
   const at = u.lastActiveAt ?? u.sessions[0]?.updatedAt
   return at ? { label: ago(at, now), title: formatDateTime(at, TZ), days: (now.getTime() - at.getTime()) / 86_400_000 } : null
 }
 
-/** Desde qué equipo entró la última vez (según el navegador). */
-function device(userAgent: string | null | undefined) {
-  if (!userAgent) return null
-  const os = /iPhone|iPad/i.test(userAgent) ? "iPhone" : /Android/i.test(userAgent) ? "Android" : /Windows/i.test(userAgent) ? "Windows" : /Mac OS/i.test(userAgent) ? "Mac" : null
-  const mobile = /Mobile|Android|iPhone|iPad/i.test(userAgent)
-  return `${mobile ? "Celular" : "Computador"}${os ? ` (${os})` : ""}`
-}
 
 /** "a@x.cl, b@y.cl y 3 más" */
 function shortList(emails: string | null, count: number) {
@@ -96,7 +78,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     mercadoPagoAccount(),
     db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
-  const roleCounts = await countUsersByRole()
+  const [roleCounts, adoption] = await Promise.all([countUsersByRole(), getFeatureAdoption()])
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -187,6 +169,42 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="size-4 text-primary" />
+            Funciones más usadas
+          </CardTitle>
+          <CardDescription>
+            Cuántos de tus {formatNumber(adoption.total)} negocios usaron cada función en los últimos 30 días. Te dice qué vale la pena
+            mejorar y qué casi nadie usa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2.5">
+          {adoption.rows.map((r) => {
+            const pct = adoption.total ? r.count / adoption.total : 0
+            return (
+              <div key={r.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[16rem_minmax(0,1fr)_5.5rem]">
+                <span className="truncate">
+                  {r.label}
+                  {"note" in r && r.note ? <span className="text-xs text-muted-foreground"> ({r.note})</span> : null}
+                </span>
+                <span className="tabular text-right text-muted-foreground sm:order-last">
+                  {formatNumber(r.count)} · {Math.round(pct * 100)}%
+                </span>
+                <div className="col-span-2 h-2 overflow-hidden rounded-full bg-muted sm:col-span-1">
+                  <div className={cn("h-full rounded-full", "tracked" in r ? "bg-chart-2" : "bg-chart-1")} style={{ width: `${Math.max(pct * 100, r.count ? 2 : 0)}%` }} />
+                </div>
+              </div>
+            )
+          })}
+          <p className="pt-2 text-xs text-muted-foreground">
+            En verde, lo que sale de los datos de cada negocio. En la otra barra, el uso de pantallas y del escáner
+            {adoption.trackedSince ? `, que se mide desde el ${formatDate(new Date(adoption.trackedSince + "T12:00:00"), TZ, { day: "numeric", month: "long" })}` : ", que se empieza a medir desde hoy"}.
+          </p>
+        </CardContent>
+      </Card>
+
       <section id="usuarios" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">
@@ -200,6 +218,15 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             {activity !== "todos" ? <input type="hidden" name="actividad" value={activity} /> : null}
             {role !== "todos" ? <input type="hidden" name="rol" value={role} /> : null}
             <Button type="submit" variant="outline" size="lg">Buscar</Button>
+            <Button variant="outline" size="lg" asChild>
+              <a
+                href={`/admin/usuarios/exportar?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), ...(role !== "todos" ? { rol: role } : {}) })}`}
+                download
+              >
+                <Download />
+                Excel
+              </a>
+            </Button>
           </form>
         </div>
         <div className="grid gap-2 rounded-xl border bg-card p-3 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-x-4">
@@ -246,8 +273,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               return (
                 <div key={u.id} className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1.3fr_1.5fr_1fr_auto] md:items-center">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{u.name}</p>
+                    <Link href={`/admin/usuarios/${u.id}`} className="block truncate font-medium hover:text-primary hover:underline">
+                      {u.name}
+                    </Link>
                     <p className="truncate text-sm text-muted-foreground">{u.email}</p>
+                    {u._count.adminNotes ? (
+                      <Link href={`/admin/usuarios/${u.id}#notas`} className="mt-1 inline-flex items-center gap-1 text-xs text-warning hover:underline">
+                        <NotebookPen className="size-3.5" />
+                        {u._count.adminNotes} {u._count.adminNotes === 1 ? "nota" : "notas"}
+                      </Link>
+                    ) : null}
                   </div>
                   <div className="min-w-0 text-sm">
                     {b ? (

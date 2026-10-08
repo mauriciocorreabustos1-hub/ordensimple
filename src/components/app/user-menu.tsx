@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Check, LogOut, Monitor, Moon, Settings, ShieldCheck, Store, Sun } from "lucide-react"
 import { useTheme } from "@/lib/theme"
 import { toast } from "sonner"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +81,7 @@ export type BusinessOption = { id: string; name: string; active: boolean }
 export function UserMenu({
   name,
   email,
+  image = null,
   businesses = [],
   showDetails = false,
   isAdmin = false,
@@ -89,6 +90,8 @@ export function UserMenu({
 }: {
   name: string
   email: string
+  /** Foto de perfil (dirección), si subió una. */
+  image?: string | null
   /** Negocios a los que pertenece; si son varios, se puede cambiar desde aquí. */
   businesses?: BusinessOption[]
   showDetails?: boolean
@@ -118,13 +121,16 @@ export function UserMenu({
         )}
         aria-label="Menú de perfil"
       >
-        <Avatar className="size-8">
+        <Avatar className="size-9 shrink-0">
+          {image ? <AvatarImage src={image} alt={`Foto de ${name}`} className="object-cover" /> : null}
           <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">{initials(name)}</AvatarFallback>
         </Avatar>
         {showDetails ? (
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">{name}</span>
-            <span className="block truncate text-xs text-muted-foreground">{email}</span>
+          <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 leading-tight">
+            <span className="truncate text-sm font-medium">{name}</span>
+            <span className="truncate text-xs text-muted-foreground" title={email}>
+              {email}
+            </span>
           </span>
         ) : null}
       </DropdownMenuTrigger>

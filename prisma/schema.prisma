@@ -82,6 +82,7 @@ model User {
   movements     InventoryMovement[]
   notifications Notification[]
   adminNotes    AdminNote[]
+  photo         UserPhoto?
 
   @@map("user")
 }
@@ -791,4 +792,15 @@ model BusinessLogo {
   updatedAt  DateTime @updatedAt
 
   @@map("business_logo")
+}
+
+/// Foto de perfil, ya achicada en el navegador (máximo 256 px). User.image guarda su dirección.
+model UserPhoto {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Bytes
+  type      String
+  updatedAt DateTime @updatedAt
+
+  @@map("user_photo")
 }

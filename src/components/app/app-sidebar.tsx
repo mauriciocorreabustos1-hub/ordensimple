@@ -49,6 +49,7 @@ export function AppSidebar({
   role,
   userName,
   userEmail,
+  userImage = null,
   businesses = [],
   isAdmin = false,
 }: {
@@ -58,6 +59,7 @@ export function AppSidebar({
   role: Role
   userName: string
   userEmail: string
+  userImage?: string | null
   businesses?: BusinessOption[]
   isAdmin?: boolean
 }) {
@@ -76,7 +78,7 @@ export function AppSidebar({
         <NavLinks role={role} />
       </div>
       <div className="grid gap-1 border-t p-3">
-        <UserMenu name={userName} email={userEmail} businesses={businesses} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />
+        <UserMenu name={userName} email={userEmail} image={userImage} businesses={businesses} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />
         <SignOutButton className="w-full justify-start hover:bg-sidebar-accent" />
       </div>
     </aside>

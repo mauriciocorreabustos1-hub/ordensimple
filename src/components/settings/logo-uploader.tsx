@@ -5,34 +5,8 @@ import { ImagePlus, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BusinessLogo } from "@/components/app/business-logo"
+import { shrinkImage } from "@/lib/image-shrink"
 import { removeBusinessLogo, uploadBusinessLogo } from "@/server/actions/logo"
-
-const MAX = 256
-
-/** Achica la imagen en el navegador (máximo 256 px, sin perder la transparencia) y la entrega lista para guardar. */
-async function shrink(file: File): Promise<string> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const i = new Image()
-      i.onload = () => resolve(i)
-      i.onerror = () => reject(new Error("imagen"))
-      i.src = url
-    })
-    const scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight))
-    const w = Math.max(1, Math.round(img.naturalWidth * scale))
-    const h = Math.max(1, Math.round(img.naturalHeight * scale))
-    const canvas = document.createElement("canvas")
-    canvas.width = w
-    canvas.height = h
-    canvas.getContext("2d")!.drawImage(img, 0, 0, w, h)
-    const webp = canvas.toDataURL("image/webp", 0.9)
-    // Navegadores que no generan WebP devuelven PNG.
-    return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/png")
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
 
 export function LogoUploader({
   businessId,
@@ -53,7 +27,7 @@ export function LogoUploader({
     if (!file.type.startsWith("image/")) return void toast.error("Elige una imagen (PNG, JPG o WebP).")
     startTransition(async () => {
       try {
-        const r = await uploadBusinessLogo(await shrink(file))
+        const r = await uploadBusinessLogo(await shrinkImage(file))
         if (r.ok) toast.success(r.message ?? "Logo guardado")
         else toast.error(r.message)
       } catch {

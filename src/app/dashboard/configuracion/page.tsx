@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageHeader } from "@/components/app/page-header"
 import { BusinessForm } from "@/components/settings/business-form"
 import { LogoUploader } from "@/components/settings/logo-uploader"
+import { PhotoUploader } from "@/components/settings/photo-uploader"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
@@ -264,12 +265,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
         </Link>
       ) : null}
 
-      <Card>
+      <Card id="cuenta">
         <CardHeader>
           <CardTitle>Tu cuenta</CardTitle>
-          <CardDescription>Tus datos son tuyos: puedes llevártelos o eliminarlos cuando quieras.</CardDescription>
+          <CardDescription>Tu foto y tus datos. Son tuyos: puedes llevártelos o eliminarlos cuando quieras.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <PhotoUploader name={ctx.user.name} image={ctx.user.image ?? null} />
           <AccountSection
             email={ctx.user.email}
             ownedBusinesses={owned.map((o) => ({

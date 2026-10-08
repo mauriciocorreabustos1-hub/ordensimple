@@ -83,8 +83,8 @@ export function EmailVerifyBanner({ email }: { email: string }) {
           </form>
         ) : (
           <p className="text-muted-foreground">
-            Te mandamos un enlace a <strong className="text-foreground break-all">{email}</strong>. Confírmalo para recibir tus avisos y poder
-            recuperar tu cuenta si olvidas la contraseña.
+            Te mandamos un enlace a <strong className="text-foreground break-all">{email}</strong>. Confírmalo para asegurarte de que te lleguen tus
+            avisos y poder recuperar tu cuenta si olvidas la contraseña.
           </p>
         )}
       </div>

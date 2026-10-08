@@ -37,7 +37,7 @@ export async function sendBusinessAlerts(now = new Date()) {
       settings: true,
       members: {
         where: { role: { in: ["OWNER", "ADMIN"] } },
-        select: { user: { select: { name: true, email: true, emailVerified: true, createdAt: true } } },
+        select: { user: { select: { name: true, email: true } } },
       },
     },
   })
@@ -47,9 +47,7 @@ export async function sendBusinessAlerts(now = new Date()) {
 
   for (const b of businesses) {
     const s = b.settings!
-    const recipients = b.members
-      .map((m) => m.user)
-      .filter((u) => u.emailVerified || now.getTime() - u.createdAt.getTime() < 14 * 86_400_000)
+    const recipients = b.members.map((m) => m.user)
     if (recipients.length === 0) continue
     const tz = b.timezone
     const today = startOfDay(now, tz)

@@ -528,8 +528,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             Confirmación de correos
           </CardTitle>
           <CardDescription>
-            Quien no confirma su correo no recibe promociones y, después de 14 días, tampoco sus avisos. Las cuentas nuevas reciben el
-            enlace al registrarse; aquí se lo mandas a las que ya existían.
+            Confirmar el correo sirve para recuperar la cuenta si olvidan la contraseña. Los avisos y promociones les llegan igual. Las
+            cuentas nuevas reciben el enlace al registrarse; aquí se lo mandas a las que ya existían.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-4">

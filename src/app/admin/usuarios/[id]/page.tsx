@@ -10,6 +10,7 @@ import { ExtrasDialog } from "@/components/admin/extras-dialog"
 import { PlanDialog } from "@/components/admin/plan-dialog"
 import { StatCard } from "@/components/app/stat-card"
 import { ago, device } from "@/lib/activity-format"
+import { originLabel } from "@/lib/signup-source"
 import { formatMoney, formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
 import { effectivePlan, PLANS } from "@/lib/plans"
@@ -87,7 +88,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         <StatCard compactOnMobile label="Última vez activo" value={seenAt ? ago(seenAt, now) : "Nunca"} icon={MonitorSmartphone} tone="sales"
           hint={[seenAt ? formatDateTime(seenAt, TZ) : null, device(u.sessions[0]?.userAgent)].filter(Boolean).join(" · ") || undefined} />
         <StatCard compactOnMobile label="Se registró" value={formatDate(u.createdAt, TZ, { day: "numeric", month: "short", year: "numeric" })} icon={CalendarDays}
-          hint={ago(u.createdAt, now)} />
+          hint={`${ago(u.createdAt, now)} · llegó por ${originLabel(u)}${u.signupMedium ? ` (${u.signupMedium})` : ""}${u.signupReferrer ? ` · desde ${u.signupReferrer}` : ""}`} />
         <StatCard compactOnMobile label="Plan" value={plan ? PLANS[plan].name : "Sin negocio"} icon={Crown} tone="profit"
           hint={b && b.plan !== "FREE" && b.planExpiresAt ? (b.planExpiresAt > now ? `Hasta el ${longDate(b.planExpiresAt)}` : `Venció el ${longDate(b.planExpiresAt)}`) : undefined} />
         <StatCard compactOnMobile label="Ventas (30 días)" value={a ? clp(a.total30) : "—"} icon={ShoppingBag}

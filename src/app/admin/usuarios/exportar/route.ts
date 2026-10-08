@@ -49,6 +49,8 @@ export async function GET(request: Request) {
       "Producto estrella (90 días)",
       "Acepta promociones",
       "Notas internas",
+      "Llegó por",
+      "Campaña",
     ],
   ]
   for (const u of rows) {
@@ -77,6 +79,8 @@ export async function GET(request: Request) {
       act?.bestProduct?.name ?? "",
       u.marketingOptIn ? "Sí" : "No",
       u._count.adminNotes || "",
+      u.signupSource ?? "",
+      u.signupCampaign ?? "",
     ])
   }
 

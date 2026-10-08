@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { getAppUrl } from "@/lib/app-url"
+import { ORIGIN_SCRIPT } from "@/lib/signup-source"
 import "./globals.css"
 
 // Aplica el tema guardado (o el del sistema) antes de que se dibuje la página, para que no parpadee.
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: LEGACY_CSS_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: ORIGIN_SCRIPT }} />
       </head>
       <body className="min-h-full">
         <Providers>{children}</Providers>

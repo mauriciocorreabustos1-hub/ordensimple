@@ -79,6 +79,10 @@ export async function getAdminUserDetail(userId: string, businessId?: string) {
       marketingOptIn: true,
       createdAt: true,
       lastActiveAt: true,
+      signupSource: true,
+      signupMedium: true,
+      signupCampaign: true,
+      signupReferrer: true,
       sessions: { orderBy: { updatedAt: "desc" }, take: 1, select: { updatedAt: true, userAgent: true } },
       adminNotes: { orderBy: { createdAt: "desc" }, select: { id: true, text: true, author: true, createdAt: true } },
       memberships: {
@@ -180,3 +184,42 @@ async function getBusinessUsage(businessId: string, timezone: string, now = new 
 }
 
 export type AdminUserDetail = NonNullable<Awaited<ReturnType<typeof getAdminUserDetail>>>
+
+/**
+ * De dónde llegan las personas nuevas (últimos 90 días), y cuántas de cada origen avanzan:
+ * crearon su negocio, registraron una venta y pagan una suscripción.
+ */
+export async function getOriginStats(now = new Date()) {
+  const since = addDays(startOfDay(now, TZ), -89, TZ)
+  const users = await db.user.findMany({
+    where: { createdAt: { gte: since } },
+    select: {
+      signupSource: true,
+      signupCampaign: true,
+      memberships: {
+        where: { role: "OWNER" },
+        select: {
+          business: {
+            select: {
+              onboardingCompleted: true,
+              _count: { select: { sales: true } },
+              subscriptions: { where: { status: "authorized" }, select: { id: true }, take: 1 },
+            },
+          },
+        },
+      },
+    },
+  })
+  const rows = new Map<string, { source: string; campaign: string | null; users: number; business: number; selling: number; paying: number }>()
+  for (const u of users) {
+    const key = `${u.signupSource ?? ""}|${u.signupCampaign ?? ""}`
+    const r = rows.get(key) ?? { source: u.signupSource ?? "Directo / sin dato", campaign: u.signupCampaign, users: 0, business: 0, selling: 0, paying: 0 }
+    const b = u.memberships.map((m) => m.business)
+    r.users++
+    if (b.some((x) => x.onboardingCompleted)) r.business++
+    if (b.some((x) => x._count.sales > 0)) r.selling++
+    if (b.some((x) => x.subscriptions.length > 0)) r.paying++
+    rows.set(key, r)
+  }
+  return [...rows.values()].sort((a, b) => b.users - a.users)
+}

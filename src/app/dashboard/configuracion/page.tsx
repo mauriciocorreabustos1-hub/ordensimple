@@ -209,7 +209,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="equipo">
         <CardHeader>
           <CardTitle>Usuarios</CardTitle>
           <CardDescription>Las personas que tienen acceso a tu negocio y a tus sucursales.</CardDescription>

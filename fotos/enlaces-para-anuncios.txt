@@ -1,0 +1,36 @@
+ENLACES PARA TUS ANUNCIOS (para saber de dónde llega cada cliente)
+===================================================================
+
+Usa un enlace distinto en cada lugar donde publiques. Así, en tu Panel de administración → "De dónde llegan",
+ves cuántas personas se registraron, cuántas crearon su negocio, cuántas vendieron y cuántas pagan, por cada uno.
+
+Cómo se arma:  https://www.ordensimple.cl/?utm_source=DÓNDE&utm_campaign=QUÉ
+
+  utm_source   = dónde lo publicaste (instagram, tiktok, facebook, whatsapp, google…)
+  utm_campaign = qué anuncio o video es (escanear, planes, fiado, antes-vs-ahora…)
+  utm_medium   = (opcional) el formato: reel, historia, post, anuncio
+
+Usa siempre minúsculas y sin espacios (usa guiones).
+
+Ejemplos listos para copiar:
+
+  Bio de Instagram:
+  https://www.ordensimple.cl/?utm_source=instagram&utm_medium=bio
+
+  Reel "Escanear":
+  https://www.ordensimple.cl/?utm_source=instagram&utm_medium=reel&utm_campaign=escanear
+
+  Historia "Planes":
+  https://www.ordensimple.cl/?utm_source=instagram&utm_medium=historia&utm_campaign=planes
+
+  TikTok "Antes vs. ahora":
+  https://www.ordensimple.cl/?utm_source=tiktok&utm_campaign=antes-vs-ahora
+
+  Anuncio pagado de Meta "Fiado por WhatsApp":
+  https://www.ordensimple.cl/?utm_source=facebook&utm_medium=anuncio&utm_campaign=fiado-whatsapp
+
+  Grupo o estado de WhatsApp:
+  https://www.ordensimple.cl/?utm_source=whatsapp&utm_campaign=grupo-emprendedores
+
+Si alguien entra sin estos enlaces, igual se intenta saber de dónde vino (Instagram, Facebook, Google…).
+Si no se puede, aparece como "Directo / sin dato".

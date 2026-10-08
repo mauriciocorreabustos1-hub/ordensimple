@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js"
 import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { parseOrigin } from "@/lib/signup-source"
 import { resetPasswordEmail, welcomeEmail } from "@/lib/email-templates"
 
 export const auth = betterAuth({
@@ -28,7 +29,11 @@ export const auth = betterAuth({
     user: {
       create: {
         // Registrarse implica aceptar los términos: se guarda la fecha como respaldo.
-        before: async (user) => ({ data: { ...user, termsAcceptedAt: new Date() } }),
+        // También se guarda de qué anuncio o página llegó (cookie que deja el script de src/app/layout.tsx).
+        before: async (user, context) => {
+          const cookie = context?.headers?.get("cookie") ?? context?.request?.headers.get("cookie")
+          return { data: { ...user, termsAcceptedAt: new Date(), ...(parseOrigin(cookie) ?? {}) } }
+        },
         // Correo de bienvenida. Si falla, el registro no se interrumpe.
         after: async (user) => {
           await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name }) }).catch((error) =>
@@ -44,6 +49,11 @@ export const auth = betterAuth({
       // Consentimiento para recibir promociones: lo marca la persona al registrarse (desmarcado por defecto).
       marketingOptIn: { type: "boolean", required: false, input: true, defaultValue: false },
       termsAcceptedAt: { type: "date", required: false, input: false },
+      // De dónde llegó (los llena el registro desde la cookie de origen; la persona no los puede mandar).
+      signupSource: { type: "string", required: false, input: false },
+      signupMedium: { type: "string", required: false, input: false },
+      signupCampaign: { type: "string", required: false, input: false },
+      signupReferrer: { type: "string", required: false, input: false },
     },
   },
   session: {

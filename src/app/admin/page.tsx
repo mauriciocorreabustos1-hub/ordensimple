@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Download, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Download, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -24,7 +24,8 @@ import { ROLE_LABEL } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import { ago, device } from "@/lib/activity-format"
 import { isAdminEmail } from "@/server/admin"
-import { getFeatureAdoption } from "@/server/queries/admin-detail"
+import { getFeatureAdoption, getOriginStats } from "@/server/queries/admin-detail"
+import { originLabel } from "@/lib/signup-source"
 import {
   ACTIVITY_FILTERS,
   ROLE_FILTERS,
@@ -78,7 +79,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     mercadoPagoAccount(),
     db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
-  const [roleCounts, adoption] = await Promise.all([countUsersByRole(), getFeatureAdoption()])
+  const [roleCounts, adoption, origins] = await Promise.all([countUsersByRole(), getFeatureAdoption(), getOriginStats()])
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -166,6 +167,52 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="size-4 text-primary" />
+            De dónde llegan
+          </CardTitle>
+          <CardDescription>
+            Personas que se registraron en los últimos 90 días, según el enlace del anuncio por el que entraron, y cuántas avanzaron.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {origins.length ? (
+            <div className="-mx-2 overflow-x-auto px-2">
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-2 pr-3 font-medium">Origen</th>
+                    <th className="py-2 pr-3 text-right font-medium">Se registraron</th>
+                    <th className="py-2 pr-3 text-right font-medium">Crearon su negocio</th>
+                    <th className="py-2 pr-3 text-right font-medium">Vendieron</th>
+                    <th className="py-2 text-right font-medium">Pagan</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular">
+                  {origins.map((o) => (
+                    <tr key={`${o.source}|${o.campaign}`} className="border-b last:border-0">
+                      <td className="py-2 pr-3 capitalize">{originLabel({ signupSource: o.source === "Directo / sin dato" ? null : o.source, signupCampaign: o.campaign })}</td>
+                      <td className="py-2 pr-3 text-right font-medium">{formatNumber(o.users)}</td>
+                      <td className="py-2 pr-3 text-right">{formatNumber(o.business)}</td>
+                      <td className="py-2 pr-3 text-right">{formatNumber(o.selling)}</td>
+                      <td className={cn("py-2 text-right", o.paying > 0 && "font-semibold text-success")}>{formatNumber(o.paying)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Aún no hay registros en los últimos 90 días.</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Para que cada anuncio aparezca aquí, usa enlaces como <code className="rounded bg-muted px-1">ordensimple.cl/?utm_source=instagram&amp;utm_campaign=escanear</code>.
+            Sin enlace propio, se usa la página de donde vino (Instagram, Facebook, Google…) o queda como «Directo».
+          </p>
         </CardContent>
       </Card>
 
@@ -342,6 +389,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     <p>Registro: {formatDate(u.createdAt, TZ)}</p>
+                    <p className="capitalize">Llegó por: {originLabel(u)}</p>
                     <p title={seen?.title}>
                       Última vez activo:{" "}
                       <span className={seen && seen.days < 1 ? "font-medium text-success" : seen && seen.days > 14 ? "text-warning" : "text-foreground"}>

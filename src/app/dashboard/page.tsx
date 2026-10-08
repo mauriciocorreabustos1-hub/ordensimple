@@ -23,6 +23,8 @@ import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature, PLANS, PLANS_ENFORCED } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
+import { db } from "@/lib/db"
+import { FirstSteps, type FirstStep } from "@/components/dashboard/first-steps"
 
 export const metadata: Metadata = { title: "Inicio" }
 
@@ -57,6 +59,22 @@ export default async function DashboardPage() {
   const vatDaysLeft = daysUntil(vatDue, now, ctx.timezone)
   const money = (n: number) => formatMoney(n, ctx.currency)
   const easy = ctx.settings.easyMode
+  // Primeros pasos: para el dueño o administrador, hasta que el negocio quede andando.
+  const counts = showFinances
+    ? await db.business.findUnique({
+        where: { id: ctx.businessId },
+        select: { _count: { select: { products: true, sales: true, expenses: true, cashClosings: true, members: true } } },
+      })
+    : null
+  const firstSteps: FirstStep[] | null = counts
+    ? [
+        { key: "producto", label: "Crea tu primer producto", hint: "Con su precio y cuánto te cuesta.", done: counts._count.products > 0, href: "/dashboard/productos" },
+        { key: "venta", label: "Registra tu primera venta", hint: "Con el botón verde, o escaneando.", done: counts._count.sales > 0, action: "sale" },
+        { key: "gasto", label: "Anota un gasto", hint: "Arriendo, luz, mercadería…", done: counts._count.expenses > 0, action: "expense" },
+        { key: "caja", label: "Cierra la caja al final del día", hint: "Cuenta el efectivo y mira si cuadra.", done: counts._count.cashClosings > 0, href: "/dashboard/caja" },
+        { key: "equipo", label: "Invita a tu equipo", hint: "Si alguien más vende contigo.", done: counts._count.members > 1, href: "/dashboard/configuracion#equipo" },
+      ]
+    : null
 
   const health = businessHealth({
     sales: data.last30.sales,
@@ -115,6 +133,8 @@ export default async function DashboardPage() {
         </p>
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{ctx.business.name}</h1>
       </div>
+
+      {firstSteps ? <FirstSteps businessId={ctx.businessId} steps={firstSteps} /> : null}
 
       <HealthCard health={health} />
 

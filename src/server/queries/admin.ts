@@ -138,6 +138,8 @@ export async function listAdminUsers({
         emailVerified: true,
         createdAt: true,
         marketingOptIn: true,
+        signupSource: true,
+        signupCampaign: true,
         lastActiveAt: true,
         _count: { select: { adminNotes: true } },
         sessions: { orderBy: { updatedAt: "desc" }, take: 1, select: { updatedAt: true, userAgent: true } },

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Download, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Download, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils"
 import { ago, device } from "@/lib/activity-format"
 import { isAdminEmail } from "@/server/admin"
 import { getFeatureAdoption, getOriginStats } from "@/server/queries/admin-detail"
+import { countUnverified } from "@/server/verify-reminders"
+import { VerifyLinksButton } from "@/components/admin/verify-links-button"
 import { originLabel } from "@/lib/signup-source"
 import {
   ACTIVITY_FILTERS,
@@ -79,7 +81,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     mercadoPagoAccount(),
     db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
-  const [roleCounts, adoption, origins] = await Promise.all([countUsersByRole(), getFeatureAdoption(), getOriginStats()])
+  const [roleCounts, adoption, origins, unverified] = await Promise.all([countUsersByRole(), getFeatureAdoption(), getOriginStats(), countUnverified()])
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -518,6 +520,35 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           </div>
         </div>
       </section>
+
+      <Card id="confirmar-correos">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MailCheck className="size-4 text-primary" />
+            Confirmación de correos
+          </CardTitle>
+          <CardDescription>
+            Quien no confirma su correo no recibe promociones y, después de 14 días, tampoco sus avisos. Las cuentas nuevas reciben el
+            enlace al registrarse; aquí se lo mandas a las que ya existían.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="rounded-lg bg-muted/50 px-4 py-2">
+              <p className="tabular text-xl font-semibold">{formatNumber(unverified.total)}</p>
+              <p className="text-xs text-muted-foreground">sin confirmar</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 px-4 py-2">
+              <p className="tabular text-xl font-semibold">{formatNumber(unverified.pending)}</p>
+              <p className="text-xs text-muted-foreground">sin enlace enviado</p>
+            </div>
+          </div>
+          <div className="space-y-1 text-right">
+            <VerifyLinksButton pending={unverified.pending} />
+            <p className="text-xs text-muted-foreground">Máximo 80 por vez, para no pasar tu límite diario de correos.</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <section id="correos" className="scroll-mt-20 space-y-4">
         <div className="space-y-1">

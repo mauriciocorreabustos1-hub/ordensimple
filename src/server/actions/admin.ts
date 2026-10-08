@@ -469,3 +469,19 @@ export async function deleteAdminNote(id: string): Promise<ActionResult> {
   }
   return { ok: true, message: "Nota borrada" }
 }
+
+/** Manda el enlace para confirmar el correo a quienes aún no lo confirman (máximo 80 por vez). */
+export async function sendVerifyLinks(): Promise<ActionResult> {
+  await requireAdmin()
+  try {
+    const { sendVerifyLinksToUnverified } = await import("@/server/verify-reminders")
+    const r = await sendVerifyLinksToUnverified(80)
+    revalidatePath("/admin")
+    return {
+      ok: true,
+      message: r.remaining ? `Enviados ${r.sent}. Quedan ${r.remaining}: vuelve a tocar el botón mañana.` : `Enviados ${r.sent}. Listo, ya se les mandó a todos.`,
+    }
+  } catch (error) {
+    return toActionError(error)
+  }
+}

@@ -86,7 +86,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard compactOnMobile label="Entró" value={money(flow.inflow)} icon={ArrowDownLeft} tone="sales" hint="Ventas cobradas y abonos de fiado." />
-        <StatCard compactOnMobile label="Salió" value={money(flow.outflow)} icon={ArrowUpRight} tone="expenses" hint="Gastos pagados." />
+        <StatCard compactOnMobile label="Salió" value={money(flow.outflow)} icon={ArrowUpRight} tone="expenses" hint="Gastos pagados y retiros del dueño." />
         <StatCard
           compactOnMobile
           label={flow.net >= 0 ? "Te quedó en caja" : "Salió más de lo que entró"}
@@ -162,7 +162,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {flow.byCategory.length ? (
+            {flow.byCategory.length || flow.withdrawals ? (
               <ul className="divide-y text-sm">
                 {flow.byCategory.slice(0, 8).map((c) => (
                   <li key={c.name} className="flex justify-between gap-3 py-2.5">
@@ -170,6 +170,14 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
                     <span className="tabular font-medium">{money(c.total)}</span>
                   </li>
                 ))}
+                {flow.withdrawals ? (
+                  <li className="flex justify-between gap-3 py-2.5">
+                    <span>
+                      Retiros del dueño <span className="text-xs text-muted-foreground">(no es gasto)</span>
+                    </span>
+                    <span className="tabular font-medium">{money(flow.withdrawals)}</span>
+                  </li>
+                ) : null}
                 <li className="flex justify-between gap-3 pt-3 font-semibold">
                   <span>Total que salió</span>
                   <span className="tabular">{money(flow.outflow)}</span>

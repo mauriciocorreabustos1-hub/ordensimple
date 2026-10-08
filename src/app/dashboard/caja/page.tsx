@@ -110,6 +110,7 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
           cashSales={d.cashSales}
           cashPayments={d.cashPayments}
           expensesTotal={d.expensesTotal}
+          withdrawalsCash={d.withdrawalsCash}
           salesTotal={d.salesTotal}
           summaryLines={summaryLines}
           initial={

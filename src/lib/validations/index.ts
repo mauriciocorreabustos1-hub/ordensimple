@@ -184,6 +184,39 @@ export type InventoryMovementInput = z.input<typeof inventoryMovementSchema>
 
 // ─── Pagos pendientes a proveedores ─────────────────────────────────────────
 
+// ─── Retiros del dueño, préstamos y balance ────────────────────────────────
+
+export const withdrawalSchema = z
+  .object({
+    kind: z.enum(["MONEY", "GOODS"]),
+    amount: money.optional(),
+    date: dateKey,
+    source: z.enum(["CASH", "BANK"]).default("CASH"),
+    productId: z.string().max(60).optional(),
+    quantity: z.number().int().min(1, "Al menos 1 unidad").max(100_000).optional(),
+    note: optionalText(200),
+  })
+  .refine((v) => (v.kind === "MONEY" ? (v.amount ?? 0) > 0 : Boolean(v.productId && v.quantity)), {
+    message: "Completa el monto o el producto y la cantidad",
+    path: ["amount"],
+  })
+export type WithdrawalInput = z.input<typeof withdrawalSchema>
+
+export const loanSchema = z.object({
+  lender: z.string().trim().min(2, "¿A quién le debes?").max(80),
+  balance: money,
+  installment: money.optional(),
+  dueDay: z.number().int().min(1).max(31).optional(),
+  note: optionalText(200),
+})
+export type LoanInput = z.input<typeof loanSchema>
+
+export const balanceSettingsSchema = z.object({
+  ownerSalary: money.nullable().optional(),
+  openingCash: money.nullable().optional(),
+})
+export type BalanceSettingsInput = z.input<typeof balanceSettingsSchema>
+
 export const payableSchema = z.object({
   description: z.string().trim().min(2, "Escribe qué tienes que pagar").max(120),
   supplierName: optionalText(80),

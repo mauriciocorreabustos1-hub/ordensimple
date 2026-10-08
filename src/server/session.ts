@@ -71,6 +71,9 @@ export async function requireBusiness() {
     chargesVat: true,
     vatDueDay: 20,
     ppmRate: 0.00125,
+    ownerSalary: null,
+    openingCash: null,
+    openingCashAt: null,
   }
   return {
     user,

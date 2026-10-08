@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Download, Landmark, Package, PiggyBank, Receipt, ShoppingBag, TrendingDown } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, Landmark, Package, PiggyBank, Receipt, ShoppingBag, TrendingDown, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Explainer } from "@/components/app/explainer"
@@ -11,6 +11,7 @@ import { VatCoverage } from "@/components/results/vat-coverage"
 import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth, zonedParts, zonedTimeToUtc } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
+import { db } from "@/lib/db"
 import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import { daysUntil, formatDueDate, ppmAmount, vatDueDate, vatInfo } from "@/lib/vat"
@@ -94,10 +95,14 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   const to = startOfMonth(from, ctx.timezone, 1)
   const lastMonth = year === today.year ? today.month : 12
 
-  const [{ statement: st, categories, salesCount, raw }, { rows, totals }] = await Promise.all([
+  const [{ statement: st, categories, salesCount, raw }, { rows, totals }, withdrawn] = await Promise.all([
     getIncomeStatement(ctx.businessId, from, to, rate),
     getYearSummary(ctx.businessId, year, lastMonth, ctx.timezone, rate),
+    canUseFeature(ctx.business.plan, "balance")
+      ? db.ownerWithdrawal.aggregate({ where: { businessId: ctx.businessId, date: { gte: from, lt: to } }, _sum: { amount: true } })
+      : Promise.resolve(null),
   ])
+  const withdrawnTotal = withdrawn?._sum.amount ?? 0
   const money = (n: number) => formatMoney(n, ctx.currency)
   const monthText = formatDate(from, ctx.timezone, { month: "long", year: "numeric" })
   const monthLabel = monthText.charAt(0).toUpperCase() + monthText.slice(1)
@@ -163,6 +168,25 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           hint={st.margin !== null && st.profit > 0 ? `Te quedó el ${formatPercent(st.margin, 0)} de lo vendido` : undefined}
         />
       </div>
+
+      {withdrawnTotal ? (
+        <Link
+          href="/dashboard/balance"
+          className={cn(
+            "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors hover:bg-accent/40",
+            st.profit - withdrawnTotal < 0 ? "border-danger/40 bg-danger/5" : "bg-card",
+          )}
+        >
+          <Wallet className="size-4 shrink-0 text-primary" />
+          <span className="flex-1">
+            Este mes te llevaste <strong className="tabular">{money(withdrawnTotal)}</strong> (retiros del dueño, no son gasto).{" "}
+            {st.profit - withdrawnTotal >= 0
+              ? `Quedaron ${money(st.profit - withdrawnTotal)} de la ganancia en el negocio.`
+              : `Es ${money(withdrawnTotal - st.profit)} más de lo que ganó el negocio.`}
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </Link>
+      ) : null}
 
       {chargesVat ? (
         <Card className="border-primary/30">

@@ -369,6 +369,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Flujo de caja", values: ["Este mes", "Con lo que viene", "Con lo que viene"] },
   { label: "Escanear al vender", values: ["De a uno", "Continuo (modo caja)", "Continuo (modo caja)"] },
   { label: "Merma y vencidos", values: [false, true, true] },
+  { label: "Balance, retiros del dueño y préstamos", values: [false, true, true] },
   { label: "Proveedores y pagos pendientes", values: [false, true, true] },
   { label: "Resultados e IVA (utilidad y F29)", values: [false, true, true] },
   { label: "Exportar a Excel", values: [false, true, true] },

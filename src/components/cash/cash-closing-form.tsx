@@ -21,6 +21,7 @@ export function CashClosingForm({
   cashSales,
   cashPayments,
   expensesTotal,
+  withdrawalsCash = 0,
   salesTotal,
   summaryLines,
   initial,
@@ -32,6 +33,8 @@ export function CashClosingForm({
   cashSales: number
   cashPayments: number
   expensesTotal: number
+  /** Retiros del dueño sacados de la caja ese día. */
+  withdrawalsCash?: number
   salesTotal: number
   /** Líneas de resumen por método de pago, para compartir por WhatsApp. */
   summaryLines: string[]
@@ -46,7 +49,7 @@ export function CashClosingForm({
   const [pending, startTransition] = React.useTransition()
 
   const cashOut = expensesFromCash ? expensesTotal : 0
-  const expected = opening + cashSales + cashPayments - cashOut
+  const expected = opening + cashSales + cashPayments - cashOut - withdrawalsCash
   const difference = counted - expected
 
   const status =
@@ -68,6 +71,7 @@ export function CashClosingForm({
     ...summaryLines,
     cashPayments ? `Abonos de fiado en efectivo: ${money(cashPayments)}` : null,
     expensesFromCash && expensesTotal ? `Gastos pagados con caja: ${money(expensesTotal)}` : null,
+    withdrawalsCash ? `Retiros del dueño: ${money(withdrawalsCash)}` : null,
     "",
     `Efectivo esperado: ${money(expected)}`,
     hasCounted ? `Efectivo contado: ${money(counted)}` : null,
@@ -110,6 +114,9 @@ export function CashClosingForm({
           ) : null}
           {cashOut ? (
             <div className="flex justify-between"><span className="text-muted-foreground">− Gastos pagados con la caja</span><span className="tabular">{money(cashOut)}</span></div>
+          ) : null}
+          {withdrawalsCash ? (
+            <div className="flex justify-between"><span className="text-muted-foreground">− Retiros del dueño</span><span className="tabular">{money(withdrawalsCash)}</span></div>
           ) : null}
           <div className="flex justify-between border-t pt-2 text-base font-semibold">
             <span>Debería haber</span>

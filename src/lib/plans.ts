@@ -19,6 +19,8 @@ export type PlanFeature =
   | "history"
   /** Escaneo continuo al vender (la cámara queda abierta, como en una caja). */
   | "fastScan"
+  /** Balance (lo que tienes y lo que debes), retiros del dueño y préstamos. */
+  | "balance"
   | "multiUser"
   | "branches"
 
@@ -85,13 +87,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "balance"],
     highlights: [
       "Todo lo de Gratis, y además:",
       "Tú + 20 trabajadores y hasta 3 sucursales",
       "Productos ilimitados",
       "Resultados e IVA: tu utilidad real y tu F29 (IVA + PPM)",
       "Flujo de caja con lo que viene: pagos y fiado por cobrar",
+      "Balance: cuánto vale tu negocio, retiros del dueño y préstamos",
       "Todo tu historial de reportes, sin límite de fechas",
       "Proveedores y pagos pendientes con recordatorio",
       "Merma y vencidos: cuánto pierdes y aviso antes de que venza",
@@ -110,7 +113,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // más de 50 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "balance", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Más de 50 trabajadores",

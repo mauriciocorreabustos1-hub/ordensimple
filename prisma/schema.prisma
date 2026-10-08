@@ -174,6 +174,9 @@ model Business {
   payables          Payable[]
   productBarcodes   ProductBarcode[]
   featureUsage      FeatureUsage[]
+  ownerWithdrawals  OwnerWithdrawal[]
+  loans             Loan[]
+  balanceSnapshots  BalanceSnapshot[]
 
   @@map("business")
 }
@@ -210,6 +213,11 @@ model BusinessSettings {
   /// Tasa del pago provisional mensual (PPM) que va en el mismo F29, sobre las ventas sin IVA. 0 = no mostrarlo.
   /// Pro Pyme General 0,125% (rebaja transitoria 2025-2027, Ley 21.755); Pro Pyme Transparente 0,2%.
   ppmRate           Float    @default(0.00125)
+  /// Lo que el dueño quiere sacar al mes como su sueldo (para avisar si se pasa). Null = sin meta.
+  ownerSalary       Int?
+  /// Plata en caja y banco que el dueño declaró, y cuándo: desde ahí el balance la sigue sola.
+  openingCash       Int?
+  openingCashAt     DateTime?
   /// Últimos avisos enviados por correo (para no repetirlos).
   lastWeeklySummaryAt   DateTime?
   lastNoSalesReminderAt DateTime?
@@ -709,4 +717,59 @@ model FeatureUsage {
   @@id([businessId, feature, day])
   @@index([feature, day])
   @@map("feature_usage")
+}
+
+/// Plata o productos que el dueño saca del negocio para él. No es un gasto: no baja la utilidad.
+model OwnerWithdrawal {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Monto en plata; si son productos, lo que costaron.
+  amount      Int
+  date        DateTime
+  /// De dónde salió la plata: CASH (caja) o BANK (banco). Los productos salen del stock.
+  source      String   @default("CASH")
+  /// MONEY (plata) o GOODS (productos).
+  kind        String   @default("MONEY")
+  productId   String?
+  quantity    Int?
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([businessId, date])
+  @@map("owner_withdrawal")
+}
+
+/// Préstamos y deudas del negocio (banco, tarjeta, familiares): lo que se debe hoy.
+model Loan {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lender      String
+  /// Lo que se debe hoy.
+  balance     Int
+  /// Cuota mensual (opcional) y día del mes en que se paga.
+  installment Int?
+  dueDay      Int?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@map("loan")
+}
+
+/// Foto del balance de cada mes (la última vez que se miró ese mes), para ver cómo cambia.
+model BalanceSnapshot {
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// "AAAA-MM"
+  month       String
+  assets      Int
+  liabilities Int
+  updatedAt   DateTime @updatedAt
+
+  @@id([businessId, month])
+  @@map("balance_snapshot")
 }

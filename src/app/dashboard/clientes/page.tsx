@@ -37,10 +37,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 80) : ""
   const segment = SEGMENTS.some((s) => s.value === params.segmento) ? (params.segmento as CustomerSegment) : "todos"
-  const [data, debts] = await Promise.all([
-    getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined }),
-    getDebtors(ctx.businessId),
-  ])
+  const [data, debts] = await Promise.all([getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined }), getDebtors(ctx.businessId)])
   const owes = (id: string) => Math.max(0, debts.balances.get(id)?.balance ?? 0)
   const debtors = data.rows.filter((r) => owes(r.id) > 0).sort((a, b) => owes(b.id) - owes(a.id))
   const money = (n: number) => formatMoney(n, ctx.currency)
@@ -75,15 +72,41 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard compactOnMobile label="Clientes" value={formatNumber(data.rows.length)} icon={Users}
-          hint={`${data.newOnes.length} nuevos en los últimos 30 días.`} />
-        <StatCard compactOnMobile label="Te deben (fiado)" value={money(debts.total)} icon={NotebookPen}
+        <StatCard
+          compactOnMobile
+          label="Clientes"
+          value={formatNumber(data.rows.length)}
+          icon={Users}
+          hint={`${data.newOnes.length} nuevos en los últimos 30 días.`}
+        />
+        <StatCard
+          compactOnMobile
+          label="Te deben (fiado)"
+          value={money(debts.total)}
+          icon={NotebookPen}
           tone={debts.total > 0 ? "expenses" : "default"}
-          hint={debts.count ? `${debts.count} ${debts.count === 1 ? "cliente tiene" : "clientes tienen"} deuda pendiente.` : "Nadie te debe. ¡Bien!"} />
-        <StatCard compactOnMobile label="Frecuentes" value={formatNumber(data.frequent.length)} icon={Repeat} tone="sales"
-          hint="Te compraron 3 veces o más en los últimos 60 días." />
-        <StatCard compactOnMobile label="Mejor cliente" value={best ? best.name : "—"} icon={Crown} tone="profit"
-          hint={best ? `${money(best.total)} en ${best.purchases} compras.` : "Aún no hay ventas con cliente."} />
+          hint={
+            debts.count
+              ? `${debts.count} ${debts.count === 1 ? "cliente tiene" : "clientes tienen"} deuda pendiente.`
+              : "Nadie te debe. ¡Bien!"
+          }
+        />
+        <StatCard
+          compactOnMobile
+          label="Frecuentes"
+          value={formatNumber(data.frequent.length)}
+          icon={Repeat}
+          tone="sales"
+          hint="Te compraron 3 veces o más en los últimos 60 días."
+        />
+        <StatCard
+          compactOnMobile
+          label="Mejor cliente"
+          value={best ? best.name : "—"}
+          icon={Crown}
+          tone="profit"
+          hint={best ? `${money(best.total)} en ${best.purchases} compras.` : "Aún no hay ventas con cliente."}
+        />
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -122,9 +145,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
           action={canManage ? <CustomerDialog /> : null}
         />
       ) : list.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No hay clientes en esta vista.
-        </p>
+        <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">No hay clientes en esta vista.</p>
       ) : (
         <ul className="grid grid-cols-1 gap-2">
           {list.map((c) => (
@@ -140,9 +161,12 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                     .map((p) => p[0]?.toUpperCase())
                     .join("")}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-1.5 font-medium">
-                    <span className="min-w-0 truncate">{c.name}</span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="truncate font-medium" title={c.name}>
+                    {c.name}
+                  </p>
+                  {/* En el celular las etiquetas van en su propia línea, para que el nombre no quede aplastado. */}
+                  <p className="flex flex-wrap items-center gap-1 empty:hidden">
                     {c.recentPurchases >= 3 ? (
                       <Badge variant="secondary" className="gap-1">
                         <Repeat className="size-3" />
@@ -150,7 +174,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                       </Badge>
                     ) : null}
                     {owes(c.id) > 0 ? (
-                      <Badge className="gap-1 border-warning/40 bg-warning/15 text-foreground">
+                      <Badge className="h-auto max-w-full gap-1 border-warning/40 bg-warning/15 whitespace-normal text-foreground">
                         <NotebookPen className="size-3 text-warning" />
                         Debe {money(owes(c.id))}
                       </Badge>
@@ -163,17 +187,21 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                     ) : null}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
+                    <span className="tabular font-semibold text-foreground sm:hidden">{money(c.total)} · </span>
                     {c.purchases} {c.purchases === 1 ? "compra" : "compras"}
                     {c.lastPurchase ? ` · última ${formatDate(c.lastPurchase, ctx.timezone)}` : ""}
                     {c.phone ? ` · ${c.phone}` : ""}
                   </p>
                 </div>
-                <span className="tabular shrink-0 font-semibold">{money(c.total)}</span>
+                <span className="tabular hidden shrink-0 font-semibold sm:inline">{money(c.total)}</span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
               </Link>
               {owes(c.id) > 0 ? (
                 <a
-                  href={whatsappLink(c.phone, fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(owes(c.id)) }))}
+                  href={whatsappLink(
+                    c.phone,
+                    fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(owes(c.id)) }),
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-card text-[11px] font-medium text-success transition-colors hover:border-success/40 hover:bg-success/10"

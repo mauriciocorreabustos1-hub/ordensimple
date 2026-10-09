@@ -133,11 +133,37 @@
   body {
     @apply bg-background text-foreground;
   }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
   html {
     @apply font-sans;
+    /* En el celular: sin el destello gris al tocar y sin que el texto se agrande solo al girar la pantalla. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  /* Toques sin la espera de "doble toque para zoom", y sin seleccionar el texto de los botones al mantener presionado. */
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  label {
+    touch-action: manipulation;
+  }
+  button,
+  [role="button"],
+  [role="tab"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* Las ventanas y menús que se desplazan por dentro no arrastran la página de atrás. */
+  [role="dialog"],
+  [role="listbox"],
+  [role="menu"] {
+    overscroll-behavior: contain;
   }
   /* Campos de fecha: Safari en iPhone centra el texto y les da un ancho mínimo propio
      que los saca de su columna. Los dejamos alineados como el resto de los campos. */

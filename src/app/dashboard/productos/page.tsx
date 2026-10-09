@@ -95,12 +95,29 @@ export default async function ProductsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard compactOnMobile label="Productos" value={formatNumber(products.length)} icon={Package}
-          hint={limit !== null ? `Tu plan permite hasta ${limit}.` : "Sin límite en tu plan."} />
-        <StatCard compactOnMobile label="Valor del inventario" value={money(inventoryCost)} icon={Boxes} tone="sales"
-          hint={`Lo que pagaste por el stock actual. Si lo vendes todo, entrarían ${money(inventoryPrice)}.`} />
-        <StatCard compactOnMobile label="Por reponer" value={formatNumber(lowCount + outCount)} icon={AlertTriangle} tone={lowCount + outCount ? "expenses" : "default"}
-          hint={`${outCount} ${outCount === 1 ? "agotado" : "agotados"} · ${lowCount} con stock bajo`} />
+        <StatCard
+          compactOnMobile
+          label="Productos"
+          value={formatNumber(products.length)}
+          icon={Package}
+          hint={limit !== null ? `Tu plan permite hasta ${limit}.` : "Sin límite en tu plan."}
+        />
+        <StatCard
+          compactOnMobile
+          label="Valor del inventario"
+          value={money(inventoryCost)}
+          icon={Boxes}
+          tone="sales"
+          hint={`Lo que pagaste por el stock actual. Si lo vendes todo, entrarían ${money(inventoryPrice)}.`}
+        />
+        <StatCard
+          compactOnMobile
+          label="Por reponer"
+          value={formatNumber(lowCount + outCount)}
+          icon={AlertTriangle}
+          tone={lowCount + outCount ? "expenses" : "default"}
+          hint={`${outCount} ${outCount === 1 ? "agotado" : "agotados"} · ${lowCount} con stock bajo`}
+        />
       </div>
 
       {products.length === 0 ? (
@@ -136,7 +153,7 @@ export default async function ProductsPage() {
                       </div>
                     ) : null}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="flex flex-wrap gap-x-3 gap-y-2 text-sm *:min-w-fit *:flex-1">
                     <div>
                       <p className="text-xs text-muted-foreground">Precio</p>
                       <p className="tabular font-medium">{money(p.price)}</p>
@@ -183,7 +200,9 @@ export default async function ProductsPage() {
                       </TableCell>
                       <TableCell className="tabular text-right text-muted-foreground">{money(p.cost)}</TableCell>
                       <TableCell className="tabular text-right">{money(p.price)}</TableCell>
-                      <TableCell className={`tabular text-right font-medium ${profit <= 0 ? "text-danger" : ""}`}>{money(profit)}</TableCell>
+                      <TableCell className={`tabular text-right font-medium ${profit <= 0 ? "text-danger" : ""}`}>
+                        {money(profit)}
+                      </TableCell>
                       <TableCell className="tabular text-right">{formatPercent(marginRatio(p.price, p.cost), 0)}</TableCell>
                       <TableCell>
                         <StockBadge state={stockState(p)} stock={p.stock} />
@@ -211,9 +230,8 @@ export default async function ProductsPage() {
           </div>
 
           <Explainer title="¿Qué es el margen?">
-            Es la parte del precio que te queda después de pagar el producto. Un margen de 40% significa que por cada{" "}
-            {money(ref)} que vendes, unos {money(Math.round(ref * 0.4))} son ganancia antes de pagar arriendo, sueldos y
-            otros gastos.
+            Es la parte del precio que te queda después de pagar el producto. Un margen de 40% significa que por cada {money(ref)} que
+            vendes, unos {money(Math.round(ref * 0.4))} son ganancia antes de pagar arriendo, sueldos y otros gastos.
           </Explainer>
         </>
       )}

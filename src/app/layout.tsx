@@ -61,6 +61,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // En Android, el teclado achica la pantalla (como en iPhone) y no tapa el botón de guardar.
+  interactiveWidget: "resizes-content",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

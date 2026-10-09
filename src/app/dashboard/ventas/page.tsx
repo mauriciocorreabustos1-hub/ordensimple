@@ -32,10 +32,7 @@ function describe(items: { description: string; quantity: number }[]) {
 export default async function SalesPage({ searchParams }: PageProps<"/dashboard/ventas">) {
   const ctx = await requireBusiness()
   const params = await searchParams
-  const range = parseRange(
-    { desde: params.desde as string, hasta: params.hasta as string, pagina: params.pagina as string },
-    ctx.timezone,
-  )
+  const range = parseRange({ desde: params.desde as string, hasta: params.hasta as string, pagina: params.pagina as string }, ctx.timezone)
   const canEdit = can(ctx.role, "sales:edit")
   const [[today, month], list, products, customers] = await Promise.all([
     periodTotals(ctx.businessId, ctx.timezone),
@@ -79,12 +76,29 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard compactOnMobile label="Ventas hoy" value={money(today.sales)} icon={ShoppingBag} tone="sales"
-          hint={`${today.salesCount} ${today.salesCount === 1 ? "venta" : "ventas"}`} />
-        <StatCard compactOnMobile label="Ventas del mes" value={money(month.sales)} icon={TrendingUp} tone="sales"
-          hint={`${month.salesCount} ${month.salesCount === 1 ? "venta" : "ventas"} este mes`} />
-        <StatCard compactOnMobile label="Venta promedio" value={money(avg)} icon={CalendarDays}
-          hint="En promedio, esto es lo que te compra cada cliente este mes." />
+        <StatCard
+          compactOnMobile
+          label="Ventas hoy"
+          value={money(today.sales)}
+          icon={ShoppingBag}
+          tone="sales"
+          hint={`${today.salesCount} ${today.salesCount === 1 ? "venta" : "ventas"}`}
+        />
+        <StatCard
+          compactOnMobile
+          label="Ventas del mes"
+          value={money(month.sales)}
+          icon={TrendingUp}
+          tone="sales"
+          hint={`${month.salesCount} ${month.salesCount === 1 ? "venta" : "ventas"} este mes`}
+        />
+        <StatCard
+          compactOnMobile
+          label="Venta promedio"
+          value={money(avg)}
+          icon={CalendarDays}
+          hint="En promedio, esto es lo que te compra cada cliente este mes."
+        />
       </div>
 
       <section className="space-y-4">
@@ -110,13 +124,17 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
               {list.rows.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="truncate text-sm font-medium">{describe(s.items)}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="flex items-baseline gap-2 text-sm">
+                      <span className="min-w-0 flex-1 truncate font-medium" title={describe(s.items)}>
+                        {describe(s.items)}
+                      </span>
+                      <span className="tabular shrink-0 font-semibold">{money(s.total)}</span>
+                    </p>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
                       {formatDateTime(s.date, ctx.timezone)} · {PAYMENT_LABEL[s.paymentMethod]}
                       {s.customer ? ` · ${s.customer.name}` : ""}
                     </p>
                   </div>
-                  <span className="tabular font-semibold">{money(s.total)}</span>
                   {editButton(s)}
                   {canDelete ? (
                     <ConfirmDelete

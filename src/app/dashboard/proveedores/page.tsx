@@ -43,7 +43,10 @@ export default async function SuppliersPage() {
         actions={canManage ? <SupplierDialog currency={ctx.currency} /> : null}
       />
 
-      <Card id="pagos" className={`scroll-mt-20 ${payables.pending.some((p) => daysUntil(p.dueDate, now, ctx.timezone) < 0) ? "border-danger/40" : ""}`}>
+      <Card
+        id="pagos"
+        className={`scroll-mt-20 ${payables.pending.some((p) => daysUntil(p.dueDate, now, ctx.timezone) < 0) ? "border-danger/40" : ""}`}
+      >
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2">
@@ -56,7 +59,14 @@ export default async function SuppliersPage() {
                 : "Anota las facturas que tienes que pagar y te avisamos antes de que venzan."}
             </CardDescription>
           </div>
-          {canManage ? <PayableDialog currency={ctx.currency} timezone={ctx.timezone} suppliers={suppliers.map((x) => x.name)} chargesVat={Boolean(vatInfo(ctx.business.country) && ctx.settings.chargesVat)} /> : null}
+          {canManage ? (
+            <PayableDialog
+              currency={ctx.currency}
+              timezone={ctx.timezone}
+              suppliers={suppliers.map((x) => x.name)}
+              chargesVat={Boolean(vatInfo(ctx.business.country) && ctx.settings.chargesVat)}
+            />
+          ) : null}
         </CardHeader>
         {payables.pending.length || payables.paid.length ? (
           <CardContent className="space-y-3">
@@ -69,15 +79,20 @@ export default async function SuppliersPage() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{p.description}</p>
                         <p className="text-xs text-muted-foreground">
-                          {p.supplier?.name ? `${p.supplier.name} · ` : ""}vence el {formatDate(p.dueDate, ctx.timezone, { day: "numeric", month: "long" })}
+                          {p.supplier?.name ? `${p.supplier.name} · ` : ""}vence el{" "}
+                          {formatDate(p.dueDate, ctx.timezone, { day: "numeric", month: "long" })}
                         </p>
                       </div>
                       {days < 0 ? (
-                        <Badge variant="destructive">Atrasado {-days} {days === -1 ? "día" : "días"}</Badge>
+                        <Badge variant="destructive">
+                          Atrasado {-days} {days === -1 ? "día" : "días"}
+                        </Badge>
                       ) : days === 0 ? (
                         <Badge variant="destructive">Vence hoy</Badge>
                       ) : days <= 3 ? (
-                        <Badge className="border-warning/40 bg-warning/15 text-foreground">{days === 1 ? "Mañana" : `En ${days} días`}</Badge>
+                        <Badge className="border-warning/40 bg-warning/15 text-foreground">
+                          {days === 1 ? "Mañana" : `En ${days} días`}
+                        </Badge>
                       ) : (
                         <Badge variant="secondary">En {days} días</Badge>
                       )}
@@ -90,8 +105,8 @@ export default async function SuppliersPage() {
             ) : null}
             {payables.paid.length ? (
               <p className="text-xs text-muted-foreground">
-                Últimos pagados:{" "}
-                {payables.paid.map((p) => `${p.description} (${money(p.amount)})`).join(" · ")}. Quedaron registrados en Gastos.
+                Últimos pagados: {payables.paid.map((p) => `${p.description} (${money(p.amount)})`).join(" · ")}. Quedaron registrados en
+                Gastos.
               </p>
             ) : null}
           </CardContent>
@@ -100,10 +115,21 @@ export default async function SuppliersPage() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard compactOnMobile label="Proveedores" value={formatNumber(suppliers.length)} icon={Truck} />
-        <StatCard compactOnMobile label="Total comprado" value={money(totalSpent)} icon={Wallet} tone="expenses"
-          hint="Suma de los gastos registrados con proveedor." />
-        <StatCard compactOnMobile label="Principal proveedor" value={top && top.spent > 0 ? top.name : "—"} icon={Receipt}
-          hint={top && top.spent > 0 ? `${money(top.spent)} en ${top.purchases} compras.` : "Aún no hay gastos con proveedor."} />
+        <StatCard
+          compactOnMobile
+          label="Total comprado"
+          value={money(totalSpent)}
+          icon={Wallet}
+          tone="expenses"
+          hint="Suma de los gastos registrados con proveedor."
+        />
+        <StatCard
+          compactOnMobile
+          label="Principal proveedor"
+          value={top && top.spent > 0 ? top.name : "—"}
+          icon={Receipt}
+          hint={top && top.spent > 0 ? `${money(top.spent)} en ${top.purchases} compras.` : "Aún no hay gastos con proveedor."}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
@@ -154,9 +180,13 @@ export default async function SuppliersPage() {
                       </a>
                     ) : null}
                     {s.email ? (
-                      <a href={`mailto:${s.email}`} className="inline-flex items-center gap-1 hover:text-primary">
-                        <Mail className="size-3.5" />
-                        {s.email}
+                      <a
+                        href={`mailto:${s.email}`}
+                        className="inline-flex max-w-full min-w-0 items-center gap-1 hover:text-primary"
+                        title={s.email}
+                      >
+                        <Mail className="size-3.5 shrink-0" />
+                        <span className="truncate">{s.email}</span>
                       </a>
                     ) : null}
                     <span>Despacho: {s.deliveryCost ? money(s.deliveryCost) : "gratis o sin definir"}</span>
@@ -175,10 +205,7 @@ export default async function SuppliersPage() {
           )}
         </section>
 
-        <SupplierComparator
-          currency={ctx.currency}
-          suppliers={suppliers.map((s) => ({ name: s.name, deliveryCost: s.deliveryCost }))}
-        />
+        <SupplierComparator currency={ctx.currency} suppliers={suppliers.map((s) => ({ name: s.name, deliveryCost: s.deliveryCost }))} />
       </div>
     </div>
   )

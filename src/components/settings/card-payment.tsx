@@ -26,6 +26,8 @@ declare global {
 }
 
 const ID = "mp-card-form"
+const IFRAME_STYLE = { fontSize: "16px" }
+
 const FIELD_LABEL: Record<string, string> = {
   cardNumber: "número de tarjeta",
   expirationDate: "vencimiento",
@@ -38,7 +40,9 @@ const FIELD_LABEL: Record<string, string> = {
 }
 // Los recuadros de número, vencimiento y código son iframes seguros de Mercado Pago: se les da el aspecto de un input.
 const BOX = "h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-const FIELD = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+// 16 px en el celular: con letra más chica, el iPhone hace zoom al escribir.
+const FIELD =
+  "h-10 w-full rounded-md border border-input bg-background px-3 text-base sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 /**
  * Pago con tarjeta dentro de OrdenSimple con CardForm de Mercado Pago (el formulario recomendado para suscripciones).
@@ -76,9 +80,9 @@ export function CardPayment({
         iframe: true,
         form: {
           id: ID,
-          cardNumber: { id: `${ID}-number`, placeholder: "1234 1234 1234 1234" },
-          expirationDate: { id: `${ID}-expiration`, placeholder: "MM/AA" },
-          securityCode: { id: `${ID}-cvv`, placeholder: "123" },
+          cardNumber: { id: `${ID}-number`, placeholder: "1234 1234 1234 1234", style: IFRAME_STYLE },
+          expirationDate: { id: `${ID}-expiration`, placeholder: "MM/AA", style: IFRAME_STYLE },
+          securityCode: { id: `${ID}-cvv`, placeholder: "123", style: IFRAME_STYLE },
           cardholderName: { id: `${ID}-name`, placeholder: "Como aparece en la tarjeta" },
           issuer: { id: `${ID}-issuer` },
           installments: { id: `${ID}-installments` },
@@ -139,7 +143,12 @@ export function CardPayment({
 
   return (
     <div className="space-y-2">
-      <Script src="https://sdk.mercadopago.com/js/v2" strategy="afterInteractive" onReady={() => setSdkReady(true)} onError={() => onUnavailable()} />
+      <Script
+        src="https://sdk.mercadopago.com/js/v2"
+        strategy="afterInteractive"
+        onReady={() => setSdkReady(true)}
+        onError={() => onUnavailable()}
+      />
       {!mounted ? (
         <p className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -175,7 +184,9 @@ export function CardPayment({
             <input id={`${ID}-doc-number`} className={FIELD} inputMode="text" />
           </label>
         </div>
-        <p className="-mt-1 text-xs text-muted-foreground">El RUT del titular de la tarjeta, sin puntos ni guion (ej. 123456789 o 12345678K).</p>
+        <p className="-mt-1 text-xs text-muted-foreground">
+          El RUT del titular de la tarjeta, sin puntos ni guion (ej. 123456789 o 12345678K).
+        </p>
         {/* Mercado Pago los necesita en el formulario; las suscripciones se cobran en 1 cuota. */}
         <select id={`${ID}-issuer`} className="hidden" />
         <select id={`${ID}-installments`} className="hidden" />
@@ -187,8 +198,8 @@ export function CardPayment({
       </form>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Lock className="size-3.5" />
-        Los datos de tu tarjeta los recibe Mercado Pago directamente. OrdenSimple no los ve ni los guarda. No necesitas
-        cuenta de Mercado Pago.
+        Los datos de tu tarjeta los recibe Mercado Pago directamente. OrdenSimple no los ve ni los guarda. No necesitas cuenta de Mercado
+        Pago.
       </p>
     </div>
   )

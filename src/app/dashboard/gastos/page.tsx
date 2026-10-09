@@ -24,10 +24,7 @@ export const metadata: Metadata = { title: "Gastos" }
 export default async function ExpensesPage({ searchParams }: PageProps<"/dashboard/gastos">) {
   const ctx = await requireBusiness()
   const params = await searchParams
-  const range = parseRange(
-    { desde: params.desde as string, hasta: params.hasta as string, pagina: params.pagina as string },
-    ctx.timezone,
-  )
+  const range = parseRange({ desde: params.desde as string, hasta: params.hasta as string, pagina: params.pagina as string }, ctx.timezone)
   const now = new Date()
   const canEdit = can(ctx.role, "expenses:edit")
   const [[today, month], list, byCategory, categories] = await Promise.all([
@@ -75,10 +72,21 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard compactOnMobile label="Gastos hoy" value={money(today.expenses)} icon={Receipt} tone="expenses" />
-        <StatCard compactOnMobile label="Gastos del mes" value={money(month.expenses)} icon={Wallet} tone="expenses"
-          hint={month.sales > 0 ? `Equivale al ${formatPercent(month.expenses / month.sales, 0)} de lo que vendiste este mes.` : undefined} />
-        <StatCard compactOnMobile label="En lo que más gastas" value={top ? top.name : "—"} icon={PieChart}
-          hint={top ? `${money(top.total)} este mes` : "Aún no hay gastos este mes"} />
+        <StatCard
+          compactOnMobile
+          label="Gastos del mes"
+          value={money(month.expenses)}
+          icon={Wallet}
+          tone="expenses"
+          hint={month.sales > 0 ? `Equivale al ${formatPercent(month.expenses / month.sales, 0)} de lo que vendiste este mes.` : undefined}
+        />
+        <StatCard
+          compactOnMobile
+          label="En lo que más gastas"
+          value={top ? top.name : "—"}
+          icon={PieChart}
+          hint={top ? `${money(top.total)} este mes` : "Aún no hay gastos este mes"}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -104,13 +112,17 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                 {list.rows.map((e) => (
                   <li key={e.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className="truncate text-sm font-medium">{e.description}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="flex items-baseline gap-2 text-sm">
+                        <span className="min-w-0 flex-1 truncate font-medium" title={e.description}>
+                          {e.description}
+                        </span>
+                        <span className="tabular shrink-0 font-semibold">{money(e.amount)}</span>
+                      </p>
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
                         {formatDate(e.date, ctx.timezone)} · {e.category?.name ?? "Sin categoría"}
                         {e.supplier ? ` · ${e.supplier.name}` : ""}
                       </p>
                     </div>
-                    <span className="tabular font-semibold">{money(e.amount)}</span>
                     {editButton(e)}
                     {canDelete ? (
                       <ConfirmDelete
@@ -190,10 +202,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                       <span className="tabular shrink-0 font-medium">{money(c.total)}</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-chart-2"
-                        style={{ width: `${Math.max(3, (c.total / maxCat) * 100)}%` }}
-                      />
+                      <div className="h-full rounded-full bg-chart-2" style={{ width: `${Math.max(3, (c.total / maxCat) * 100)}%` }} />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {formatPercent(month.expenses ? c.total / month.expenses : 0, 0)} de tus gastos del mes

@@ -1,7 +1,19 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
-import { CalendarClock, ChevronRight, Crown, Landmark, NotebookPen, PiggyBank, Receipt, ShoppingBag, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
+import {
+  CalendarClock,
+  ChevronRight,
+  Crown,
+  Landmark,
+  NotebookPen,
+  PiggyBank,
+  Receipt,
+  ShoppingBag,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard, ChangeBadge, DiffBadge } from "@/components/app/stat-card"
 import { Explainer } from "@/components/app/explainer"
@@ -47,7 +59,9 @@ export default async function DashboardPage() {
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
     showFiado ? getDebtors(ctx.businessId) : Promise.resolve(null),
-    showResults ? getYearSummary(ctx.businessId, today.year, today.month, ctx.timezone, chargesVat ? vat!.rate : null) : Promise.resolve(null),
+    showResults
+      ? getYearSummary(ctx.businessId, today.year, today.month, ctx.timezone, chargesVat ? vat!.rate : null)
+      : Promise.resolve(null),
     showPayables ? payablesDueBefore(ctx.businessId, addDays(startOfDay(now, ctx.timezone), 8, ctx.timezone)) : Promise.resolve([]),
   ])
   const payablesTotal = payables.reduce((sum, p) => sum + p.amount, 0)
@@ -69,11 +83,35 @@ export default async function DashboardPage() {
     : null
   const firstSteps: FirstStep[] | null = counts
     ? [
-        { key: "producto", label: "Crea tu primer producto", hint: "Con su precio y cuánto te cuesta.", done: counts._count.products > 0, href: "/dashboard/productos" },
-        { key: "venta", label: "Registra tu primera venta", hint: "Con el botón verde, o escaneando.", done: counts._count.sales > 0, action: "sale" },
+        {
+          key: "producto",
+          label: "Crea tu primer producto",
+          hint: "Con su precio y cuánto te cuesta.",
+          done: counts._count.products > 0,
+          href: "/dashboard/productos",
+        },
+        {
+          key: "venta",
+          label: "Registra tu primera venta",
+          hint: "Con el botón verde, o escaneando.",
+          done: counts._count.sales > 0,
+          action: "sale",
+        },
         { key: "gasto", label: "Anota un gasto", hint: "Arriendo, luz, mercadería…", done: counts._count.expenses > 0, action: "expense" },
-        { key: "caja", label: "Cierra la caja al final del día", hint: "Cuenta el efectivo y mira si cuadra.", done: counts._count.cashClosings > 0, href: "/dashboard/caja" },
-        { key: "equipo", label: "Invita a tu equipo", hint: "Si alguien más vende contigo.", done: counts._count.members > 1, href: "/dashboard/configuracion#equipo" },
+        {
+          key: "caja",
+          label: "Cierra la caja al final del día",
+          hint: "Cuenta el efectivo y mira si cuadra.",
+          done: counts._count.cashClosings > 0,
+          href: "/dashboard/caja",
+        },
+        {
+          key: "equipo",
+          label: "Invita a tu equipo",
+          hint: "Si alguien más vende contigo.",
+          done: counts._count.members > 1,
+          href: "/dashboard/configuracion#equipo",
+        },
       ]
     : null
 
@@ -83,9 +121,7 @@ export default async function DashboardPage() {
     prevSales: data.prev30.sales,
   })
 
-  const daysWithoutSales = data.lastSaleAt
-    ? Math.floor((now.getTime() - data.lastSaleAt.getTime()) / 86_400_000)
-    : null
+  const daysWithoutSales = data.lastSaleAt ? Math.floor((now.getTime() - data.lastSaleAt.getTime()) / 86_400_000) : null
 
   const ref = referenceAmount(ctx.currency)
   const monthMargin = data.month.sales > 0 ? data.month.profit / data.month.sales : null
@@ -99,11 +135,16 @@ export default async function DashboardPage() {
             {greeting(now, ctx.timezone)}, {ctx.user.name.split(" ")[0]}
           </p>
           <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl">
-          {ctx.business.logoUpdatedAt ? (
-            <BusinessLogo businessId={ctx.businessId} name={ctx.business.name} logoUpdatedAt={ctx.business.logoUpdatedAt} className="size-11 rounded-xl border" />
-          ) : null}
-          <span className="min-w-0">{ctx.business.name}</span>
-        </h1>
+            {ctx.business.logoUpdatedAt ? (
+              <BusinessLogo
+                businessId={ctx.businessId}
+                name={ctx.business.name}
+                logoUpdatedAt={ctx.business.logoUpdatedAt}
+                className="size-11 rounded-xl border"
+              />
+            ) : null}
+            <span className="min-w-0">{ctx.business.name}</span>
+          </h1>
         </div>
         <QuickButtons />
         <section aria-labelledby="hoy" className="space-y-3">
@@ -111,8 +152,14 @@ export default async function DashboardPage() {
             Hoy en el negocio
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <StatCard label="Ventas hoy" value={money(data.today.sales)} icon={ShoppingBag} tone="sales" size="lg"
-              hint={data.today.salesCount === 1 ? "1 venta registrada" : `${data.today.salesCount} ventas registradas`} />
+            <StatCard
+              label="Ventas hoy"
+              value={money(data.today.sales)}
+              icon={ShoppingBag}
+              tone="sales"
+              size="lg"
+              hint={data.today.salesCount === 1 ? "1 venta registrada" : `${data.today.salesCount} ventas registradas`}
+            />
             <StatCard label="Gastos hoy" value={money(data.today.expenses)} icon={Receipt} tone="expenses" size="lg" />
           </div>
         </section>
@@ -139,7 +186,12 @@ export default async function DashboardPage() {
         </p>
         <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl">
           {ctx.business.logoUpdatedAt ? (
-            <BusinessLogo businessId={ctx.businessId} name={ctx.business.name} logoUpdatedAt={ctx.business.logoUpdatedAt} className="size-11 rounded-xl border" />
+            <BusinessLogo
+              businessId={ctx.businessId}
+              name={ctx.business.name}
+              logoUpdatedAt={ctx.business.logoUpdatedAt}
+              className="size-11 rounded-xl border"
+            />
           ) : null}
           <span className="min-w-0">{ctx.business.name}</span>
         </h1>
@@ -153,8 +205,8 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <span className="flex items-center gap-2">
             <Crown className="size-4 shrink-0 text-warning" />
-            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) ves tu utilidad real y tu F29, el
-            flujo de caja con lo que viene, todo tu historial, merma y vencidos, y vendes escaneando sin parar.
+            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) ves tu utilidad real y tu F29, el flujo
+            de caja con lo que viene, todo tu historial, merma y vencidos, y vendes escaneando sin parar.
           </span>
           <Link href="/dashboard/plan" className="font-medium text-primary hover:underline">
             Ver planes
@@ -192,15 +244,30 @@ export default async function DashboardPage() {
           Hoy
         </h2>
         <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard label="Ventas hoy" value={money(data.today.sales)} icon={ShoppingBag} tone="sales" size={easy ? "lg" : "default"} compactOnMobile={!easy}
-            hint={data.today.salesCount === 1 ? "1 venta registrada" : `${data.today.salesCount} ventas registradas`} />
-          <StatCard label="Gastos hoy" value={money(data.today.expenses)} icon={Receipt} tone="expenses" size={easy ? "lg" : "default"} compactOnMobile={!easy} />
+          <StatCard
+            label="Ventas hoy"
+            value={money(data.today.sales)}
+            icon={ShoppingBag}
+            tone="sales"
+            size={easy ? "lg" : "default"}
+            compactOnMobile={!easy}
+            hint={data.today.salesCount === 1 ? "1 venta registrada" : `${data.today.salesCount} ventas registradas`}
+          />
+          <StatCard
+            label="Gastos hoy"
+            value={money(data.today.expenses)}
+            icon={Receipt}
+            tone="expenses"
+            size={easy ? "lg" : "default"}
+            compactOnMobile={!easy}
+          />
           <StatCard
             label={data.today.profit >= 0 ? "Ganancia aproximada" : "Pérdida aproximada"}
             value={money(Math.abs(data.today.profit))}
             icon={data.today.profit >= 0 ? PiggyBank : TrendingDown}
             tone={data.today.profit >= 0 ? "profit" : "loss"}
-            size={easy ? "lg" : "default"} compactOnMobile={!easy}
+            size={easy ? "lg" : "default"}
+            compactOnMobile={!easy}
             hint="Ventas de hoy menos gastos de hoy."
           />
         </div>
@@ -211,7 +278,9 @@ export default async function DashboardPage() {
           <h2 id="cuentas" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
             Tus cuentas de {currentMonth}
           </h2>
-          <div className={`grid gap-3 ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          <div
+            className={`grid gap-3 ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+          >
             {debts ? (
               <LinkCard
                 href="/dashboard/clientes?segmento=deben"
@@ -219,7 +288,13 @@ export default async function DashboardPage() {
                 label="Te deben (fiado)"
                 value={money(debts.total)}
                 tone="text-warning"
-                hint={debts.count === 0 ? "Nadie te debe" : debts.count === 1 ? "1 cliente con deuda · ver quién" : `${debts.count} clientes con deuda · ver quiénes`}
+                hint={
+                  debts.count === 0
+                    ? "Nadie te debe"
+                    : debts.count === 1
+                      ? "1 cliente con deuda · ver quién"
+                      : `${debts.count} clientes con deuda · ver quiénes`
+                }
               />
             ) : null}
             {thisMonth ? (
@@ -288,13 +363,20 @@ export default async function DashboardPage() {
                 value={money(Math.abs(data.month.profit))}
                 icon={data.month.profit >= 0 ? PiggyBank : TrendingDown}
                 tone={data.month.profit >= 0 ? "profit" : "loss"}
-                hint={<DiffBadge current={data.month.profit} previous={data.prevMonth.profit} money={money} label="vs. mismas fechas del mes pasado" />}
+                hint={
+                  <DiffBadge
+                    current={data.month.profit}
+                    previous={data.prevMonth.profit}
+                    money={money}
+                    label="vs. mismas fechas del mes pasado"
+                  />
+                }
               />
             </div>
             {monthMargin !== null && monthMargin > 0 ? (
               <Explainer title="En palabras simples">
-                Este mes, por cada {money(ref)} que vendes, aproximadamente {money(Math.round(ref * monthMargin))} te
-                quedan como ganancia después de tus gastos registrados.
+                Este mes, por cada {money(ref)} que vendes, aproximadamente {money(Math.round(ref * monthMargin))} te quedan como ganancia
+                después de tus gastos registrados.
               </Explainer>
             ) : null}
           </section>
@@ -308,11 +390,7 @@ export default async function DashboardPage() {
                 <CardDescription>Lo que vendiste y gastaste cada día.</CardDescription>
               </CardHeader>
               <CardContent>
-                <SalesExpensesChart
-                  data={data.last7}
-                  currency={ctx.currency}
-                  caption="Ventas y gastos de cada uno de los últimos 7 días"
-                />
+                <SalesExpensesChart data={data.last7} currency={ctx.currency} caption="Ventas y gastos de cada uno de los últimos 7 días" />
               </CardContent>
             </Card>
             <Card>
@@ -414,7 +492,7 @@ function ComparisonCard({
   return (
     <div className="space-y-3 rounded-2xl border bg-card p-4 md:p-5">
       <p className="font-medium">{title}</p>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex flex-wrap gap-x-4 gap-y-3 *:min-w-fit *:flex-1">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Ventas</p>
           <p className="tabular text-lg font-semibold">{money(current)}</p>

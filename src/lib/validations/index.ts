@@ -114,6 +114,9 @@ export const saleSchema = z
     paymentMethod,
     customerName: optionalText(80),
     note: optionalText(200),
+    /** Para ventas guardadas sin internet: evita duplicarlas al reintentar y conserva la hora real. */
+    clientId: z.string().regex(/^[\w-]{8,64}$/).optional(),
+    soldAt: z.iso.datetime().optional(),
   })
   .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
 export type SaleInput = z.input<typeof saleSchema>
@@ -125,6 +128,9 @@ export const quickSaleSchema = z
     paymentMethod,
     customerName: optionalText(80),
     note: optionalText(200),
+    /** Para ventas guardadas sin internet: evita duplicarlas al reintentar y conserva la hora real. */
+    clientId: z.string().regex(/^[\w-]{8,64}$/).optional(),
+    soldAt: z.iso.datetime().optional(),
   })
   .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
 export type QuickSaleInput = z.input<typeof quickSaleSchema>

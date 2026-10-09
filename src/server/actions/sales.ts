@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import type { Prisma } from "@/generated/prisma/client"
+import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { dateKeyToInstant, toDateKey } from "@/lib/dates"
 import {
@@ -30,6 +30,24 @@ async function resolveCustomer(tx: Tx, businessId: string, name: string | undefi
   })
   return existing ? existing.id : (await tx.customer.create({ data: { businessId, name } })).id
 }
+
+/**
+ * Venta que se guardó sin internet: si ya se subió en un intento anterior, no se vuelve a crear.
+ * La hora real (soldAt) se usa solo si es del mismo día elegido y no está en el futuro.
+ */
+async function alreadySynced(ctx: BusinessContext, clientId: string | undefined) {
+  if (!clientId) return false
+  return Boolean(await db.sale.findUnique({ where: { businessId_clientId: { businessId: ctx.businessId, clientId } }, select: { id: true } }))
+}
+
+function saleDate(key: string, ctx: BusinessContext, soldAt: string | undefined) {
+  const at = soldAt ? new Date(soldAt) : null
+  if (at && at.getTime() <= Date.now() + 60_000 && toDateKey(at, ctx.timezone) === key) return at
+  return resolveDate(key, ctx)
+}
+
+const isDuplicate = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002" && String(error.meta?.target ?? "").includes("clientId")
 
 /** Si la fecha no cambió al editar, se conserva la hora original de la venta. */
 function resolveDate(key: string, ctx: BusinessContext, previous?: Date) {
@@ -112,16 +130,18 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
   const ctx = await requireBusiness()
   const parsed = quickSaleSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { amount, date, paymentMethod, customerName, note } = parsed.data
+  const { amount, date, paymentMethod, customerName, note, clientId, soldAt } = parsed.data
 
   try {
     assertCan(ctx, "sales:create")
+    if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       await tx.sale.create({
         data: {
           businessId: ctx.businessId,
-          date: resolveDate(date, ctx),
+          clientId,
+          date: saleDate(date, ctx, soldAt),
           total: amount,
           paymentMethod,
           isQuick: true,
@@ -133,6 +153,7 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
       })
     })
   } catch (error) {
+    if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
     return toActionError(error)
   }
   revalidate()
@@ -181,10 +202,11 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
   const ctx = await requireBusiness()
   const parsed = saleSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { items, date, paymentMethod, customerName, note } = parsed.data
+  const { items, date, paymentMethod, customerName, note, clientId, soldAt } = parsed.data
 
   try {
     assertCan(ctx, "sales:create")
+    if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     const total = lines.reduce((sum, l) => sum + l.subtotal, 0)
@@ -195,7 +217,8 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
       const sale = await tx.sale.create({
         data: {
           businessId: ctx.businessId,
-          date: resolveDate(date, ctx),
+          clientId,
+          date: saleDate(date, ctx, soldAt),
           total,
           paymentMethod,
           note,
@@ -207,6 +230,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
       await applyStock(tx, ctx, sale.id, lines, "Venta")
     })
   } catch (error) {
+    if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
     return toActionError(error)
   }
   revalidate()

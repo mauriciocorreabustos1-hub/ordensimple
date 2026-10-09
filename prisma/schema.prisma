@@ -302,11 +302,14 @@ model Sale {
   createdBy     User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  /// Id que pone el teléfono: si la venta se guardó sin internet y se reintenta, no se duplica.
+  clientId      String?
 
   items     SaleItem[]
   movements InventoryMovement[]
 
   @@index([businessId, date])
+  @@unique([businessId, clientId])
   @@map("sale")
 }
 

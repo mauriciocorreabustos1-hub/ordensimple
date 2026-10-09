@@ -16,6 +16,7 @@ import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createSale, updateSale } from "@/server/actions/sales"
+import { useOfflineSales } from "@/components/app/offline-sales"
 
 export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[] }
 
@@ -80,6 +81,7 @@ export function SaleForm({
   const fiado = paymentMethod === "FIADO"
   const [error, setError] = React.useState<string | null>(null)
   const [pending, startTransition] = React.useTransition()
+  const offline = useOfflineSales()
   const byId = React.useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
   const total = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
@@ -140,12 +142,20 @@ export function SaleForm({
         customerName,
         note: editing?.note,
       }
-      const result = editing ? await updateSale(editing.id, input) : await createSale(input)
+      const result = editing
+        ? await updateSale(editing.id, input)
+        : offline
+          ? await offline.save({ kind: "detail", input, total })
+          : await createSale(input)
       if (!result.ok) {
         toast.error(result.message)
         return
       }
-      toast.success(editing ? "Venta actualizada" : `Venta de ${formatMoney(total, currency)} guardada`)
+      if ("offline" in result && result.offline) {
+        toast.success(`Sin internet: la venta de ${formatMoney(total, currency)} quedó guardada en este equipo y se subirá sola.`)
+      } else {
+        toast.success(editing ? "Venta actualizada" : `Venta de ${formatMoney(total, currency)} guardada`)
+      }
       if (!editing) {
         setLines([newLine()])
         setCustomerName("")
@@ -159,7 +169,11 @@ export function SaleForm({
       <div className="grid gap-3">
         {products.length ? (
           <div className="flex *:h-11 *:w-full *:text-base">
-            <ScanButton continuous={continuousScan} label={continuousScan ? "Escanear productos" : "Escanear producto"} onResult={addScanned} />
+            <ScanButton
+              continuous={continuousScan}
+              label={continuousScan ? "Escanear productos" : "Escanear producto"}
+              onResult={addScanned}
+            />
           </div>
         ) : null}
         {lines.map((line, index) => {
@@ -241,9 +255,7 @@ export function SaleForm({
                 />
               </div>
               {lowStock ? (
-                <p className="text-xs text-warning">
-                  Solo te quedan {product.stock} unidades registradas de este producto.
-                </p>
+                <p className="text-xs text-warning">Solo te quedan {product.stock} unidades registradas de este producto.</p>
               ) : product?.trackStock && !editing ? (
                 <p className="text-xs text-muted-foreground">
                   En stock: {product.stock} · después de esta venta quedan {product.stock - line.quantity}

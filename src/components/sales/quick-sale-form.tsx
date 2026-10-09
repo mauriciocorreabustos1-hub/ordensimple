@@ -12,6 +12,7 @@ import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createQuickSale, updateQuickSale } from "@/server/actions/sales"
+import { useOfflineSales } from "@/components/app/offline-sales"
 
 export type QuickSaleEdit = {
   id: string
@@ -45,6 +46,7 @@ export function QuickSaleForm({
   const [note, setNote] = React.useState(editing?.note ?? "")
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
+  const offline = useOfflineSales()
   const fiado = paymentMethod === "FIADO"
 
   function submit(e: React.FormEvent) {
@@ -56,17 +58,23 @@ export function QuickSaleForm({
     if (Object.keys(errs).length) return
     startTransition(async () => {
       const input = { amount, paymentMethod, date, customerName, note }
-      const result = editing ? await updateQuickSale(editing.id, input) : await createQuickSale(input)
+      const result = editing
+        ? await updateQuickSale(editing.id, input)
+        : offline
+          ? await offline.save({ kind: "quick", input, total: amount })
+          : await createQuickSale(input)
       if (!result.ok) {
         toast.error(result.message)
         return
       }
       toast.success(
-        editing
-          ? "Venta actualizada"
-          : fiado
-            ? `Fiado de ${formatMoney(amount, currency)} anotado a ${customerName}`
-            : `Venta de ${formatMoney(amount, currency)} guardada`,
+        "offline" in result && result.offline
+          ? `Sin internet: la venta de ${formatMoney(amount, currency)} quedó guardada en este equipo y se subirá sola.`
+          : editing
+            ? "Venta actualizada"
+            : fiado
+              ? `Fiado de ${formatMoney(amount, currency)} anotado a ${customerName}`
+              : `Venta de ${formatMoney(amount, currency)} guardada`,
       )
       if (!editing) {
         setAmount(0)

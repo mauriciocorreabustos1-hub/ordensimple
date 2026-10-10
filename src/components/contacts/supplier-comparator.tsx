@@ -11,13 +11,16 @@ import { Explainer } from "@/components/app/explainer"
 import { formatMoney, formatNumber } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 
-type Option = { key: number; name: string; price: number; delivery: number }
+/** Costo extra de un proveedor: una vez por pedido (embalaje, flete) o por cada unidad (comisión, envase). */
+type Extra = { key: number; name: string; amount: number; perUnit: boolean }
+type Option = { key: number; name: string; price: number; delivery: number; extras: Extra[] }
+const EXTRA_SUGGESTIONS = ["Embalaje", "Flete", "Seguro", "Comisión por transferencia", "Envase", "Impuesto"]
 
 const MAX = 6
 const LETTERS = "ABCDEF"
 let optionKey = 0
 
-/** Compara proveedores (2 a 6) según cuántas unidades compras: precio × cantidad + despacho. */
+/** Compara proveedores (2 a 6) según cuántas unidades compras: precio × cantidad + despacho + otros costos. */
 export function SupplierComparator({
   currency,
   suppliers,
@@ -33,6 +36,7 @@ export function SupplierComparator({
       name: suppliers[i]?.name ?? `Proveedor ${LETTERS[i]}`,
       price: 0,
       delivery: suppliers[i]?.deliveryCost ?? 0,
+      extras: [],
     })),
   )
 
@@ -48,13 +52,19 @@ export function SupplierComparator({
           name: next?.name ?? `Proveedor ${LETTERS[os.length] ?? os.length + 1}`,
           price: 0,
           delivery: next?.deliveryCost ?? 0,
+          extras: [],
         },
       ]
     })
   }
 
   const q = Number(qty) || 0
-  const total = (o: Option) => o.price * q + o.delivery
+  const setExtras = (key: number, fn: (xs: Extra[]) => Extra[]) =>
+    setOptions((os) => os.map((o) => (o.key === key ? { ...o, extras: fn(o.extras) } : o)))
+  // Lo que cuesta cada unidad (precio + extras por unidad) y lo que se paga una vez por pedido (despacho + extras por pedido).
+  const unitCost = (o: Option) => o.price + o.extras.reduce((t, x) => t + (x.perUnit ? x.amount : 0), 0)
+  const fixedCost = (o: Option) => o.delivery + o.extras.reduce((t, x) => t + (x.perUnit ? 0 : x.amount), 0)
+  const total = (o: Option) => unitCost(o) * q + fixedCost(o)
   const filled = options.filter((o) => o.price > 0)
   const ready = filled.length >= 2 && q > 0
   const ranked = [...filled].sort((x, y) => total(x) - total(y))
@@ -64,10 +74,10 @@ export function SupplierComparator({
   const winner = tie ? null : best
 
   // Si el más barato por unidad no es el que conviene ahora, desde cuántas unidades pasa a convenir.
-  const cheapestUnit = filled.length ? filled.reduce((m, o) => (o.price < m.price ? o : m)) : null
+  const cheapestUnit = filled.length ? filled.reduce((m, o) => (unitCost(o) < unitCost(m) ? o : m)) : null
   let breakEven: number | null = null
-  if (winner && cheapestUnit && cheapestUnit !== winner && cheapestUnit.price < winner.price) {
-    const x = (cheapestUnit.delivery - winner.delivery) / (winner.price - cheapestUnit.price)
+  if (winner && cheapestUnit && cheapestUnit !== winner && unitCost(cheapestUnit) < unitCost(winner)) {
+    const x = (fixedCost(cheapestUnit) - fixedCost(winner)) / (unitCost(winner) - unitCost(cheapestUnit))
     if (x > 0 && Number.isFinite(x)) breakEven = Math.ceil(x + 1e-9)
   }
 
@@ -75,12 +85,17 @@ export function SupplierComparator({
     <Card>
       <CardHeader>
         <CardTitle>¿Qué proveedor me conviene?</CardTitle>
-        <CardDescription>Compara precio y despacho según cuántas unidades vas a comprar.</CardDescription>
+        <CardDescription>Compara precio, despacho y otros costos según cuántas unidades vas a comprar.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <datalist id="comparator-suppliers">
           {suppliers.map((s) => (
             <option key={s.name} value={s.name} />
+          ))}
+        </datalist>
+        <datalist id="comparator-extras">
+          {EXTRA_SUGGESTIONS.map((n) => (
+            <option key={n} value={n} />
           ))}
         </datalist>
         <Field label="¿Cuántas unidades vas a comprar?" htmlFor="cmp-qty">
@@ -140,6 +155,72 @@ export function SupplierComparator({
                     aria-label={`Despacho ${label}`}
                   />
                 </Field>
+                {o.extras.map((x, j) => (
+                  <div key={x.key} className="space-y-1.5 rounded-lg bg-muted/40 p-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={x.name}
+                        onChange={(e) => setExtras(o.key, (xs) => xs.map((y) => (y.key === x.key ? { ...y, name: e.target.value } : y)))}
+                        list="comparator-extras"
+                        placeholder="¿Qué costo? (ej. embalaje)"
+                        aria-label={`Nombre del costo ${j + 1}, ${label}`}
+                        className="h-9 min-w-0 bg-background text-sm [&::-webkit-calendar-picker-indicator]:hidden"
+                      />
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        className="shrink-0 text-muted-foreground"
+                        onClick={() => setExtras(o.key, (xs) => xs.filter((y) => y.key !== x.key))}
+                        aria-label={`Quitar costo ${x.name || j + 1}, ${label}`}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                    <MoneyInput
+                      value={x.amount}
+                      onValueChange={(amount) => setExtras(o.key, (xs) => xs.map((y) => (y.key === x.key ? { ...y, amount } : y)))}
+                      currency={currency}
+                      aria-label={`Monto del costo ${j + 1}, ${label}`}
+                    />
+                    <div
+                      className="grid grid-cols-2 gap-1 rounded-md bg-background p-0.5 text-xs"
+                      role="radiogroup"
+                      aria-label="¿Cómo se cobra?"
+                    >
+                      {[
+                        { perUnit: false, text: "Una vez" },
+                        { perUnit: true, text: "Por unidad" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.text}
+                          type="button"
+                          role="radio"
+                          aria-checked={x.perUnit === opt.perUnit}
+                          onClick={() => setExtras(o.key, (xs) => xs.map((y) => (y.key === x.key ? { ...y, perUnit: opt.perUnit } : y)))}
+                          className={cn(
+                            "rounded px-2 py-1 font-medium transition-colors",
+                            x.perUnit === opt.perUnit ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          {opt.text}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {o.extras.length < 5 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-full justify-start px-2 text-primary"
+                    onClick={() => setExtras(o.key, (xs) => [...xs, { key: ++optionKey, name: "", amount: 0, perUnit: false }])}
+                  >
+                    <Plus />
+                    Agregar otro costo
+                  </Button>
+                ) : null}
                 <div className="space-y-0.5 border-t pt-3">
                   <div className="flex items-baseline justify-between">
                     <span className="text-sm text-muted-foreground">Total</span>
@@ -147,7 +228,8 @@ export function SupplierComparator({
                   </div>
                   {o.price > 0 && q > 0 ? (
                     <p className="tabular text-right text-xs text-muted-foreground">
-                      {money(Math.round(total(o) / q))} por unidad con despacho
+                      {money(Math.round(total(o) / q))} por unidad con{" "}
+                      {o.extras.some((x) => x.amount > 0) ? "despacho y extras" : "despacho"}
                     </p>
                   ) : null}
                 </div>
@@ -175,7 +257,7 @@ export function SupplierComparator({
                 }.`
               : `Con ${formatNumber(q)} unidades pagas ${money(total(best))} con cualquiera de los dos.`}
             {breakEven !== null && cheapestUnit
-              ? ` Ojo: si compras ${formatNumber(breakEven)} unidades o más, conviene ${cheapestUnit.name} (más barato por unidad).`
+              ? ` Ojo: si compras ${formatNumber(breakEven)} unidades o más, conviene ${cheapestUnit.name} (más barato por unidad, contando sus costos extra).`
               : ""}
           </Explainer>
         ) : (

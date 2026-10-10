@@ -485,3 +485,31 @@ export async function sendVerifyLinks(): Promise<ActionResult> {
     return toActionError(error)
   }
 }
+
+// ─── Invita a un amigo ──────────────────────────────────────────────────────
+
+const referralProgramSchema = z.object({
+  enabled: z.boolean(),
+  plan: z.enum(["PRO", "BUSINESS"]),
+  invitedDays: z.number().int().min(0).max(365),
+  referrerDays: z.number().int().min(0).max(365),
+  referrerTrigger: z.enum(["REGISTRO", "VENTAS", "PAGO"]),
+  minSales: z.number().int().min(1).max(500),
+  maxRewards: z.number().int().min(1).max(1000).nullable(),
+})
+export type ReferralProgramInput = z.input<typeof referralProgramSchema>
+
+/** Guarda las reglas de "Invita a un amigo". Valen para las invitaciones nuevas y las pendientes. */
+export async function saveReferralProgram(input: ReferralProgramInput): Promise<ActionResult> {
+  await requireAdmin()
+  const parsed = referralProgramSchema.safeParse(input)
+  if (!parsed.success) return validationError(parsed.error)
+  try {
+    await db.referralProgram.upsert({ where: { id: "default" }, create: { id: "default", ...parsed.data }, update: parsed.data })
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidatePath("/admin")
+  revalidatePath("/dashboard/invitar")
+  return { ok: true, message: parsed.data.enabled ? "Reglas guardadas" : "Programa pausado" }
+}

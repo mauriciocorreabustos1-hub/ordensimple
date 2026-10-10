@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Download, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Download, Gift, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -27,6 +27,8 @@ import { isAdminEmail } from "@/server/admin"
 import { getFeatureAdoption, getOriginStats } from "@/server/queries/admin-detail"
 import { countUnverified } from "@/server/verify-reminders"
 import { VerifyLinksButton } from "@/components/admin/verify-links-button"
+import { ReferralSettings } from "@/components/admin/referral-settings"
+import { getReferralAdmin } from "@/server/referrals"
 import { originLabel } from "@/lib/signup-source"
 import {
   ACTIVITY_FILTERS,
@@ -81,7 +83,13 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     mercadoPagoAccount(),
     db.subscription.groupBy({ by: ["status"], _count: true }),
   ])
-  const [roleCounts, adoption, origins, unverified] = await Promise.all([countUsersByRole(), getFeatureAdoption(), getOriginStats(), countUnverified()])
+  const [roleCounts, adoption, origins, unverified, referrals] = await Promise.all([
+    countUsersByRole(),
+    getFeatureAdoption(),
+    getOriginStats(),
+    countUnverified(),
+    getReferralAdmin(),
+  ])
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -485,6 +493,73 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           </p>
         </div>
         <CouponManager coupons={couponRows} />
+      </section>
+
+      <section id="invita" className="scroll-mt-20 space-y-4">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Gift className="size-5 text-muted-foreground" />
+            Invita a un amigo
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Cada negocio tiene su enlace en «Invita y gana». Los días se dan solos: al invitado cuando crea su negocio, y a quien
+            invitó según la regla que elijas (se revisa una vez al día).
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reglas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ReferralSettings
+                initial={{
+                  enabled: referrals.program.enabled,
+                  plan: referrals.program.plan === "BUSINESS" ? "BUSINESS" : "PRO",
+                  invitedDays: referrals.program.invitedDays,
+                  referrerDays: referrals.program.referrerDays,
+                  referrerTrigger: referrals.program.referrerTrigger as "REGISTRO" | "VENTAS" | "PAGO",
+                  minSales: referrals.program.minSales,
+                  maxRewards: referrals.program.maxRewards,
+                }}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Resultados</CardTitle>
+              <CardDescription>
+                {formatNumber(referrals.total)} {referrals.total === 1 ? "negocio llegó invitado" : "negocios llegaron invitados"} ·{" "}
+                {formatNumber(referrals.rewarded)} {referrals.rewarded === 1 ? "recompensa entregada" : "recompensas entregadas"} · {formatNumber(referrals.pending)} pendientes ·{" "}
+                {formatNumber(referrals.days)} días regalados en total
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {referrals.recent.length ? (
+                <ul className="divide-y text-sm">
+                  {referrals.recent.map((r) => (
+                    <li key={r.id} className="space-y-0.5 py-2.5">
+                      <p className="min-w-0">
+                        <span className="font-medium break-words">{r.referrer.name}</span>
+                        <span className="text-muted-foreground"> invitó a </span>
+                        <span className="font-medium break-words">{r.referred.name}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(r.createdAt, TZ)} · invitado: {r.invitedDays} días{r.invitedNote ? ` (${r.invitedNote})` : ""} · quien
+                        invitó:{" "}
+                        {r.referrerRewardedAt
+                          ? `${r.referrerDays ?? 0} días${r.referrerNote ? ` (${r.referrerNote})` : ""}`
+                          : `pendiente (${formatNumber(r.referred._count.sales)} ventas)`}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Aún nadie ha llegado invitado.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       <section id="cobros" className="scroll-mt-20 space-y-3">

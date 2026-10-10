@@ -6,6 +6,10 @@ import { safeNext } from "@/lib/auth-errors"
 import { formatMoney } from "@/lib/currency"
 import { BILLING_ENABLED, checkoutPath, parsePlanChoice, PLAN_OF_CHOICE, PLANS } from "@/lib/plans"
 import { getSession } from "@/server/session"
+import { cookies } from "next/headers"
+import { Gift } from "lucide-react"
+import { REFERRAL_COOKIE } from "@/lib/referrals"
+import { findReferrerByCode, getReferralProgram } from "@/server/referrals"
 
 export const metadata: Metadata = { title: "Crear cuenta" }
 
@@ -17,6 +21,9 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
   const choice = BILLING_ENABLED && !next ? parsePlanChoice(params.plan) : null
   const chosen = choice ? PLANS[PLAN_OF_CHOICE[choice]] : null
   if (await getSession()) redirect(choice ? checkoutPath(choice) : next || "/dashboard")
+  // Llegó con el enlace de un amigo: se le muestra quién lo invitó y su regalo.
+  const [referrer, program] = await Promise.all([findReferrerByCode((await cookies()).get(REFERRAL_COOKIE)?.value), getReferralProgram()])
+  const invitedBy = referrer && program.enabled && !next ? referrer : null
 
   return (
     <div className="space-y-6">
@@ -30,6 +37,17 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
               : "En 2 minutos tendrás tu negocio listo para usar."}
         </p>
       </div>
+      {invitedBy ? (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
+          <Gift className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            <strong className="break-words">{invitedBy.name}</strong> te invitó a OrdenSimple.
+            {program.invitedDays > 0
+              ? ` Al crear tu negocio tienes ${program.invitedDays} días gratis del plan ${PLANS[program.plan].name}.`
+              : null}
+          </span>
+        </div>
+      ) : null}
       {chosen?.monthlyPrice ? (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <span>

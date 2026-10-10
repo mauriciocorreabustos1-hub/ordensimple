@@ -6,6 +6,7 @@ import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { parseOrigin } from "@/lib/signup-source"
+import { parseReferralCookie } from "@/lib/referrals"
 import { resetPasswordEmail, verifyEmail, welcomeEmail } from "@/lib/email-templates"
 
 export const auth = betterAuth({
@@ -48,7 +49,8 @@ export const auth = betterAuth({
         // También se guarda de qué anuncio o página llegó (cookie que deja el script de src/app/layout.tsx).
         before: async (user, context) => {
           const cookie = context?.headers?.get("cookie") ?? context?.request?.headers.get("cookie")
-          return { data: { ...user, termsAcceptedAt: new Date(), ...(parseOrigin(cookie) ?? {}) } }
+          // Si llegó con un enlace de "Invita a un amigo", se guarda el código (se usa al crear su negocio).
+          return { data: { ...user, termsAcceptedAt: new Date(), ...(parseOrigin(cookie) ?? {}), invitedByCode: parseReferralCookie(cookie) } }
         },
       },
     },
@@ -66,6 +68,7 @@ export const auth = betterAuth({
       signupMedium: { type: "string", required: false, input: false },
       signupCampaign: { type: "string", required: false, input: false },
       signupReferrer: { type: "string", required: false, input: false },
+      invitedByCode: { type: "string", required: false, input: false },
     },
   },
   session: {

@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { COUNTRIES, DEFAULT_EXPENSE_CATEGORIES } from "@/lib/constants"
 import { onboardingSchema, type OnboardingInput } from "@/lib/validations"
 import { requireUser } from "@/server/session"
+import { recordReferral } from "@/server/referrals"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 export async function completeOnboarding(input: OnboardingInput, planChoice?: string): Promise<ActionResult> {
@@ -27,6 +28,7 @@ export async function completeOnboarding(input: OnboardingInput, planChoice?: st
   // Plan gratis: un negocio. Si ya terminó el onboarding, no se crea otro.
   if (existing?.business.onboardingCompleted) return finish()
 
+  let businessId: string
   try {
     const businessData = {
       name: data.name,
@@ -41,7 +43,7 @@ export async function completeOnboarding(input: OnboardingInput, planChoice?: st
       onboardingCompleted: true,
     }
 
-    await db.$transaction(async (tx) => {
+    businessId = await db.$transaction(async (tx) => {
       const business = existing
         ? await tx.business.update({ where: { id: existing.businessId }, data: businessData })
         : await tx.business.create({
@@ -69,10 +71,13 @@ export async function completeOnboarding(input: OnboardingInput, planChoice?: st
       })
 
       await tx.user.update({ where: { id: user.id }, data: { activeBusinessId: business.id } })
+      return business.id
     })
   } catch (error) {
     return toActionError(error)
   }
+  // "Invita a un amigo": si llegó con un enlace, recibe sus días de regalo.
+  await recordReferral({ userId: user.id, businessId })
 
   return finish()
 }

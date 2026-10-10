@@ -166,6 +166,42 @@ export function planGiftEmail({
   }
 }
 
+/** "Invita a un amigo": quien invitó ganó días de plan. */
+export function referralRewardEmail({
+  name,
+  invitedName,
+  planName,
+  days,
+  expiresAt,
+}: {
+  name: string
+  invitedName: string
+  planName: string
+  days: number
+  expiresAt: Date
+}) {
+  const appUrl = getAppUrl()
+  const firstRaw = name.split(" ")[0] ?? name
+  const until = expiresAt.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Santiago" })
+  return {
+    subject: `🎁 Ganaste ${days} días del plan ${planName}`,
+    html: layout({
+      preview: `${invitedName} se unió a OrdenSimple gracias a ti.`,
+      body: [
+        h1(`¡Gracias por recomendarnos, ${escapeHtml(firstRaw)}!`),
+        p(`<strong>${escapeHtml(invitedName)}</strong> se unió a OrdenSimple con tu enlace. Como agradecimiento, te regalamos <strong>${days} días del plan ${escapeHtml(planName)}</strong>: lo tienes hasta el ${until}.`),
+        p("Sigue compartiendo tu enlace: por cada negocio que se una, ganas más días."),
+        button(`${appUrl}/dashboard/invitar`, "Ver mi enlace"),
+      ].join(""),
+    }),
+    text: `¡Hola ${firstRaw}!
+
+${invitedName} se unió a OrdenSimple con tu enlace. Te regalamos ${days} días del plan ${planName}, hasta el ${until}.
+
+Tu enlace: ${appUrl}/dashboard/invitar`,
+  }
+}
+
 /** Correo de promoción escrito en /admin. El texto viene en párrafos separados por líneas en blanco. */
 export function promoEmail({
   name,

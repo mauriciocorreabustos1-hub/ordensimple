@@ -4,6 +4,7 @@ import {
   Crown,
   Boxes,
   Calculator,
+  Gift,
   Home,
   Landmark,
   Package,
@@ -45,6 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports:view" },
   { href: "/dashboard/resultados", label: "Resultados e IVA", icon: Landmark, pro: true, permission: "reports:view" },
   { href: "/dashboard/sucursales", label: "Sucursales", icon: Store, permission: "finances:view" },
+  { href: "/dashboard/invitar", label: "Invita y gana", icon: Gift },
   { href: "/dashboard/plan", label: "Tu plan", icon: Crown, permission: "settings:manage" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]

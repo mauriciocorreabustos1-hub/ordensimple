@@ -53,15 +53,15 @@ enum NotificationType {
 // ─── Autenticación (Better Auth) ────────────────────────────────────────────
 
 model User {
-  id               String   @id
+  id               String    @id
   name             String
-  email            String   @unique
-  emailVerified    Boolean  @default(false)
+  email            String    @unique
+  emailVerified    Boolean   @default(false)
   image            String?
   activeBusinessId String?
   // Aceptación de términos (fecha) y consentimiento para recibir promociones.
   termsAcceptedAt  DateTime?
-  marketingOptIn   Boolean  @default(false)
+  marketingOptIn   Boolean   @default(false)
   /// Correos de bienvenida enviados (1, 2, 3). 99 = no quiere recibirlos.
   nudgeStep        Int       @default(0)
   /// Última vez que usó la app (se actualiza como máximo cada 5 minutos).
@@ -73,8 +73,10 @@ model User {
   signupReferrer   String?
   /// Cuándo se le mandó el recordatorio de confirmar el correo (se manda una sola vez).
   verifyRemindedAt DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  /// Código del negocio que lo invitó ("Invita a un amigo"), si llegó por un enlace de invitación.
+  invitedByCode    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   sessions      Session[]
   accounts      Account[]
@@ -139,28 +141,28 @@ model Verification {
 // ─── Negocio ────────────────────────────────────────────────────────────────
 
 model Business {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   name                String
   type                String?
-  country             String   @default("CL")
-  currency            String   @default("CLP")
-  timezone            String   @default("America/Santiago")
-  plan                Plan     @default(FREE)
+  country             String    @default("CL")
+  currency            String    @default("CLP")
+  timezone            String    @default("America/Santiago")
+  plan                Plan      @default(FREE)
   /// Hasta cuándo dura el plan pagado o regalado. null = no vence.
   planExpiresAt       DateTime?
   /// Descuento ganado con un código, para aplicarlo cuando se cobre la suscripción.
   /// Cupos regalados por el admin, que se suman a los del plan.
-  extraProducts       Int      @default(0)
-  extraMembers        Int      @default(0)
+  extraProducts       Int       @default(0)
+  extraMembers        Int       @default(0)
   discountPercent     Int?
   discountCode        String?
   hasProducts         Boolean?
   hasEmployees        Boolean?
   managesInventory    Boolean?
   monthlyRevenueRange String?
-  onboardingCompleted Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  onboardingCompleted Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   members           BusinessMember[]
   settings          BusinessSettings?
@@ -179,6 +181,8 @@ model Business {
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
   subscriptions     Subscription[]
+  referralsMade     Referral[]          @relation("ReferralReferrer")
+  referredBy        Referral?           @relation("ReferralReferred")
   payables          Payable[]
   productBarcodes   ProductBarcode[]
   featureUsage      FeatureUsage[]
@@ -188,6 +192,8 @@ model Business {
   logo              BusinessLogo?
   /// Cuándo se cambió el logo (null = sin logo). Sirve para saber si hay y para que el navegador no muestre uno viejo.
   logoUpdatedAt     DateTime?
+  /// Código para el enlace "Invita a un amigo" (se crea la primera vez que se abre esa página).
+  referralCode      String?             @unique
 
   @@map("business")
 }
@@ -208,35 +214,35 @@ model BusinessMember {
 }
 
 model BusinessSettings {
-  id                String   @id @default(cuid())
-  businessId        String   @unique
-  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  easyMode          Boolean  @default(false)
-  lowStockAlerts    Boolean  @default(true)
-  noSalesReminder   Boolean  @default(true)
-  weeklySummary     Boolean  @default(true)
-  defaultPayment    PaymentMethod @default(CASH)
+  id                    String        @id @default(cuid())
+  businessId            String        @unique
+  business              Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  easyMode              Boolean       @default(false)
+  lowStockAlerts        Boolean       @default(true)
+  noSalesReminder       Boolean       @default(true)
+  weeklySummary         Boolean       @default(true)
+  defaultPayment        PaymentMethod @default(CASH)
   /// El negocio cobra IVA en sus ventas (inscrito en el SII): se calcula el IVA a pagar y los montos sin IVA.
   /// Viene activado; quien no cobra IVA lo desactiva en Configuración.
-  chargesVat        Boolean  @default(true)
+  chargesVat            Boolean       @default(true)
   /// Día del mes siguiente en que vence el pago del IVA (en Chile, F29: día 20 con documentos electrónicos, si no día 12).
-  vatDueDay         Int      @default(20)
+  vatDueDay             Int           @default(20)
   /// Tasa del pago provisional mensual (PPM) que va en el mismo F29, sobre las ventas sin IVA. 0 = no mostrarlo.
   /// Pro Pyme General 0,125% (rebaja transitoria 2025-2027, Ley 21.755); Pro Pyme Transparente 0,2%.
-  ppmRate           Float    @default(0.00125)
+  ppmRate               Float         @default(0.00125)
   /// Lo que el dueño quiere sacar al mes como su sueldo (para avisar si se pasa). Null = sin meta.
-  ownerSalary       Int?
+  ownerSalary           Int?
   /// Plata en caja y banco que el dueño declaró, y cuándo: desde ahí el balance la sigue sola.
-  openingCash       Int?
-  openingCashAt     DateTime?
+  openingCash           Int?
+  openingCashAt         DateTime?
   /// Últimos avisos enviados por correo (para no repetirlos).
   lastWeeklySummaryAt   DateTime?
   lastNoSalesReminderAt DateTime?
   lastLowStockAlertAt   DateTime?
   /// Productos incluidos en el último aviso de stock bajo: si no cambian, no se repite el correo.
   lowStockAlertKey      String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   @@map("business_settings")
 }
@@ -308,8 +314,8 @@ model Sale {
   items     SaleItem[]
   movements InventoryMovement[]
 
-  @@index([businessId, date])
   @@unique([businessId, clientId])
+  @@index([businessId, date])
   @@map("sale")
 }
 
@@ -376,17 +382,17 @@ model Expense {
 // ─── Contactos ──────────────────────────────────────────────────────────────
 
 model Customer {
-  id         String   @id @default(cuid())
+  id         String            @id @default(cuid())
   businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name       String
   phone      String?
   email      String?
   notes      String?
   sales      Sale[]
   payments   CustomerPayment[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   @@index([businessId])
   @@map("customer")
@@ -808,4 +814,47 @@ model UserPhoto {
   updatedAt DateTime @updatedAt
 
   @@map("user_photo")
+}
+
+// ─── Invita a un amigo ──────────────────────────────────────────────────────
+
+/// Reglas del programa (una sola fila, id "default"); se cambian en /admin.
+model ReferralProgram {
+  id              String   @id @default("default")
+  enabled         Boolean  @default(true)
+  /// Plan que se regala.
+  plan            Plan     @default(PRO)
+  /// Días para quien llega invitado (al crear su negocio).
+  invitedDays     Int      @default(14)
+  /// Días para quien invita.
+  referrerDays    Int      @default(30)
+  /// Cuándo gana quien invita: REGISTRO (al crear el negocio), VENTAS (al registrar minSales ventas) o PAGO (al pagar su primer mes).
+  referrerTrigger String   @default("VENTAS")
+  minSales        Int      @default(5)
+  /// Máximo de recompensas por negocio que invita (vacío = sin límite).
+  maxRewards      Int?     @default(12)
+  updatedAt       DateTime @updatedAt
+
+  @@map("referral_program")
+}
+
+/// Un negocio que llegó invitado por otro.
+model Referral {
+  id                 String    @id @default(cuid())
+  referrerBusinessId String
+  referrer           Business  @relation("ReferralReferrer", fields: [referrerBusinessId], references: [id], onDelete: Cascade)
+  referredBusinessId String    @unique
+  referred           Business  @relation("ReferralReferred", fields: [referredBusinessId], references: [id], onDelete: Cascade)
+  referredUserId     String?
+  /// Días que recibió el invitado (0 si no se pudo aplicar) y por qué.
+  invitedDays        Int       @default(0)
+  invitedNote        String?
+  /// Cuándo ganó quien invitó, cuántos días y una nota (por ejemplo, si ya tenía un plan mayor).
+  referrerRewardedAt DateTime?
+  referrerDays       Int?
+  referrerNote       String?
+  createdAt          DateTime  @default(now())
+
+  @@index([referrerBusinessId])
+  @@map("referral")
 }

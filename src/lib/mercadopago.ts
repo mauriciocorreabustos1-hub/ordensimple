@@ -75,6 +75,11 @@ export function cancelPreapproval(id: string) {
   return mp<Preapproval>(`/preapproval/${encodeURIComponent(id)}`, { method: "PUT", body: { status: "cancelled" } })
 }
 
+/** Pausa o reanuda los cobros de una suscripción (se usa para regalar meses en "Invita a un amigo"). */
+export function setPreapprovalStatus(id: string, status: "paused" | "authorized") {
+  return mp<Preapproval>(`/preapproval/${encodeURIComponent(id)}`, { method: "PUT", body: { status } })
+}
+
 export type AuthorizedPayment = {
   id: number | string
   preapproval_id?: string

@@ -6,6 +6,8 @@ import { sendEmail } from "@/lib/email"
 import { referralRewardEmail } from "@/lib/email-templates"
 import { effectivePlan, PLAN_RANK, PLANS } from "@/lib/plans"
 import { REFERRAL_CODE_RE } from "@/lib/referrals"
+import { formatDate } from "@/lib/dates"
+import { pauseForGift } from "@/server/billing"
 
 const DAY = 86_400_000
 
@@ -65,10 +67,7 @@ export function findReferrerByCode(code: string | null | undefined) {
  */
 async function grantPlanDays(businessId: string, plan: Plan, days: number, now: Date) {
   if (days <= 0) return { days: 0, until: null, note: "El programa regala 0 días" }
-  const business = await db.business.findUnique({
-    where: { id: businessId },
-    select: { plan: true, planExpiresAt: true, subscriptions: { where: { status: "authorized" }, select: { id: true }, take: 1 } },
-  })
+  const business = await db.business.findUnique({ where: { id: businessId }, select: { plan: true, planExpiresAt: true, timezone: true } })
   if (!business) return { days: 0, until: null, note: "El negocio ya no existe" }
   const current = effectivePlan(business, now)
   if (PLAN_RANK[current] > PLAN_RANK[plan]) return { days: 0, until: null, note: `Ya tenía el plan ${PLANS[current].name}` }
@@ -77,7 +76,14 @@ async function grantPlanDays(businessId: string, plan: Plan, days: number, now: 
   const base = current === plan && business.planExpiresAt && business.planExpiresAt > now ? business.planExpiresAt : now
   const until = new Date(base.getTime() + days * DAY)
   await db.business.update({ where: { id: businessId }, data: { plan, planExpiresAt: until } })
-  const note = business.subscriptions.length ? "Paga suscripción: los días se sumaron, pero Mercado Pago le sigue cobrando" : null
+  // Si paga suscripción, no se le cobra mientras duran los días regalados.
+  const pause = await pauseForGift(businessId, until, now)
+  const note =
+    pause.state === "paused"
+      ? `Paga suscripción: su cobro quedó pausado hasta el ${formatDate(pause.resumeAt, business.timezone)}`
+      : pause.state === "error"
+        ? "Paga suscripción, pero no se pudo pausar su cobro: revísalo en Mercado Pago"
+        : null
   return { days, until, note }
 }
 

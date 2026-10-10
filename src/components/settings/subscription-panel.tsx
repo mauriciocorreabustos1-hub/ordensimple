@@ -28,7 +28,16 @@ export type PlanOption = {
 export type SubscriptionState =
   | { kind: "none" }
   | { kind: "pending"; plan: PaidPlan; payerEmail: string }
-  | { kind: "active"; planName: string; amountLabel: string; nextLabel: string | null; payerEmail: string; status: string }
+  | {
+      kind: "active"
+      planName: string
+      amountLabel: string
+      nextLabel: string | null
+      payerEmail: string
+      status: string
+      /** Cobro pausado como regalo de "Invita a un amigo": hasta cuándo. */
+      giftPausedLabel?: string | null
+    }
 
 /** Contratar o cancelar Pro o Empresa con Mercado Pago (cobro mensual automático). */
 export function SubscriptionPanel({
@@ -64,11 +73,17 @@ export function SubscriptionPanel({
     return (
       <div className="space-y-3 rounded-xl border border-success/30 bg-success/5 p-4 text-sm">
         <p className="font-medium">
-          {state.status === "authorized" ? "Suscripción activa" : "Suscripción pausada"}: {state.planName} · {state.amountLabel} al mes
+          {state.giftPausedLabel
+            ? "🎁 Cobro en pausa por tus invitaciones"
+            : state.status === "authorized"
+              ? "Suscripción activa"
+              : "Suscripción pausada"}
+          : {state.planName} · {state.amountLabel} al mes
         </p>
         <p className="text-muted-foreground">
-          Se cobra con Mercado Pago a {state.payerEmail}.
-          {state.nextLabel ? ` Próximo cobro: ${state.nextLabel}.` : ""}
+          {state.giftPausedLabel
+            ? `Ganaste días gratis invitando a otros negocios, así que no se te cobra hasta el ${state.giftPausedLabel}. Después tu suscripción sigue sola con Mercado Pago a ${state.payerEmail}.`
+            : `Se cobra con Mercado Pago a ${state.payerEmail}.${state.nextLabel ? ` Próximo cobro: ${state.nextLabel}.` : ""}`}
         </p>
         {canManage ? (
           <Button
@@ -76,7 +91,10 @@ export function SubscriptionPanel({
             size="sm"
             disabled={pending}
             onClick={() => {
-              if (!window.confirm("¿Cancelar la suscripción? No se te cobrará más y tu plan seguirá hasta el final del mes que ya pagaste.")) return
+              if (
+                !window.confirm("¿Cancelar la suscripción? No se te cobrará más y tu plan seguirá hasta el final del mes que ya pagaste.")
+              )
+                return
               startTransition(async () => {
                 const r = await cancelSubscription()
                 if (r.ok) {
@@ -138,7 +156,14 @@ export function SubscriptionPanel({
       {useCard ? (
         <div className="space-y-3">
           <p className="text-sm font-medium">Paga {chosen.name} con tu tarjeta</p>
-          <CardPayment key={plan} publicKey={publicKey!} plan={plan} amount={chosen.amount} payerEmail={defaultEmail} onUnavailable={cardFailed} />
+          <CardPayment
+            key={plan}
+            publicKey={publicKey!}
+            plan={plan}
+            amount={chosen.amount}
+            payerEmail={defaultEmail}
+            onUnavailable={cardFailed}
+          />
           <button type="button" onClick={() => setMethod("account")} className="text-xs text-primary hover:underline">
             Prefiero pagar con mi cuenta de Mercado Pago
           </button>
@@ -165,7 +190,9 @@ export function SubscriptionPanel({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button type="submit" size="lg" className="h-11 w-full sm:w-auto" disabled={pending}>
               {pending ? <Loader2 className="animate-spin" /> : <CreditCard />}
-              {state.kind === "pending" && state.plan === plan ? "Completar el pago en Mercado Pago" : `Suscribirme a ${chosen.name} con Mercado Pago`}
+              {state.kind === "pending" && state.plan === plan
+                ? "Completar el pago en Mercado Pago"
+                : `Suscribirme a ${chosen.name} con Mercado Pago`}
             </Button>
             {publicKey && !cardUnavailable ? (
               <button type="button" onClick={() => setMethod("card")} className="text-xs text-primary hover:underline">

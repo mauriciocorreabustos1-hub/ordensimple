@@ -2,6 +2,7 @@ import { sendBusinessAlerts } from "@/server/business-alerts"
 import { sendOnboardingNudges } from "@/server/onboarding-emails"
 import { sendVerifyReminders } from "@/server/verify-reminders"
 import { processReferralRewards } from "@/server/referrals"
+import { resumeGiftPauses } from "@/server/billing"
 
 // Vercel Cron llama esta ruta una vez al día (ver vercel.json) con el CRON_SECRET en la cabecera.
 // Envía los correos de bienvenida y los avisos que cada negocio activó en Configuración.
@@ -19,5 +20,6 @@ export async function GET(request: Request) {
     sendVerifyReminders(now),
     processReferralRewards(now),
   ])
-  return Response.json({ bienvenida, avisos, verificacion, invitaciones })
+  const cobrosReanudados = await resumeGiftPauses(now)
+  return Response.json({ bienvenida, avisos, verificacion, invitaciones, cobrosReanudados })
 }

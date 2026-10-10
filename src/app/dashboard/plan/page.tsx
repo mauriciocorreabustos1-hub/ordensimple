@@ -47,6 +47,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
           amountLabel: formatMoney(sub.amount, sub.currency),
           payerEmail: sub.payerEmail,
           nextLabel: sub.nextPaymentAt ? formatDate(sub.nextPaymentAt, ctx.timezone, { day: "numeric", month: "long" }) : null,
+          giftPausedLabel: sub.giftPausedUntil ? formatDate(sub.giftPausedUntil, ctx.timezone, { day: "numeric", month: "long" }) : null,
         }
   const planOptions: PlanOption[] = PAID_PLANS.flatMap((p) => {
     const price = PLANS[p].monthlyPrice

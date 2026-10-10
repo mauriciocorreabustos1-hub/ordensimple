@@ -69,6 +69,7 @@ export default async function InvitePage() {
           <CardDescription className="text-pretty">
             {program.invitedDays > 0 ? `Tu amigo recibe ${program.invitedDays} días gratis del plan ${planName} al crear su negocio. ` : ""}
             {program.referrerDays > 0 ? `Tú ganas tus ${program.referrerDays} días ${when}.` : ""}
+            {program.referrerDays > 0 ? " Si ya pagas tu suscripción, no se te cobra mientras duran tus días ganados." : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>

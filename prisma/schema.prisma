@@ -641,27 +641,29 @@ model Invitation {
 // ─── Suscripciones pagadas (Mercado Pago) ──────────────────────────────────
 
 model Subscription {
-  id            String    @id @default(cuid())
-  businessId    String
-  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   /// Quién se suscribió.
-  userId        String?
-  plan          Plan      @default(PRO)
-  provider      String    @default("MERCADOPAGO")
+  userId          String?
+  plan            Plan      @default(PRO)
+  provider        String    @default("MERCADOPAGO")
   /// Id de la suscripción en Mercado Pago (preapproval).
-  externalId    String    @unique
+  externalId      String    @unique
   /// pending, authorized, paused o cancelled (como los informa Mercado Pago).
-  status        String
+  status          String
   /// Monto mensual, en la unidad mínima de la moneda.
-  amount        Int
-  currency      String    @default("CLP")
-  payerEmail    String
+  amount          Int
+  currency        String    @default("CLP")
+  payerEmail      String
   /// Enlace para completar el pago mientras está pendiente.
-  checkoutUrl   String?
-  lastChargedAt DateTime?
-  nextPaymentAt DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  checkoutUrl     String?
+  lastChargedAt   DateTime?
+  nextPaymentAt   DateTime?
+  /// "Invita a un amigo": el cobro está pausado como regalo y se reanuda solo en esta fecha.
+  giftPausedUntil DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([businessId])
   @@map("subscription")

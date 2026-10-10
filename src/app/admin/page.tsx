@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Download, Gift, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Download, Gift, Link2, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -28,7 +28,8 @@ import { getFeatureAdoption, getOriginStats } from "@/server/queries/admin-detai
 import { countUnverified } from "@/server/verify-reminders"
 import { VerifyLinksButton } from "@/components/admin/verify-links-button"
 import { ReferralSettings } from "@/components/admin/referral-settings"
-import { getReferralAdmin } from "@/server/referrals"
+import { getReferralAdmin, getSpecialLinksAdmin } from "@/server/referrals"
+import { SpecialLinks, type SpecialLinkRow } from "@/components/admin/special-links"
 import { originLabel } from "@/lib/signup-source"
 import {
   ACTIVITY_FILTERS,
@@ -90,6 +91,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     countUnverified(),
     getReferralAdmin(),
   ])
+  const specialLinks = await getSpecialLinksAdmin()
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -105,6 +107,20 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     expired: Boolean(cp.expiresAt && cp.expiresAt <= now),
     active: cp.active,
     note: cp.note,
+  }))
+  const specialRows: SpecialLinkRow[] = specialLinks.map((l) => ({
+    id: l.id,
+    name: l.name,
+    code: l.code,
+    url: `${getAppUrl()}/amigo/${l.code}`,
+    gift: `${l.days} días gratis del plan ${PLANS[l.plan].name}`,
+    expiresLabel: l.expiresAt ? longDate(l.expiresAt) : null,
+    expired: Boolean(l.expiresAt && l.expiresAt <= now),
+    maxUses: l.maxUses,
+    active: l.active,
+    signups: l.signups,
+    businesses: l.businesses,
+    paying: l.paying,
   }))
   const maxSignups = Math.max(1, ...stats.signupsByDay.map((d) => d.count))
 
@@ -560,6 +576,20 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             </CardContent>
           </Card>
         </div>
+      </section>
+
+      <section id="enlaces" className="scroll-mt-20 space-y-4">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Link2 className="size-5 text-muted-foreground" />
+            Enlaces especiales
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Enlaces que creas tú para tus anuncios, ferias, volantes o alguien que te recomiende. Quien se registra con uno recibe
+            sus días gratis al crear su negocio, y aquí ves cuántos llegaron con cada enlace.
+          </p>
+        </div>
+        <SpecialLinks links={specialRows} baseUrl={getAppUrl()} />
       </section>
 
       <section id="cobros" className="scroll-mt-20 space-y-3">

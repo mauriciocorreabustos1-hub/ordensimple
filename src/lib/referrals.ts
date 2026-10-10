@@ -4,7 +4,7 @@ export const REFERRAL_COOKIE = "os_amigo"
 /** 60 días: si llega con el enlace y se registra después, igual cuenta. */
 export const REFERRAL_COOKIE_MAX_AGE = 60 * 60 * 24 * 60
 
-export const REFERRAL_CODE_RE = /^[a-z0-9-]{4,24}$/
+export const REFERRAL_CODE_RE = /^[a-z0-9-]{3,32}$/
 
 export const REFERRAL_TRIGGERS = [
   { value: "REGISTRO", label: "Cuando el invitado crea su negocio", short: "al crear su negocio" },

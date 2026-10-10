@@ -183,6 +183,7 @@ model Business {
   subscriptions     Subscription[]
   referralsMade     Referral[]          @relation("ReferralReferrer")
   referredBy        Referral?           @relation("ReferralReferred")
+  specialLinkUses   SpecialLinkUse[]
   payables          Payable[]
   productBarcodes   ProductBarcode[]
   featureUsage      FeatureUsage[]
@@ -857,4 +858,39 @@ model Referral {
 
   @@index([referrerBusinessId])
   @@map("referral")
+}
+
+/// Enlace especial que crea el administrador para una campaña (anuncios, ferias, un contador aliado...):
+/// ordensimple.cl/amigo/<code>. Quien se registra con él recibe días de regalo al crear su negocio.
+model SpecialLink {
+  id        String           @id @default(cuid())
+  code      String           @unique
+  name      String
+  plan      Plan             @default(PRO)
+  days      Int              @default(14)
+  expiresAt DateTime?
+  maxUses   Int?
+  active    Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  uses      SpecialLinkUse[]
+
+  @@map("special_link")
+}
+
+/// Un negocio que se creó con un enlace especial.
+model SpecialLinkUse {
+  id         String      @id @default(cuid())
+  linkId     String
+  link       SpecialLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String?
+  /// Días que recibió (0 si no se pudo aplicar) y por qué.
+  days       Int         @default(0)
+  note       String?
+  createdAt  DateTime    @default(now())
+
+  @@unique([linkId, businessId])
+  @@index([businessId])
+  @@map("special_link_use")
 }

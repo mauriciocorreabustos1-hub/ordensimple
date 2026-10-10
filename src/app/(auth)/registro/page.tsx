@@ -9,7 +9,7 @@ import { getSession } from "@/server/session"
 import { cookies } from "next/headers"
 import { Gift } from "lucide-react"
 import { REFERRAL_COOKIE } from "@/lib/referrals"
-import { findReferrerByCode, getReferralProgram } from "@/server/referrals"
+import { findReferrerByCode, findSpecialLink, getReferralProgram } from "@/server/referrals"
 
 export const metadata: Metadata = { title: "Crear cuenta" }
 
@@ -22,8 +22,10 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
   const chosen = choice ? PLANS[PLAN_OF_CHOICE[choice]] : null
   if (await getSession()) redirect(choice ? checkoutPath(choice) : next || "/dashboard")
   // Llegó con el enlace de un amigo: se le muestra quién lo invitó y su regalo.
-  const [referrer, program] = await Promise.all([findReferrerByCode((await cookies()).get(REFERRAL_COOKIE)?.value), getReferralProgram()])
-  const invitedBy = referrer && program.enabled && !next ? referrer : null
+  const inviteCode = (await cookies()).get(REFERRAL_COOKIE)?.value
+  const special = next ? null : await findSpecialLink(inviteCode)
+  const [referrer, program] = special ? [null, null] : await Promise.all([findReferrerByCode(inviteCode), getReferralProgram()])
+  const invitedBy = referrer && program?.enabled && !next ? referrer : null
 
   return (
     <div className="space-y-6">
@@ -37,7 +39,15 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
               : "En 2 minutos tendrás tu negocio listo para usar."}
         </p>
       </div>
-      {invitedBy ? (
+      {special && special.days > 0 ? (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
+          <Gift className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            ¡Tienes un regalo! Al crear tu negocio tienes <strong>{special.days} días gratis del plan {PLANS[special.plan].name}</strong>.
+          </span>
+        </div>
+      ) : null}
+      {invitedBy && program ? (
         <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <Gift className="mt-0.5 size-4 shrink-0 text-primary" />
           <span>

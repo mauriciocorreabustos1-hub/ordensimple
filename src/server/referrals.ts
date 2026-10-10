@@ -30,6 +30,8 @@ export async function referralCodeFor(businessId: string) {
   for (let i = 0; i < 5; i++) {
     const tail = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join("")
     const code = `${base}-${tail}`
+    // Que no choque con un enlace especial del administrador.
+    if (await db.specialLink.findUnique({ where: { code }, select: { id: true } })) continue
     try {
       // Si otra pestaña ya le creó un código, se respeta ese.
       const { count } = await db.business.updateMany({ where: { id: businessId, referralCode: null }, data: { referralCode: code } })
@@ -40,6 +42,16 @@ export async function referralCodeFor(businessId: string) {
     }
   }
   throw new Error("No se pudo crear el código de invitación")
+}
+
+/** Enlace especial del administrador, si existe y todavía se puede usar (activo, sin vencer y con cupos). */
+export async function findSpecialLink(code: string | null | undefined, now = new Date()) {
+  if (!code || !REFERRAL_CODE_RE.test(code)) return null
+  const link = await db.specialLink.findUnique({ where: { code }, include: { _count: { select: { uses: true } } } })
+  if (!link || !link.active) return null
+  if (link.expiresAt && link.expiresAt <= now) return null
+  if (link.maxUses !== null && link._count.uses >= link.maxUses) return null
+  return link
 }
 
 export function findReferrerByCode(code: string | null | undefined) {
@@ -116,6 +128,14 @@ async function rewardReferrer(referralId: string, program: Awaited<ReturnType<ty
 export async function recordReferral({ userId, businessId, now = new Date() }: { userId: string; businessId: string; now?: Date }) {
   try {
     const user = await db.user.findUnique({ where: { id: userId }, select: { invitedByCode: true } })
+    // Enlace especial del administrador (campañas): solo da días al nuevo negocio.
+    const special = await findSpecialLink(user?.invitedByCode, now)
+    if (special) {
+      const use = await db.specialLinkUse.create({ data: { linkId: special.id, businessId, userId } })
+      const gift = await grantPlanDays(businessId, special.plan, special.days, now)
+      await db.specialLinkUse.update({ where: { id: use.id }, data: { days: gift.days, note: gift.note } })
+      return
+    }
     const referrer = await findReferrerByCode(user?.invitedByCode)
     if (!referrer || referrer.id === businessId) return
     const program = await getReferralProgram()
@@ -219,4 +239,24 @@ export async function getReferralAdmin() {
     days: (daysGiven._sum.referrerDays ?? 0) + (daysGiven._sum.invitedDays ?? 0),
     recent,
   }
+}
+
+/** Enlaces especiales para el panel: cuántos se registraron, cuántos crearon su negocio y cuántos ya pagan. */
+export async function getSpecialLinksAdmin() {
+  const links = await db.specialLink.findMany({ orderBy: { createdAt: "desc" }, include: { _count: { select: { uses: true } } } })
+  if (!links.length) return []
+  const codes = links.map((l) => l.code)
+  const [signups, paying] = await Promise.all([
+    db.user.groupBy({ by: ["invitedByCode"], where: { invitedByCode: { in: codes } }, _count: true }),
+    db.specialLinkUse.findMany({
+      where: { linkId: { in: links.map((l) => l.id) }, business: { subscriptions: { some: { lastChargedAt: { not: null } } } } },
+      select: { linkId: true },
+    }),
+  ])
+  return links.map((l) => ({
+    ...l,
+    signups: signups.find((s) => s.invitedByCode === l.code)?._count ?? 0,
+    businesses: l._count.uses,
+    paying: paying.filter((p) => p.linkId === l.id).length,
+  }))
 }

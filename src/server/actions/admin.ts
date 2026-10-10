@@ -513,3 +513,56 @@ export async function saveReferralProgram(input: ReferralProgramInput): Promise<
   revalidatePath("/dashboard/invitar")
   return { ok: true, message: parsed.data.enabled ? "Reglas guardadas" : "Programa pausado" }
 }
+
+// ─── Enlaces especiales (campañas) ──────────────────────────────────────────
+
+const specialLinkSchema = z.object({
+  name: z.string().trim().min(2, "Ponle un nombre, ej.: Instagram octubre").max(60),
+  code: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9-]{3,32}$/, "Usa de 3 a 32 letras minúsculas, números o guiones (sin espacios ni tildes)"),
+  plan: z.enum(["PRO", "BUSINESS"]),
+  days: z.number().int().min(1, "Mínimo 1 día").max(365, "Máximo 365 días"),
+  maxUses: z.number().int().min(1, "Mínimo 1").max(1_000_000).nullable(),
+  expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+})
+export type SpecialLinkInput = z.input<typeof specialLinkSchema>
+
+export async function createSpecialLink(input: SpecialLinkInput): Promise<ActionResult> {
+  await requireAdmin()
+  const parsed = specialLinkSchema.safeParse(input)
+  if (!parsed.success) return validationError(parsed.error)
+  const d = parsed.data
+  // El enlace comparte dirección con los de los clientes (ordensimple.cl/amigo/...): no puede repetir uno de ellos.
+  if (await db.business.findUnique({ where: { referralCode: d.code }, select: { id: true } })) {
+    return { ok: false, message: "Ese enlace ya lo usa un cliente. Elige otro.", fieldErrors: { code: ["Ya existe"] } }
+  }
+  try {
+    await db.specialLink.create({
+      data: { ...d, expiresAt: d.expiresAt ? new Date(`${d.expiresAt}T23:59:59-03:00`) : null },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { ok: false, message: "Ya tienes un enlace con ese nombre. Elige otro.", fieldErrors: { code: ["Ya existe"] } }
+    }
+    return toActionError(error)
+  }
+  revalidatePath("/admin")
+  return { ok: true, message: "Enlace creado" }
+}
+
+export async function toggleSpecialLink(id: string, active: boolean): Promise<ActionResult> {
+  await requireAdmin()
+  await db.specialLink.update({ where: { id }, data: { active } })
+  revalidatePath("/admin")
+  return { ok: true, message: active ? "Enlace activado" : "Enlace pausado" }
+}
+
+export async function deleteSpecialLink(id: string): Promise<ActionResult> {
+  await requireAdmin()
+  await db.specialLink.delete({ where: { id } })
+  revalidatePath("/admin")
+  return { ok: true, message: "Enlace eliminado" }
+}

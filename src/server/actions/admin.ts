@@ -1,5 +1,6 @@
 "use server"
 
+import { idSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { Prisma } from "@/generated/prisma/client"
@@ -83,7 +84,10 @@ const couponSchema = z
     days: z.number().int().min(1, "Mínimo 1 día").max(3650).nullable(),
     percentOff: z.number().int().min(1, "Mínimo 1%").max(100, "Máximo 100%").nullable(),
     maxRedemptions: z.number().int().min(1, "Mínimo 1 uso").max(1_000_000).nullable(),
-    expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    expiresAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
     note: z.string().trim().max(200).optional(),
   })
   .refine((d) => d.kind !== "FREE_DAYS" || d.days, { path: ["days"], message: "¿Cuántos días regala?" })
@@ -123,6 +127,7 @@ export async function createCoupon(input: CouponInput): Promise<ActionResult> {
 }
 
 export async function toggleCoupon(id: string, active: boolean): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Código no encontrado." }
   await requireAdmin()
   try {
     await db.coupon.update({ where: { id }, data: { active } })
@@ -134,6 +139,7 @@ export async function toggleCoupon(id: string, active: boolean): Promise<ActionR
 }
 
 export async function deleteCoupon(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Código no encontrado." }
   await requireAdmin()
   try {
     // Borrar el código no quita lo que ya ganaron quienes lo usaron.
@@ -243,9 +249,7 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
     if (sent === 0) return { ok: false, message: "No se pudo enviar ningún correo. Revisa la configuración de Resend." }
     return {
       ok: true,
-      message: failed
-        ? `Se enviaron ${sent} correos; ${failed} fallaron`
-        : `¡Listo! Se enviaron ${sent} correo${sent === 1 ? "" : "s"}`,
+      message: failed ? `Se enviaron ${sent} correos; ${failed} fallaron` : `¡Listo! Se enviaron ${sent} correo${sent === 1 ? "" : "s"}`,
     }
   } catch (error) {
     return toActionError(error)
@@ -284,7 +288,9 @@ export async function setBusinessExtras(input: z.input<typeof extrasSchema>): Pr
 /** Busca personas por nombre o correo para elegir a quién escribirle. */
 export async function searchUsersForEmail(q: string) {
   await requireAdmin()
-  const term = String(q ?? "").trim().slice(0, 80)
+  const term = String(q ?? "")
+    .trim()
+    .slice(0, 80)
   if (term.length < 2) return []
   return db.user.findMany({
     where: { OR: [{ name: { contains: term, mode: "insensitive" } }, { email: { contains: term, mode: "insensitive" } }] },
@@ -419,7 +425,8 @@ export async function deleteUserAccount(input: z.input<typeof deleteUserSchema>)
     })
     if (!user) return { ok: false, message: "Esa cuenta ya no existe." }
     if (user.email.toLowerCase() !== confirmEmail) return { ok: false, message: "El correo no coincide. No se eliminó nada." }
-    if (user.email.toLowerCase() === admin.email.toLowerCase()) return { ok: false, message: "No puedes eliminar tu propia cuenta desde aquí." }
+    if (user.email.toLowerCase() === admin.email.toLowerCase())
+      return { ok: false, message: "No puedes eliminar tu propia cuenta desde aquí." }
     if (isAdminEmail(user.email)) return { ok: false, message: "No se puede eliminar la cuenta de un administrador." }
 
     const ownedIds = user.memberships.map((m) => m.businessId)
@@ -459,6 +466,7 @@ export async function addAdminNote(input: z.input<typeof noteSchema>): Promise<A
 }
 
 export async function deleteAdminNote(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Nota no encontrada." }
   await requireAdmin()
   try {
     const note = await db.adminNote.delete({ where: { id: z.string().min(1).max(60).parse(id) }, select: { userId: true } })
@@ -479,7 +487,9 @@ export async function sendVerifyLinks(): Promise<ActionResult> {
     revalidatePath("/admin")
     return {
       ok: true,
-      message: r.remaining ? `Enviados ${r.sent}. Quedan ${r.remaining}: vuelve a tocar el botón mañana.` : `Enviados ${r.sent}. Listo, ya se les mandó a todos.`,
+      message: r.remaining
+        ? `Enviados ${r.sent}. Quedan ${r.remaining}: vuelve a tocar el botón mañana.`
+        : `Enviados ${r.sent}. Listo, ya se les mandó a todos.`,
     }
   } catch (error) {
     return toActionError(error)
@@ -526,7 +536,10 @@ const specialLinkSchema = z.object({
   plan: z.enum(["PRO", "BUSINESS"]),
   days: z.number().int().min(1, "Mínimo 1 día").max(365, "Máximo 365 días"),
   maxUses: z.number().int().min(1, "Mínimo 1").max(1_000_000).nullable(),
-  expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  expiresAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
 })
 export type SpecialLinkInput = z.input<typeof specialLinkSchema>
 
@@ -554,6 +567,7 @@ export async function createSpecialLink(input: SpecialLinkInput): Promise<Action
 }
 
 export async function toggleSpecialLink(id: string, active: boolean): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Enlace no encontrado." }
   await requireAdmin()
   await db.specialLink.update({ where: { id }, data: { active } })
   revalidatePath("/admin")
@@ -561,6 +575,7 @@ export async function toggleSpecialLink(id: string, active: boolean): Promise<Ac
 }
 
 export async function deleteSpecialLink(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Enlace no encontrado." }
   await requireAdmin()
   await db.specialLink.delete({ where: { id } })
   revalidatePath("/admin")

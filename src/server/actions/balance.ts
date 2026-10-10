@@ -44,7 +44,15 @@ export async function createWithdrawal(input: WithdrawalInput): Promise<ActionRe
 
     if (v.kind !== "GOODS") {
       await db.ownerWithdrawal.create({
-        data: { businessId: ctx.businessId, amount: v.amount!, date, source: v.source, kind: v.kind, note: v.note, createdById: ctx.user.id },
+        data: {
+          businessId: ctx.businessId,
+          amount: v.amount!,
+          date,
+          source: v.source,
+          kind: v.kind,
+          note: v.note,
+          createdById: ctx.user.id,
+        },
       })
       return done(v.kind === "DEPOSIT" ? "Anotado: pusiste plata en el negocio" : "Retiro anotado")
     }
@@ -100,7 +108,8 @@ export async function deleteWithdrawal(id: string): Promise<ActionResult> {
     const ctx = await ctxForBalance()
     const w = await db.ownerWithdrawal.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId } })
     if (!w) return { ok: false, message: "Retiro no encontrado." }
-    const product = w.kind === "GOODS" && w.productId ? await db.product.findFirst({ where: { id: w.productId, businessId: ctx.businessId } }) : null
+    const product =
+      w.kind === "GOODS" && w.productId ? await db.product.findFirst({ where: { id: w.productId, businessId: ctx.businessId } }) : null
     await db.$transaction([
       db.ownerWithdrawal.delete({ where: { id: w.id } }),
       ...(product?.trackStock && w.quantity
@@ -137,7 +146,11 @@ export async function saveBalanceSettings(input: BalanceSettingsInput): Promise<
       ...(parsed.data.ownerSalary !== undefined ? { ownerSalary: parsed.data.ownerSalary || null } : {}),
       ...(parsed.data.openingCash !== undefined ? { openingCash: parsed.data.openingCash, openingCashAt: new Date() } : {}),
     }
-    await db.businessSettings.upsert({ where: { businessId: ctx.businessId }, create: { businessId: ctx.businessId, ...data }, update: data })
+    await db.businessSettings.upsert({
+      where: { businessId: ctx.businessId },
+      create: { businessId: ctx.businessId, ...data },
+      update: data,
+    })
   } catch (error) {
     return toActionError(error)
   }
@@ -155,7 +168,15 @@ export async function saveLoan(input: LoanInput, id?: string): Promise<ActionRes
     // Un préstamo nuevo que se acaba de recibir: la plata entra a la caja o al banco.
     if (!id && receivedTo && fields.balance > 0) {
       await db.ownerWithdrawal.create({
-        data: { businessId: ctx.businessId, amount: fields.balance, date: new Date(), source: receivedTo, kind: "DEPOSIT", note: `Préstamo: ${fields.lender}`, createdById: ctx.user.id },
+        data: {
+          businessId: ctx.businessId,
+          amount: fields.balance,
+          date: new Date(),
+          source: receivedTo,
+          kind: "DEPOSIT",
+          note: `Préstamo: ${fields.lender}`,
+          createdById: ctx.user.id,
+        },
       })
     }
     if (id) {
@@ -172,6 +193,7 @@ export async function saveLoan(input: LoanInput, id?: string): Promise<ActionRes
 
 /** Pagaste una cuota: baja lo que debes (lo que se pagó de interés no se separa; es un cálculo simple). */
 export async function payLoanInstallment(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Préstamo no encontrado." }
   try {
     const ctx = await ctxForBalance()
     const loan = await db.loan.findFirst({ where: { id, businessId: ctx.businessId } })
@@ -184,6 +206,7 @@ export async function payLoanInstallment(id: string): Promise<ActionResult> {
 }
 
 export async function deleteLoan(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Préstamo no encontrado." }
   try {
     const ctx = await ctxForBalance()
     const { count } = await db.loan.deleteMany({ where: { id, businessId: ctx.businessId } })
@@ -193,4 +216,3 @@ export async function deleteLoan(id: string): Promise<ActionResult> {
   }
   return done("Préstamo borrado")
 }
-

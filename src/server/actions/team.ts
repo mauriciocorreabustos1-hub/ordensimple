@@ -1,5 +1,6 @@
 "use server"
 
+import { idSchema } from "@/lib/validations"
 import { randomBytes } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
@@ -149,7 +150,8 @@ export async function setMemberBranches(input: z.input<typeof branchesSchema>): 
     })
     if (current.length === 0) return { ok: false, message: "Esa persona no es parte de tu equipo." }
     if (current.some((m) => m.role === "OWNER")) return { ok: false, message: "No se pueden cambiar las sucursales de un dueño." }
-    if (businessIds.length === 0) return { ok: false, message: "Marca al menos una sucursal. Para quitarle todo el acceso usa “Quitar del negocio”." }
+    if (businessIds.length === 0)
+      return { ok: false, message: "Marca al menos una sucursal. Para quitarle todo el acceso usa “Quitar del negocio”." }
 
     const role = current.find((m) => m.businessId === ctx.businessId)?.role ?? current[0].role
     const toAdd = businessIds.filter((id) => !current.some((m) => m.businessId === id))
@@ -166,7 +168,10 @@ export async function setMemberBranches(input: z.input<typeof branchesSchema>): 
       ...toAdd.map((businessId) => db.businessMember.create({ data: { businessId, userId, role } })),
       db.businessMember.deleteMany({ where: { id: { in: toRemove.map((m) => m.id) } } }),
       // Si tenía abierta una sucursal que se le quitó, entrará a otra de las suyas.
-      db.user.updateMany({ where: { id: userId, activeBusinessId: { in: toRemove.map((m) => m.businessId) } }, data: { activeBusinessId: null } }),
+      db.user.updateMany({
+        where: { id: userId, activeBusinessId: { in: toRemove.map((m) => m.businessId) } },
+        data: { activeBusinessId: null },
+      }),
     ])
 
     revalidatePath("/dashboard/configuracion")
@@ -178,6 +183,7 @@ export async function setMemberBranches(input: z.input<typeof branchesSchema>): 
 }
 
 export async function cancelInvitation(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Invitación no encontrada." }
   const ctx = await requireBusiness()
   try {
     assertCan(ctx, "members:manage")
@@ -191,6 +197,7 @@ export async function cancelInvitation(id: string): Promise<ActionResult> {
 }
 
 export async function changeMemberRole(memberId: string, role: z.input<typeof teamRole>): Promise<ActionResult> {
+  if (!idSchema.safeParse(memberId).success) return { ok: false, message: "No encontramos a esa persona." }
   const ctx = await requireBusiness()
   const parsedRole = teamRole.safeParse(role)
   if (!parsedRole.success) return { ok: false, message: "Rol no válido." }
@@ -213,6 +220,7 @@ export async function changeMemberRole(memberId: string, role: z.input<typeof te
 }
 
 export async function removeMember(memberId: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(memberId).success) return { ok: false, message: "No encontramos a esa persona." }
   const ctx = await requireBusiness()
   try {
     assertCan(ctx, "members:manage")
@@ -246,6 +254,7 @@ export async function leaveBusiness(): Promise<ActionResult> {
 
 /** Cambia el negocio que se muestra (para quien pertenece a más de uno). */
 export async function switchBusiness(businessId: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(businessId).success) return { ok: false, message: "No tienes acceso a ese negocio." }
   const user = await requireUser()
   const member = await db.businessMember.findUnique({
     where: { businessId_userId: { businessId, userId: user.id } },
@@ -259,6 +268,7 @@ export async function switchBusiness(businessId: string): Promise<ActionResult> 
 
 /** Botón "Unirme" de la página /invitacion/[token]. */
 export async function acceptInvitation(token: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(token).success) return { ok: false, message: "Esta invitación ya no es válida. Pide una nueva." }
   const user = await requireUser()
   const invitation = await db.invitation.findUnique({ where: { token } })
   if (!invitation || invitation.acceptedAt || invitation.expiresAt <= new Date()) {

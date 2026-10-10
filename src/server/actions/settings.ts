@@ -131,16 +131,13 @@ export async function updateMarketingOptIn(value: boolean): Promise<ActionResult
  */
 export async function deleteMyAccount(confirmEmail: string): Promise<ActionResult> {
   const user = await requireUser()
-  if (confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+  if (typeof confirmEmail !== "string" || confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
     return { ok: false, message: "El correo no coincide. No se eliminó nada." }
   }
   try {
     const owned = await db.businessMember.findMany({ where: { userId: user.id, role: "OWNER" }, select: { businessId: true } })
     const ownedIds = owned.map((m) => m.businessId)
-    await db.$transaction([
-      db.business.deleteMany({ where: { id: { in: ownedIds } } }),
-      db.user.delete({ where: { id: user.id } }),
-    ])
+    await db.$transaction([db.business.deleteMany({ where: { id: { in: ownedIds } } }), db.user.delete({ where: { id: user.id } })])
     if (ownedIds.length) {
       await db.user.updateMany({ where: { activeBusinessId: { in: ownedIds } }, data: { activeBusinessId: null } })
     }

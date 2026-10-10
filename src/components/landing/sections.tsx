@@ -212,13 +212,13 @@ export function PricingCards() {
               </Button>
             ) : plan.id === "PRO" ? (
               <Button size="lg" className="h-11" asChild>
-                <Link href={BILLING_ENABLED ? "/registro?plan=pro" : "/registro"}>
-                  {BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}
-                </Link>
+                {/* Enlace normal (no Link): /pagar/... es una redirección del servidor, no una página. */}
+                <a href={BILLING_ENABLED ? "/pagar/pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</a>
               </Button>
             ) : BILLING_ENABLED ? (
               <Button size="lg" variant="outline" className="h-11" asChild>
-                <Link href="/registro?plan=empresa">Elegir Empresa</Link>
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- /pagar es una redirección del servidor, no una página */}
+                <a href="/pagar/empresa">Elegir Empresa</a>
               </Button>
             ) : (
               <Button size="lg" variant="outline" className="h-11" disabled>

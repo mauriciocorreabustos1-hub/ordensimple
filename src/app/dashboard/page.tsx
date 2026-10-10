@@ -32,7 +32,7 @@ import { getYearSummary } from "@/server/queries/results"
 import { payablesDueBefore } from "@/server/queries/payables"
 import { addDays, startOfDay } from "@/lib/dates"
 import { InsightsCard } from "@/components/dashboard/insights-card"
-import { canUseFeature, PLANS, PLANS_ENFORCED } from "@/lib/plans"
+import { canUseFeature, PLANS, PLANS_ENFORCED, checkoutPath } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 import { db } from "@/lib/db"
@@ -208,8 +208,8 @@ export default async function DashboardPage() {
             Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) ves tu utilidad real y tu F29, el flujo
             de caja con lo que viene, todo tu historial, merma y vencidos, y vendes escaneando sin parar.
           </span>
-          <Link href="/dashboard/plan" className="font-medium text-primary hover:underline">
-            Ver planes
+          <Link href={checkoutPath("pro")} className="shrink-0 font-medium text-primary hover:underline">
+            Pasar a Pro
           </Link>
         </div>
       ) : null}

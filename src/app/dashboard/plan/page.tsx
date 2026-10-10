@@ -69,6 +69,38 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
     ctx.business.extraMembers ? `+${ctx.business.extraMembers} trabajadores` : null,
   ].filter(Boolean)
 
+  // Llegó para pagar (desde Precios, el Inicio o una función Pro): el formulario de pago va primero.
+  const payFirst = Boolean(planChoice) && showBilling && subState.kind !== "active"
+  const currentPlan = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Crown className="size-4 text-warning" />
+          Estás en el plan {plan.name}
+        </CardTitle>
+        <CardDescription>{plan.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ul className="grid gap-1 text-sm sm:grid-cols-2">
+          {plan.highlights.map((h) => (
+            <li key={h}>· {h}</li>
+          ))}
+        </ul>
+        {planEnds || ctx.business.discountPercent || extras.length ? (
+          <div className="flex flex-wrap gap-2">
+            {planEnds ? <Badge variant="secondary">Vigente hasta el {planEnds}</Badge> : null}
+            {ctx.business.discountPercent ? (
+              <Badge variant="secondary">
+                {ctx.business.discountPercent}% de descuento guardado ({ctx.business.discountCode})
+              </Badge>
+            ) : null}
+            {extras.length ? <Badge variant="secondary">Cupos extra: {extras.join(" · ")}</Badge> : null}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+
   return (
     <div className="space-y-6">
       <PageHeader title="Tu plan" description="Lo que incluye tu plan, y cómo contratar o cambiar a Pro o Empresa." />
@@ -81,33 +113,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
         </p>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Crown className="size-4 text-warning" />
-            Estás en el plan {plan.name}
-          </CardTitle>
-          <CardDescription>{plan.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ul className="grid gap-1 text-sm sm:grid-cols-2">
-            {plan.highlights.map((h) => (
-              <li key={h}>· {h}</li>
-            ))}
-          </ul>
-          {planEnds || ctx.business.discountPercent || extras.length ? (
-            <div className="flex flex-wrap gap-2">
-              {planEnds ? <Badge variant="secondary">Vigente hasta el {planEnds}</Badge> : null}
-              {ctx.business.discountPercent ? (
-                <Badge variant="secondary">
-                  {ctx.business.discountPercent}% de descuento guardado ({ctx.business.discountCode})
-                </Badge>
-              ) : null}
-              {extras.length ? <Badge variant="secondary">Cupos extra: {extras.join(" · ")}</Badge> : null}
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+      {payFirst ? null : currentPlan}
 
       {showBilling ? (
         <Card id="contratar" className="scroll-mt-20">
@@ -133,6 +139,8 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
           </CardContent>
         </Card>
       ) : null}
+
+      {payFirst ? currentPlan : null}
 
       <Card>
         <CardContent className="pt-6">

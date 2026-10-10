@@ -36,7 +36,10 @@ export function OnboardingWizard({ firstName, planChoice }: { firstName: string;
   const [data, setData] = React.useState<State>({ name: "", country: "CL", currency: "CLP" })
 
   const set = <K extends keyof State>(key: K, value: State[K]) => setData((d) => ({ ...d, [key]: value }))
-  const last = step === STEPS.length - 1
+  // Si ya eligió Pro o Empresa para pagar, solo se pide el nombre del negocio y va directo al pago (Chile y pesos
+  // por defecto); lo demás se completa después en Configuración.
+  const total = planChoice ? 1 : STEPS.length
+  const last = step === total - 1
 
   function next() {
     if (step === 0 && data.name.trim().length < 2) {
@@ -60,12 +63,16 @@ export function OnboardingWizard({ firstName, planChoice }: { firstName: string;
 
   return (
     <div className="w-full max-w-lg space-y-6">
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          Paso {step + 1} de {STEPS.length}
-        </p>
-        <Progress value={((step + 1) / STEPS.length) * 100} className="h-1.5" />
-      </div>
+      {planChoice ? (
+        <p className="text-sm text-muted-foreground">Un solo dato y vamos al pago.</p>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Paso {step + 1} de {total}
+          </p>
+          <Progress value={((step + 1) / total) * 100} className="h-1.5" />
+        </div>
+      )}
 
       <div className="space-y-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-8">
         <div className="space-y-1">
@@ -143,12 +150,7 @@ export function OnboardingWizard({ firstName, planChoice }: { firstName: string;
               <ChoiceChips name="Trabajadores" options={YES_NO} value={data.hasEmployees} onChange={(v) => set("hasEmployees", v)} />
             </Field>
             <Field label="¿Llevas control de stock o inventario?">
-              <ChoiceChips
-                name="Inventario"
-                options={YES_NO}
-                value={data.managesInventory}
-                onChange={(v) => set("managesInventory", v)}
-              />
+              <ChoiceChips name="Inventario" options={YES_NO} value={data.managesInventory} onChange={(v) => set("managesInventory", v)} />
             </Field>
           </div>
         ) : null}
@@ -181,15 +183,19 @@ export function OnboardingWizard({ firstName, planChoice }: { firstName: string;
               </Button>
             ) : null}
             <Button size="lg" className="h-11 px-5" onClick={next} disabled={pending}>
-              {pending ? <Loader2 className="animate-spin" /> : last ? <Rocket /> : null}
-              {last ? "Empezar a usar OrdenSimple" : "Continuar"}
-              {!last && !pending ? <ArrowRight /> : null}
+              {pending ? <Loader2 className="animate-spin" /> : last && !planChoice ? <Rocket /> : null}
+              {last ? (planChoice ? "Continuar al pago" : "Empezar a usar OrdenSimple") : "Continuar"}
+              {(!last || planChoice) && !pending ? <ArrowRight /> : null}
             </Button>
           </div>
         </div>
       </div>
-      {step > 0 ? (
-        <p className="text-center text-xs text-muted-foreground">Todo esto se puede cambiar después en Configuración.</p>
+      {step > 0 || planChoice ? (
+        <p className="text-center text-xs text-muted-foreground">
+          {planChoice
+            ? "El rubro, el país y lo demás los completas después en Configuración."
+            : "Todo esto se puede cambiar después en Configuración."}
+        </p>
       ) : null}
     </div>
   )

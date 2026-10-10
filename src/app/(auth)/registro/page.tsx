@@ -30,7 +30,9 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center lg:text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">{chosen ? `Crea tu cuenta para contratar ${chosen.name}` : "Crea tu cuenta gratis"}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {chosen ? `Crea tu cuenta para contratar ${chosen.name}` : "Crea tu cuenta gratis"}
+        </h1>
         <p className="text-sm text-muted-foreground">
           {next
             ? "Crea tu cuenta y te llevamos directo a la invitación."
@@ -43,7 +45,11 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
         <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <Gift className="mt-0.5 size-4 shrink-0 text-primary" />
           <span>
-            ¡Tienes un regalo! Al crear tu negocio tienes <strong>{special.days} días gratis del plan {PLANS[special.plan].name}</strong>.
+            ¡Tienes un regalo! Al crear tu negocio tienes{" "}
+            <strong>
+              {special.days} días gratis del plan {PLANS[special.plan].name}
+            </strong>
+            .
           </span>
         </div>
       ) : null}
@@ -54,7 +60,14 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
             <strong className="break-words">{invitedBy.name}</strong> te invitó a OrdenSimple.
             {program.invitedDays > 0
               ? ` Al crear tu negocio tienes ${program.invitedDays} días gratis del plan ${PLANS[program.plan].name}.`
-              : null}
+              : null}{" "}
+            {/* Enlace normal: /amigo/quitar es una redirección del servidor que borra la invitación guardada. */}
+            <a
+              href={choice ? `/amigo/quitar?plan=${choice}` : "/amigo/quitar"}
+              className="text-xs whitespace-nowrap text-muted-foreground underline hover:text-foreground"
+            >
+              ¿No te invitó nadie? Quitar
+            </a>
           </span>
         </div>
       ) : null}

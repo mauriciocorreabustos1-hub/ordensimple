@@ -1,5 +1,6 @@
 "use server"
 
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { BILLING_ENABLED, checkoutPath, parsePlanChoice } from "@/lib/plans"
 import { db } from "@/lib/db"
@@ -7,6 +8,7 @@ import { COUNTRIES, DEFAULT_EXPENSE_CATEGORIES } from "@/lib/constants"
 import { onboardingSchema, type OnboardingInput } from "@/lib/validations"
 import { requireUser } from "@/server/session"
 import { recordReferral } from "@/server/referrals"
+import { REFERRAL_COOKIE } from "@/lib/referrals"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 export async function completeOnboarding(input: OnboardingInput, planChoice?: string): Promise<ActionResult> {
@@ -76,8 +78,10 @@ export async function completeOnboarding(input: OnboardingInput, planChoice?: st
   } catch (error) {
     return toActionError(error)
   }
-  // "Invita a un amigo": si llegó con un enlace, recibe sus días de regalo.
+  // "Invita a un amigo": si llegó con un enlace, recibe sus días de regalo. La invitación se usa una sola vez:
+  // se borra del navegador para que otra cuenta creada ahí no cuente como invitada.
   await recordReferral({ userId: user.id, businessId })
+  ;(await cookies()).delete(REFERRAL_COOKIE)
 
   return finish()
 }

@@ -1,17 +1,11 @@
 import Link from "next/link"
-import { ArrowRight, Check, Minus, Sparkles, Users } from "lucide-react"
+import { ArrowRight, Check, Minus, Users, X } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
 import { cn } from "@/lib/utils"
-import {
-  BENEFITS,
-  PLAN_COMPARISON,
-  STEPS,
-  type FaqGroup,
-  type Feature,
-} from "@/components/landing/content"
+import { BEFORE_AFTER, PLAN_COMPARISON, STEPS, type FaqGroup, type Feature } from "@/components/landing/content"
 
 export function Container({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("mx-auto max-w-6xl px-4 sm:px-6", className)}>{children}</div>
@@ -36,20 +30,19 @@ export function Section({
 }
 
 export function SectionTitle({
-  eyebrow,
   title,
   description,
   align = "center",
 }: {
-  eyebrow: string
+  /** Ya no se muestra (quedaba con cara de plantilla); se mantiene para no tocar cada página. */
+  eyebrow?: string
   title: string
   description?: string
   align?: "center" | "left"
 }) {
   return (
     <div className={cn("max-w-2xl space-y-3", align === "center" && "mx-auto text-center")}>
-      <p className="text-sm font-semibold text-primary">{eyebrow}</p>
-      <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h2>
+      <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
       {description ? <p className="text-lg text-pretty text-muted-foreground">{description}</p> : null}
     </div>
   )
@@ -58,16 +51,12 @@ export function SectionTitle({
 /** Encabezado de las páginas internas (/funciones, /precios, etc.). */
 export function PageHero({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(ellipse_at_top,var(--accent),transparent_70%)]" />
-      <Container className="pt-14 pb-12 text-center md:pt-20 md:pb-16">
-        <div className="mx-auto max-w-3xl space-y-5">
-          <p className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-            <Sparkles className="size-3.5 text-primary" />
-            {eyebrow}
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{title}</h1>
-          <p className="mx-auto max-w-2xl text-lg text-pretty text-muted-foreground">{description}</p>
+    <section className="border-b bg-accent/30">
+      <Container className="pt-12 pb-10 md:pt-16 md:pb-14">
+        <div className="max-w-3xl space-y-4">
+          <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p>
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.05]">{title}</h1>
+          <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{description}</p>
         </div>
       </Container>
     </section>
@@ -76,20 +65,14 @@ export function PageHero({ eyebrow, title, description }: { eyebrow: string; tit
 
 export function FeatureGrid({ items, columns = 3 }: { items: Feature[]; columns?: 2 | 3 | 4 }) {
   return (
-    <div
-      className={cn(
-        "grid gap-4 sm:grid-cols-2",
-        columns === 3 && "lg:grid-cols-3",
-        columns === 4 && "lg:grid-cols-4",
-      )}
-    >
+    <div className={cn("grid gap-x-8 gap-y-6 sm:grid-cols-2", columns === 3 && "lg:grid-cols-3", columns === 4 && "lg:grid-cols-4")}>
       {items.map((f) => (
-        <div key={f.title} className="space-y-3 rounded-2xl border bg-card p-5 text-center sm:text-left">
-          <span className="mx-auto flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary sm:mx-0">
-            <f.icon className="size-5" />
-          </span>
-          <p className="font-semibold">{f.title}</p>
-          <p className="text-sm text-muted-foreground">{f.text}</p>
+        <div key={f.title} className="flex gap-3 border-t pt-4">
+          <f.icon className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div className="space-y-1">
+            <p className="font-semibold">{f.title}</p>
+            <p className="text-sm text-pretty text-muted-foreground">{f.text}</p>
+          </div>
         </div>
       ))}
     </div>
@@ -112,30 +95,71 @@ export function MoreLink({ href, children }: { href: string; children: React.Rea
 export function BenefitsSection() {
   return (
     <Section>
-      <SectionTitle eyebrow="Beneficios" title="Entiende tus números, aunque no te gusten los números" />
-      <div className="mt-12 grid gap-8 md:grid-cols-3">
-        {BENEFITS.map((b) => (
-          <div key={b.title} className="space-y-3 text-center md:text-left">
-            <b.icon className="mx-auto size-6 text-primary md:mx-0" />
-            <p className="text-lg font-semibold">{b.title}</p>
-            <p className="text-muted-foreground">{b.text}</p>
-          </div>
-        ))}
+      <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
+        <div className="space-y-4">
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+            Entiende tus números, aunque no te gusten los números.
+          </h2>
+          <p className="text-lg text-pretty text-muted-foreground">
+            Nada de “margen neto” ni planillas. OrdenSimple te lo dice como te lo diría un amigo que sabe de negocios.
+          </p>
+          <ul className="space-y-2 pt-2 text-pretty">
+            <li className="flex gap-2">
+              <Check className="mt-1 size-4 shrink-0 text-primary" />
+              Anotar el día te toma menos de un minuto.
+            </li>
+            <li className="flex gap-2">
+              <Check className="mt-1 size-4 shrink-0 text-primary" />
+              Tus datos son solo tuyos y de quien tú autorices.
+            </li>
+          </ul>
+        </div>
+        <figure className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+          <p className="text-sm text-muted-foreground line-through decoration-muted-foreground/50">Margen neto del período: 18,4%</p>
+          <blockquote className="font-display mt-4 text-2xl leading-snug font-semibold text-balance sm:text-3xl">
+            De cada <span className="text-primary">$10.000</span> que vendes, te quedan <span className="text-primary">$1.840</span>.
+          </blockquote>
+          <figcaption className="mt-4 text-sm text-muted-foreground">Así te lo muestra OrdenSimple en el Inicio.</figcaption>
+        </figure>
       </div>
     </Section>
   )
 }
 
+/** "El cuaderno vs. OrdenSimple": situaciones reales de un negocio de barrio, antes y después. */
+export function BeforeAfter() {
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card">
+      <div className="hidden grid-cols-2 border-b bg-muted/40 text-sm font-medium text-muted-foreground sm:grid">
+        <p className="px-5 py-3">Con el cuaderno</p>
+        <p className="border-l px-5 py-3 text-foreground">Con OrdenSimple</p>
+      </div>
+      <ul className="divide-y">
+        {BEFORE_AFTER.map((row) => (
+          <li key={row.after} className="grid sm:grid-cols-2">
+            <p className="flex gap-2.5 px-5 pt-4 text-pretty text-muted-foreground sm:py-4">
+              <X className="mt-0.5 size-4 shrink-0 text-muted-foreground/70" />
+              {row.before}
+            </p>
+            <p className="flex gap-2.5 px-5 pt-2 pb-4 font-medium text-pretty sm:border-l sm:py-4">
+              <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+              {row.after}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
   return (
-    <ol className={cn("grid gap-4 sm:grid-cols-2", !detailed && "lg:grid-cols-4")}>
+    <ol className={cn("grid gap-x-8 gap-y-8 sm:grid-cols-2", !detailed && "lg:grid-cols-4")}>
       {STEPS.map((s) => (
-        <li key={s.n} className="space-y-3 rounded-2xl border bg-card p-5 text-center sm:text-left md:p-6">
-          <span className="mx-auto flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground sm:mx-0">
-            {s.n}
-          </span>
-          <p className="font-semibold">{s.title}</p>
-          <p className="text-sm text-muted-foreground">{detailed ? s.detail : s.text}</p>
+        <li key={s.n} className="space-y-2 border-t-2 border-foreground/80 pt-4">
+          <span className="font-display tabular block text-4xl font-semibold text-primary">{s.n.padStart(2, "0")}</span>
+          <p className="text-lg font-semibold">{s.title}</p>
+          <p className="text-pretty text-muted-foreground">{detailed ? s.detail : s.text}</p>
         </li>
       ))}
     </ol>
@@ -188,7 +212,9 @@ export function PricingCards() {
               </Button>
             ) : plan.id === "PRO" ? (
               <Button size="lg" className="h-11" asChild>
-                <Link href={BILLING_ENABLED ? "/registro?plan=pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</Link>
+                <Link href={BILLING_ENABLED ? "/registro?plan=pro" : "/registro"}>
+                  {BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}
+                </Link>
               </Button>
             ) : BILLING_ENABLED ? (
               <Button size="lg" variant="outline" className="h-11" asChild>
@@ -267,17 +293,19 @@ export function CtaSection({
   return (
     <section className="border-t">
       <Container className="py-16 md:py-24">
-        <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 text-center text-primary-foreground sm:px-12">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,oklch(1_0_0/0.18),transparent_50%)]" />
-          <div className="relative mx-auto max-w-xl space-y-5">
-            <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h2>
-            <p className="text-primary-foreground/85">{text}</p>
-            <Button size="lg" variant="secondary" className="h-12 px-6 text-base" asChild>
+        <div className="grid items-end gap-8 rounded-3xl bg-[#13201c] px-6 py-12 text-white sm:px-12 md:grid-cols-[1fr_auto] md:py-14">
+          <div className="max-w-xl space-y-3">
+            <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
+            <p className="text-lg text-white/70">{text}</p>
+          </div>
+          <div className="space-y-2 md:text-right">
+            <Button size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
               <Link href="/registro">
                 Comenzar gratis
                 <ArrowRight />
               </Link>
             </Button>
+            <p className="text-sm text-white/60">Gratis para siempre · Sin tarjeta</p>
           </div>
         </div>
       </Container>

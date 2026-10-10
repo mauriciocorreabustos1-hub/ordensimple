@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Analytics } from "@vercel/analytics/next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { getAppUrl } from "@/lib/app-url"
 import { ORIGIN_SCRIPT } from "@/lib/signup-source"
@@ -17,6 +17,8 @@ const LEGACY_CSS_SCRIPT = `(function(){try{if(window.CSSLayerBlockRule)return;va
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
+// Títulos de la web pública: una letra con más carácter que la del texto.
+const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], weight: ["500", "600", "700"] })
 
 export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
@@ -24,8 +26,7 @@ export const metadata: Metadata = {
     default: "OrdenSimple — Administra tu negocio sin complicarte",
     template: "%s · OrdenSimple",
   },
-  description:
-    "Controla tus ventas, gastos, productos y ganancias desde un solo lugar. Hecho para emprendedores y pymes de Chile.",
+  description: "Controla tus ventas, gastos, productos y ganancias desde un solo lugar. Hecho para emprendedores y pymes de Chile.",
   applicationName: "OrdenSimple",
   // Código de Google Search Console (variable GOOGLE_SITE_VERIFICATION en Vercel).
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
@@ -70,7 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es-CL"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />

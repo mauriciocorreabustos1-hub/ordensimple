@@ -33,15 +33,43 @@ import { BILLING_ENABLED } from "@/lib/plans"
 export type Feature = { icon: LucideIcon; title: string; text: string }
 
 export const HIGHLIGHTS: Feature[] = [
-  { icon: ShoppingBag, title: "Ventas en segundos", text: "Anota una venta desde el celular con solo el monto, o con detalle de productos, cliente y forma de pago." },
-  { icon: NotebookPen, title: "Fiado sin cuaderno", text: "Anota lo que fías, registra los abonos y sabe al tiro cuánto te debe cada cliente." },
+  {
+    icon: ShoppingBag,
+    title: "Ventas en segundos",
+    text: "Anota una venta desde el celular con solo el monto, o con detalle de productos, cliente y forma de pago.",
+  },
+  {
+    icon: NotebookPen,
+    title: "Fiado sin cuaderno",
+    text: "Anota lo que fías, registra los abonos y sabe al tiro cuánto te debe cada cliente.",
+  },
   { icon: Vault, title: "Cierre de caja", text: "Al final del día cuentas el efectivo y te decimos si falta o sobra plata." },
-  { icon: Receipt, title: "Gastos ordenados", text: "Arriendo, luz, proveedores, sueldos… todo en categorías para saber en qué se va tu plata." },
-  { icon: LayoutDashboard, title: "Tu negocio de un vistazo", text: "Ventas, gastos y ganancia de hoy y del mes, con gráficos simples y comparaciones." },
-  { icon: Mail, title: "Avisos por correo", text: "Te avisamos cuando algo se está acabando, si llevas días sin anotar ventas y cada lunes con tu resumen." },
-  { icon: Package, title: "Productos e inventario", text: "Costo, precio y stock de cada producto: cuánto ganas por unidad y qué tienes que reponer." },
+  {
+    icon: Receipt,
+    title: "Gastos ordenados",
+    text: "Arriendo, luz, proveedores, sueldos… todo en categorías para saber en qué se va tu plata.",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Tu negocio de un vistazo",
+    text: "Ventas, gastos y ganancia de hoy y del mes, con gráficos simples y comparaciones.",
+  },
+  {
+    icon: Mail,
+    title: "Avisos por correo",
+    text: "Te avisamos cuando algo se está acabando, si llevas días sin anotar ventas y cada lunes con tu resumen.",
+  },
+  {
+    icon: Package,
+    title: "Productos e inventario",
+    text: "Costo, precio y stock de cada producto: cuánto ganas por unidad y qué tienes que reponer.",
+  },
   { icon: UsersRound, title: "Tu equipo", text: "Invita a tus empleados: registran ventas y gastos sin ver tus ganancias." },
-  { icon: Calculator, title: "Calculadoras simples", text: "Precio correcto, punto de equilibrio, metas y simulaciones, explicadas en palabras simples." },
+  {
+    icon: Calculator,
+    title: "Calculadoras simples",
+    text: "Precio correcto, punto de equilibrio, metas y simulaciones, explicadas en palabras simples.",
+  },
 ]
 
 export type FeatureGroup = {
@@ -251,10 +279,22 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
 ]
 
 export const TOOLS: Feature[] = [
-  { icon: Tag, title: "¿A cuánto debería vender?", text: "Si un producto te cuesta $10.000 y quieres ganar 30%, te decimos que lo vendas a $14.286." },
-  { icon: Scale, title: "Punto de equilibrio", text: "“Necesitas vender 248 unidades este mes para cubrir tus gastos. Desde la 249 empiezas a ganar.”" },
+  {
+    icon: Tag,
+    title: "¿A cuánto debería vender?",
+    text: "Si un producto te cuesta $10.000 y quieres ganar 30%, te decimos que lo vendas a $14.286.",
+  },
+  {
+    icon: Scale,
+    title: "Punto de equilibrio",
+    text: "“Necesitas vender 248 unidades este mes para cubrir tus gastos. Desde la 249 empiezas a ganar.”",
+  },
   { icon: Target, title: "Meta de ganancia", text: "¿Quieres ganar $1.000.000 este mes? Te decimos cuánto vender cada día para lograrlo." },
-  { icon: FlaskConical, title: "¿Qué pasa si…?", text: "Prueba subir precios, contratar a alguien o hacer un descuento antes de arriesgarte." },
+  {
+    icon: FlaskConical,
+    title: "¿Qué pasa si…?",
+    text: "Prueba subir precios, contratar a alguien o hacer un descuento antes de arriesgarte.",
+  },
 ]
 
 export const COMING_SOON: Feature[] = [
@@ -265,8 +305,32 @@ export const COMING_SOON: Feature[] = [
 
 export const BENEFITS: Feature[] = [
   { icon: Clock, title: "Adiós al Excel", text: "Deja de pelear con planillas. Registrar tu día te toma menos de un minuto." },
-  { icon: HeartHandshake, title: "Sin palabras difíciles", text: "En vez de “margen neto 18,4%”, te decimos: por cada $10.000 que vendes, te quedan $1.840." },
-  { icon: ShieldCheck, title: "Tus datos, seguros", text: "Cada negocio está separado y protegido. Solo tú y quien autorices pueden verlos." },
+  {
+    icon: HeartHandshake,
+    title: "Sin palabras difíciles",
+    text: "En vez de “margen neto 18,4%”, te decimos: por cada $10.000 que vendes, te quedan $1.840.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Tus datos, seguros",
+    text: "Cada negocio está separado y protegido. Solo tú y quien autorices pueden verlos.",
+  },
+]
+
+/** "El cuaderno vs. OrdenSimple" en la portada. Solo cosas que la app hace hoy. */
+export const BEFORE_AFTER: { before: string; after: string }[] = [
+  {
+    before: "Anotas las ventas en un cuaderno… cuando te acuerdas.",
+    after: "Registras cada venta en segundos, o escaneando el código del producto.",
+  },
+  {
+    before: "El fiado en hojas sueltas, y nadie tiene claro cuánto debe.",
+    after: "Sabes al tiro cuánto te debe cada cliente y le cobras por WhatsApp.",
+  },
+  { before: "Cierras, cuentas la plata y no cuadra.", after: "El cierre de caja te dice si falta o sobra plata, y cuánto." },
+  { before: "Te enteras de que se acabó algo cuando un cliente lo pide.", after: "Te avisa cuando un producto se está acabando." },
+  { before: "A fin de mes no sabes si ganaste o perdiste.", after: "Ves tu ganancia del día y del mes, en palabras simples." },
+  { before: "El Excel que empezaste y nunca terminaste.", after: "Todo en el celular o el computador, sin planillas." },
 ]
 
 export type Step = { n: string; title: string; text: string; detail: string }
@@ -288,7 +352,8 @@ export const STEPS: Step[] = [
     n: "3",
     title: "Registra ventas y gastos",
     text: "Con el botón verde, desde el celular o el computador.",
-    detail: "Cada vez que vendes o pagas algo, lo anotas en segundos. Si tienes productos, también puedes agregarlos con su costo y precio.",
+    detail:
+      "Cada vez que vendes o pagas algo, lo anotas en segundos. Si tienes productos, también puedes agregarlos con su costo y precio.",
   },
   {
     n: "4",
@@ -300,9 +365,15 @@ export const STEPS: Step[] = [
 
 export const TRANSLATIONS: { jargon: string; simple: string }[] = [
   { jargon: "Margen neto: 18,4%", simple: "Por cada $10.000 que vendes, aproximadamente $1.840 quedan como ganancia." },
-  { jargon: "Punto de equilibrio: 248 unidades", simple: "Necesitas vender 248 unidades este mes para cubrir tus gastos. Desde la 249 empiezas a ganar." },
+  {
+    jargon: "Punto de equilibrio: 248 unidades",
+    simple: "Necesitas vender 248 unidades este mes para cubrir tus gastos. Desde la 249 empiezas a ganar.",
+  },
   { jargon: "Margen de contribución unitario: $4.000", simple: "Por cada unidad vendida ganas aproximadamente $4.000." },
-  { jargon: "Variación de ingresos vs. período anterior: -18%", simple: "Estás vendiendo bastante menos que el mes pasado en estas mismas fechas." },
+  {
+    jargon: "Variación de ingresos vs. período anterior: -18%",
+    simple: "Estás vendiendo bastante menos que el mes pasado en estas mismas fechas.",
+  },
 ]
 
 export type FaqGroup = { title: string; items: { q: string; a: string }[] }
@@ -311,43 +382,99 @@ export const FAQ_GROUPS: FaqGroup[] = [
   {
     title: "Sobre OrdenSimple",
     items: [
-      { q: "¿Necesito saber de contabilidad?", a: "No. OrdenSimple está hecho para personas que nunca han usado un software administrativo. Todo se explica con palabras simples y ejemplos." },
-      { q: "¿Reemplaza a mi contador o la boleta del SII?", a: "No. OrdenSimple te ayuda a entender y ordenar tu negocio día a día, pero no emite boletas ni reemplaza tus obligaciones tributarias." },
-      { q: "¿Para qué tipo de negocios sirve?", a: "Almacenes, minimarkets, restaurantes, cafeterías, tiendas, peluquerías, talleres, servicios profesionales y emprendimientos en general: cualquier negocio que venda y tenga gastos." },
-      { q: "¿Funciona en otros países?", a: "Partimos en Chile con pesos chilenos, pero ya puedes usar dólares, euros, soles, pesos argentinos, colombianos y mexicanos." },
+      {
+        q: "¿Necesito saber de contabilidad?",
+        a: "No. OrdenSimple está hecho para personas que nunca han usado un software administrativo. Todo se explica con palabras simples y ejemplos.",
+      },
+      {
+        q: "¿Reemplaza a mi contador o la boleta del SII?",
+        a: "No. OrdenSimple te ayuda a entender y ordenar tu negocio día a día, pero no emite boletas ni reemplaza tus obligaciones tributarias.",
+      },
+      {
+        q: "¿Para qué tipo de negocios sirve?",
+        a: "Almacenes, minimarkets, restaurantes, cafeterías, tiendas, peluquerías, talleres, servicios profesionales y emprendimientos en general: cualquier negocio que venda y tenga gastos.",
+      },
+      {
+        q: "¿Funciona en otros países?",
+        a: "Partimos en Chile con pesos chilenos, pero ya puedes usar dólares, euros, soles, pesos argentinos, colombianos y mexicanos.",
+      },
     ],
   },
   {
     title: "Cuenta y precios",
     items: [
-      { q: "¿Es realmente gratis?", a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta." },
+      {
+        q: "¿Es realmente gratis?",
+        a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta.",
+      },
       BILLING_ENABLED
-        ? { q: "¿Cuánto cuestan Pro y Empresa?", a: "Pro cuesta $6.990 al mes y Empresa $14.990 al mes. Se pagan con Mercado Pago (tarjeta de crédito o débito), se renuevan solos cada mes y los cancelas cuando quieras desde Configuración: tu plan sigue hasta el final del mes que pagaste." }
-        : { q: "¿Puedo usar las funciones Pro ahora?", a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro." },
+        ? {
+            q: "¿Cuánto cuestan Pro y Empresa?",
+            a: "Pro cuesta $6.990 al mes y Empresa $14.990 al mes. Se pagan con Mercado Pago (tarjeta de crédito o débito), se renuevan solos cada mes y los cancelas cuando quieras desde Configuración: tu plan sigue hasta el final del mes que pagaste.",
+          }
+        : {
+            q: "¿Puedo usar las funciones Pro ahora?",
+            a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro.",
+          },
       ...(BILLING_ENABLED
-        ? [{ q: "¿Qué pasa con mis datos si dejo de pagar?", a: "Nada se borra. Vuelves al plan Gratis: sigues registrando ventas y gastos, y las funciones Pro quedan en pausa hasta que vuelvas a contratar." }]
+        ? [
+            {
+              q: "¿Qué pasa con mis datos si dejo de pagar?",
+              a: "Nada se borra. Vuelves al plan Gratis: sigues registrando ventas y gastos, y las funciones Pro quedan en pausa hasta que vuelvas a contratar.",
+            },
+          ]
         : []),
       { q: "¿Necesito tarjeta de crédito para registrarme?", a: "No. Solo tu nombre, correo y una contraseña." },
-      { q: "Olvidé mi contraseña, ¿qué hago?", a: "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y te enviaremos un enlace para crear una nueva." },
+      {
+        q: "Olvidé mi contraseña, ¿qué hago?",
+        a: "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y te enviaremos un enlace para crear una nueva.",
+      },
     ],
   },
   {
     title: "Uso diario",
     items: [
-      { q: "¿Puedo usarlo desde el celular?", a: "Sí, funciona en cualquier navegador: celular, tablet o computador. Pronto podrás instalarlo como app en tu pantalla de inicio." },
-      { q: "¿Qué es el Modo Fácil?", a: "Una vista simplificada que muestra solo las ventas, gastos y ganancia de hoy, con botones grandes para registrar. Se activa en Configuración." },
-      { q: "¿Qué pasa si me equivoco al registrar una venta?", a: "Puedes corregirla o eliminarla desde el historial de ventas. Si había descontado stock, se ajusta automáticamente." },
-      { q: "¿Cómo llevo el fiado?", a: "Al registrar una venta elige “Fiado” y escribe el nombre del cliente. En Clientes ves cuánto te debe cada uno y registras sus abonos cuando te pagan." },
-      { q: "¿Qué avisos me llegan por correo?", a: "Un resumen cada lunes con cómo te fue la semana, un aviso cuando un producto se está acabando y un recordatorio si pasan 3 días sin anotar ventas. Los activas o desactivas en Configuración." },
-      { q: "¿Cómo calculan la ganancia?", a: "La ganancia aproximada es lo que vendiste menos lo que gastaste en el período. Es simple a propósito, para que siempre sepas de dónde sale el número." },
+      {
+        q: "¿Puedo usarlo desde el celular?",
+        a: "Sí, funciona en cualquier navegador: celular, tablet o computador. Pronto podrás instalarlo como app en tu pantalla de inicio.",
+      },
+      {
+        q: "¿Qué es el Modo Fácil?",
+        a: "Una vista simplificada que muestra solo las ventas, gastos y ganancia de hoy, con botones grandes para registrar. Se activa en Configuración.",
+      },
+      {
+        q: "¿Qué pasa si me equivoco al registrar una venta?",
+        a: "Puedes corregirla o eliminarla desde el historial de ventas. Si había descontado stock, se ajusta automáticamente.",
+      },
+      {
+        q: "¿Cómo llevo el fiado?",
+        a: "Al registrar una venta elige “Fiado” y escribe el nombre del cliente. En Clientes ves cuánto te debe cada uno y registras sus abonos cuando te pagan.",
+      },
+      {
+        q: "¿Qué avisos me llegan por correo?",
+        a: "Un resumen cada lunes con cómo te fue la semana, un aviso cuando un producto se está acabando y un recordatorio si pasan 3 días sin anotar ventas. Los activas o desactivas en Configuración.",
+      },
+      {
+        q: "¿Cómo calculan la ganancia?",
+        a: "La ganancia aproximada es lo que vendiste menos lo que gastaste en el período. Es simple a propósito, para que siempre sepas de dónde sale el número.",
+      },
     ],
   },
   {
     title: "Datos y seguridad",
     items: [
-      { q: "¿Mis datos están seguros?", a: "Cada negocio está aislado: nadie más puede ver tu información. Las contraseñas nunca se guardan en texto plano." },
-      { q: "¿Quién puede ver la información de mi negocio?", a: "Solo tú y las personas que invites. Un empleado puede registrar ventas y gastos sin ver tus ganancias, costos ni reportes." },
-      { q: "¿Las calculadoras cambian mis datos?", a: "No. Las herramientas usan tus números para prellenar los cálculos, pero nunca modifican tus ventas, gastos ni productos." },
+      {
+        q: "¿Mis datos están seguros?",
+        a: "Cada negocio está aislado: nadie más puede ver tu información. Las contraseñas nunca se guardan en texto plano.",
+      },
+      {
+        q: "¿Quién puede ver la información de mi negocio?",
+        a: "Solo tú y las personas que invites. Un empleado puede registrar ventas y gastos sin ver tus ganancias, costos ni reportes.",
+      },
+      {
+        q: "¿Las calculadoras cambian mis datos?",
+        a: "No. Las herramientas usan tus números para prellenar los cálculos, pero nunca modifican tus ventas, gastos ni productos.",
+      },
     ],
   },
 ]

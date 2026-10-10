@@ -1,18 +1,18 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Check, Sparkles } from "lucide-react"
+import { ArrowRight, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
-import { FAQ_GROUPS, HIGHLIGHTS } from "@/components/landing/content"
+import { FAQ_GROUPS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { VideoDemo } from "@/components/landing/video-demo"
 import {
+  BeforeAfter,
   BenefitsSection,
   Container,
   CtaSection,
   FaqList,
-  FeatureGrid,
   MoreLink,
   PricingCards,
   Section,
@@ -36,21 +36,17 @@ export default function LandingPage() {
       <StructuredData />
       <LegacyHashRedirect />
 
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 -z-10 h-[520px] bg-[radial-gradient(ellipse_at_top,var(--accent),transparent_70%)]" />
-        <Container className="pt-14 pb-16 md:pt-20 md:pb-24">
-          <div className="mx-auto max-w-3xl space-y-6 text-center">
-            <p className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Sparkles className="size-3.5 text-primary" />
-              Hecho para emprendedores y pymes de Chile
-            </p>
-            <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl md:text-6xl">
+      <section className="overflow-hidden border-b bg-accent/30">
+        <Container className="grid items-center gap-12 pt-12 pb-14 md:pt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 lg:pb-20">
+          <div className="space-y-6">
+            <p className="text-sm font-medium text-muted-foreground">Para almacenes, botillerías, minimarkets, peluquerías y ferias</p>
+            <h1 className="font-display text-[2.6rem] leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl">
               Administra tu negocio sin complicarte.
             </h1>
-            <p className="mx-auto max-w-xl text-lg text-pretty text-muted-foreground">
-              Controla tus ventas, gastos, productos y ganancias desde un solo lugar.
+            <p className="max-w-lg text-lg text-pretty text-muted-foreground">
+              Anota tus ventas, gastos, fiados y productos desde el celular, y sabe cada día cuánto estás ganando de verdad.
             </p>
-            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" asChild>
                 <Link href="/registro">
                   Comenzar gratis
@@ -61,9 +57,9 @@ export default function LandingPage() {
                 <Link href="/como-funciona">Ver cómo funciona</Link>
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Gratis para siempre en el plan básico · Sin tarjeta de crédito</p>
+            <p className="text-sm text-muted-foreground">Gratis para siempre en el plan básico · Sin tarjeta de crédito</p>
           </div>
-          <div className="mt-14 md:mt-16">
+          <div className="lg:-mr-24 xl:-mr-32">
             <DashboardPreview />
           </div>
         </Container>
@@ -81,7 +77,9 @@ export default function LandingPage() {
             <ul className="space-y-3">
               {DAY.map((d) => (
                 <li key={d.time} className="flex items-start gap-3">
-                  <span className="tabular mt-0.5 rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">{d.time}</span>
+                  <span className="tabular mt-0.5 rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">
+                    {d.time}
+                  </span>
                   <span className="text-pretty">{d.text}</span>
                 </li>
               ))}
@@ -106,9 +104,13 @@ export default function LandingPage() {
       </Section>
 
       <Section muted>
-        <SectionTitle eyebrow="Funciones" title="Todo lo que necesitas, nada que te complique" />
-        <div className="mt-12">
-          <FeatureGrid items={HIGHLIGHTS} />
+        <SectionTitle
+          align="left"
+          title="Lo que cambia cuando dejas el cuaderno"
+          description="Las mismas cosas que ya haces en tu negocio, pero sin que se te pierda nada."
+        />
+        <div className="mt-10">
+          <BeforeAfter />
         </div>
         <MoreLink href="/funciones">Ver todas las funciones</MoreLink>
       </Section>
@@ -116,8 +118,8 @@ export default function LandingPage() {
       <BenefitsSection />
 
       <Section muted>
-        <SectionTitle eyebrow="Cómo funciona" title="Empieza en 2 minutos" />
-        <div className="mt-12">
+        <SectionTitle align="left" title="Empieza en 2 minutos" />
+        <div className="mt-10">
           <StepsGrid />
         </div>
         <MoreLink href="/como-funciona">Conoce cómo funciona</MoreLink>
@@ -132,12 +134,19 @@ export default function LandingPage() {
       </Section>
 
       <Section muted>
-        <div className="mx-auto max-w-3xl">
-          <SectionTitle eyebrow="Preguntas frecuentes" title="¿Tienes dudas?" />
-          <div className="mt-10">
-            <FaqList items={TOP_FAQ} />
+        <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] md:gap-12">
+          <div className="space-y-4">
+            <SectionTitle
+              align="left"
+              title="¿Tienes dudas?"
+              description="Lo que más nos preguntan los dueños de negocio antes de empezar."
+            />
+            <Link href="/preguntas-frecuentes" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+              Ver todas las preguntas
+              <ArrowRight className="size-4" />
+            </Link>
           </div>
-          <MoreLink href="/preguntas-frecuentes">Ver todas las preguntas</MoreLink>
+          <FaqList items={TOP_FAQ} />
         </div>
       </Section>
 

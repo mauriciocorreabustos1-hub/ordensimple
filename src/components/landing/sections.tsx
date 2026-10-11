@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Check, Minus, Users, X } from "lucide-react"
+import { Check, Minus, Users, X } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
@@ -83,10 +83,7 @@ export function MoreLink({ href, children }: { href: string; children: React.Rea
   return (
     <div className="mt-10 flex justify-center">
       <Button variant="outline" size="lg" className="h-11 px-5" asChild>
-        <Link href={href}>
-          {children}
-          <ArrowRight />
-        </Link>
+        <Link href={href}>{children}</Link>
       </Button>
     </div>
   )
@@ -117,7 +114,7 @@ export function BenefitsSection() {
         <figure className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
           <p className="text-sm text-muted-foreground line-through decoration-muted-foreground/50">Margen neto del período: 18,4%</p>
           <blockquote className="font-display mt-4 text-2xl leading-snug font-semibold text-balance sm:text-3xl">
-            De cada <span className="text-primary">$10.000</span> que vendes, te quedan <span className="text-primary">$1.840</span>.
+            De cada $10.000 que vendes, te quedan $1.840.
           </blockquote>
           <figcaption className="mt-4 text-sm text-muted-foreground">Así te lo muestra OrdenSimple en el Inicio.</figcaption>
         </figure>
@@ -291,22 +288,17 @@ export function CtaSection({
   text?: string
 }) {
   return (
-    <section className="border-t">
-      <Container className="py-16 md:py-24">
-        <div className="grid items-end gap-8 rounded-3xl bg-[#13201c] px-6 py-12 text-white sm:px-12 md:grid-cols-[1fr_auto] md:py-14">
-          <div className="max-w-xl space-y-3">
-            <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
-            <p className="text-lg text-white/70">{text}</p>
-          </div>
-          <div className="space-y-2 md:text-right">
-            <Button size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
-              <Link href="/registro">
-                Comenzar gratis
-                <ArrowRight />
-              </Link>
-            </Button>
-            <p className="text-sm text-white/60">Gratis para siempre · Sin tarjeta</p>
-          </div>
+    <section className="border-t bg-accent/30">
+      <Container className="grid items-end gap-8 py-16 md:grid-cols-[1fr_auto] md:py-20">
+        <div className="max-w-xl space-y-3">
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
+          <p className="text-lg text-muted-foreground">{text}</p>
+        </div>
+        <div className="space-y-2 md:text-right">
+          <Button size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
+            <Link href="/registro">Crear mi cuenta gratis</Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">Gratis para siempre, sin tarjeta.</p>
         </div>
       </Container>
     </section>

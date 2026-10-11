@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Check } from "lucide-react"
+import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { FAQ_GROUPS } from "@/components/landing/content"
@@ -39,25 +39,22 @@ export default function LandingPage() {
       <section className="overflow-hidden border-b bg-accent/30">
         <Container className="grid items-center gap-12 pt-12 pb-14 md:pt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 lg:pb-20">
           <div className="space-y-6">
-            <p className="text-sm font-medium text-muted-foreground">Para almacenes, botillerías, minimarkets, peluquerías y ferias</p>
             <h1 className="font-display text-[2.6rem] leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl">
               Administra tu negocio sin complicarte.
             </h1>
             <p className="max-w-lg text-lg text-pretty text-muted-foreground">
-              Anota tus ventas, gastos, fiados y productos desde el celular, y sabe cada día cuánto estás ganando de verdad.
+              Para almacenes, botillerías, peluquerías y ferias: anota ventas, gastos, fiados y productos desde el celular, y sabe cada día
+              cuánto estás ganando de verdad.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" asChild>
-                <Link href="/registro">
-                  Comenzar gratis
-                  <ArrowRight />
-                </Link>
+                <Link href="/registro">Crear mi cuenta gratis</Link>
               </Button>
               <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
                 <Link href="/como-funciona">Ver cómo funciona</Link>
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">Gratis para siempre en el plan básico · Sin tarjeta de crédito</p>
+            <p className="text-sm text-muted-foreground">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
           </div>
           <div className="lg:-mr-24 xl:-mr-32">
             <DashboardPreview />
@@ -89,10 +86,7 @@ export default function LandingPage() {
               Funciona en el celular y en el computador.
             </p>
             <Button size="lg" className="h-12 px-6 text-base" asChild>
-              <Link href="/registro">
-                Pruébalo gratis
-                <ArrowRight />
-              </Link>
+              <Link href="/registro">Pruébalo gratis</Link>
             </Button>
           </div>
           <VideoDemo
@@ -143,7 +137,6 @@ export default function LandingPage() {
             />
             <Link href="/preguntas-frecuentes" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
               Ver todas las preguntas
-              <ArrowRight className="size-4" />
             </Link>
           </div>
           <FaqList items={TOP_FAQ} />

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
+import { PriceTag } from "@/components/landing/price-tag"
 import { FAQ_GROUPS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
@@ -56,7 +57,11 @@ export default function LandingPage() {
             </div>
             <p className="text-sm text-muted-foreground">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
           </div>
-          <div className="lg:-mr-24 xl:-mr-32">
+          <div className="relative pt-11 lg:-mr-24 xl:-mr-32">
+            <PriceTag className="absolute top-0 left-3 z-10 -rotate-3 sm:left-6">
+              <span className="font-display text-3xl font-semibold">$0</span>
+              <span className="text-sm font-medium">para empezar</span>
+            </PriceTag>
             <DashboardPreview />
           </div>
         </Container>

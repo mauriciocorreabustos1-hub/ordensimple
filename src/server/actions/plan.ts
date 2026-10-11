@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/dates"
 import { effectivePlan, PLAN_RANK, PLANS } from "@/lib/plans"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, type ActionResult } from "@/server/actions/result"
+import { allowAttempt } from "@/server/rate-limit"
 
 const codeSchema = z.string().trim().toUpperCase().min(3).max(30)
 
@@ -22,6 +23,10 @@ export async function redeemCoupon(rawCode: string): Promise<ActionResult> {
 
   try {
     assertCan(ctx, "settings:manage")
+    // Evita probar miles de códigos hasta adivinar uno: máximo 10 intentos por hora por negocio.
+    if (!(await allowAttempt(`cupon:${ctx.businessId}`, 10, 60 * 60 * 1000))) {
+      return { ok: false, message: "Probaste muchos códigos seguidos. Espera una hora e intenta de nuevo." }
+    }
 
     const message = await db.$transaction(async (tx) => {
       const coupon = await tx.coupon.findUnique({

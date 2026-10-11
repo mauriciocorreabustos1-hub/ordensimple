@@ -12,7 +12,7 @@ import { requireBusiness } from "@/server/session"
 function cell(value: string | number) {
   const s = String(value)
   // Evita que Excel interprete texto como fórmula (los números negativos sí se dejan como número).
-  const safe = /^[=+\-@]/.test(s) && !/^-\d+(,\d+)?$/.test(s) ? `'${s}` : s
+  const safe = /^[=+\-@\t\r]/.test(s) && !/^-\d+(,\d+)?$/.test(s) ? `'${s}` : s
   return /[";\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 

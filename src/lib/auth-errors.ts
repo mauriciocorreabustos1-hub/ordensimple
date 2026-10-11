@@ -20,5 +20,8 @@ export function authErrorMessage(error: { code?: string; message?: string; statu
 /** Solo permite redirigir a rutas internas. */
 export function safeNext(next: string | null | undefined, fallback = "/dashboard") {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback
+  // El navegador ignora tabulaciones y saltos de línea dentro de una dirección: "/<tab>/sitio.com" terminaría en
+  // "//sitio.com" (otro sitio). Cualquier carácter invisible o "\\" se rechaza.
+  if (/[\u0000-\u001F\u007F\\]/.test(next)) return fallback
   return next
 }

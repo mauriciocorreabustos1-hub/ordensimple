@@ -11,7 +11,7 @@ import { requireUser } from "@/server/session"
 
 function cell(value: string | number | boolean | null | undefined) {
   const s = value === null || value === undefined ? "" : typeof value === "boolean" ? (value ? "Sí" : "No") : String(value)
-  const safe = /^[=+\-@]/.test(s) ? `'${s}` : s // evita que Excel lo tome como fórmula
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s // evita que Excel lo tome como fórmula
   return /[";\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 function csv(header: string[], rows: (string | number | boolean | null | undefined)[][]) {

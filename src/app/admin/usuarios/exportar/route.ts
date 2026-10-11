@@ -10,7 +10,7 @@ const TZ = "America/Santiago"
 
 function cell(value: string | number | null | undefined) {
   const s = value === null || value === undefined ? "" : String(value)
-  const safe = /^[=+\-@]/.test(s) ? `'${s}` : s
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
   return /[";\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 

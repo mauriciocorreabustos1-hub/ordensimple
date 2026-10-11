@@ -47,7 +47,10 @@ export function TwoFactorSettings({ enabled, method, isAdmin }: { enabled: boole
       } else if (step.action === "app") {
         const { data, error } = await authClient.twoFactor.enable({ password })
         if (error || !data || !("totpURI" in data)) return void toast.error(passwordError(error?.message))
-        const uri = data.totpURI as string
+        // Logo para las apps que lo muestran (FreeOTP y otras); las demás lo ignoran.
+        const withLogo = new URL(data.totpURI as string)
+        withLogo.searchParams.set("image", `${window.location.origin}/pwa-icon/192`)
+        const uri = withLogo.toString()
         const qr = await QRCode.toDataURL(uri, { margin: 1, width: 220 })
         const secret = new URL(uri).searchParams.get("secret") ?? ""
         setStep({ kind: "qr", qr, secret, backupCodes: (data as { backupCodes?: string[] }).backupCodes ?? [] })

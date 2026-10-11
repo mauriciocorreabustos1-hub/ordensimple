@@ -13,9 +13,9 @@ export default function InstallPage() {
   return (
     <>
       <PageHero
-        eyebrow="iPhone y Android"
+        eyebrow=""
         title="Tenla en tu celular, como una app"
-        description="OrdenSimple no está en App Store ni Google Play, pero no la necesitas de ahí: la agregas a tu pantalla de inicio en 4 pasos y se abre con un toque, a pantalla completa. Es gratis y no ocupa espacio."
+        description="No está en App Store ni Google Play. Agrégala a tu pantalla de inicio en 4 pasos y ábrela como una app."
       />
       <Section className="border-t-0">
         <InstallGuide />

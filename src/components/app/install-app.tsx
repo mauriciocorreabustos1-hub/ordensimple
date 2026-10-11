@@ -85,24 +85,24 @@ export function IphoneSteps() {
   return (
     <ol className="space-y-3">
       <Step n={1}>
-        Abre <strong>ordensimple.cl</strong> en <strong>Safari</strong> (también sirve Chrome en iPhones con iOS 16.4 o más nuevo).
+        Abre <strong>ordensimple.cl</strong> en <strong>Safari</strong>.
       </Step>
       <Step n={2}>
-        Toca el botón{" "}
+        Toca{" "}
         <Key>
           <Share className="size-4" /> Compartir
-        </Key>{" "}
-        (el cuadrado con la flecha hacia arriba, abajo o arriba de la pantalla).
+        </Key>
+        .
       </Step>
       <Step n={3}>
-        Baja y toca{" "}
+        Toca{" "}
         <Key>
           <SquarePlus className="size-4" /> Agregar a inicio
-        </Key>{" "}
-        (en algunos iPhone dice “Agregar a pantalla de inicio”).
+        </Key>
+        .
       </Step>
       <Step n={4}>
-        Toca <strong>Agregar</strong>. Listo: el ícono de OrdenSimple queda en tu pantalla, como cualquier app.
+        Toca <strong>Agregar</strong>.
       </Step>
     </ol>
   )
@@ -118,14 +118,14 @@ export function AndroidSteps() {
         Toca el menú{" "}
         <Key>
           <EllipsisVertical className="size-4" />
-        </Key>{" "}
-        (los tres puntos, arriba a la derecha).
+        </Key>
+        .
       </Step>
       <Step n={3}>
-        Toca <Key>Instalar app</Key> o <Key>Agregar a la pantalla principal</Key>.
+        Toca <Key>Instalar app</Key>.
       </Step>
       <Step n={4}>
-        Confirma con <strong>Instalar</strong>. El ícono de OrdenSimple queda con tus apps.
+        Toca <strong>Instalar</strong>.
       </Step>
     </ol>
   )
@@ -135,9 +135,8 @@ export function AndroidSteps() {
 export function InAppBrowserNote({ platform }: { platform: Platform }) {
   return (
     <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm text-pretty">
-      Estás viendo esta página dentro de Instagram, Facebook o TikTok, y desde ahí no se puede instalar. Toca el menú de esa app (
-      <strong>⋯</strong> arriba) y elige <strong>{platform === "iphone" ? "Abrir en Safari" : "Abrir en Chrome"}</strong>. Después sigue
-      estos pasos.
+      Desde Instagram, Facebook o TikTok no se puede instalar. Toca <strong>⋯</strong> y elige{" "}
+      <strong>{platform === "iphone" ? "Abrir en Safari" : "Abrir en Chrome"}</strong>.
     </p>
   )
 }
@@ -204,7 +203,7 @@ export function InstallCard() {
         open={open}
         onOpenChange={setOpen}
         title="Agrega OrdenSimple a tu pantalla de inicio"
-        description="No está en App Store ni Google Play, pero así queda como una app: con su ícono y a pantalla completa."
+        description="No está en App Store ni Google Play. Así queda como una app."
       >
         <div className="space-y-4">
           {info.inAppBrowser ? <InAppBrowserNote platform={info.platform} /> : null}

@@ -54,7 +54,7 @@ export function PageHero({ eyebrow, title, description }: { eyebrow: string; tit
     <section className="border-b bg-accent/30">
       <Container className="pt-12 pb-10 md:pt-16 md:pb-14">
         <div className="max-w-3xl space-y-4">
-          <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p>
+          {eyebrow ? <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p> : null}
           <h1 className="font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.05]">{title}</h1>
           <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{description}</p>
         </div>

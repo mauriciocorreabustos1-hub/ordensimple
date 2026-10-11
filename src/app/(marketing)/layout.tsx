@@ -18,6 +18,7 @@ const FOOTER = [
     links: [
       { href: "/guias", label: "Guías para tu negocio" },
       { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
+      { href: "/instalar", label: "Instalar en tu celular" },
       { href: "/terminos", label: "Términos y condiciones" },
       { href: "/privacidad", label: "Política de privacidad" },
     ],

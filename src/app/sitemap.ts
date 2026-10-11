@@ -7,6 +7,7 @@ const PAGES = [
   "/funciones",
   "/como-funciona",
   "/precios",
+  "/instalar",
   "/preguntas-frecuentes",
   "/calculadoras",
   "/calculadoras/precio-de-venta",

@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { InstallCard } from "@/components/app/install-app"
 import { StatCard, ChangeBadge, DiffBadge, STAT_GROUP } from "@/components/app/stat-card"
 import { Explainer } from "@/components/app/explainer"
 import { HealthCard } from "@/components/dashboard/health-card"
@@ -198,6 +199,7 @@ export default async function DashboardPage() {
       </div>
 
       {firstSteps ? <FirstSteps businessId={ctx.businessId} steps={firstSteps} /> : null}
+      <InstallCard />
 
       <HealthCard health={health} />
 

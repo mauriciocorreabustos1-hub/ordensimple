@@ -436,7 +436,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "¿Puedo usarlo desde el celular?",
-        a: "Sí, funciona en cualquier navegador: celular, tablet o computador. Pronto podrás instalarlo como app en tu pantalla de inicio.",
+        a: "Sí, funciona en cualquier navegador: celular, tablet o computador. No está en App Store ni Google Play, pero puedes agregarla a la pantalla de inicio de tu celular y usarla como una app. Te mostramos cómo en ordensimple.cl/instalar.",
       },
       {
         q: "¿Qué es el Modo Fácil?",

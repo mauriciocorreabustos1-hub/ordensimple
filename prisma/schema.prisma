@@ -289,6 +289,7 @@ model Product {
 
   @@unique([businessId, sku])
   @@index([businessId, active])
+  @@index([categoryId])
   @@map("product")
 }
 
@@ -317,6 +318,7 @@ model Sale {
 
   @@unique([businessId, clientId])
   @@index([businessId, date])
+  @@index([customerId])
   @@map("sale")
 }
 
@@ -377,6 +379,8 @@ model Expense {
   updatedAt   DateTime         @updatedAt
 
   @@index([businessId, date])
+  @@index([supplierId])
+  @@index([categoryId])
   @@map("expense")
 }
 
@@ -440,6 +444,8 @@ model InventoryMovement {
   updatedAt   DateTime              @updatedAt
 
   @@index([businessId, productId])
+  @@index([saleId])
+  @@index([productId])
   @@map("inventory_movement")
 }
 
@@ -695,6 +701,7 @@ model Payable {
   updatedAt   DateTime  @updatedAt
 
   @@index([businessId, paidAt, dueDate])
+  @@index([supplierId])
   @@map("payable")
 }
 

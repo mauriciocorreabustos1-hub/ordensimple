@@ -117,10 +117,17 @@ export function EmailVerifyBanner({ email }: { email: string }) {
   )
 }
 
-/** Al volver desde el enlace del correo (?correo=confirmado): mensaje de éxito y se limpia la dirección. */
+/** Al volver desde el enlace del correo (?correo=confirmado) o desde /admin sin confirmar (?confirmar=admin): mensaje y se limpia la dirección. */
 export function EmailConfirmedToast() {
   React.useEffect(() => {
     const url = new URL(window.location.href)
+    // Un administrador con el correo sin confirmar llega aquí desde /admin.
+    if (url.searchParams.get("confirmar") === "admin") {
+      toast.info("Para entrar al panel de administración, primero confirma tu correo: toca “Reenviar correo” en el aviso amarillo.", { duration: 10000 })
+      url.searchParams.delete("confirmar")
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash)
+      return
+    }
     if (url.searchParams.get("correo") !== "confirmado") return
     toast.success("¡Correo confirmado! Ya te llegarán tus avisos.")
     url.searchParams.delete("correo")

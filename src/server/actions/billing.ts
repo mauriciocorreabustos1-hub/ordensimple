@@ -8,6 +8,7 @@ import { BILLING_ENABLED, discountedPrice, PAID_PLANS, PLANS } from "@/lib/plans
 import { subscriptionBackUrl, syncSubscription } from "@/server/billing"
 import { requireBusiness } from "@/server/session"
 import { toActionError, type ActionResult } from "@/server/actions/result"
+import { recordError } from "@/server/error-log"
 
 const subscribeSchema = z.object({
   payerEmail: z.email("Escribe el correo de tu cuenta de Mercado Pago").trim().toLowerCase().max(200),
@@ -80,6 +81,9 @@ export async function startSubscription(input: z.input<typeof subscribeSchema>):
     })
     return { ok: true, data: { url: pre.init_point } }
   } catch (error) {
+    if (error instanceof MercadoPagoError) {
+      await recordError({ source: "servidor", message: `No se pudo crear el pago con cuenta de Mercado Pago: ${error.status} — ${error.message}`, path: "/dashboard/plan" })
+    }
     const message = mpMessage(error)
     return message ? { ok: false, message } : toActionError(error)
   }
@@ -137,8 +141,19 @@ export async function startCardSubscription(input: z.input<typeof cardSchema>): 
     await syncSubscription(pre.id)
   } catch (error) {
     if (error instanceof MercadoPagoError) {
-      console.error("[billing] tarjeta rechazada o error de Mercado Pago:", error.status, error.message)
-      return { ok: false, message: "No se pudo cobrar a esa tarjeta. Revisa los datos o prueba con otra tarjeta." }
+      await recordError({
+        source: "servidor",
+        message: `Pago con tarjeta rechazado (${PLANS[plan].name}): Mercado Pago ${error.status} — ${error.message}`,
+        path: "/dashboard/plan",
+      })
+      // Algunas tarjetas no piden código de seguridad y Mercado Pago no las acepta para suscripciones.
+      const noCvv = /cvv/i.test(error.message)
+      return {
+        ok: false,
+        message: noCvv
+          ? "Esta tarjeta no sirve para pagos mensuales. Prueba con otra tarjeta o toca “Prefiero pagar con mi cuenta de Mercado Pago”."
+          : "No se pudo cobrar a esa tarjeta. Revisa los datos, prueba con otra o toca “Prefiero pagar con mi cuenta de Mercado Pago”.",
+      }
     }
     return toActionError(error)
   }

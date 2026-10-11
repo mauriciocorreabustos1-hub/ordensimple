@@ -151,7 +151,7 @@ export type ExpenseInput = z.input<typeof expenseSchema>
 
 export const productSchema = z.object({
   name: z.string().trim().min(2, "Escribe el nombre").max(100),
-  sku: optionalText(40),
+  sku: optionalText(120),
   categoryName: optionalText(40),
   cost: money,
   price: positiveMoney,
@@ -162,7 +162,7 @@ export const productSchema = z.object({
   /** Próximo vencimiento (AAAA-MM-DD) o vacío. */
   expiresAt: z.union([dateKey, z.literal("")]).optional(),
   /** Todos sus códigos de barras (el primero queda como principal). */
-  codes: z.array(z.string().trim().min(1).max(40)).max(30, "Máximo 30 códigos por producto").optional(),
+  codes: z.array(z.string().trim().min(1).max(120)).max(30, "Máximo 30 códigos por producto").optional(),
 })
 export type ProductInput = z.input<typeof productSchema>
 

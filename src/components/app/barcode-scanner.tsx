@@ -9,15 +9,22 @@ import { AppModal } from "@/components/app/app-modal"
 import { cn } from "@/lib/utils"
 
 type Detector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> }
+type DetectorClass = { new (o: { formats: string[] }): Detector; getSupportedFormats: () => Promise<string[]> }
 
-const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"]
-
-/** Lector nativo del navegador (Chrome en Android) o, si no existe (iPhone), la versión en WebAssembly. */
+/**
+ * Lector nativo del navegador (Chrome en Android) o, si no existe (iPhone), la versión en WebAssembly.
+ * Lee todos los tipos de código que el lector conoce: los de supermercado (EAN, UPC), Code 128/39/93, Codabar,
+ * ITF, DataBar (frutas y verduras), Data Matrix (remedios y cosméticos), PDF417, Aztec, QR y más.
+ */
 async function createDetector(): Promise<Detector> {
-  const native = (globalThis as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector
-  if (native) return new native({ formats: FORMATS })
+  const native = (globalThis as { BarcodeDetector?: DetectorClass }).BarcodeDetector
+  if (native) {
+    const formats = await native.getSupportedFormats().catch(() => [] as string[])
+    return formats.length ? new native({ formats }) : new native({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"] })
+  }
   const { BarcodeDetector } = await import("barcode-detector/ponyfill")
-  return new BarcodeDetector({ formats: FORMATS as never }) as unknown as Detector
+  // "any" = todos los formatos que soporta la versión en WebAssembly.
+  return new BarcodeDetector({ formats: ["any"] }) as unknown as Detector
 }
 
 /** Lo que muestra el lector después de leer un código (ej. "Coca-Cola 1.5L agregado"). */

@@ -160,7 +160,7 @@ export function ProductForm({
               }}
               placeholder="Escribe o escanea un código"
               className="h-10 font-mono"
-              maxLength={40}
+              maxLength={120}
             />
             <Button type="button" variant="outline" className="h-10" onClick={() => addCode(newCode)} aria-label="Agregar código">
               <Plus />

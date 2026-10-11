@@ -8,7 +8,7 @@ import { ConfirmDelete } from "@/components/app/confirm-delete"
 import { EmptyState } from "@/components/app/empty-state"
 import { Explainer } from "@/components/app/explainer"
 import { PageHeader } from "@/components/app/page-header"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { ActiveSwitch } from "@/components/products/active-switch"
 import { ProductDialog } from "@/components/products/product-dialog"
 import type { ProductFormValues } from "@/components/products/product-form"
@@ -94,7 +94,7 @@ export default async function ProductsPage() {
         actions={canManage ? <ProductDialog currency={ctx.currency} categories={categoryNames} /> : null}
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
         <StatCard
           compactOnMobile
           label="Productos"

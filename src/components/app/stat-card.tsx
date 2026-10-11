@@ -3,6 +3,13 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react"
 import { formatPercent } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 
+/**
+ * Para la grilla que agrupa varias StatCard: en el celular quedan juntas en una sola tarjeta con líneas entre
+ * cada cifra (como las listas del iPhone), en vez de una caja por número. En pantallas grandes, cajas separadas.
+ */
+export const STAT_GROUP =
+  "max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0"
+
 type Tone = "default" | "sales" | "expenses" | "profit" | "loss"
 
 const toneStyles: Record<Tone, string> = {
@@ -45,7 +52,8 @@ export function StatCard({
     <div
       className={cn(
         "flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-xs md:p-5",
-        compactOnMobile && "max-sm:flex-row max-sm:flex-wrap max-sm:items-center max-sm:justify-between max-sm:gap-x-3 max-sm:gap-y-1 max-sm:py-3",
+        compactOnMobile &&
+          "max-sm:flex-row max-sm:flex-wrap max-sm:items-center max-sm:justify-between max-sm:gap-x-3 max-sm:gap-y-1 max-sm:py-3",
         className,
       )}
     >
@@ -68,9 +76,7 @@ export function StatCard({
         {value}
       </div>
       {change !== undefined ? <ChangeBadge change={change} label={changeLabel} invert={invertChange} /> : null}
-      {hint ? (
-        <p className={cn("text-xs leading-relaxed text-muted-foreground", compactOnMobile && "max-sm:basis-full")}>{hint}</p>
-      ) : null}
+      {hint ? <p className={cn("text-xs leading-relaxed text-muted-foreground", compactOnMobile && "max-sm:basis-full")}>{hint}</p> : null}
     </div>
   )
 }
@@ -107,15 +113,7 @@ export function DiffBadge({
   )
 }
 
-export function ChangeBadge({
-  change,
-  label,
-  invert = false,
-}: {
-  change: number | null
-  label?: string
-  invert?: boolean
-}) {
+export function ChangeBadge({ change, label, invert = false }: { change: number | null; label?: string; invert?: boolean }) {
   if (change === null) {
     return <span className="text-xs text-muted-foreground">Sin datos para comparar {label}</span>
   }

@@ -15,7 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { StatCard, ChangeBadge, DiffBadge } from "@/components/app/stat-card"
+import { StatCard, ChangeBadge, DiffBadge, STAT_GROUP } from "@/components/app/stat-card"
 import { Explainer } from "@/components/app/explainer"
 import { HealthCard } from "@/components/dashboard/health-card"
 import { QuickButtons } from "@/components/dashboard/quick-buttons"
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
           <h2 id="hoy" className="text-base font-semibold">
             Hoy en el negocio
           </h2>
-          <div className="grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 sm:grid-cols-2">
+          <div className={`grid gap-3 ${STAT_GROUP} sm:grid-cols-2`}>
             <StatCard
               label="Ventas hoy"
               value={money(data.today.sales)}
@@ -243,7 +243,7 @@ export default async function DashboardPage() {
         <h2 id="hoy" className="text-base font-semibold">
           Hoy
         </h2>
-        <div className="grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 sm:grid-cols-3">
+        <div className={`grid gap-3 ${STAT_GROUP} sm:grid-cols-3`}>
           <StatCard
             label="Ventas hoy"
             value={money(data.today.sales)}
@@ -279,7 +279,7 @@ export default async function DashboardPage() {
             Tus cuentas de {currentMonth}
           </h2>
           <div
-            className={`grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+            className={`grid gap-3 ${STAT_GROUP} ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
           >
             {debts ? (
               <LinkCard
@@ -340,7 +340,7 @@ export default async function DashboardPage() {
             <h2 id="mes" className="text-base font-semibold">
               Este mes ({currentMonth})
             </h2>
-            <div className="grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 sm:grid-cols-3">
+            <div className={`grid gap-3 ${STAT_GROUP} sm:grid-cols-3`}>
               <StatCard
                 label="Ventas del mes"
                 value={money(data.month.sales)}

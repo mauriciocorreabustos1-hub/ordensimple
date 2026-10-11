@@ -5,7 +5,7 @@ import type { PaymentMethod } from "@/generated/prisma/enums"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/app/page-header"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { CashClosingForm } from "@/components/cash/cash-closing-form"
 import { PAYMENT_METHODS } from "@/lib/constants"
 import { formatMoney, formatNumber } from "@/lib/currency"
@@ -51,7 +51,7 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
           </Link>
         </Button>
         <p className="text-center font-medium first-letter:uppercase">
-          {day === today ? "Hoy · " : ""}
+          {day === today ? "Hoy, " : ""}
           {dayLabel}
         </p>
         <Button variant="ghost" size="icon" asChild disabled={day >= today}>
@@ -65,13 +65,31 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard compactOnMobile label="Ventas del día" value={money(d.salesTotal)} icon={ShoppingBag} tone="sales"
-          hint={`${formatNumber(d.salesCount)} ${d.salesCount === 1 ? "venta" : "ventas"}`} />
-        <StatCard compactOnMobile label="Abonos de fiado" value={money(d.paymentsTotal)} icon={HandCoins} tone="profit"
-          hint="Lo que te pagaron clientes que te debían." />
-        <StatCard compactOnMobile label="Gastos del día" value={money(d.expensesTotal)} icon={Receipt} tone="expenses"
-          hint={`${formatNumber(d.expensesCount)} ${d.expensesCount === 1 ? "gasto" : "gastos"}`} />
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
+        <StatCard
+          compactOnMobile
+          label="Ventas del día"
+          value={money(d.salesTotal)}
+          icon={ShoppingBag}
+          tone="sales"
+          hint={`${formatNumber(d.salesCount)} ${d.salesCount === 1 ? "venta" : "ventas"}`}
+        />
+        <StatCard
+          compactOnMobile
+          label="Abonos de fiado"
+          value={money(d.paymentsTotal)}
+          icon={HandCoins}
+          tone="profit"
+          hint="Lo que te pagaron clientes que te debían."
+        />
+        <StatCard
+          compactOnMobile
+          label="Gastos del día"
+          value={money(d.expensesTotal)}
+          icon={Receipt}
+          tone="expenses"
+          hint={`${formatNumber(d.expensesCount)} ${d.expensesCount === 1 ? "gasto" : "gastos"}`}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
@@ -136,7 +154,10 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
             <ul className="divide-y">
               {d.history.map((h) => (
                 <li key={h.id}>
-                  <Link href={`/dashboard/caja?dia=${h.day}`} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary">
+                  <Link
+                    href={`/dashboard/caja?dia=${h.day}`}
+                    className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary"
+                  >
                     <span className="first-letter:uppercase">
                       {formatDate(dateKeyToUtc(h.day, ctx.timezone), ctx.timezone, { weekday: "short", day: "numeric", month: "short" })}
                     </span>

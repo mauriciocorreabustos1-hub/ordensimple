@@ -3,7 +3,7 @@ import { Building2, PiggyBank, Receipt, ShoppingBag, TrendingDown } from "lucide
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/app/page-header"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { AddBranchButton, DeleteBranchButton, EnterBranchButton } from "@/components/branches/branch-actions"
 import { formatMoney } from "@/lib/currency"
 import { addDays, monthName, startOfDay, startOfMonth } from "@/lib/dates"
@@ -55,7 +55,12 @@ export default async function BranchesPage() {
   const currency = rows[0]?.currency ?? ctx.currency
   const money = (n: number, code = currency) => formatMoney(n, code)
   const total = rows.reduce(
-    (acc, r) => ({ sales: acc.sales + r.month.sales, expenses: acc.expenses + r.month.expenses, profit: acc.profit + r.month.profit, today: acc.today + r.day.sales }),
+    (acc, r) => ({
+      sales: acc.sales + r.month.sales,
+      expenses: acc.expenses + r.month.expenses,
+      profit: acc.profit + r.month.profit,
+      today: acc.today + r.day.sales,
+    }),
     { sales: 0, expenses: 0, profit: 0, today: 0 },
   )
   const month = monthName(now, ctx.timezone)
@@ -71,7 +76,7 @@ export default async function BranchesPage() {
       {sameCurrency && rows.length > 1 ? (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Todas juntas · {month}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${STAT_GROUP}`}>
             <StatCard compactOnMobile label="Ventas de hoy" value={money(total.today)} icon={ShoppingBag} tone="sales" />
             <StatCard compactOnMobile label="Ventas del mes" value={money(total.sales)} icon={ShoppingBag} tone="sales" />
             <StatCard compactOnMobile label="Gastos del mes" value={money(total.expenses)} icon={Receipt} tone="expenses" />
@@ -101,7 +106,9 @@ export default async function BranchesPage() {
                       <Building2 className="size-4 text-primary" />
                       <span className="truncate">{r.name}</span>
                       {r.id === ctx.businessId ? <Badge variant="secondary">Estás aquí</Badge> : null}
-                      {rows.length > 1 && i === 0 && r.month.sales > 0 ? <Badge className="bg-success/15 text-success">La que más vende</Badge> : null}
+                      {rows.length > 1 && i === 0 && r.month.sales > 0 ? (
+                        <Badge className="bg-success/15 text-success">La que más vende</Badge>
+                      ) : null}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {r.type ?? "Sin rubro"} · {ROLE_LABEL[r.role]}
@@ -141,8 +148,8 @@ export default async function BranchesPage() {
 
       {rows.length === 1 ? (
         <p className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-          ¿Tienes otro local? Agrega una sucursal: tendrá sus propias ventas, gastos, productos y caja, y aquí verás cómo
-          va cada una comparada con las demás. Tu equipo puede trabajar en una sucursal sin ver las otras.
+          ¿Tienes otro local? Agrega una sucursal: tendrá sus propias ventas, gastos, productos y caja, y aquí verás cómo va cada una
+          comparada con las demás. Tu equipo puede trabajar en una sucursal sin ver las otras.
         </p>
       ) : null}
     </div>

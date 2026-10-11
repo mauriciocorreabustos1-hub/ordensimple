@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/app/empty-state"
 import { LoadMore } from "@/components/app/load-more"
 import { OpenQuickAction } from "@/components/app/open-quick-action"
 import { PageHeader } from "@/components/app/page-header"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
@@ -75,7 +75,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
         actions={<OpenQuickAction action="sale" label="Registrar venta" />}
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
         <StatCard
           compactOnMobile
           label="Ventas hoy"

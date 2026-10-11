@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DateRangeFilter } from "@/components/app/date-range-filter"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate, ProUpsell } from "@/components/app/pro-gate"
-import { DiffBadge, StatCard } from "@/components/app/stat-card"
+import { DiffBadge, StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { percentChange } from "@/lib/calculations"
@@ -124,11 +124,24 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
         />
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Ventas" value={money(cur.sales)} icon={ShoppingBag} tone="sales"
-          change={percentChange(cur.sales, prev.sales)} changeLabel={prevLabel} />
-        <StatCard label="Gastos" value={money(cur.expenses)} icon={Receipt} tone="expenses"
-          change={percentChange(cur.expenses, prev.expenses)} changeLabel={prevLabel} invertChange />
+      <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${STAT_GROUP}`}>
+        <StatCard
+          label="Ventas"
+          value={money(cur.sales)}
+          icon={ShoppingBag}
+          tone="sales"
+          change={percentChange(cur.sales, prev.sales)}
+          changeLabel={prevLabel}
+        />
+        <StatCard
+          label="Gastos"
+          value={money(cur.expenses)}
+          icon={Receipt}
+          tone="expenses"
+          change={percentChange(cur.expenses, prev.expenses)}
+          changeLabel={prevLabel}
+          invertChange
+        />
         <StatCard
           label={cur.profit >= 0 ? "Ganancia aproximada" : "Pérdida aproximada"}
           value={money(Math.abs(cur.profit))}
@@ -136,8 +149,12 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
           tone={cur.profit >= 0 ? "profit" : "loss"}
           hint={<DiffBadge current={cur.profit} previous={prev.profit} money={money} label={prevLabel} />}
         />
-        <StatCard label="Venta promedio" value={money(avgTicket)} icon={ShoppingBag}
-          hint={`${formatNumber(cur.salesCount)} ventas${margin !== null && margin > 0 ? ` · te quedó el ${formatPercent(margin, 0)} de lo vendido` : ""}`} />
+        <StatCard
+          label="Venta promedio"
+          value={money(avgTicket)}
+          icon={ShoppingBag}
+          hint={`${formatNumber(cur.salesCount)} ventas${margin !== null && margin > 0 ? ` · te quedó el ${formatPercent(margin, 0)} de lo vendido` : ""}`}
+        />
       </div>
 
       <Card>
@@ -232,8 +249,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
             )}
             {report.quickSalesTotal > 0 ? (
               <p className="mt-4 text-xs text-muted-foreground">
-                {money(report.quickSalesTotal)} vienen de ventas rápidas (sin detalle de productos), por eso no aparecen en
-                los rankings de productos.
+                {money(report.quickSalesTotal)} vienen de ventas rápidas (sin detalle de productos), por eso no aparecen en los rankings de
+                productos.
               </p>
             ) : null}
           </CardContent>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Explainer } from "@/components/app/explainer"
 import { PageHeader } from "@/components/app/page-header"
 import { ProUpsell } from "@/components/app/pro-gate"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney } from "@/lib/currency"
@@ -81,12 +81,29 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
       />
 
       {askedPast && !plus ? (
-        <ProUpsell title="Los meses anteriores son parte de Pro" text="En el plan Gratis ves el flujo de caja de este mes. Con Pro revisas todos los meses y lo que viene." />
+        <ProUpsell
+          title="Los meses anteriores son parte de Pro"
+          text="En el plan Gratis ves el flujo de caja de este mes. Con Pro revisas todos los meses y lo que viene."
+        />
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard compactOnMobile label="Entró" value={money(flow.inflow)} icon={ArrowDownLeft} tone="sales" hint="Ventas cobradas, abonos de fiado y plata que pusiste." />
-        <StatCard compactOnMobile label="Salió" value={money(flow.outflow)} icon={ArrowUpRight} tone="expenses" hint="Gastos pagados y retiros del dueño." />
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
+        <StatCard
+          compactOnMobile
+          label="Entró"
+          value={money(flow.inflow)}
+          icon={ArrowDownLeft}
+          tone="sales"
+          hint="Ventas cobradas, abonos de fiado y plata que pusiste."
+        />
+        <StatCard
+          compactOnMobile
+          label="Salió"
+          value={money(flow.outflow)}
+          icon={ArrowUpRight}
+          tone="expenses"
+          hint="Gastos pagados y retiros del dueño."
+        />
         <StatCard
           compactOnMobile
           label={flow.net >= 0 ? "Te quedó en caja" : "Salió más de lo que entró"}
@@ -218,7 +235,9 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
                     {outlook.fiadoTotal ? "+" : ""}
                     {money(outlook.fiadoTotal)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{outlook.fiadoCount} {outlook.fiadoCount === 1 ? "cliente" : "clientes"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {outlook.fiadoCount} {outlook.fiadoCount === 1 ? "cliente" : "clientes"}
+                  </p>
                 </div>
                 <div className="rounded-xl border p-3">
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -251,7 +270,11 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
                           <span className="block truncate">{p.description}</span>
                           <span className={cn("text-xs", days < 0 ? "text-danger" : "text-muted-foreground")}>
                             {p.supplier?.name ? `${p.supplier.name} · ` : ""}
-                            {days < 0 ? `Atrasado ${-days} ${days === -1 ? "día" : "días"}` : days === 0 ? "Vence hoy" : `Vence en ${days} ${days === 1 ? "día" : "días"}`}
+                            {days < 0
+                              ? `Atrasado ${-days} ${days === -1 ? "día" : "días"}`
+                              : days === 0
+                                ? "Vence hoy"
+                                : `Vence en ${days} ${days === 1 ? "día" : "días"}`}
                           </span>
                         </span>
                         <span className="tabular shrink-0 font-medium">{money(p.amount)}</span>
@@ -279,9 +302,8 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
       ) : null}
 
       <Explainer title="¿En qué se diferencia de la utilidad?">
-        El flujo de caja es la plata que de verdad entró y salió. La utilidad (en Resultados) es lo que ganaste: puede que
-        hayas ganado plata pero tengas poca en caja, por ejemplo si vendiste mucho fiado o compraste mercadería que todavía
-        no vendes.
+        El flujo de caja es la plata que de verdad entró y salió. La utilidad (en Resultados) es lo que ganaste: puede que hayas ganado
+        plata pero tengas poca en caja, por ejemplo si vendiste mucho fiado o compraste mercadería que todavía no vendes.
       </Explainer>
     </div>
   )

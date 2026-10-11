@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
 import { ProGate } from "@/components/app/pro-gate"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { CustomerDialog } from "@/components/contacts/customer-dialog"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney } from "@/lib/currency"
@@ -53,7 +53,12 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{c.name}</h1>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             {c.phone ? (
-              <a href={whatsappLink(c.phone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <a
+                href={whatsappLink(c.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 hover:text-primary"
+              >
                 <Phone className="size-4" />
                 {c.phone} · WhatsApp
               </a>
@@ -84,12 +89,23 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
         <StatCard compactOnMobile label="Total comprado" value={money(detail.total)} icon={Wallet} tone="sales" />
-        <StatCard compactOnMobile label="Compras" value={String(detail.purchases)} icon={ShoppingBag}
-          hint={detail.last ? `Última: ${formatDate(detail.last, ctx.timezone)}` : "Aún no compra."} />
-        <StatCard compactOnMobile label="Compra promedio" value={money(detail.average)} icon={ReceiptText} tone="profit"
-          hint="Lo que gasta en promedio cada vez que te compra." />
+        <StatCard
+          compactOnMobile
+          label="Compras"
+          value={String(detail.purchases)}
+          icon={ShoppingBag}
+          hint={detail.last ? `Última: ${formatDate(detail.last, ctx.timezone)}` : "Aún no compra."}
+        />
+        <StatCard
+          compactOnMobile
+          label="Compra promedio"
+          value={money(detail.average)}
+          icon={ReceiptText}
+          tone="profit"
+          hint="Lo que gasta en promedio cada vez que te compra."
+        />
       </div>
 
       {balance > 0 || fiadoHistory.length ? (
@@ -115,9 +131,16 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {balance > 0 ? (
-                <Button variant="outline" asChild title={c.phone ? undefined : "No tiene teléfono guardado: en WhatsApp eliges el contacto"}>
+                <Button
+                  variant="outline"
+                  asChild
+                  title={c.phone ? undefined : "No tiene teléfono guardado: en WhatsApp eliges el contacto"}
+                >
                   <a
-                    href={whatsappLink(c.phone, fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(balance) }))}
+                    href={whatsappLink(
+                      c.phone,
+                      fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(balance) }),
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -127,13 +150,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
                 </Button>
               ) : null}
               {balance > 0 && canRegisterPayment ? (
-                <PaymentDialog
-                  customerId={c.id}
-                  customerName={c.name}
-                  balance={balance}
-                  currency={ctx.currency}
-                  timezone={ctx.timezone}
-                />
+                <PaymentDialog customerId={c.id} customerName={c.name} balance={balance} currency={ctx.currency} timezone={ctx.timezone} />
               ) : null}
             </div>
           </CardHeader>

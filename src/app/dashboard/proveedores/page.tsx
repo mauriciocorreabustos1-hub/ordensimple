@@ -9,7 +9,7 @@ import { ConfirmDelete } from "@/components/app/confirm-delete"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { SupplierComparator } from "@/components/contacts/supplier-comparator"
 import { SupplierDialog } from "@/components/contacts/supplier-dialog"
 import { formatMoney, formatNumber } from "@/lib/currency"
@@ -113,7 +113,7 @@ export default async function SuppliersPage() {
         ) : null}
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
         <StatCard compactOnMobile label="Proveedores" value={formatNumber(suppliers.length)} icon={Truck} />
         <StatCard
           compactOnMobile

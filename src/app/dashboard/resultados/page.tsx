@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Explainer } from "@/components/app/explainer"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { VatCoverage } from "@/components/results/vat-coverage"
 import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth, zonedParts, zonedTimeToUtc } from "@/lib/dates"
@@ -99,7 +99,10 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
     getIncomeStatement(ctx.businessId, from, to, rate),
     getYearSummary(ctx.businessId, year, lastMonth, ctx.timezone, rate),
     canUseFeature(ctx.business.plan, "balance")
-      ? db.ownerWithdrawal.aggregate({ where: { businessId: ctx.businessId, date: { gte: from, lt: to }, kind: { not: "DEPOSIT" } }, _sum: { amount: true } })
+      ? db.ownerWithdrawal.aggregate({
+          where: { businessId: ctx.businessId, date: { gte: from, lt: to }, kind: { not: "DEPOSIT" } },
+          _sum: { amount: true },
+        })
       : Promise.resolve(null),
   ])
   const withdrawnTotal = withdrawn?._sum.amount ?? 0
@@ -112,7 +115,9 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   // Si anotó el pago del IVA o del PPM como gasto, se estaría restando dos veces.
   const taxes = chargesVat ? categories.find((c) => /impuesto/i.test(c.name) && c.total > 0) : undefined
   // Los meses vacíos antes de empezar a registrar no se muestran (el mes elegido siempre aparece).
-  const firstActive = rows.findIndex((r) => r.s.sales !== 0 || r.s.costOfSales !== 0 || r.s.operatingExpenses !== 0 || r.s.purchasesToInventory !== 0)
+  const firstActive = rows.findIndex(
+    (r) => r.s.sales !== 0 || r.s.costOfSales !== 0 || r.s.operatingExpenses !== 0 || r.s.purchasesToInventory !== 0,
+  )
   const visibleRows = rows.slice(Math.min(firstActive < 0 ? month - 1 : firstActive, month - 1))
   const due = vatDueDate(year, month, ctx.settings.vatDueDay, ctx.timezone, ctx.business.country)
   // PPM: va en el mismo F29 que el IVA (solo Chile), sobre las ventas sin IVA.
@@ -154,9 +159,15 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard compactOnMobile label={salesLabel} value={money(st.netSales)} icon={ShoppingBag} tone="sales"
-          hint={salesCount === 1 ? "1 venta" : `${salesCount} ventas`} />
+      <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${STAT_GROUP}`}>
+        <StatCard
+          compactOnMobile
+          label={salesLabel}
+          value={money(st.netSales)}
+          icon={ShoppingBag}
+          tone="sales"
+          hint={salesCount === 1 ? "1 venta" : `${salesCount} ventas`}
+        />
         <StatCard compactOnMobile label="Costo de venta" value={money(st.costOfSales)} icon={Package} tone="expenses" />
         <StatCard compactOnMobile label="Gastos" value={money(st.operatingExpenses)} icon={Receipt} tone="expenses" />
         <StatCard
@@ -214,22 +225,37 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
             <div className="grid gap-6 md:grid-cols-[1fr_1.4fr] md:items-center">
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {f29 > 0 ? (ppm > 0 ? "Total a pagar en el F29 (aprox.)" : `${L} a pagar (aprox.)`) : `${L} a favor para el mes siguiente`}
+                  {f29 > 0
+                    ? ppm > 0
+                      ? "Total a pagar en el F29 (aprox.)"
+                      : `${L} a pagar (aprox.)`
+                    : `${L} a favor para el mes siguiente`}
                 </p>
                 <p className={cn("tabular text-4xl font-semibold tracking-tight", f29 > 0 ? "text-foreground" : "text-success")}>
                   {money(f29 > 0 ? f29 : current.carryOut)}
                 </p>
                 {f29 > 0 && current.carryOut > 0 ? (
-                  <p className="mt-1 text-xs text-muted-foreground">Y te quedan {money(current.carryOut)} de {L} a favor para el mes siguiente.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Y te quedan {money(current.carryOut)} de {L} a favor para el mes siguiente.
+                  </p>
                 ) : null}
               </div>
               <div className="divide-y rounded-xl border px-4">
                 <Line money={money} label={`${L} de tus ventas`} hint="Lo que va dentro de tus precios" value={st.vat.debit} />
-                <Line money={money} kind="minus" label={`${L} de tus gastos con factura`} hint="Lo que puedes descontar" value={st.vat.credit} />
-                {current.carryIn > 0 ? (
-                  <Line money={money} kind="minus" label="A favor del mes anterior" value={current.carryIn} />
-                ) : null}
-                <Line money={money} kind="subtotal" label={current.vatToPay > 0 || current.carryOut === 0 ? `${L} a pagar` : `${L} a favor`} value={current.vatToPay > 0 || current.carryOut === 0 ? current.vatToPay : current.carryOut} />
+                <Line
+                  money={money}
+                  kind="minus"
+                  label={`${L} de tus gastos con factura`}
+                  hint="Lo que puedes descontar"
+                  value={st.vat.credit}
+                />
+                {current.carryIn > 0 ? <Line money={money} kind="minus" label="A favor del mes anterior" value={current.carryIn} /> : null}
+                <Line
+                  money={money}
+                  kind="subtotal"
+                  label={current.vatToPay > 0 || current.carryOut === 0 ? `${L} a pagar` : `${L} a favor`}
+                  value={current.vatToPay > 0 || current.carryOut === 0 ? current.vatToPay : current.carryOut}
+                />
                 {ppm > 0 ? (
                   <>
                     <Line money={money} label={ppmLabel} hint="Pago provisional del impuesto a la renta" value={ppm} />
@@ -298,14 +324,26 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                 hint={st.grossMargin !== null ? `Margen de ${formatPercent(st.grossMargin, 0)} sobre lo vendido` : undefined}
                 value={st.grossProfit}
               />
-              <Line money={money} kind="minus" label="Gastos del negocio" hint="Arriendo, sueldos, cuentas y otros" value={st.operatingExpenses} />
+              <Line
+                money={money}
+                kind="minus"
+                label="Gastos del negocio"
+                hint="Arriendo, sueldos, cuentas y otros"
+                value={st.operatingExpenses}
+              />
               {categories
                 .filter((c) => !c.isVariable && c.total > 0)
                 .map((c) => (
                   <Line key={c.name} money={money} kind="detail" label={c.name} value={c.total} />
                 ))}
               {st.waste > 0 ? (
-                <Line money={money} kind="minus" label="Merma y vencidos" hint="Productos vencidos, dañados o perdidos, a costo" value={st.waste} />
+                <Line
+                  money={money}
+                  kind="minus"
+                  label="Merma y vencidos"
+                  hint="Productos vencidos, dañados o perdidos, a costo"
+                  value={st.waste}
+                />
               ) : null}
               <Line
                 money={money}
@@ -316,15 +354,16 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
               />
               {taxes ? (
                 <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-foreground">
-                  En “{taxes.name}” tienes {money(taxes.total)}. Si ahí anotaste el pago del {L} o del PPM, no son gastos del
-                  negocio: el {L} ya lo calculamos aparte y el PPM es un adelanto del impuesto a la renta. Cámbialos de
-                  categoría o elimínalos para que tu utilidad sea correcta.
+                  En “{taxes.name}” tienes {money(taxes.total)}. Si ahí anotaste el pago del {L} o del PPM, no son gastos del negocio: el{" "}
+                  {L} ya lo calculamos aparte y el PPM es un adelanto del impuesto a la renta. Cámbialos de categoría o elimínalos para que
+                  tu utilidad sea correcta.
                 </p>
               ) : null}
               {st.purchasesToInventory > 0 ? (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Compraste {money(st.purchasesToInventory)} en mercadería{chargesVat && raw.purchasesInvoiced > 0 ? ` (sin el ${L} de las facturas)` : ""}. No se resta aquí porque ya contamos el costo de
-                  lo que vendiste; lo que no vendiste sigue en tu inventario.
+                  Compraste {money(st.purchasesToInventory)} en mercadería
+                  {chargesVat && raw.purchasesInvoiced > 0 ? ` (sin el ${L} de las facturas)` : ""}. No se resta aquí porque ya contamos el
+                  costo de lo que vendiste; lo que no vendiste sigue en tu inventario.
                 </p>
               ) : null}
             </div>
@@ -335,8 +374,10 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           <Explainer title="En palabras simples">
             {st.netSales > 0 ? (
               <>
-                De cada {money(10_000)} que vendiste{chargesVat ? ` (sin ${L})` : ""}, {money(Math.round((st.costOfSales / st.netSales) * 10_000))} se fueron en
-                el costo de lo que vendiste, {money(Math.round(((st.operatingExpenses + st.waste) / st.netSales) * 10_000))} en los gastos del negocio{st.waste > 0 ? " y la merma" : ""} y{" "}
+                De cada {money(10_000)} que vendiste{chargesVat ? ` (sin ${L})` : ""},{" "}
+                {money(Math.round((st.costOfSales / st.netSales) * 10_000))} se fueron en el costo de lo que vendiste,{" "}
+                {money(Math.round(((st.operatingExpenses + st.waste) / st.netSales) * 10_000))} en los gastos del negocio
+                {st.waste > 0 ? " y la merma" : ""} y{" "}
                 {st.profit >= 0 ? (
                   <>te quedaron {money(Math.round((st.profit / st.netSales) * 10_000))} de utilidad.</>
                 ) : (
@@ -350,17 +391,21 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           <div className="space-y-2 rounded-xl border bg-card p-4 text-xs leading-relaxed text-muted-foreground">
             <p className="text-sm font-medium text-foreground">¿Cómo lo calculamos?</p>
             <p>
-              <strong>Utilidad bruta</strong> = ventas − costo de venta. Es lo que te dejan tus productos.{" "}
-              <strong>Utilidad del mes</strong> = utilidad bruta − gastos del negocio.
+              <strong>Utilidad bruta</strong> = ventas − costo de venta. Es lo que te dejan tus productos. <strong>Utilidad del mes</strong>{" "}
+              = utilidad bruta − gastos del negocio.
             </p>
             {chargesVat ? (
               <p>
-                Con {L}, los montos se muestran sin {L}: el {L} de tus ventas no es ganancia, se paga al SII, y el de tus
-                gastos con factura lo recuperas. El {L} de lo que compras sin factura no se recupera, así que es parte de tu
-                costo. Suponemos que tus precios y el costo de tus productos incluyen {L}.
+                Con {L}, los montos se muestran sin {L}: el {L} de tus ventas no es ganancia, se paga al SII, y el de tus gastos con factura
+                lo recuperas. El {L} de lo que compras sin factura no se recupera, así que es parte de tu costo. Suponemos que tus precios y
+                el costo de tus productos incluyen {L}.
               </p>
             ) : null}
-            {chargesVat ? <p>Qué incluye y qué no el cálculo del {L}: está explicado en la tarjeta del {L}, más arriba.</p> : null}
+            {chargesVat ? (
+              <p>
+                Qué incluye y qué no el cálculo del {L}: está explicado en la tarjeta del {L}, más arriba.
+              </p>
+            ) : null}
             <p>Es un cálculo aproximado para ordenarte. Para tu declaración, la cifra oficial la revisa tu contador o el SII.</p>
           </div>
         </div>
@@ -421,7 +466,9 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                   <td className="py-3 pr-3 text-right">{money(totals.operatingExpenses)}</td>
                   <td className={cn("py-3 pr-3 text-right", totals.profit < 0 ? "text-danger" : "text-success")}>{money(totals.profit)}</td>
                   {chargesVat ? <td className="py-3 pr-3 text-right">{money(totals.vatToPay)}</td> : null}
-                  {ppmRate > 0 ? <td className="py-3 text-right">{money(rows.reduce((acc, r) => acc + ppmAmount(r.s.netSales, ppmRate), 0))}</td> : null}
+                  {ppmRate > 0 ? (
+                    <td className="py-3 text-right">{money(rows.reduce((acc, r) => acc + ppmAmount(r.s.netSales, ppmRate), 0))}</td>
+                  ) : null}
                 </tr>
               </tfoot>
             </table>

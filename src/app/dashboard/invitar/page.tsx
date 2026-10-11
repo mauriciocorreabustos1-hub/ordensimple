@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Gift, Sparkles, Trophy, UserPlus } from "lucide-react"
+import { Gift, Store, Trophy, UserPlus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/app/page-header"
@@ -39,7 +39,7 @@ export default async function InvitePage() {
   const steps = [
     { icon: UserPlus, title: "1. Comparte tu enlace", text: "Por WhatsApp, en tus redes o a otros negocios del barrio." },
     {
-      icon: Sparkles,
+      icon: Store,
       title: "2. Tu amigo se registra",
       text:
         program.invitedDays > 0

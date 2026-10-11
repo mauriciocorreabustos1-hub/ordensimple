@@ -1,13 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight, Crown, NotebookPen, Repeat, Search, Sparkles, Users, MessageCircle } from "lucide-react"
+import { ChevronRight, Crown, NotebookPen, Repeat, Search, Users, MessageCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { CustomerDialog } from "@/components/contacts/customer-dialog"
 import { formatMoney, formatNumber } from "@/lib/currency"
 import { formatDate } from "@/lib/dates"
@@ -71,7 +71,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
         actions={canManage ? <CustomerDialog /> : null}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${STAT_GROUP}`}>
         <StatCard
           compactOnMobile
           label="Clientes"
@@ -181,7 +181,6 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                     ) : null}
                     {c.isNew ? (
                       <Badge variant="outline" className="gap-1">
-                        <Sparkles className="size-3" />
                         Nuevo
                       </Badge>
                     ) : null}

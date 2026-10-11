@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/app/empty-state"
 import { LoadMore } from "@/components/app/load-more"
 import { OpenQuickAction } from "@/components/app/open-quick-action"
 import { PageHeader } from "@/components/app/page-header"
-import { StatCard } from "@/components/app/stat-card"
+import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth } from "@/lib/dates"
 import { can } from "@/lib/roles"
@@ -70,7 +70,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
         actions={<OpenQuickAction action="expense" label="Registrar gasto" />}
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
         <StatCard compactOnMobile label="Gastos hoy" value={money(today.expenses)} icon={Receipt} tone="expenses" />
         <StatCard
           compactOnMobile

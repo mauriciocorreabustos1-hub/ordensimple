@@ -75,11 +75,15 @@ model User {
   verifyRemindedAt DateTime?
   /// Código del negocio que lo invitó ("Invita a un amigo"), si llegó por un enlace de invitación.
   invitedByCode    String?
+  /// Verificación en dos pasos (Better Auth): activada y con qué método ("email" o "app").
+  twoFactorEnabled Boolean   @default(false)
+  twoFactorMethod  String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   sessions      Session[]
   accounts      Account[]
+  twoFactors    TwoFactor[]
   memberships   BusinessMember[]
   sales         Sale[]
   expenses      Expense[]
@@ -902,4 +906,30 @@ model SpecialLinkUse {
   @@unique([linkId, businessId])
   @@index([businessId])
   @@map("special_link_use")
+}
+
+/// Datos del segundo paso al iniciar sesión (app de códigos y códigos de respaldo). Lo maneja Better Auth.
+model TwoFactor {
+  id                      String    @id @default(cuid())
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("two_factor")
+}
+
+/// Administradores agregados desde el panel (además de los de ADMIN_EMAILS en Vercel, que son los dueños).
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  addedBy   String?
+  createdAt DateTime @default(now())
+
+  @@map("admin_user")
 }

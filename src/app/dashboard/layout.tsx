@@ -8,12 +8,12 @@ import { UserMenu } from "@/components/app/user-menu"
 import { OfflineSalesBar, OfflineSalesProvider } from "@/components/app/offline-sales"
 import { db } from "@/lib/db"
 import { canUseFeature } from "@/lib/plans"
-import { isAdminEmail } from "@/server/admin"
+import { isAdmin as checkAdmin } from "@/server/admin"
 import { requireBusiness } from "@/server/session"
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const ctx = await requireBusiness()
-  const isAdmin = isAdminEmail(ctx.user.email)
+  const isAdmin = await checkAdmin(ctx.user.email)
 
   const [products, categories, customers, memberships] = await Promise.all([
     db.product.findMany({

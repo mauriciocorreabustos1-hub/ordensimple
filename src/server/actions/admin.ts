@@ -9,7 +9,7 @@ import { sendEmail, sendEmailBatch } from "@/lib/email"
 import { directEmail, planGiftEmail, promoEmail } from "@/lib/email-templates"
 import { unsubscribeUrl } from "@/lib/unsubscribe"
 import { PLANS } from "@/lib/plans"
-import { isAdminEmail, requireAdmin } from "@/server/admin"
+import { isAdmin, isAdminEmail, requireAdmin, requireOwnerAdmin } from "@/server/admin"
 import { audienceWhere } from "@/server/queries/campaigns"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -427,7 +427,7 @@ export async function deleteUserAccount(input: z.input<typeof deleteUserSchema>)
     if (user.email.toLowerCase() !== confirmEmail) return { ok: false, message: "El correo no coincide. No se eliminó nada." }
     if (user.email.toLowerCase() === admin.email.toLowerCase())
       return { ok: false, message: "No puedes eliminar tu propia cuenta desde aquí." }
-    if (isAdminEmail(user.email)) return { ok: false, message: "No se puede eliminar la cuenta de un administrador." }
+    if (await isAdmin(user.email)) return { ok: false, message: "No se puede eliminar la cuenta de un administrador." }
 
     const ownedIds = user.memberships.map((m) => m.businessId)
     await db.$transaction([
@@ -580,4 +580,35 @@ export async function deleteSpecialLink(id: string): Promise<ActionResult> {
   await db.specialLink.delete({ where: { id } })
   revalidatePath("/admin")
   return { ok: true, message: "Enlace eliminado" }
+}
+
+// ─── Administradores ────────────────────────────────────────────────────────
+
+const adminEmailSchema = z.email("Escribe un correo válido.").trim().toLowerCase().max(200)
+
+/** Agrega un administrador por correo (puede crear su cuenta después). Solo los dueños. */
+export async function addAdmin(email: string): Promise<ActionResult> {
+  const owner = await requireOwnerAdmin()
+  const parsed = adminEmailSchema.safeParse(email)
+  if (!parsed.success) return { ok: false, message: "Escribe un correo válido." }
+  if (isAdminEmail(parsed.data)) return { ok: false, message: "Ese correo ya es dueño del panel." }
+  try {
+    await db.adminUser.create({ data: { email: parsed.data, addedBy: owner.email } })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { ok: false, message: "Ese correo ya es administrador." }
+    return toActionError(error)
+  }
+  revalidatePath("/admin")
+  return { ok: true, message: `${parsed.data} ahora es administrador` }
+}
+
+/** Quita un administrador agregado desde el panel (los dueños de Vercel no se pueden quitar aquí). */
+export async function removeAdmin(email: string): Promise<ActionResult> {
+  await requireOwnerAdmin()
+  const parsed = adminEmailSchema.safeParse(email)
+  if (!parsed.success) return { ok: false, message: "Correo no válido." }
+  if (isAdminEmail(parsed.data)) return { ok: false, message: "Los dueños no se pueden quitar desde aquí." }
+  await db.adminUser.deleteMany({ where: { email: parsed.data } })
+  revalidatePath("/admin")
+  return { ok: true, message: `${parsed.data} ya no es administrador` }
 }

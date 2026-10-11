@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/app/page-header"
 import { BusinessForm } from "@/components/settings/business-form"
 import { LogoUploader } from "@/components/settings/logo-uploader"
 import { PhotoUploader } from "@/components/settings/photo-uploader"
+import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
+import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
@@ -33,6 +35,9 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
     redirect(`/dashboard/plan?${new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => typeof e[1] === "string"))}`)
   }
   const canManage = can(ctx.role, "settings:manage")
+  const twoFactorUser = ctx.user as { twoFactorEnabled?: boolean | null; twoFactorMethod?: string | null }
+  const twoFactor = { enabled: Boolean(twoFactorUser.twoFactorEnabled), method: twoFactorUser.twoFactorMethod ?? null }
+  const userIsAdmin = await isAdmin(ctx.user.email)
   const vat = vatInfo(ctx.business.country)
   const [categories, currentMembers, records, invitations, owned] = await Promise.all([
     db.expenseCategory.findMany({
@@ -264,6 +269,21 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
           <span className="text-sm text-primary">Ver o cambiar plan →</span>
         </Link>
       ) : null}
+
+      <Card id="seguridad" className="scroll-mt-20">
+        <CardHeader>
+          <CardTitle>Verificación en dos pasos</CardTitle>
+          <CardDescription>Protege tu cuenta con un código además de la contraseña.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {params["dos-pasos"] === "admin" && !twoFactor.enabled ? (
+            <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+              Para entrar al panel de administración, activa primero la verificación en dos pasos.
+            </p>
+          ) : null}
+          <TwoFactorSettings enabled={twoFactor.enabled} method={twoFactor.method} isAdmin={userIsAdmin} />
+        </CardContent>
+      </Card>
 
       <Card id="cuenta">
         <CardHeader>

@@ -147,3 +147,14 @@ export async function deleteMyAccount(confirmEmail: string): Promise<ActionResul
     return toActionError(error)
   }
 }
+
+/** Guarda el método del segundo paso ("email" o "app") después de activarlo, o lo borra al desactivarlo. */
+export async function setTwoFactorMethod(method: "email" | "app" | null): Promise<ActionResult> {
+  const user = await requireUser()
+  if (method !== null && method !== "email" && method !== "app") return { ok: false, message: "Método no válido." }
+  const row = await db.user.findUnique({ where: { id: user.id }, select: { twoFactorEnabled: true } })
+  if (method && !row?.twoFactorEnabled) return { ok: false, message: "Primero activa la verificación en dos pasos." }
+  await db.user.update({ where: { id: user.id }, data: { twoFactorMethod: method } })
+  revalidatePath("/dashboard/configuracion")
+  return { ok: true }
+}

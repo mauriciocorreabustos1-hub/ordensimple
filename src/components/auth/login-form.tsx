@@ -66,13 +66,18 @@ export function LoginForm({ next }: { next?: string }) {
     setFieldErrors({})
     setPending(true)
     // rememberMe = false: la sesión termina al cerrar el navegador.
-    const { error } = await authClient.signIn.email({ ...parsed.data, rememberMe: remember })
+    const { data, error } = await authClient.signIn.email({ ...parsed.data, rememberMe: remember })
     if (error) {
       setPending(false)
       setError(authErrorMessage(error))
       return
     }
     writeRememberedEmail(remember ? parsed.data.email : null)
+    // Cuenta con verificación en dos pasos: falta el código.
+    if (data && "twoFactorRedirect" in data && data.twoFactorRedirect) {
+      router.replace(`/verificar?${new URLSearchParams({ next: safeNext(next) })}`)
+      return
+    }
     router.replace(safeNext(next))
     router.refresh()
   }

@@ -87,6 +87,25 @@ export function resetPasswordEmail({ name, url }: { name: string; url: string })
   }
 }
 
+/** Código del segundo paso al iniciar sesión (verificación en dos pasos). */
+export function twoFactorCodeEmail({ name, code }: { name: string; code: string }) {
+  const first = escapeHtml(name.split(" ")[0] ?? name)
+  return {
+    subject: `Tu código para entrar a OrdenSimple: ${code}`,
+    html: layout({
+      preview: `Tu código es ${code}. Vale por 5 minutos.`,
+      body: [
+        h1("Tu código para entrar"),
+        p(`Hola ${first}, este es tu código para terminar de iniciar sesión:`),
+        `<p style="margin:8px 0 16px;font-size:32px;font-weight:700;letter-spacing:6px;color:${GREEN};font-family:Consolas,Menlo,monospace;">${escapeHtml(code)}</p>`,
+        p("Vale por <strong>5 minutos</strong>."),
+        small("Si no estabas iniciando sesión, alguien tiene tu contraseña: cámbiala desde Configuración y no compartas este código."),
+      ].join(""),
+    }),
+    text: `Hola ${name.split(" ")[0] ?? name},\n\nTu código para entrar a OrdenSimple es: ${code}\nVale por 5 minutos.\n\nSi no estabas iniciando sesión, cambia tu contraseña.`,
+  }
+}
+
 /**
  * Bienvenida. Si viene verifyUrl, el botón principal confirma el correo (y entra al negocio): así la verificación
  * no gasta un correo aparte.

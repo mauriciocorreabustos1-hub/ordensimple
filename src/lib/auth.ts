@@ -2,12 +2,15 @@ import "server-only"
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { nextCookies } from "better-auth/next-js"
+import { twoFactor } from "better-auth/plugins"
+import { createAuthEndpoint } from "better-auth/api"
+import type { BetterAuthPlugin } from "better-auth"
 import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { parseOrigin } from "@/lib/signup-source"
 import { parseReferralCookie } from "@/lib/referrals"
-import { resetPasswordEmail, verifyEmail, welcomeEmail } from "@/lib/email-templates"
+import { resetPasswordEmail, twoFactorCodeEmail, verifyEmail, welcomeEmail } from "@/lib/email-templates"
 
 export const auth = betterAuth({
   appName: "OrdenSimple",
@@ -69,6 +72,8 @@ export const auth = betterAuth({
       signupCampaign: { type: "string", required: false, input: false },
       signupReferrer: { type: "string", required: false, input: false },
       invitedByCode: { type: "string", required: false, input: false },
+      // Método del segundo paso que eligió la persona ("email" o "app"); lo guarda la app, no el navegador.
+      twoFactorMethod: { type: "string", required: false, input: false },
     },
   },
   session: {
@@ -95,7 +100,46 @@ export const auth = betterAuth({
       "/change-email": { window: 60 * 60, max: 3 },
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    // Verificación en dos pasos: código por correo o app de códigos (Google Authenticator), más códigos de respaldo.
+    twoFactor({
+      issuer: "OrdenSimple",
+      otpOptions: {
+        period: 5,
+        storeOTP: "hashed",
+        async sendOTP({ user, otp }) {
+          // Quien eligió la app de códigos no recibe códigos por correo: así, aunque le roben el correo, no pueden entrar.
+          const method = (user as { twoFactorMethod?: string | null }).twoFactorMethod
+          if (method === "app") throw new Error("Esta cuenta usa la app de códigos.")
+          await sendEmail({ to: user.email, ...twoFactorCodeEmail({ name: user.name, code: otp }) })
+        },
+      },
+      backupCodeOptions: { amount: 8 },
+    }),
+    twoFactorMethod(),
+    nextCookies(),
+  ],
 })
 
 export type AuthSession = typeof auth.$Infer.Session
+
+/**
+ * Durante el segundo paso (antes de tener sesión) dice qué método usa la cuenta, para que /verificar
+ * muestre solo ese. Lee la misma cookie firmada que usa la verificación; sin ella no responde nada.
+ */
+function twoFactorMethod() {
+  return {
+    id: "dos-pasos-metodo",
+    endpoints: {
+      twoFactorPendingMethod: createAuthEndpoint("/dos-pasos/metodo", { method: "GET" }, async (ctx) => {
+        const cookie = ctx.context.createAuthCookie("two_factor")
+        const token = await ctx.getSignedCookie(cookie.name, ctx.context.secret)
+        if (!token) return ctx.json({ method: null })
+        const pending = await ctx.context.internalAdapter.findVerificationValue(token)
+        if (!pending || pending.expiresAt < new Date()) return ctx.json({ method: null })
+        const user = await db.user.findUnique({ where: { id: pending.value }, select: { twoFactorMethod: true } })
+        return ctx.json({ method: user?.twoFactorMethod === "app" ? "app" : "email" })
+      }),
+    },
+  } satisfies BetterAuthPlugin
+}

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, BarChart3, Download, Gift, Link2, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users } from "lucide-react"
+import { Activity, BarChart3, Download, Gift, Link2, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, UserPlus, Users, ShieldCheck } from "lucide-react"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -23,7 +23,8 @@ import { couponSummary, effectivePlan, PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import { ago, device } from "@/lib/activity-format"
-import { isAdminEmail } from "@/server/admin"
+import { adminEmailSet, isAdminEmail, listAdmins, requireAdmin } from "@/server/admin"
+import { AdminsManager, type AdminRow } from "@/components/admin/admins-manager"
 import { getFeatureAdoption, getOriginStats } from "@/server/queries/admin-detail"
 import { countUnverified } from "@/server/verify-reminders"
 import { VerifyLinksButton } from "@/components/admin/verify-links-button"
@@ -70,6 +71,15 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const role = (ROLE_FILTERS.some((r) => r.value === params.rol) ? params.rol : "todos") as RoleFilter
   // ?para=<id> deja a esa persona elegida en "Correo a personas específicas".
   const para = typeof params.para === "string" ? params.para.slice(0, 40) : ""
+  const me = await requireAdmin()
+  const [adminEmails, admins] = await Promise.all([adminEmailSet(), listAdmins()])
+  const adminRows: AdminRow[] = admins.map((a) => ({
+    email: a.email,
+    owner: a.owner,
+    name: a.user?.name ?? null,
+    verified: a.user ? a.user.emailVerified : null,
+    twoFactor: a.user ? a.user.twoFactorEnabled : null,
+  }))
   const [stats, users, errors, coupons, planCounts, audience, campaigns, directTo, mpAccount, subCounts] = await Promise.all([
     getAdminStats(),
     listAdminUsers({ q: q || undefined, page, activity, role }),
@@ -461,7 +471,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         Escribirle
                       </Link>
                     </Button>
-                    {isAdminEmail(u.email) ? null : (
+                    {adminEmails.has(u.email.toLowerCase()) ? null : (
                       <DeleteUserDialog
                         userId={u.id}
                         name={u.name}
@@ -495,6 +505,17 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             ) : null}
           </div>
         ) : null}
+      </section>
+
+      <section id="administradores" className="scroll-mt-20 space-y-4">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <ShieldCheck className="size-5 text-muted-foreground" />
+            Administradores
+          </h2>
+          <p className="text-sm text-muted-foreground">Quién puede entrar a este panel.</p>
+        </div>
+        <AdminsManager admins={adminRows} canManage={isAdminEmail(me.email)} />
       </section>
 
       <section id="codigos" className="scroll-mt-20 space-y-4">

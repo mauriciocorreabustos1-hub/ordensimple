@@ -15,7 +15,7 @@ export function HealthCard({ health }: { health: Health }) {
     <section aria-label="¿Cómo va tu negocio?" className={cn("flex gap-3 rounded-2xl border p-4 md:p-5", s.box)}>
       <s.icon className={cn("mt-0.5 size-5 shrink-0", s.iconColor)} aria-hidden />
       <div className="space-y-0.5">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">¿Cómo va tu negocio?</p>
+        <p className="text-sm font-medium text-muted-foreground">¿Cómo va tu negocio?</p>
         <p className="font-semibold">
           <span className="mr-1.5" aria-hidden>
             {s.emoji}

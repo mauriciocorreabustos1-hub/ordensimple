@@ -148,10 +148,10 @@ export default async function DashboardPage() {
         </div>
         <QuickButtons />
         <section aria-labelledby="hoy" className="space-y-3">
-          <h2 id="hoy" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+          <h2 id="hoy" className="text-base font-semibold">
             Hoy en el negocio
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 sm:grid-cols-2">
             <StatCard
               label="Ventas hoy"
               value={money(data.today.sales)}
@@ -240,10 +240,10 @@ export default async function DashboardPage() {
       <QuickButtons />
 
       <section aria-labelledby="hoy" className="space-y-3">
-        <h2 id="hoy" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+        <h2 id="hoy" className="text-base font-semibold">
           Hoy
         </h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 sm:grid-cols-3">
           <StatCard
             label="Ventas hoy"
             value={money(data.today.sales)}
@@ -275,11 +275,11 @@ export default async function DashboardPage() {
 
       {debts || thisMonth ? (
         <section aria-labelledby="cuentas" className="space-y-3">
-          <h2 id="cuentas" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+          <h2 id="cuentas" className="text-base font-semibold">
             Tus cuentas de {currentMonth}
           </h2>
           <div
-            className={`grid gap-3 ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+            className={`grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
           >
             {debts ? (
               <LinkCard
@@ -337,10 +337,10 @@ export default async function DashboardPage() {
       ) : (
         <>
           <section aria-labelledby="mes" className="space-y-3">
-            <h2 id="mes" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            <h2 id="mes" className="text-base font-semibold">
               Este mes ({currentMonth})
             </h2>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0 sm:grid-cols-3">
               <StatCard
                 label="Ventas del mes"
                 value={money(data.month.sales)}
@@ -409,7 +409,7 @@ export default async function DashboardPage() {
           </div>
 
           <section aria-labelledby="comparar" className="space-y-3">
-            <h2 id="comparar" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            <h2 id="comparar" className="text-base font-semibold">
               Comparaciones
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">

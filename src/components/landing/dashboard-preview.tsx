@@ -156,9 +156,9 @@ export function DashboardPreview() {
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
-              { label: "Ventas hoy", value: sales, icon: ShoppingBag, tone: "bg-chart-1/15 text-chart-1", up: true },
-              { label: "Gastos", value: BASE.expenses, icon: Receipt, tone: "bg-chart-2/15 text-chart-2", up: false },
-              { label: "Ganancia aprox.", value: profit, icon: PiggyBank, tone: "bg-chart-3/15 text-chart-3", up: true },
+              { label: "Ventas hoy", short: "Ventas", value: sales, icon: ShoppingBag, tone: "bg-chart-1/15 text-chart-1", up: true },
+              { label: "Gastos", short: "Gastos", value: BASE.expenses, icon: Receipt, tone: "bg-chart-2/15 text-chart-2", up: false },
+              { label: "Ganancia aprox.", short: "Ganancia", value: profit, icon: PiggyBank, tone: "bg-chart-3/15 text-chart-3", up: true },
             ].map((s) => (
               <div
                 key={s.label}
@@ -171,7 +171,10 @@ export function DashboardPreview() {
                   <span className={`flex size-6 items-center justify-center rounded-md ${s.tone}`}>
                     <s.icon className="size-3.5" />
                   </span>
-                  <span className="truncate text-[11px] text-muted-foreground sm:text-xs">{s.label}</span>
+                  <span className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                    <span className="sm:hidden">{s.short}</span>
+                    <span className="hidden sm:inline">{s.label}</span>
+                  </span>
                 </div>
                 <p className="tabular text-sm font-semibold sm:text-xl">{clp(s.value)}</p>
               </div>

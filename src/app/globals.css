@@ -200,3 +200,19 @@
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Hoja de cuaderno: margen y líneas cada 28px (el alto de una línea de texto), corridas 14px para que
+   el texto quede apoyado en la línea. */
+.notebook {
+  --margin-line: color-mix(in oklch, var(--danger) 60%, transparent);
+  --rule-line: color-mix(in oklch, var(--border) 75%, transparent);
+  background-image:
+    linear-gradient(to right, transparent 2.25rem, var(--margin-line) 2.25rem, var(--margin-line) calc(2.25rem + 2px), transparent calc(2.25rem + 2px)),
+    repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule-line) 27px 28px);
+  background-position: 0 0, 0 14px;
+}
+
+/* Borde de abajo en zigzag, como una boleta cortada. */
+.receipt-edge {
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+}

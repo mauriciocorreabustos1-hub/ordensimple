@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
 import { cn } from "@/lib/utils"
-import { BEFORE_AFTER, PLAN_COMPARISON, STEPS, type FaqGroup, type Feature } from "@/components/landing/content"
+import { BEFORE_AFTER, PLAN_COMPARISON, RECEIPT_STEPS, STEPS, type FaqGroup, type Feature } from "@/components/landing/content"
 
 export function Container({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("mx-auto max-w-6xl px-4 sm:px-6", className)}>{children}</div>
@@ -125,26 +125,67 @@ export function BenefitsSection() {
 
 /** "El cuaderno vs. OrdenSimple": situaciones reales de un negocio de barrio, antes y después. */
 export function BeforeAfter() {
+  // A la izquierda, una hoja de cuaderno de verdad (líneas y margen); a la derecha, lo mismo con OrdenSimple.
+  // Todo con alto de línea de 28px para que el texto quede sobre las líneas.
   return (
     <div className="overflow-hidden rounded-2xl border bg-card">
-      <div className="hidden grid-cols-2 border-b bg-muted/40 text-sm font-medium text-muted-foreground sm:grid">
-        <p className="px-5 py-3">Con el cuaderno</p>
-        <p className="border-l px-5 py-3 text-foreground">Con OrdenSimple</p>
+      <div className="hidden grid-cols-2 border-b text-sm font-medium sm:grid">
+        <p className="bg-muted/40 py-3.5 pr-5 pl-12 leading-7 text-muted-foreground">Con el cuaderno</p>
+        <p className="border-l px-5 py-3.5 leading-7">Con OrdenSimple</p>
       </div>
-      <ul className="divide-y">
+      <ul>
         {BEFORE_AFTER.map((row) => (
           <li key={row.after} className="grid sm:grid-cols-2">
-            <p className="flex gap-2.5 px-5 pt-4 text-pretty text-muted-foreground sm:py-4">
-              <X className="mt-0.5 size-4 shrink-0 text-muted-foreground/70" />
+            <p className="notebook relative bg-muted/40 py-3.5 pr-5 pl-12 leading-7 text-pretty text-muted-foreground">
+              <X className="absolute top-[1.3rem] left-3 size-4 text-danger/60" aria-hidden />
+              <span className="sr-only">Antes: </span>
               {row.before}
             </p>
-            <p className="flex gap-2.5 px-5 pt-2 pb-4 font-medium text-pretty sm:border-l sm:py-4">
-              <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+            <p className="flex gap-2.5 px-5 py-3.5 leading-7 font-medium text-pretty shadow-[inset_0_-1px_0_var(--border)] sm:border-l">
+              <Check className="mt-1.5 size-4 shrink-0 text-primary" />
               {row.after}
             </p>
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+/** "Empieza en 2 minutos" como una boleta: cada paso con lo que tarda, y el total al final. */
+export function ReceiptSteps() {
+  return (
+    <div className="mx-auto w-full max-w-sm drop-shadow-xl md:rotate-1">
+      <div className="receipt-edge bg-card px-6 pt-7 pb-10 font-mono text-sm text-card-foreground">
+        <div className="space-y-1 text-center">
+          <p className="text-base font-semibold">OrdenSimple</p>
+          <p className="text-xs text-muted-foreground">Boleta de inicio · N° 000001</p>
+        </div>
+        <ol className="my-5 space-y-4 border-y border-dashed border-foreground/25 py-5">
+          {RECEIPT_STEPS.map((s, i) => (
+            <li key={s.what}>
+              <p className="flex items-baseline">
+                <span className="mr-2 text-muted-foreground">{i + 1}</span>
+                <span className="font-medium">{s.what}</span>
+                <span className="mx-2 flex-1 translate-y-[-3px] border-b border-dotted border-foreground/30" aria-hidden />
+                <span className="tabular shrink-0">{s.time}</span>
+              </p>
+              <p className="mt-0.5 pl-5 text-xs text-muted-foreground">{s.note}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="space-y-1.5">
+          <p className="flex justify-between text-base font-semibold">
+            <span>Total</span>
+            <span>2 min</span>
+          </p>
+          <p className="flex justify-between">
+            <span>Te cobramos</span>
+            <span className="tabular font-semibold text-primary">$0</span>
+          </p>
+        </div>
+        <p className="mt-6 text-center text-xs text-muted-foreground">¡Gracias por su preferencia!</p>
+      </div>
     </div>
   )
 }
@@ -163,7 +204,9 @@ export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
   )
 }
 
-export function PricingCards() {
+/** En la portada (`compact`) cada plan muestra lo principal; el detalle está en /precios. */
+export function PricingCards({ compact = false }: { compact?: boolean }) {
+  const MAX = 6
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {Object.values(PLANS).map((plan) => {
@@ -196,12 +239,19 @@ export function PricingCards() {
               {plan.priceNote ? <p className="text-xs text-muted-foreground">{plan.priceNote}</p> : null}
             </div>
             <ul className="flex-1 space-y-2 text-sm">
-              {plan.highlights.map((h) => (
+              {(compact ? plan.highlights.slice(0, MAX) : plan.highlights).map((h) => (
                 <li key={h} className={cn("flex items-start gap-2", h.startsWith("Todo lo de") && "font-medium")}>
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {h}
                 </li>
               ))}
+              {compact && plan.highlights.length > MAX ? (
+                <li className="pl-6">
+                  <Link href="/precios" className="text-primary hover:underline">
+                    Y {plan.highlights.length - MAX} cosas más
+                  </Link>
+                </li>
+              ) : null}
             </ul>
             {plan.id === "FREE" ? (
               <Button size="lg" variant={featured ? "default" : "outline"} className="h-11" asChild>

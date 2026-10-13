@@ -18,7 +18,7 @@ import {
   PricingCards,
   Section,
   SectionTitle,
-  StepsGrid,
+  ReceiptSteps,
 } from "@/components/landing/sections"
 
 export const metadata: Metadata = { alternates: { canonical: "/" } }
@@ -117,17 +117,26 @@ export default function LandingPage() {
       <BenefitsSection />
 
       <Section muted>
-        <SectionTitle align="left" title="Empieza en 2 minutos" />
-        <div className="mt-10">
-          <StepsGrid />
+        <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
+          <div className="space-y-4">
+            <SectionTitle align="left" title="Empieza en 2 minutos" description="Sin instalar nada y sin tarjeta. Esto es todo lo que tienes que hacer." />
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+              <Button size="lg" className="h-11" asChild>
+                <Link href="/registro">Crear mi cuenta gratis</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/como-funciona">Conoce cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <ReceiptSteps />
         </div>
-        <MoreLink href="/como-funciona">Conoce cómo funciona</MoreLink>
       </Section>
 
       <Section>
         <SectionTitle eyebrow="Precios" title="Empieza gratis. Crece cuando lo necesites." />
         <div className="mt-12">
-          <PricingCards />
+          <PricingCards compact />
         </div>
         <MoreLink href="/precios">Comparar planes</MoreLink>
       </Section>

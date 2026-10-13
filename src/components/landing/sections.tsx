@@ -91,27 +91,27 @@ export function MoreLink({ href, children }: { href: string; children: React.Rea
 
 export function BenefitsSection() {
   return (
-    <Section>
+    <Section className="border-t-0 bg-deep text-deep-foreground">
       <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
         <div className="space-y-4">
           <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
             Entiende tus números, aunque no te gusten los números.
           </h2>
-          <p className="text-lg text-pretty text-muted-foreground">
+          <p className="text-lg text-pretty text-deep-foreground/75">
             Nada de “margen neto” ni planillas. OrdenSimple te lo dice como te lo diría un amigo que sabe de negocios.
           </p>
           <ul className="space-y-2 pt-2 text-pretty">
             <li className="flex gap-2">
-              <Check className="mt-1 size-4 shrink-0 text-primary" />
+              <Check className="mt-1 size-4 shrink-0 text-deep-foreground/80" />
               Anotar el día te toma menos de un minuto.
             </li>
             <li className="flex gap-2">
-              <Check className="mt-1 size-4 shrink-0 text-primary" />
+              <Check className="mt-1 size-4 shrink-0 text-deep-foreground/80" />
               Tus datos son solo tuyos y de quien tú autorices.
             </li>
           </ul>
         </div>
-        <figure className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+        <figure className="rounded-2xl bg-card p-6 text-card-foreground shadow-lg sm:p-8">
           <p className="text-sm text-muted-foreground line-through decoration-muted-foreground/50">Margen neto del período: 18,4%</p>
           <blockquote className="font-display mt-4 text-2xl leading-snug font-semibold text-balance sm:text-3xl">
             De cada $10.000 que vendes, te quedan $1.840.
@@ -288,17 +288,17 @@ export function CtaSection({
   text?: string
 }) {
   return (
-    <section className="border-t bg-accent/30">
+    <section className="bg-deep text-deep-foreground">
       <Container className="grid items-end gap-8 py-16 md:grid-cols-[1fr_auto] md:py-20">
         <div className="max-w-xl space-y-3">
           <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
-          <p className="text-lg text-muted-foreground">{text}</p>
+          <p className="text-lg text-deep-foreground/75">{text}</p>
         </div>
         <div className="space-y-2 md:text-right">
-          <Button size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
+          <Button size="lg" className="h-12 w-full bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90 sm:w-auto" asChild>
             <Link href="/registro">Crear mi cuenta gratis</Link>
           </Button>
-          <p className="text-sm text-muted-foreground">Gratis para siempre, sin tarjeta.</p>
+          <p className="text-sm text-deep-foreground/70">Gratis para siempre, sin tarjeta.</p>
         </div>
       </Container>
     </section>

@@ -3,7 +3,6 @@ import {
   Boxes,
   Calculator,
   Clock,
-  CreditCard,
   FileDown,
   FlaskConical,
   HeartHandshake,
@@ -15,7 +14,6 @@ import {
   Scale,
   ShieldCheck,
   ShoppingBag,
-  Smartphone,
   Store,
   Tag,
   Target,
@@ -298,9 +296,7 @@ export const TOOLS: Feature[] = [
 ]
 
 export const COMING_SOON: Feature[] = [
-  { icon: CreditCard, title: "Pagar Pro y Empresa", text: "Pago mensual con tarjeta y boleta electrónica. Por ahora Pro es gratis." },
   { icon: FileDown, title: "Reportes en PDF", text: "Resúmenes listos para imprimir o enviar." },
-  { icon: Smartphone, title: "App instalable", text: "Ícono en tu celular y funciona con mala señal." },
 ]
 
 export const BENEFITS: Feature[] = [
@@ -483,7 +479,7 @@ export type ComparisonRow = { label: string; values: [string | boolean, string |
 
 export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Ideal para", values: ["1 a 3 personas", "Pymes con equipo e IVA", "Empresas con varios locales"] },
-  { label: "Trabajadores (además de ti)", values: ["2", "20", "Más de 50"] },
+  { label: "Trabajadores (además de ti)", values: ["2", "20", "Sin límite"] },
   { label: "Negocios o sucursales", values: ["1", "Hasta 3", "Hasta 10"] },
   { label: "Productos", values: ["Hasta 50", "Ilimitados", "Ilimitados"] },
   { label: "Ventas y gastos", values: [true, true, true] },

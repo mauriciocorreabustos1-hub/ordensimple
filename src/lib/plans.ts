@@ -112,11 +112,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     audience: "Empresas con varias sucursales y más de 20 personas",
     maxBusinesses: 10,
     maxProducts: null,
-    maxMembers: 1000, // más de 50 trabajadores
+    maxMembers: 1000, // en la práctica, sin límite
     features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "balance", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
-      "Más de 50 trabajadores",
+      "Trabajadores sin límite",
       "Hasta 10 sucursales",
       "Resumen de todas tus sucursales juntas",
       "Cuál sucursal vende más, de un vistazo",

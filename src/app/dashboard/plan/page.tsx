@@ -60,7 +60,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
         priceLabel: formatMoney(final, "CLP"),
         amount: final,
         fullPriceLabel: final !== price ? formatMoney(price, "CLP") : undefined,
-        summary: p === "PRO" ? "Tú + 20 trabajadores · hasta 3 sucursales" : "Más de 50 trabajadores · hasta 10 sucursales",
+        summary: p === "PRO" ? "Tú + 20 trabajadores · hasta 3 sucursales" : "Trabajadores sin límite · hasta 10 sucursales",
       },
     ]
   })

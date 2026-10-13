@@ -22,7 +22,11 @@ async function createDetector(): Promise<Detector> {
     const formats = await native.getSupportedFormats().catch(() => [] as string[])
     return formats.length ? new native({ formats }) : new native({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"] })
   }
-  const { BarcodeDetector } = await import("barcode-detector/ponyfill")
+  const { BarcodeDetector, setZXingModuleOverrides, ZXING_WASM_VERSION } = await import("barcode-detector/ponyfill")
+  // El motor se sirve desde el propio sitio (lo copia scripts/copy-wasm.mjs), no desde un servidor externo.
+  setZXingModuleOverrides({
+    locateFile: (path: string, prefix: string) => (path.endsWith(".wasm") ? `/wasm/zxing_reader-${ZXING_WASM_VERSION}.wasm` : prefix + path),
+  })
   // "any" = todos los formatos que soporta la versión en WebAssembly.
   return new BarcodeDetector({ formats: ["any"] }) as unknown as Detector
 }

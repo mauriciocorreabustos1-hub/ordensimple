@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# lector de códigos (lo copia scripts/copy-wasm.mjs al instalar)
+/public/wasm
+
 # vercel
 .vercel
 

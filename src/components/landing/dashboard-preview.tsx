@@ -104,10 +104,19 @@ export function DashboardPreview() {
     return () => observer.disconnect()
   }, [])
 
+  // Da dos vueltas y se detiene, para no gastar batería mientras la persona lee; con play vuelve a empezar.
+  const loops = React.useRef(0)
   React.useEffect(() => {
     if (!playing) return
     const i = STEPS.findIndex((s) => s.id === step)
-    const timer = setTimeout(() => setStep(STEPS[(i + 1) % STEPS.length].id), STEPS[i].ms)
+    const timer = setTimeout(() => {
+      if (i === STEPS.length - 1 && ++loops.current >= 2) {
+        loops.current = 0
+        setPaused(true)
+        return
+      }
+      setStep(STEPS[(i + 1) % STEPS.length].id)
+    }, STEPS[i].ms)
     return () => clearTimeout(timer)
   }, [step, playing])
 

@@ -96,7 +96,7 @@ export default function LandingPage() {
           </div>
           <VideoDemo
             src="/videos/un-dia-con-ordensimple.mp4"
-            poster="/videos/un-dia-con-ordensimple.jpg"
+            poster="/videos/un-dia-con-ordensimple.webp"
             label="Video: un día en un negocio usando OrdenSimple, desde abrir en la mañana hasta cerrar la caja en la noche."
           />
         </div>

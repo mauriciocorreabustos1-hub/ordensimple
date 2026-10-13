@@ -16,7 +16,8 @@ const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var d=
 const LEGACY_CSS_SCRIPT = `(function(){try{if(window.CSSLayerBlockRule)return;var add=function(){var h=[].map.call(document.querySelectorAll('link[rel="stylesheet"][href*="/_next/static/"]'),function(l){return l.getAttribute("href")});if(!h.length)return;var l=document.createElement("link");l.rel="stylesheet";l.href="/estilos-compatibles.css?f="+encodeURIComponent(h.join(","));document.head.appendChild(l)};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",add);else add()}catch(e){}})()`
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
+// Se usa poco (códigos, la boleta de la portada): no se descarga por adelantado en todas las páginas.
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false })
 // Títulos de la web pública: una letra con más carácter que la del texto.
 const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], weight: ["500", "600", "700"] })
 

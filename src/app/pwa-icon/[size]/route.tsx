@@ -2,6 +2,12 @@ import { ImageResponse } from "next/og"
 
 const SIZES = new Set([180, 192, 512])
 
+// Se generan al publicar (no en cada visita); cualquier otro tamaño no existe.
+export function generateStaticParams() {
+  return [...SIZES].map((size) => ({ size: String(size) }))
+}
+export const dynamicParams = false
+
 // Íconos PNG para el manifest PWA y la pantalla de inicio de iOS (mismo isotipo que public/brand).
 export async function GET(_req: Request, { params }: RouteContext<"/pwa-icon/[size]">) {
   const { size: raw } = await params

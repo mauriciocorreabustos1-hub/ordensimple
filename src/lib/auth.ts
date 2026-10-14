@@ -74,6 +74,8 @@ export const auth = betterAuth({
       invitedByCode: { type: "string", required: false, input: false },
       // Método del segundo paso que eligió la persona ("email" o "app"); lo guarda la app, no el navegador.
       twoFactorMethod: { type: "string", required: false, input: false },
+      // Cuándo vio el tutorial de bienvenida (lo marca la app al cerrarlo).
+      welcomeTourAt: { type: "date", required: false, input: false },
     },
   },
   session: {

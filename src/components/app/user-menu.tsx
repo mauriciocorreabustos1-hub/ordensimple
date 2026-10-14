@@ -3,7 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Check, LogOut, Monitor, Moon, Settings, ShieldCheck, Store, Sun } from "lucide-react"
+import { Check, CircleHelp, LogOut, Monitor, Moon, Settings, ShieldCheck, Store, Sun } from "lucide-react"
+import { OPEN_WELCOME_TOUR } from "@/components/app/welcome-tour"
 import { useTheme } from "@/lib/theme"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -158,6 +159,10 @@ export function UserMenu({
             <Settings />
             Configuración
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => window.dispatchEvent(new Event(OPEN_WELCOME_TOUR))}>
+          <CircleHelp />
+          Cómo usar OrdenSimple
         </DropdownMenuItem>
         {isAdmin ? (
           <DropdownMenuItem asChild>

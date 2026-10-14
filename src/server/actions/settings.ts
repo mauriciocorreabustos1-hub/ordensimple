@@ -173,3 +173,10 @@ export async function setTwoFactorMethod(method: "email" | "app" | null): Promis
   revalidatePath("/dashboard/configuracion")
   return { ok: true }
 }
+
+/** Marca el tutorial de bienvenida como visto (no se vuelve a abrir solo; se puede ver desde el menú). */
+export async function markWelcomeTourSeen(): Promise<ActionResult> {
+  const user = await requireUser()
+  await db.user.updateMany({ where: { id: user.id, welcomeTourAt: null }, data: { welcomeTourAt: new Date() } })
+  return { ok: true }
+}

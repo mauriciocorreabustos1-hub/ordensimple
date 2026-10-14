@@ -78,6 +78,8 @@ model User {
   /// Verificación en dos pasos (Better Auth): activada y con qué método ("email" o "app").
   twoFactorEnabled Boolean   @default(false)
   twoFactorMethod  String?
+  /// Cuándo vio el tutorial de bienvenida (null = todavía no; se muestra al entrar a la app).
+  welcomeTourAt    DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

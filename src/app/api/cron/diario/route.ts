@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto"
 import { sendBusinessAlerts } from "@/server/business-alerts"
 import { sendOnboardingNudges } from "@/server/onboarding-emails"
 import { sendVerifyReminders } from "@/server/verify-reminders"
@@ -23,7 +24,9 @@ async function step<T>(name: string, run: () => Promise<T>): Promise<T | { error
 // Envía los correos de bienvenida y los avisos que cada negocio activó en Configuración.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  const given = Buffer.from(request.headers.get("authorization") ?? "")
+  const expected = Buffer.from(`Bearer ${secret}`)
+  if (!secret || given.length !== expected.length || !timingSafeEqual(given, expected)) {
     return new Response(null, { status: 401 })
   }
   // Solo en desarrollo: ?ahora=2026-10-05T14:00:00Z para probar como si fuera otro día.

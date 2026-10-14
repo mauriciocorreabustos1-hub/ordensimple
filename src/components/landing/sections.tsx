@@ -32,7 +32,7 @@ export function Section({
 export function SectionTitle({
   title,
   description,
-  align = "center",
+  align = "left",
 }: {
   /** Ya no se muestra (quedaba con cara de plantilla); se mantiene para no tocar cada página. */
   eyebrow?: string
@@ -49,13 +49,22 @@ export function SectionTitle({
 }
 
 /** Encabezado de las páginas internas (/funciones, /precios, etc.). */
-export function PageHero({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+export function PageHero({
+  title,
+  description,
+}: {
+  /** Ya no se muestra (la etiqueta chica sobre el título se veía de plantilla); se mantiene para no tocar cada página. */
+  eyebrow?: string
+  title: string
+  description: string
+}) {
   return (
     <section className="border-b bg-accent/30">
-      <Container className="pt-12 pb-10 md:pt-16 md:pb-14">
-        <div className="max-w-3xl space-y-4">
-          {eyebrow ? <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p> : null}
-          <h1 className="font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.05]">{title}</h1>
+      <Container className="pt-14 pb-12 md:pt-20 md:pb-16">
+        <div className="max-w-3xl space-y-5">
+          <h1 className="font-display text-[2.4rem] leading-[1.04] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[1.02]">
+            {title}
+          </h1>
           <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{description}</p>
         </div>
       </Container>
@@ -81,7 +90,7 @@ export function FeatureGrid({ items, columns = 3 }: { items: Feature[]; columns?
 
 export function MoreLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <div className="mt-10 flex justify-center">
+    <div className="mt-10 flex">
       <Button variant="outline" size="lg" className="h-11 px-5" asChild>
         <Link href={href}>{children}</Link>
       </Button>
@@ -190,7 +199,29 @@ export function ReceiptSteps() {
   )
 }
 
+/** Minuto en que empieza cada paso (suman los 2 minutos que promete la página). */
+const STOPWATCH = ["00:00", "00:30", "01:30", "01:50"]
+
 export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
+  if (detailed) {
+    return (
+      <ol className="max-w-3xl border-t border-foreground/80">
+        {STEPS.map((s, i) => (
+          <li key={s.n} className="grid gap-2 border-b py-6 sm:grid-cols-[6.5rem_1fr] sm:gap-8 sm:py-8">
+            <span className="tabular pt-1.5 font-mono text-sm text-muted-foreground">{STOPWATCH[i]}</span>
+            <div className="space-y-2">
+              <p className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">{s.title}</p>
+              <p className="max-w-xl text-pretty text-muted-foreground">{s.detail}</p>
+            </div>
+          </li>
+        ))}
+        <li className="grid gap-2 py-6 sm:grid-cols-[6.5rem_1fr] sm:gap-8 sm:py-8">
+          <span className="tabular pt-1.5 font-mono text-sm font-semibold text-primary">02:00</span>
+          <p className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">Listo. Ya estás ordenado.</p>
+        </li>
+      </ol>
+    )
+  }
   return (
     <ol className={cn("grid gap-x-8 gap-y-8 sm:grid-cols-2", !detailed && "lg:grid-cols-4")}>
       {STEPS.map((s) => (

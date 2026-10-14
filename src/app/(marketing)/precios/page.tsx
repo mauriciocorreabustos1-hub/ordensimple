@@ -41,7 +41,7 @@ export default function PricingPage() {
 
       <Section>
         <SectionTitle eyebrow="Comparación" title="¿Qué incluye cada plan?" />
-        <div className="mx-auto mt-12 max-w-4xl">
+        <div className="mt-12 max-w-4xl">
           <PricingComparison />
           <p className="mt-4 text-center text-sm text-muted-foreground">
             {BILLING_ENABLED
@@ -52,11 +52,9 @@ export default function PricingPage() {
       </Section>
 
       <Section muted>
-        <div className="mx-auto max-w-3xl">
-          <SectionTitle eyebrow="Preguntas" title="Sobre precios y tu cuenta" />
-          <div className="mt-10">
-            <FaqList items={PRICING_FAQ} />
-          </div>
+        <div className="grid gap-10 md:grid-cols-[1fr_1.5fr] md:gap-16">
+          <SectionTitle title="Sobre precios y tu cuenta" />
+          <FaqList items={PRICING_FAQ} />
         </div>
       </Section>
 

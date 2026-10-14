@@ -35,7 +35,7 @@ export default function FaqPage() {
       />
 
       <Section muted className="border-t-0">
-        <div className="mx-auto grid max-w-3xl gap-12">
+        <div className="grid max-w-3xl gap-12">
           {FAQ_GROUPS.map((g) => (
             <div key={g.title} className="space-y-4">
               <h2 className="text-xl font-semibold tracking-tight">{g.title}</h2>

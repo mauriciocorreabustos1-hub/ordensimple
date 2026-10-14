@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { Check } from "lucide-react"
 import { COMING_SOON, FEATURE_GROUPS, TOOLS } from "@/components/landing/content"
 import { CtaSection, FeatureGrid, MoreLink, PageHero, Section, SectionTitle } from "@/components/landing/sections"
 
@@ -19,23 +18,29 @@ export default function FeaturesPage() {
         description="Registra lo que vendes y lo que gastas, lleva el fiado, cuadra la caja y sabe cuánto ganas, con avisos que te llegan solos al correo."
       />
 
-      <Section muted>
-        <div className="grid gap-6 md:grid-cols-2">
+      <Section>
+        {/* Índice: salta directo a lo que te interesa. */}
+        <nav aria-label="Funciones" className="mb-12 flex flex-wrap gap-x-1 gap-y-2 text-sm">
+          {FEATURE_GROUPS.map((g, i) => (
+            <span key={g.id} className="flex items-center gap-1">
+              {i > 0 ? <span className="text-muted-foreground/50" aria-hidden>·</span> : null}
+              <a href={`#${g.id}`} className="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                {g.title}
+              </a>
+            </span>
+          ))}
+        </nav>
+        <div className="border-t border-foreground/80">
           {FEATURE_GROUPS.map((g) => (
-            <article key={g.id} id={g.id} className="scroll-mt-20 space-y-5 rounded-2xl border bg-card p-6 md:p-8">
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <g.icon className="size-5" />
-                </span>
-                <div>
-                  <h2 className="text-xl font-semibold tracking-tight">{g.title}</h2>
-                  <p className="text-sm text-muted-foreground">{g.description}</p>
-                </div>
+            <article key={g.id} id={g.id} className="grid scroll-mt-20 gap-5 border-b py-8 md:grid-cols-[17rem_1fr] md:gap-12 md:py-10">
+              <div className="space-y-2">
+                <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">{g.title}</h2>
+                <p className="text-pretty text-muted-foreground">{g.description}</p>
               </div>
-              <ul className="space-y-2.5">
+              <ul className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
                 {g.points.map((p) => (
-                  <li key={p} className="flex items-start gap-2.5 text-sm">
-                    <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <li key={p} className="flex gap-2.5 text-[15px] text-pretty">
+                    <span className="mt-[0.6rem] h-px w-3 shrink-0 bg-primary" aria-hidden />
                     {p}
                   </li>
                 ))}
@@ -43,6 +48,12 @@ export default function FeaturesPage() {
             </article>
           ))}
         </div>
+        {COMING_SOON.length ? (
+          <p className="mt-8 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Lo que viene:</span>{" "}
+            {COMING_SOON.map((f) => `${f.title.toLowerCase()} (${f.text.charAt(0).toLowerCase() + f.text.slice(1).replace(/\.$/, "")})`).join(", ")}.
+          </p>
+        ) : null}
       </Section>
 
       <Section>
@@ -55,23 +66,6 @@ export default function FeaturesPage() {
           <FeatureGrid items={TOOLS} columns={4} />
         </div>
         <MoreLink href="/calculadoras">Probar las calculadoras gratis</MoreLink>
-      </Section>
-
-      <Section muted>
-        <SectionTitle
-          eyebrow="Próximamente"
-          title="Lo que viene"
-          description="Seguimos construyendo OrdenSimple. Esto es lo próximo que llegará."
-        />
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {COMING_SOON.map((f) => (
-            <div key={f.title} className="space-y-2 rounded-2xl border border-dashed bg-card/60 p-5">
-              <f.icon className="size-5 text-muted-foreground" />
-              <p className="font-medium">{f.title}</p>
-              <p className="text-sm text-muted-foreground">{f.text}</p>
-            </div>
-          ))}
-        </div>
       </Section>
 
       <CtaSection title="Pruébalo gratis hoy" text="Crea tu cuenta en menos de un minuto. Sin tarjeta de crédito." />

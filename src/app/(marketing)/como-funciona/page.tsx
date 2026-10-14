@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { ArrowRight, Moon, Sun, Sunset } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { TRANSLATIONS } from "@/components/landing/content"
 import { CtaSection, PageHero, Section, SectionTitle, StepsGrid } from "@/components/landing/sections"
@@ -12,17 +12,17 @@ export const metadata: Metadata = {
 
 const DAY = [
   {
-    icon: Sun,
+    time: "08:30",
     title: "En la mañana",
     text: "Abres OrdenSimple y ves cómo te fue ayer y si tu negocio va bien este mes.",
   },
   {
-    icon: Sunset,
+    time: "13:00",
     title: "Durante el día",
     text: "Cada vez que vendes, tocas el botón verde y anotas el monto. Si pagas algo, lo registras como gasto.",
   },
   {
-    icon: Moon,
+    time: "21:00",
     title: "Al cerrar",
     text: "Miras cuánto vendiste, cuánto gastaste y cuánto te quedó hoy. Sin cuadrar planillas.",
   },
@@ -38,7 +38,7 @@ export default function HowItWorksPage() {
       />
 
       <Section muted>
-        <SectionTitle eyebrow="Paso a paso" title="Cuatro pasos y listo" />
+        <SectionTitle title="De cero a ordenado, con cronómetro" description="Esto es lo que toma empezar, minuto a minuto." />
         <div className="mt-12">
           <StepsGrid detailed />
         </div>
@@ -46,15 +46,15 @@ export default function HowItWorksPage() {
 
       <Section>
         <SectionTitle eyebrow="Tu día con OrdenSimple" title="Menos de un minuto al día" />
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <ul className="mt-10 grid gap-8 md:grid-cols-3 md:gap-10">
           {DAY.map((d) => (
-            <div key={d.title} className="space-y-3 rounded-2xl border bg-card p-6">
-              <d.icon className="size-6 text-primary" />
+            <li key={d.title} className="space-y-2 border-t border-foreground/80 pt-4">
+              <span className="tabular inline-block rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">{d.time}</span>
               <p className="text-lg font-semibold">{d.title}</p>
-              <p className="text-muted-foreground">{d.text}</p>
-            </div>
+              <p className="text-pretty text-muted-foreground">{d.text}</p>
+            </li>
           ))}
-        </div>
+        </ul>
         <div className="mt-14">
           <DashboardPreview />
         </div>
@@ -66,7 +66,7 @@ export default function HowItWorksPage() {
           title="Nada de términos complicados"
           description="Cada número viene con una explicación en lenguaje de todos los días."
         />
-        <div className="mx-auto mt-12 grid max-w-4xl gap-3">
+        <div className="mt-12 grid max-w-4xl gap-3">
           {TRANSLATIONS.map((t) => (
             <div
               key={t.jargon}

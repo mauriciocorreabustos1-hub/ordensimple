@@ -23,6 +23,7 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
   if (!parsed.success) return validationError(parsed.error)
   const { description, categoryId, amount, date, supplierName, hasInvoice } = parsed.data
 
+  let createdSupplier: string | null = null
   try {
     assertCan(ctx, id ? "expenses:edit" : "expenses:create")
     const current = id ? await db.expense.findFirst({ where: { id, businessId: ctx.businessId } }) : null
@@ -39,9 +40,11 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
         const existing = await tx.supplier.findFirst({
           where: { businessId: ctx.businessId, name: { equals: supplierName, mode: "insensitive" } },
         })
-        supplierId = existing
-          ? existing.id
-          : (await tx.supplier.create({ data: { businessId: ctx.businessId, name: supplierName } })).id
+        if (existing) supplierId = existing.id
+        else {
+          supplierId = (await tx.supplier.create({ data: { businessId: ctx.businessId, name: supplierName } })).id
+          createdSupplier = supplierName
+        }
       }
 
       const data = {
@@ -64,7 +67,9 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: id ? "Gasto actualizado" : "Gasto guardado" }
+  const saved = id ? "Gasto actualizado" : "Gasto guardado"
+  // Si el proveedor es nuevo, se avisa que quedó su ficha en Proveedores.
+  return { ok: true, message: createdSupplier ? `${saved}. Creamos la ficha de ${createdSupplier} en Proveedores.` : saved }
 }
 
 export async function deleteExpense(id: string): Promise<ActionResult> {

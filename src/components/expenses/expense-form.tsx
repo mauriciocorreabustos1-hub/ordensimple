@@ -78,7 +78,13 @@ export function ExpenseForm({
         }
         return
       }
-      toast.success(editing ? "Gasto actualizado" : `Gasto de ${formatMoney(amount, currency)} guardado`)
+      toast.success(
+        result.message?.includes("ficha")
+          ? result.message
+          : editing
+            ? "Gasto actualizado"
+            : `Gasto de ${formatMoney(amount, currency)} guardado`,
+      )
       if (editing) return onDone?.()
       setAmount(0)
       setDescription("")

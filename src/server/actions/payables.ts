@@ -14,6 +14,7 @@ export async function createPayable(input: PayableInput): Promise<ActionResult> 
   const parsed = payableSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   const { description, supplierName, amount, dueDate, hasInvoice = true, invoiceDate } = parsed.data
+  let createdSupplier: string | null = null
 
   try {
     assertCan(ctx, "suppliers:manage")
@@ -24,7 +25,11 @@ export async function createPayable(input: PayableInput): Promise<ActionResult> 
         where: { businessId: ctx.businessId, name: { equals: supplierName, mode: "insensitive" } },
         select: { id: true },
       })
-      supplierId = existing ? existing.id : (await db.supplier.create({ data: { businessId: ctx.businessId, name: supplierName } })).id
+      if (existing) supplierId = existing.id
+      else {
+        supplierId = (await db.supplier.create({ data: { businessId: ctx.businessId, name: supplierName } })).id
+        createdSupplier = supplierName
+      }
     }
     const [y, m, d] = dueDate.split("-").map(Number)
     const [iy, im, id] = invoiceDate ? invoiceDate.split("-").map(Number) : []
@@ -45,7 +50,12 @@ export async function createPayable(input: PayableInput): Promise<ActionResult> 
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: "Pago pendiente guardado. Te avisaremos antes de que venza." }
+  return {
+    ok: true,
+    message: createdSupplier
+      ? `Pago pendiente guardado. Creamos la ficha de ${createdSupplier} en Proveedores.`
+      : "Pago pendiente guardado. Te avisaremos antes de que venza.",
+  }
 }
 
 /** Marca como pagado: también queda registrado como gasto (en la categoría de compras a proveedores). */

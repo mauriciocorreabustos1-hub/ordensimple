@@ -53,7 +53,7 @@ export async function listExpenses(businessId: string, from: Date, to: Date, tak
       where,
       orderBy: { date: "desc" },
       take,
-      include: { category: { select: { name: true } }, supplier: { select: { name: true } } },
+      include: { category: { select: { name: true } }, supplier: { select: { id: true, name: true } } },
     }),
     db.expense.count({ where }),
     db.expense.aggregate({ where, _sum: { amount: true } }),

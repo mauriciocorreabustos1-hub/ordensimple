@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { PieChart, Receipt, Wallet } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,6 +12,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth } from "@/lib/dates"
+import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { deleteExpense } from "@/server/actions/expenses"
 import { EditExpenseButton } from "@/components/expenses/edit-expense-button"
@@ -27,6 +29,16 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
   const range = parseRange({ desde: params.desde as string, hasta: params.hasta as string, pagina: params.pagina as string }, ctx.timezone)
   const now = new Date()
   const canEdit = can(ctx.role, "expenses:edit")
+  // El nombre del proveedor abre su ficha (si puede ver Proveedores).
+  const supplierLinks = can(ctx.role, "suppliers:manage") && canUseFeature(ctx.business.plan, "suppliers")
+  const supplierName = (sup: { id: string; name: string }) =>
+    supplierLinks ? (
+      <Link href={`/dashboard/proveedores/${sup.id}`} className="hover:text-primary hover:underline">
+        {sup.name}
+      </Link>
+    ) : (
+      sup.name
+    )
   const [[today, month], list, byCategory, categories] = await Promise.all([
     periodTotals(ctx.businessId, ctx.timezone, now),
     listExpenses(ctx.businessId, range.from, range.to, range.take),
@@ -120,7 +132,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                       </p>
                       <p className="line-clamp-2 text-xs text-muted-foreground">
                         {formatDate(e.date, ctx.timezone)} · {e.category?.name ?? "Sin categoría"}
-                        {e.supplier ? ` · ${e.supplier.name}` : ""}
+                        {e.supplier ? <> · {supplierName(e.supplier)}</> : null}
                       </p>
                     </div>
                     {editButton(e)}
@@ -152,7 +164,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
                         <TableCell className="pl-4 text-muted-foreground">{formatDate(e.date, ctx.timezone)}</TableCell>
                         <TableCell className="max-w-64 truncate">{e.description}</TableCell>
                         <TableCell>{e.category?.name ?? "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{e.supplier?.name ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{e.supplier ? supplierName(e.supplier) : "—"}</TableCell>
                         <TableCell className="tabular text-right font-medium">{money(e.amount)}</TableCell>
                         {canDelete || canEdit ? (
                           <TableCell className="pr-2">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { CalendarClock, Mail, Phone, Receipt, Truck, Wallet } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,7 +40,7 @@ export default async function SuppliersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Proveedores"
-        description="A quién le compras, cuánto le has comprado y cuál te conviene. Los gastos con proveedor se suman solos aquí."
+        description="A quién le compras, cuánto le has comprado y cuál te conviene. Cada gasto con proveedor crea su ficha y se suma solo."
         actions={canManage ? <SupplierDialog currency={ctx.currency} /> : null}
       />
 
@@ -147,7 +148,9 @@ export default async function SuppliersPage() {
                 <li key={s.id} className="space-y-2 rounded-xl border bg-card p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{s.name}</p>
+                      <Link href={`/dashboard/proveedores/${s.id}`} className="block truncate font-medium hover:text-primary hover:underline">
+                        {s.name}
+                      </Link>
                       {s.products ? <p className="truncate text-sm text-muted-foreground">{s.products}</p> : null}
                     </div>
                     {canManage ? (
@@ -191,13 +194,16 @@ export default async function SuppliersPage() {
                     ) : null}
                     <span>Despacho: {s.deliveryCost ? money(s.deliveryCost) : "gratis o sin definir"}</span>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm">
+                  <Link
+                    href={`/dashboard/proveedores/${s.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm hover:text-primary"
+                  >
                     <span className="text-muted-foreground">
                       {s.purchases} {s.purchases === 1 ? "compra" : "compras"}
                       {s.lastPurchase ? ` · última ${formatDate(s.lastPurchase, ctx.timezone)}` : ""}
                     </span>
-                    <span className="tabular font-semibold">{money(s.spent)}</span>
-                  </div>
+                    <span className="tabular font-semibold">{money(s.spent)} · Ver ficha</span>
+                  </Link>
                   {s.notes ? <p className="text-xs text-muted-foreground">{s.notes}</p> : null}
                 </li>
               ))}

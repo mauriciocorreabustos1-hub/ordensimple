@@ -91,6 +91,37 @@ export async function getCustomerDetail(businessId: string, id: string) {
   }
 }
 
+/** Ficha de un proveedor: sus compras (gastos con su nombre) y lo que se le debe. */
+export async function getSupplierDetail(businessId: string, id: string) {
+  const supplier = await db.supplier.findFirst({ where: { id, businessId } })
+  if (!supplier) return null
+  const [stats, expenses, pending] = await Promise.all([
+    db.expense.aggregate({ where: { businessId, supplierId: id }, _sum: { amount: true }, _count: true, _max: { date: true } }),
+    db.expense.findMany({
+      where: { businessId, supplierId: id },
+      orderBy: { date: "desc" },
+      take: 50,
+      select: { id: true, date: true, description: true, amount: true, category: { select: { name: true } } },
+    }),
+    db.payable.findMany({
+      where: { businessId, supplierId: id, paidAt: null },
+      orderBy: { dueDate: "asc" },
+      select: { id: true, description: true, amount: true, dueDate: true },
+    }),
+  ])
+  const total = stats._sum.amount ?? 0
+  return {
+    supplier,
+    total,
+    purchases: stats._count,
+    last: stats._max.date,
+    average: stats._count ? Math.round(total / stats._count) : 0,
+    expenses,
+    pending,
+    pendingTotal: pending.reduce((t, p) => t + p.amount, 0),
+  }
+}
+
 export async function getSuppliers(businessId: string) {
   const [suppliers, totals] = await Promise.all([
     db.supplier.findMany({ where: { businessId }, orderBy: { name: "asc" } }),

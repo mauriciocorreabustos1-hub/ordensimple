@@ -364,9 +364,12 @@ export function FaqList({ items }: { items: FaqGroup["items"] }) {
 export function CtaSection({
   title = "Tu negocio merece estar ordenado.",
   text = "Crea tu cuenta gratis y registra tu primera venta hoy.",
+  users,
 }: {
   title?: string
   text?: string
+  /** Personas con cuenta: si viene, se muestra "Únete a las N personas…". */
+  users?: number | null
 }) {
   return (
     <section className="bg-deep text-deep-foreground">
@@ -374,6 +377,11 @@ export function CtaSection({
         <div className="max-w-xl space-y-3">
           <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
           <p className="text-lg text-deep-foreground/75">{text}</p>
+          {users && users > 1 ? (
+            <p className="text-deep-foreground/90">
+              Únete a las <span className="tabular font-semibold">{users.toLocaleString("es-CL")}</span> personas que ya lo usan.
+            </p>
+          ) : null}
         </div>
         <div className="space-y-2 md:text-right">
           <Button size="lg" className="h-12 w-full bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90 sm:w-auto" asChild>

@@ -7,6 +7,7 @@ import { PriceTag } from "@/components/landing/price-tag"
 import { FAQ_GROUPS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
+import { getUserCount } from "@/components/landing/user-count"
 import { VideoDemo } from "@/components/landing/video-demo"
 import {
   BeforeAfter,
@@ -23,6 +24,9 @@ import {
 
 export const metadata: Metadata = { alternates: { canonical: "/" } }
 
+// Se regenera cada 10 minutos para que el contador de personas esté al día.
+export const revalidate = 600
+
 const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 5)
 
 const DAY = [
@@ -31,7 +35,8 @@ const DAY = [
   { time: "21:00", text: "Cierras la caja en 1 minuto y sabes cuánto ganaste." },
 ]
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const users = await getUserCount()
   return (
     <>
       <StructuredData />
@@ -55,7 +60,15 @@ export default function LandingPage() {
                 <Link href="/como-funciona">Ver cómo funciona</Link>
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
+            <p className="text-sm text-pretty text-muted-foreground">
+              {users ? (
+                <>
+                  <span className="tabular font-semibold text-foreground">{users.toLocaleString("es-CL")}</span>{" "}
+                  {users === 1 ? "persona ya ordena su negocio" : "personas ya ordenan su negocio"} con OrdenSimple.{" "}
+                </>
+              ) : null}
+              El plan básico es gratis para siempre y no te pedimos tarjeta.
+            </p>
           </div>
           <div className="relative pt-11 lg:-mr-24 xl:-mr-32">
             <PriceTag className="absolute top-0 left-3 z-10 -rotate-3 sm:left-6">
@@ -157,7 +170,7 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      <CtaSection />
+      <CtaSection users={users} />
     </>
   )
 }

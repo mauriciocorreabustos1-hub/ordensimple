@@ -1,12 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Download, Landmark, PiggyBank, Receipt, ShoppingBag, TrendingDown } from "lucide-react"
+import { Download, Landmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DateRangeFilter } from "@/components/app/date-range-filter"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate, ProUpsell } from "@/components/app/pro-gate"
-import { DiffBadge, StatCard, STAT_GROUP } from "@/components/app/stat-card"
+import { ChangeBadge, DiffBadge } from "@/components/app/stat-card"
+import { AccountLine } from "@/components/app/account-line"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { percentChange } from "@/lib/calculations"
@@ -124,37 +125,30 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
         />
       ) : null}
 
-      <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${STAT_GROUP}`}>
-        <StatCard
-          label="Ventas"
-          value={money(cur.sales)}
-          icon={ShoppingBag}
-          tone="sales"
-          change={percentChange(cur.sales, prev.sales)}
-          changeLabel={prevLabel}
+      <div className="space-y-2">
+        <AccountLine
+          positive={cur.profit >= 0}
+          sales={{
+            label: "Vendiste",
+            value: money(cur.sales),
+            sub: <ChangeBadge change={percentChange(cur.sales, prev.sales)} label={prevLabel} />,
+          }}
+          expenses={{
+            label: "Gastaste",
+            value: money(cur.expenses),
+            sub: <ChangeBadge change={percentChange(cur.expenses, prev.expenses)} label={prevLabel} invert />,
+          }}
+          result={{
+            label: cur.profit >= 0 ? "Te quedó (aprox.)" : "Perdiste (aprox.)",
+            value: money(Math.abs(cur.profit)),
+            sub: <DiffBadge current={cur.profit} previous={prev.profit} money={money} label={prevLabel} />,
+          }}
         />
-        <StatCard
-          label="Gastos"
-          value={money(cur.expenses)}
-          icon={Receipt}
-          tone="expenses"
-          change={percentChange(cur.expenses, prev.expenses)}
-          changeLabel={prevLabel}
-          invertChange
-        />
-        <StatCard
-          label={cur.profit >= 0 ? "Ganancia aproximada" : "Pérdida aproximada"}
-          value={money(Math.abs(cur.profit))}
-          icon={cur.profit >= 0 ? PiggyBank : TrendingDown}
-          tone={cur.profit >= 0 ? "profit" : "loss"}
-          hint={<DiffBadge current={cur.profit} previous={prev.profit} money={money} label={prevLabel} />}
-        />
-        <StatCard
-          label="Venta promedio"
-          value={money(avgTicket)}
-          icon={ShoppingBag}
-          hint={`${formatNumber(cur.salesCount)} ventas${margin !== null && margin > 0 ? ` · te quedó el ${formatPercent(margin, 0)} de lo vendido` : ""}`}
-        />
+        <p className="px-1 text-sm text-muted-foreground">
+          {formatNumber(cur.salesCount)} {cur.salesCount === 1 ? "venta" : "ventas"} · cada cliente te compró en promedio{" "}
+          <span className="tabular font-medium text-foreground">{money(avgTicket)}</span>
+          {margin !== null && margin > 0 ? <> · te quedó el {formatPercent(margin, 0)} de lo vendido</> : null}
+        </p>
       </div>
 
       <Card>

@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney } from "@/lib/currency"
-import { formatDate, formatDateTime } from "@/lib/dates"
+import { addDays, formatDate, formatTime } from "@/lib/dates"
 import { can } from "@/lib/roles"
 import { deleteSale } from "@/server/actions/sales"
 import { EditSaleButton, type EditableSale } from "@/components/sales/edit-sale-button"
@@ -27,6 +27,22 @@ function describe(items: { description: string; quantity: number }[]) {
   if (!first) return "Venta"
   const text = first.quantity > 1 ? `${first.quantity} × ${first.description}` : first.description
   return items.length > 1 ? `${text} y ${items.length - 1} más` : text
+}
+
+/** Agrupa las ventas por día (vienen de la más nueva a la más antigua), como las páginas de un cuaderno. */
+function byDay<T extends { date: Date; total: number }>(rows: T[], timeZone: string) {
+  const groups: { key: string; date: Date; rows: T[]; total: number }[] = []
+  for (const r of rows) {
+    const key = toDateKey(r.date, timeZone)
+    let g = groups.at(-1)
+    if (!g || g.key !== key) {
+      g = { key, date: r.date, rows: [], total: 0 }
+      groups.push(g)
+    }
+    g.rows.push(r)
+    g.total += r.total
+  }
+  return groups
 }
 
 export default async function SalesPage({ searchParams }: PageProps<"/dashboard/ventas">) {
@@ -49,6 +65,22 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
       : Promise.resolve([]),
   ])
   const customerNames = customers.map((c) => c.name)
+  const days = byDay(list.rows, ctx.timezone)
+  // Si quedan ventas por cargar, el último día puede estar incompleto: ahí no se muestra su total.
+  const lastIsPartial = list.rows.length < list.count
+  const now = new Date()
+  const todayKey = toDateKey(now, ctx.timezone)
+  const yesterdayKey = toDateKey(addDays(now, -1, ctx.timezone), ctx.timezone)
+  const dayLabel = (key: string, date: Date) => {
+    if (key === todayKey) return "Hoy"
+    if (key === yesterdayKey) return "Ayer"
+    const text = formatDate(date, ctx.timezone, { weekday: "long", day: "numeric", month: "long" })
+    return text.charAt(0).toUpperCase() + text.slice(1)
+  }
+  const daySummary = (g: (typeof days)[number], i: number) =>
+    i === days.length - 1 && lastIsPartial
+      ? null
+      : `${g.rows.length} ${g.rows.length === 1 ? "venta" : "ventas"} · ${money(g.total)}`
   const toEditable = (s: (typeof list.rows)[number]): EditableSale => ({
     id: s.id,
     isQuick: s.isQuick,
@@ -120,39 +152,49 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
         ) : (
           <>
             {/* Celular: tarjetas */}
-            <ul className="grid grid-cols-1 gap-2 md:hidden">
-              {list.rows.map((s) => (
-                <li key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="flex items-baseline gap-2 text-sm">
-                      <span className="min-w-0 flex-1 truncate font-medium" title={describe(s.items)}>
-                        {describe(s.items)}
-                      </span>
-                      <span className="tabular shrink-0 font-semibold">{money(s.total)}</span>
-                    </p>
-                    <p className="line-clamp-2 text-xs text-muted-foreground">
-                      {formatDateTime(s.date, ctx.timezone)} · {PAYMENT_LABEL[s.paymentMethod]}
-                      {s.customer ? ` · ${s.customer.name}` : ""}
-                    </p>
-                  </div>
-                  {editButton(s)}
-                  {canDelete ? (
-                    <ConfirmDelete
-                      title="¿Eliminar esta venta?"
-                      description={`Se eliminará la venta de ${money(s.total)}. Si descontó stock, se devolverá.`}
-                      onConfirm={deleteSale.bind(null, s.id)}
-                    />
-                  ) : null}
-                </li>
+            <div className="space-y-5 md:hidden">
+              {days.map((g, i) => (
+                <section key={g.key} className="space-y-2">
+                  <h3 className="flex items-baseline justify-between gap-3 border-b border-foreground/70 pb-1.5 text-sm">
+                    <span className="font-semibold">{dayLabel(g.key, g.date)}</span>
+                    <span className="tabular text-muted-foreground">{daySummary(g, i)}</span>
+                  </h3>
+                  <ul className="grid grid-cols-1 gap-2">
+                    {g.rows.map((s) => (
+                      <li key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="flex items-baseline gap-2 text-sm">
+                            <span className="min-w-0 flex-1 truncate font-medium" title={describe(s.items)}>
+                              {describe(s.items)}
+                            </span>
+                            <span className="tabular shrink-0 font-semibold">{money(s.total)}</span>
+                          </p>
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {formatTime(s.date, ctx.timezone)} · {PAYMENT_LABEL[s.paymentMethod]}
+                            {s.customer ? ` · ${s.customer.name}` : ""}
+                          </p>
+                        </div>
+                        {editButton(s)}
+                        {canDelete ? (
+                          <ConfirmDelete
+                            title="¿Eliminar esta venta?"
+                            description={`Se eliminará la venta de ${money(s.total)}. Si descontó stock, se devolverá.`}
+                            onConfirm={deleteSale.bind(null, s.id)}
+                          />
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
 
             {/* Computador: tabla */}
             <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-4">Fecha</TableHead>
+                    <TableHead className="pl-4">Hora</TableHead>
                     <TableHead>Detalle</TableHead>
                     <TableHead>Pago</TableHead>
                     <TableHead>Cliente</TableHead>
@@ -161,39 +203,48 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {list.rows.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="pl-4 text-muted-foreground">{formatDateTime(s.date, ctx.timezone)}</TableCell>
-                      <TableCell className="max-w-72">
-                        <span className="flex items-center gap-2">
-                          <span className="truncate">{describe(s.items)}</span>
-                          {s.isQuick ? (
-                            <Badge variant="secondary" className="gap-1">
-                              <Zap className="size-3" />
-                              Rápida
-                            </Badge>
-                          ) : null}
-                        </span>
+                  {days.map((g, i) => [
+                    <TableRow key={g.key} className="bg-muted/50 hover:bg-muted/50">
+                      <TableCell colSpan={4} className="pl-4 font-semibold">
+                        {dayLabel(g.key, g.date)}
                       </TableCell>
-                      <TableCell>{PAYMENT_LABEL[s.paymentMethod]}</TableCell>
-                      <TableCell className="text-muted-foreground">{s.customer?.name ?? "—"}</TableCell>
-                      <TableCell className="tabular text-right font-medium">{money(s.total)}</TableCell>
-                      {canDelete || canEdit ? (
-                        <TableCell className="pr-2">
-                          <div className="flex items-center justify-end gap-1">
-                            {editButton(s)}
-                            {canDelete ? (
-                              <ConfirmDelete
-                                title="¿Eliminar esta venta?"
-                                description={`Se eliminará la venta de ${money(s.total)} del ${formatDate(s.date, ctx.timezone)}. Si descontó stock, se devolverá.`}
-                                onConfirm={deleteSale.bind(null, s.id)}
-                              />
+                      <TableCell className="tabular text-right text-sm whitespace-nowrap text-muted-foreground">{daySummary(g, i)}</TableCell>
+                      {canDelete || canEdit ? <TableCell /> : null}
+                    </TableRow>,
+                    ...g.rows.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="tabular pl-4 text-muted-foreground">{formatTime(s.date, ctx.timezone)}</TableCell>
+                        <TableCell className="max-w-72">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate">{describe(s.items)}</span>
+                            {s.isQuick ? (
+                              <Badge variant="secondary" className="gap-1">
+                                <Zap className="size-3" />
+                                Rápida
+                              </Badge>
                             ) : null}
-                          </div>
+                          </span>
                         </TableCell>
-                      ) : null}
-                    </TableRow>
-                  ))}
+                        <TableCell>{PAYMENT_LABEL[s.paymentMethod]}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.customer?.name ?? "—"}</TableCell>
+                        <TableCell className="tabular text-right font-medium">{money(s.total)}</TableCell>
+                        {canDelete || canEdit ? (
+                          <TableCell className="pr-2">
+                            <div className="flex items-center justify-end gap-1">
+                              {editButton(s)}
+                              {canDelete ? (
+                                <ConfirmDelete
+                                  title="¿Eliminar esta venta?"
+                                  description={`Se eliminará la venta de ${money(s.total)} del ${formatDate(s.date, ctx.timezone)}. Si descontó stock, se devolverá.`}
+                                  onConfirm={deleteSale.bind(null, s.id)}
+                                />
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    )),
+                  ])}
                 </TableBody>
               </Table>
             </div>

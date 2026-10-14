@@ -13,11 +13,11 @@ export const STAT_GROUP =
 type Tone = "default" | "sales" | "expenses" | "profit" | "loss"
 
 const toneStyles: Record<Tone, string> = {
-  default: "bg-muted text-foreground",
-  sales: "bg-chart-1/15 text-chart-1",
-  expenses: "bg-chart-2/15 text-chart-2",
-  profit: "bg-chart-3/15 text-chart-3",
-  loss: "bg-danger/15 text-danger",
+  default: "text-muted-foreground",
+  sales: "text-chart-1",
+  expenses: "text-chart-2",
+  profit: "text-chart-3",
+  loss: "text-danger",
 }
 
 export function StatCard({
@@ -57,12 +57,8 @@ export function StatCard({
         className,
       )}
     >
-      <div className="flex items-center gap-2.5">
-        {Icon ? (
-          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", toneStyles[tone])}>
-            <Icon className="size-4" />
-          </span>
-        ) : null}
+      <div className="flex items-center gap-1.5">
+        {Icon ? <Icon className={cn("size-4 shrink-0", toneStyles[tone])} aria-hidden /> : null}
         <span className="text-sm font-medium text-muted-foreground">{label}</span>
       </div>
       <div

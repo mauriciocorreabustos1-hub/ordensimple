@@ -1,8 +1,29 @@
 import "server-only"
 import { getAppUrl } from "@/lib/app-url"
 import { db } from "@/lib/db"
-import { getPreapproval, setPreapprovalStatus } from "@/lib/mercadopago"
+import { cancelPreapproval, getPreapproval, setPreapprovalStatus } from "@/lib/mercadopago"
 import { effectivePlan, PLAN_RANK } from "@/lib/plans"
+
+/**
+ * Antes de borrar negocios (cuenta eliminada): cancela en Mercado Pago sus suscripciones vivas, para que no se
+ * le siga cobrando a alguien que ya no tiene cuenta. Devuelve false si alguna no se pudo cancelar (entonces no se borra nada).
+ */
+export async function cancelSubscriptionsOf(businessIds: string[]) {
+  if (!businessIds.length) return true
+  const subs = await db.subscription.findMany({
+    where: { businessId: { in: businessIds }, status: { in: ["authorized", "paused", "pending"] } },
+    select: { externalId: true },
+  })
+  for (const s of subs) {
+    try {
+      await cancelPreapproval(s.externalId)
+    } catch (error) {
+      console.error("[billing] no se pudo cancelar la suscripción", s.externalId, error)
+      return false
+    }
+  }
+  return true
+}
 
 /** Días extra después del período pagado, por si el cobro del mes se atrasa o se reintenta. */
 const GRACE_DAYS = 3

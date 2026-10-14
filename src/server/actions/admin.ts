@@ -10,6 +10,7 @@ import { directEmail, planGiftEmail, promoEmail } from "@/lib/email-templates"
 import { unsubscribeUrl } from "@/lib/unsubscribe"
 import { PLANS } from "@/lib/plans"
 import { isAdmin, isAdminEmail, requireAdmin, requireOwnerAdmin } from "@/server/admin"
+import { cancelSubscriptionsOf } from "@/server/billing"
 import { audienceWhere } from "@/server/queries/campaigns"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -430,6 +431,10 @@ export async function deleteUserAccount(input: z.input<typeof deleteUserSchema>)
     if (await isAdmin(user.email)) return { ok: false, message: "No se puede eliminar la cuenta de un administrador." }
 
     const ownedIds = user.memberships.map((m) => m.businessId)
+    // Si pagaba, se cancela en Mercado Pago antes de borrar (si no, le seguirían cobrando sin cuenta).
+    if (!(await cancelSubscriptionsOf(ownedIds))) {
+      return { ok: false, message: "No se pudo cancelar su suscripción en Mercado Pago. No se eliminó nada; intenta de nuevo." }
+    }
     await db.$transaction([
       // Borra en cascada ventas, gastos, productos, clientes, invitaciones, etc. de sus negocios.
       db.business.deleteMany({ where: { id: { in: ownedIds } } }),

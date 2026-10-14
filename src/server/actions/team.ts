@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email"
 import { invitationEmail } from "@/lib/email-templates"
 import { effectivePlan, memberLimit, PLANS } from "@/lib/plans"
 import { ROLE_LABEL } from "@/lib/roles"
+import { allowAttempt } from "@/server/rate-limit"
 import { assertCan, requireBusiness, requireUser } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -50,6 +51,9 @@ export async function inviteMember(input: z.input<typeof inviteSchema>): Promise
 
   try {
     assertCan(ctx, "members:manage")
+    if (!(await allowAttempt(`invitar:${ctx.user.id}`, 15, 60 * 60_000))) {
+      return { ok: false, message: "Enviaste muchas invitaciones seguidas. Espera un rato e intenta de nuevo." }
+    }
     const now = new Date()
     const owned = await ownedBusinesses(ctx.user.id)
     const wanted = new Set(parsed.data.businessIds?.length ? parsed.data.businessIds : [ctx.businessId])

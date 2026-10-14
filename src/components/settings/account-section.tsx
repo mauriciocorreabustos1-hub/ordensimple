@@ -17,14 +17,15 @@ export function AccountSection({ email, ownedBusinesses }: { email: string; owne
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [confirm, setConfirm] = React.useState("")
+  const [password, setPassword] = React.useState("")
   const [pending, startTransition] = React.useTransition()
   const matches = confirm.trim().toLowerCase() === email.toLowerCase()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!matches) return
+    if (!matches || !password) return
     startTransition(async () => {
-      const r = await deleteMyAccount(confirm)
+      const r = await deleteMyAccount(confirm, password)
       if (!r.ok) return void toast.error(r.message)
       toast.success("Tu cuenta fue eliminada. ¡Gracias por haber usado OrdenSimple!")
       // La sesión ya no existe: volvemos a la portada.
@@ -59,6 +60,7 @@ export function AccountSection({ email, ownedBusinesses }: { email: string; owne
           className="shrink-0 text-destructive"
           onClick={() => {
             setConfirm("")
+            setPassword("")
             setOpen(true)
           }}
         >
@@ -104,7 +106,17 @@ export function AccountSection({ email, ownedBusinesses }: { email: string; owne
           <Field label={`Para confirmar, escribe tu correo: ${email}`} htmlFor="delete-me">
             <Input id="delete-me" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" className="h-10" placeholder={email} />
           </Field>
-          <Button type="submit" variant="destructive" size="lg" className="h-11 text-base" disabled={!matches || pending}>
+          <Field label="Tu contraseña" htmlFor="delete-me-pass">
+            <Input
+              id="delete-me-pass"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="h-10"
+            />
+          </Field>
+          <Button type="submit" variant="destructive" size="lg" className="h-11 text-base" disabled={!matches || !password || pending}>
             {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
             Eliminar mi cuenta para siempre
           </Button>

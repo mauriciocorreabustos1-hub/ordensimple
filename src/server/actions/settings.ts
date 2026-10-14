@@ -13,6 +13,9 @@ import {
   type BusinessSettingsInput,
   type PreferencesInput,
 } from "@/lib/validations"
+import { verifyPassword } from "better-auth/crypto"
+import { cancelSubscriptionsOf } from "@/server/billing"
+import { allowAttempt } from "@/server/rate-limit"
 import { assertCan, requireBusiness, requireUser } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -129,14 +132,26 @@ export async function updateMarketingOptIn(value: boolean): Promise<ActionResult
  * La persona elimina su propia cuenta: se borran la cuenta y los negocios de los que es dueña
  * (con todas sus ventas, gastos, productos y clientes). De negocios ajenos solo se quita su acceso.
  */
-export async function deleteMyAccount(confirmEmail: string): Promise<ActionResult> {
+export async function deleteMyAccount(confirmEmail: string, password: string): Promise<ActionResult> {
   const user = await requireUser()
   if (typeof confirmEmail !== "string" || confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
     return { ok: false, message: "El correo no coincide. No se eliminó nada." }
   }
   try {
+    // Pide la contraseña: si alguien toma un celular con la sesión abierta, no puede borrar el negocio.
+    if (!(await allowAttempt(`borrar-cuenta:${user.id}`, 5, 15 * 60_000))) {
+      return { ok: false, message: "Intentaste varias veces. Espera unos minutos." }
+    }
+    const credential = await db.account.findFirst({ where: { userId: user.id, providerId: "credential" }, select: { password: true } })
+    if (!credential?.password || typeof password !== "string" || !(await verifyPassword({ hash: credential.password, password }))) {
+      return { ok: false, message: "La contraseña no es correcta. No se eliminó nada." }
+    }
+
     const owned = await db.businessMember.findMany({ where: { userId: user.id, role: "OWNER" }, select: { businessId: true } })
     const ownedIds = owned.map((m) => m.businessId)
+    if (!(await cancelSubscriptionsOf(ownedIds))) {
+      return { ok: false, message: "No pudimos cancelar tu suscripción en Mercado Pago. Cancélala en Tu plan e intenta de nuevo." }
+    }
     await db.$transaction([db.business.deleteMany({ where: { id: { in: ownedIds } } }), db.user.delete({ where: { id: user.id } })])
     if (ownedIds.length) {
       await db.user.updateMany({ where: { activeBusinessId: { in: ownedIds } }, data: { activeBusinessId: null } })

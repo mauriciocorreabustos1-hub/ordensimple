@@ -10,7 +10,7 @@ export default async function ResetPasswordPage({ searchParams }: PageProps<"/re
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center lg:text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">Crea una nueva contraseña</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Crea una nueva contraseña</h1>
         <p className="text-sm text-muted-foreground">Elige una contraseña que no uses en otros sitios.</p>
       </div>
       <ResetPasswordForm token={validToken} />

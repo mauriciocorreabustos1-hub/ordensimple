@@ -8,7 +8,7 @@ export default async function VerifyPage({ searchParams }: PageProps<"/verificar
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center lg:text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">Un paso más</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Un paso más</h1>
         <p className="text-sm text-muted-foreground">Escribe tu código para entrar.</p>
       </div>
       <TwoFactorVerify next={typeof next === "string" ? next : undefined} />

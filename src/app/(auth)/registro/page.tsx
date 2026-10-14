@@ -30,7 +30,7 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center lg:text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
           {chosen ? `Crea tu cuenta para contratar ${chosen.name}` : "Crea tu cuenta gratis"}
         </h1>
         <p className="text-sm text-muted-foreground">

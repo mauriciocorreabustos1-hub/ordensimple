@@ -32,7 +32,7 @@ export default async function InvitationPage({ params }: PageProps<"/invitacion/
   if (!invitation || invitation.acceptedAt || invitation.expiresAt <= new Date()) {
     return (
       <div className="space-y-4 text-center lg:text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">Esta invitación ya no es válida</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Esta invitación ya no es válida</h1>
         <p className="text-sm text-muted-foreground">
           Puede que ya se haya usado, que haya vencido (duran 7 días) o que la hayan cancelado. Pídele a quien te invitó que
           te envíe una nueva.
@@ -61,7 +61,7 @@ export default async function InvitationPage({ params }: PageProps<"/invitacion/
         <Users className="size-6" />
       </span>
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
           Te invitaron a {branchNames.length > 1 ? `${branchNames.length} sucursales` : branchNames[0]}
         </h1>
         {branchNames.length > 1 ? <p className="text-sm font-medium">{branchNames.join(" · ")}</p> : null}

@@ -201,13 +201,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             checked={ctx.settings.noSalesReminder}
             disabled={!canManage}
           />
-          <PreferenceSwitch
-            name="weeklySummary"
-            label="Resumen semanal"
-            description="Cada lunes: cuánto vendiste, gastaste y te quedó la semana anterior."
-            checked={ctx.settings.weeklySummary}
-            disabled={!canManage}
-          />
+          <div className="space-y-0.5 py-3">
+            <p className="text-sm font-medium">Resumen de los lunes</p>
+            <p className="text-xs text-muted-foreground">
+              Cada lunes te llega cuánto vendiste, gastaste y te quedó la semana anterior. Llega siempre, para que nunca pierdas de vista tu
+              negocio.
+            </p>
+          </div>
           <MarketingSwitch checked={Boolean((ctx.user as { marketingOptIn?: boolean }).marketingOptIn)} />
         </CardContent>
       </Card>

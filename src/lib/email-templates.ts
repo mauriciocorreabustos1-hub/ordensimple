@@ -436,6 +436,11 @@ function alertFooter() {
   return `Recibes este aviso porque lo tienes activado en OrdenSimple. <a href="${getAppUrl()}/dashboard/configuracion" style="color:${MUTED};">Cambiar mis avisos</a>.`
 }
 
+/** El resumen de los lunes llega siempre: es parte del servicio, no un aviso que se apaga. */
+function weeklyFooter() {
+  return `Este resumen te llega cada lunes porque tienes un negocio en OrdenSimple. <a href="${getAppUrl()}/dashboard/reportes" style="color:${MUTED};">Ver tus reportes</a>.`
+}
+
 function statRow(label: string, value: string, color = INK) {
   return `<tr>
   <td style="padding:10px 0;font-size:15px;color:${MUTED};border-bottom:1px solid #eef2f0;">${label}</td>
@@ -491,7 +496,7 @@ ${statRow(profitLabel, money(Math.abs(d.profit)), d.profit >= 0 ? GREEN : "#c241
       ...extras.map((e) => p(e)),
       button(`${appUrl}/dashboard/reportes`, "Ver el detalle"),
     ].join(""),
-    footer: alertFooter(),
+    footer: weeklyFooter(),
   })
 
   const text = [
@@ -505,6 +510,36 @@ ${statRow(profitLabel, money(Math.abs(d.profit)), d.profit >= 0 ? GREEN : "#c241
     .join("\n\n")
 
   return { subject: `Tu semana en ${d.businessName}: vendiste ${money(d.sales)}`, html, text }
+}
+
+/** Resumen de los lunes cuando la semana no tuvo ventas ni gastos anotados: en vez de ceros, una invitación a anotar. */
+export function weeklyEmptyEmail(d: { name: string; businessName: string; weekLabel: string; currency: string; debtTotal: number; debtCount: number }) {
+  const appUrl = getAppUrl()
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const debt =
+    d.debtTotal > 0
+      ? `Ojo: te deben ${formatMoney(d.debtTotal, d.currency)} entre ${d.debtCount} cliente${d.debtCount === 1 ? "" : "s"} con fiado.`
+      : ""
+  const html = layout({
+    preview: `Del ${d.weekLabel} no hay ventas ni gastos anotados en ${d.businessName}.`,
+    body: [
+      h1(`Tu semana en ${escapeHtml(d.businessName)} quedó en blanco`),
+      p(`Hola ${escapeHtml(first)}, del ${escapeHtml(d.weekLabel)} no anotaste ventas ni gastos, así que no podemos decirte cuánto ganaste.`),
+      p("Anotar una venta toma unos segundos desde el celular. Si vendiste la semana pasada, todavía puedes anotarla con su fecha."),
+      debt ? p(escapeHtml(debt)) : "",
+      button(`${appUrl}/dashboard`, "Anotar una venta"),
+    ].join(""),
+    footer: weeklyFooter(),
+  })
+  const text = [
+    `Hola ${first}, del ${d.weekLabel} no anotaste ventas ni gastos en ${d.businessName}, así que no podemos decirte cuánto ganaste.`,
+    "Anotar una venta toma unos segundos desde el celular. Si vendiste la semana pasada, todavía puedes anotarla con su fecha.",
+    debt,
+    `Anotar una venta: ${appUrl}/dashboard`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+  return { subject: `Tu semana en ${d.businessName} quedó en blanco`, html, text }
 }
 
 /** Recordatorio de pagos a proveedores que vencen pronto o ya vencieron. */

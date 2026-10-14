@@ -2,7 +2,7 @@ import "server-only"
 import { db } from "@/lib/db"
 import { addDays, formatDate, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
 import { sendEmailBatch } from "@/lib/email"
-import { lowStockEmail, noSalesEmail, payablesEmail, weeklySummaryEmail } from "@/lib/email-templates"
+import { lowStockEmail, noSalesEmail, payablesEmail, weeklyEmptyEmail, weeklySummaryEmail } from "@/lib/email-templates"
 import { formatMoney } from "@/lib/currency"
 import { payablesDueBefore } from "@/server/queries/payables"
 import { totalsBetween } from "@/server/queries/aggregates"
@@ -52,10 +52,11 @@ export async function sendBusinessAlerts(now = new Date()) {
     const tz = b.timezone
     const today = startOfDay(now, tz)
 
-    // ─── Resumen semanal: los lunes, de la semana anterior (lunes a domingo) ──
+    // ─── Resumen semanal: todos los lunes, sí o sí, de la semana anterior (lunes a domingo) ──
+    // Llega siempre (no depende de la opción de Configuración); si la semana estuvo vacía, invita a anotar.
     const p = zonedParts(now, tz)
     const isMonday = new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay() === 1
-    if (s.weeklySummary && isMonday && (!s.lastWeeklySummaryAt || s.lastWeeklySummaryAt < today)) {
+    if (isMonday && (!s.lastWeeklySummaryAt || s.lastWeeklySummaryAt < today)) {
       const thisWeek = startOfWeek(now, tz)
       const from = addDays(thisWeek, -7, tz)
       const prevFrom = addDays(thisWeek, -14, tz)
@@ -67,10 +68,17 @@ export async function sendBusinessAlerts(now = new Date()) {
         db.product.findMany({ where: { businessId: b.id, active: true, trackStock: true }, select: { stock: true, minStock: true } }),
       ])
       await db.businessSettings.update({ where: { id: s.id }, data: { lastWeeklySummaryAt: now } })
-      // Sin movimiento en la semana no hay nada útil que contar.
-      if (week.sales > 0 || week.expenses > 0) {
-        const lastDay = addDays(thisWeek, -1, tz)
-        const weekLabel = `${formatDate(from, tz, { day: "numeric", month: "long" })} al ${formatDate(lastDay, tz, { day: "numeric", month: "long" })}`
+      const lastDay = addDays(thisWeek, -1, tz)
+      const weekLabel = `${formatDate(from, tz, { day: "numeric", month: "long" })} al ${formatDate(lastDay, tz, { day: "numeric", month: "long" })}`
+      if (week.sales === 0 && week.expenses === 0) {
+        for (const r of recipients) {
+          emails.push({
+            to: r.email,
+            ...weeklyEmptyEmail({ name: r.name, businessName: b.name, weekLabel, currency: b.currency, debtTotal: debts.total, debtCount: debts.count }),
+          })
+        }
+        counts.weekly++
+      } else {
         const topProducts = [...stats].sort((a, c) => c.qty - a.qty).slice(0, 3).map((x) => ({ name: x.name, qty: x.qty }))
         for (const r of recipients) {
           emails.push({

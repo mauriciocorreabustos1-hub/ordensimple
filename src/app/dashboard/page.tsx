@@ -11,12 +11,12 @@ import {
   Receipt,
   ShoppingBag,
   TrendingDown,
-  TrendingUp,
   type LucideIcon,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { InstallCard } from "@/components/app/install-app"
 import { StatCard, ChangeBadge, DiffBadge, STAT_GROUP } from "@/components/app/stat-card"
+import { AccountLine } from "@/components/app/account-line"
 import { Explainer } from "@/components/app/explainer"
 import { HealthCard } from "@/components/dashboard/health-card"
 import { QuickButtons } from "@/components/dashboard/quick-buttons"
@@ -245,34 +245,17 @@ export default async function DashboardPage() {
         <h2 id="hoy" className="text-base font-semibold">
           Hoy
         </h2>
-        <div className={`grid gap-3 ${STAT_GROUP} sm:grid-cols-3`}>
-          <StatCard
-            label="Ventas hoy"
-            value={money(data.today.sales)}
-            icon={ShoppingBag}
-            tone="sales"
-            size={easy ? "lg" : "default"}
-            compactOnMobile={!easy}
-            hint={data.today.salesCount === 1 ? "1 venta registrada" : `${data.today.salesCount} ventas registradas`}
-          />
-          <StatCard
-            label="Gastos hoy"
-            value={money(data.today.expenses)}
-            icon={Receipt}
-            tone="expenses"
-            size={easy ? "lg" : "default"}
-            compactOnMobile={!easy}
-          />
-          <StatCard
-            label={data.today.profit >= 0 ? "Ganancia aproximada" : "Pérdida aproximada"}
-            value={money(Math.abs(data.today.profit))}
-            icon={data.today.profit >= 0 ? PiggyBank : TrendingDown}
-            tone={data.today.profit >= 0 ? "profit" : "loss"}
-            size={easy ? "lg" : "default"}
-            compactOnMobile={!easy}
-            hint="Ventas de hoy menos gastos de hoy."
-          />
-        </div>
+        <AccountLine
+          size={easy ? "lg" : "default"}
+          positive={data.today.profit >= 0}
+          sales={{
+            label: "Vendiste",
+            value: money(data.today.sales),
+            sub: data.today.salesCount === 1 ? "1 venta" : `${data.today.salesCount} ventas`,
+          }}
+          expenses={{ label: "Gastaste", value: money(data.today.expenses) }}
+          result={{ label: data.today.profit >= 0 ? "Te quedó (aprox.)" : "Perdiste (aprox.)", value: money(Math.abs(data.today.profit)) }}
+        />
       </section>
 
       {debts || thisMonth ? (
@@ -342,39 +325,32 @@ export default async function DashboardPage() {
             <h2 id="mes" className="text-base font-semibold">
               Este mes ({currentMonth})
             </h2>
-            <div className={`grid gap-3 ${STAT_GROUP} sm:grid-cols-3`}>
-              <StatCard
-                label="Ventas del mes"
-                value={money(data.month.sales)}
-                icon={TrendingUp}
-                tone="sales"
-                change={percentChange(data.month.sales, data.prevMonth.sales)}
-                changeLabel="vs. mismas fechas del mes pasado"
-              />
-              <StatCard
-                label="Gastos del mes"
-                value={money(data.month.expenses)}
-                icon={Receipt}
-                tone="expenses"
-                change={percentChange(data.month.expenses, data.prevMonth.expenses)}
-                changeLabel="vs. mismas fechas del mes pasado"
-                invertChange
-              />
-              <StatCard
-                label={data.month.profit >= 0 ? "Ganancia del mes" : "Pérdida del mes"}
-                value={money(Math.abs(data.month.profit))}
-                icon={data.month.profit >= 0 ? PiggyBank : TrendingDown}
-                tone={data.month.profit >= 0 ? "profit" : "loss"}
-                hint={
-                  <DiffBadge
-                    current={data.month.profit}
-                    previous={data.prevMonth.profit}
-                    money={money}
+            <AccountLine
+              positive={data.month.profit >= 0}
+              sales={{
+                label: "Vendiste",
+                value: money(data.month.sales),
+                sub: <ChangeBadge change={percentChange(data.month.sales, data.prevMonth.sales)} label="vs. mismas fechas del mes pasado" />,
+              }}
+              expenses={{
+                label: "Gastaste",
+                value: money(data.month.expenses),
+                sub: (
+                  <ChangeBadge
+                    change={percentChange(data.month.expenses, data.prevMonth.expenses)}
                     label="vs. mismas fechas del mes pasado"
+                    invert
                   />
-                }
-              />
-            </div>
+                ),
+              }}
+              result={{
+                label: data.month.profit >= 0 ? "Te quedó" : "Perdiste",
+                value: money(Math.abs(data.month.profit)),
+                sub: (
+                  <DiffBadge current={data.month.profit} previous={data.prevMonth.profit} money={money} label="vs. mismas fechas del mes pasado" />
+                ),
+              }}
+            />
             {monthMargin !== null && monthMargin > 0 ? (
               <Explainer title="En palabras simples">
                 Este mes, por cada {money(ref)} que vendes, aproximadamente {money(Math.round(ref * monthMargin))} te quedan como ganancia

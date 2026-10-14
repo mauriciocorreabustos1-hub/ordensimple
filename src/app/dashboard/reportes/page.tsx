@@ -128,6 +128,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
       <div className="space-y-2">
         <AccountLine
           positive={cur.profit >= 0}
+          empty={!cur.sales && !cur.expenses ? "No hay ventas ni gastos en estas fechas. Prueba con otro período." : null}
           sales={{
             label: "Vendiste",
             value: money(cur.sales),
@@ -144,11 +145,13 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
             sub: <DiffBadge current={cur.profit} previous={prev.profit} money={money} label={prevLabel} />,
           }}
         />
+        {cur.salesCount > 0 ? (
         <p className="px-1 text-sm text-muted-foreground">
           {formatNumber(cur.salesCount)} {cur.salesCount === 1 ? "venta" : "ventas"} · cada cliente te compró en promedio{" "}
           <span className="tabular font-medium text-foreground">{money(avgTicket)}</span>
           {margin !== null && margin > 0 ? <> · te quedó el {formatPercent(margin, 0)} de lo vendido</> : null}
         </p>
+        ) : null}
       </div>
 
       <Card>

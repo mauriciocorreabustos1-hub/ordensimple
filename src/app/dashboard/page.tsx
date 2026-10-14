@@ -248,6 +248,7 @@ export default async function DashboardPage() {
         <AccountLine
           size={easy ? "lg" : "default"}
           positive={data.today.profit >= 0}
+          empty={!data.today.sales && !data.today.expenses ? "Hoy todavía no anotas ventas ni gastos. Cuando registres una venta, aquí verás cuánto te va quedando." : null}
           sales={{
             label: "Vendiste",
             value: money(data.today.sales),
@@ -327,6 +328,7 @@ export default async function DashboardPage() {
             </h2>
             <AccountLine
               positive={data.month.profit >= 0}
+              empty={!data.month.sales && !data.month.expenses ? "Este mes todavía no hay ventas ni gastos anotados." : null}
               sales={{
                 label: "Vendiste",
                 value: money(data.month.sales),

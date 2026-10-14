@@ -1,4 +1,5 @@
 import "server-only"
+import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { db } from "@/lib/db"
 import { addDays, formatDate, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
 import { sendEmailBatch } from "@/lib/email"
@@ -34,6 +35,8 @@ export async function sendBusinessAlerts(now = new Date()) {
       name: true,
       currency: true,
       timezone: true,
+      plan: true,
+      planExpiresAt: true,
       settings: true,
       members: {
         where: { role: { in: ["OWNER", "ADMIN"] } },
@@ -105,7 +108,7 @@ export async function sendBusinessAlerts(now = new Date()) {
     }
 
     // ─── Stock bajo: solo si cambió la lista o pasó una semana ────────────────
-    if (s.lowStockAlerts) {
+    if (s.lowStockAlerts && canUseFeature(effectivePlan(b), "inventory")) {
       const low = await db.product.findMany({
         where: { businessId: b.id, active: true, trackStock: true },
         select: { id: true, name: true, stock: true, minStock: true },

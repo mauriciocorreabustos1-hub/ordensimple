@@ -11,6 +11,7 @@ import {
   type QuickSaleInput,
   type SaleInput,
 } from "@/lib/validations"
+import { canUseFeature } from "@/lib/plans"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -115,6 +116,12 @@ async function revertStock(tx: Tx, saleId: string) {
   await tx.inventoryMovement.deleteMany({ where: { saleId } })
 }
 
+/** Vender al fiado es parte de Pro. Una venta que ya era fiada (de antes) se puede seguir editando. */
+const FIADO_PRO = "Vender al fiado es parte del plan Pro. Puedes contratarlo en Tu plan."
+function fiadoBlocked(ctx: BusinessContext, paymentMethod: string, previous?: string) {
+  return paymentMethod === "FIADO" && previous !== "FIADO" && !canUseFeature(ctx.business.plan, "customers")
+}
+
 const lineData = (l: Line) => ({
   productId: l.productId,
   description: l.description,
@@ -134,6 +141,7 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
 
   try {
     assertCan(ctx, "sales:create")
+    if (fiadoBlocked(ctx, paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
@@ -171,6 +179,7 @@ export async function updateQuickSale(id: string, input: QuickSaleInput): Promis
   try {
     assertCan(ctx, "sales:edit")
     const sale = await db.sale.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId } })
+    if (sale && fiadoBlocked(ctx, parsed.data.paymentMethod, sale.paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (!sale) return { ok: false, message: "Venta no encontrada." }
     if (!sale.isQuick) return { ok: false, message: "Esta venta tiene detalle de productos." }
 
@@ -206,6 +215,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
 
   try {
     assertCan(ctx, "sales:create")
+    if (fiadoBlocked(ctx, paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
@@ -248,6 +258,7 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
   try {
     assertCan(ctx, "sales:edit")
     const sale = await db.sale.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId } })
+    if (sale && fiadoBlocked(ctx, parsed.data.paymentMethod, sale.paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (!sale) return { ok: false, message: "Venta no encontrada." }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }

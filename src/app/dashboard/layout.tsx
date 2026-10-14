@@ -49,6 +49,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         timezone={ctx.timezone}
         defaultPayment={ctx.settings.defaultPayment}
         continuousScan={canUseFeature(ctx.business.plan, "fastScan")}
+        fiado={canUseFeature(ctx.business.plan, "customers")}
         products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}

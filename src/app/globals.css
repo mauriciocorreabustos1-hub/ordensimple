@@ -216,3 +216,10 @@
 .receipt-edge {
   mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
 }
+
+/* Ticket de número de atención: muescas redondas a los costados, recortadas del papel. */
+.ticket-notch {
+  mask:
+    radial-gradient(circle 8px at left center, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at right center, #0000 98%, #000) right / 51% 100% no-repeat;
+}

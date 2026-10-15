@@ -8,6 +8,7 @@ import { FAQ_GROUPS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { getUserCount } from "@/components/landing/user-count"
+import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
 import {
   BeforeAfter,
@@ -60,17 +61,8 @@ export default async function LandingPage() {
                 <Link href="/como-funciona">Ver cómo funciona</Link>
               </Button>
             </div>
-            {/* Cuántos somos: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
-            {users ? (
-              <p className="flex items-center gap-4 border-l-2 border-primary py-1 pl-4">
-                <span className="font-display tabular text-4xl leading-none font-semibold text-primary sm:text-5xl">
-                  {users.toLocaleString("es-CL")}
-                </span>
-                <span className="max-w-[16rem] text-pretty text-muted-foreground">
-                  {users === 1 ? "persona ya ordena su negocio" : "personas ya ordenan su negocio"} con OrdenSimple
-                </span>
-              </p>
-            ) : null}
+            {/* Cuántos somos, como número de atención: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
+            {users ? <TurnTicket users={users} /> : null}
             <p className="text-sm text-muted-foreground">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
           </div>
           <div className="relative pt-11 lg:-mr-24 xl:-mr-32">

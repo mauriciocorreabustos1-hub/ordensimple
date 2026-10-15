@@ -10,7 +10,9 @@ import { ExpenseForm, type ExpenseCategoryOption } from "@/components/expenses/e
 
 type Action = "sale" | "expense"
 
-type QuickActionsContextValue = { open: (action: Action) => void }
+/** Datos con que se abre el formulario: por ahora, el proveedor de una compra. */
+type Preset = { supplierName?: string }
+type QuickActionsContextValue = { open: (action: Action, preset?: Preset) => void }
 
 const QuickActionsContext = React.createContext<QuickActionsContextValue | null>(null)
 
@@ -19,6 +21,12 @@ const ALL_ALLOWED = { fiado: true, cashClose: true }
 const PlanFlagsContext = React.createContext(ALL_ALLOWED)
 export function usePlanFlags() {
   return React.useContext(PlanFlagsContext)
+}
+
+/** Proveedores registrados del negocio (para elegirlos al anotar un gasto). */
+const SuppliersContext = React.createContext<string[]>([])
+export function useSuppliers() {
+  return React.useContext(SuppliersContext)
 }
 
 export function useQuickActions() {
@@ -37,6 +45,7 @@ export function QuickActionsProvider({
   categories,
   chargesVat,
   customers,
+  suppliers = [],
   continuousScan = true,
   fiado = true,
   cashClose = true,
@@ -49,6 +58,8 @@ export function QuickActionsProvider({
   categories: ExpenseCategoryOption[]
   chargesVat: boolean
   customers: string[]
+  /** Proveedores registrados, los más usados primero. */
+  suppliers?: string[]
   /** El plan incluye escaneo continuo al vender. */
   continuousScan?: boolean
   /** El plan permite vender al fiado (Pro). */
@@ -57,13 +68,23 @@ export function QuickActionsProvider({
   cashClose?: boolean
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
-  const value = React.useMemo(() => ({ open: (a: Action) => setAction(a) }), [])
+  const [preset, setPreset] = React.useState<Preset | undefined>()
+  const value = React.useMemo(
+    () => ({
+      open: (a: Action, p?: Preset) => {
+        setPreset(p)
+        setAction(a)
+      },
+    }),
+    [],
+  )
   const close = () => setAction(null)
   const flags = React.useMemo(() => ({ fiado, cashClose }), [fiado, cashClose])
 
   return (
     <QuickActionsContext.Provider value={value}>
       <PlanFlagsContext.Provider value={flags}>
+      <SuppliersContext.Provider value={suppliers}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
         <Tabs defaultValue="detailed" className="gap-5">
@@ -93,9 +114,22 @@ export function QuickActionsProvider({
           </TabsContent>
         </Tabs>
       </AppModal>
-      <AppModal open={action === "expense"} onOpenChange={(o) => !o && close()} title="Registrar gasto">
-        <ExpenseForm currency={currency} timezone={timezone} categories={categories} chargesVat={chargesVat} onDone={close} />
+      <AppModal
+        open={action === "expense"}
+        onOpenChange={(o) => !o && close()}
+        title={preset?.supplierName ? `Compra a ${preset.supplierName}` : "Registrar gasto"}
+      >
+        <ExpenseForm
+          key={preset?.supplierName ?? "gasto"}
+          currency={currency}
+          timezone={timezone}
+          categories={categories}
+          chargesVat={chargesVat}
+          supplierPreset={preset?.supplierName}
+          onDone={close}
+        />
       </AppModal>
+      </SuppliersContext.Provider>
       </PlanFlagsContext.Provider>
     </QuickActionsContext.Provider>
   )

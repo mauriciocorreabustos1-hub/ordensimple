@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const ctx = await requireBusiness()
   const isAdmin = await checkAdmin(ctx.user.email)
 
-  const [products, categories, customers, memberships] = await Promise.all([
+  const [products, categories, customers, memberships, suppliers] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
       select: { id: true, name: true, price: true, stock: true, trackStock: true, sku: true, barcodes: { select: { code: true } } },
@@ -39,6 +39,13 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       select: { business: { select: { id: true, name: true } } },
       orderBy: { createdAt: "asc" },
     }),
+    // Para elegir el proveedor al anotar un gasto: los que más compras primero.
+    db.supplier.findMany({
+      where: { businessId: ctx.businessId },
+      select: { name: true },
+      orderBy: [{ expenses: { _count: "desc" } }, { name: "asc" }],
+      take: 200,
+    }),
   ])
   const businesses = memberships.map((m) => ({ ...m.business, active: m.business.id === ctx.businessId }))
 
@@ -55,6 +62,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         categories={categories}
         chargesVat={ctx.settings.chargesVat}
         customers={customers.map((c) => c.name)}
+        suppliers={suppliers.map((s) => s.name)}
       >
         <AppSidebar
           businessId={ctx.businessId}

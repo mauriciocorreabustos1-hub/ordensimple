@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
+import { useSuppliers } from "@/components/app/quick-actions"
 import { MoneyInput } from "@/components/app/money-input"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
@@ -32,6 +33,7 @@ export function ExpenseForm({
   categories,
   chargesVat = false,
   editing,
+  supplierPreset,
   onDone,
 }: {
   currency: string
@@ -41,17 +43,33 @@ export function ExpenseForm({
   chargesVat?: boolean
   /** Si viene, el formulario edita ese gasto en vez de crear uno nuevo. */
   editing?: ExpenseEdit
+  /** Abrir como compra a este proveedor (categoría de proveedores ya elegida). */
+  supplierPreset?: string
   onDone?: () => void
 }) {
   const [amount, setAmount] = React.useState(editing?.amount ?? 0)
-  const [description, setDescription] = React.useState(editing?.description ?? "")
-  const [categoryId, setCategoryId] = React.useState<string | undefined>(editing?.categoryId)
+  const [description, setDescription] = React.useState(editing?.description ?? (supplierPreset ? `Compra a ${supplierPreset}` : ""))
+  const [categoryId, setCategoryId] = React.useState<string | undefined>(
+    editing?.categoryId ?? (supplierPreset ? categories.find((c) => /proveedor/i.test(c.name))?.id : undefined),
+  )
   const [date, setDate] = React.useState(() => editing?.date ?? toDateKey(new Date(), timezone))
-  const [supplierName, setSupplierName] = React.useState(editing?.supplierName ?? "")
+  const [supplierName, setSupplierName] = React.useState(editing?.supplierName ?? supplierPreset ?? "")
   const [hasInvoice, setHasInvoice] = React.useState(editing?.hasInvoice ?? false)
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
   const categoryName = categories.find((c) => c.id === categoryId)?.name ?? ""
+  const suppliers = useSuppliers()
+  // Compra a proveedores: se elige de la lista de proveedores registrados (o se escribe uno nuevo).
+  const toSupplier = /proveedor/i.test(categoryName)
+  const query = supplierName.trim().toLowerCase()
+  const supplierOptions = (query ? suppliers.filter((s) => s.toLowerCase().includes(query)) : suppliers).slice(0, 12)
+  const isNewSupplier = Boolean(query) && !suppliers.some((s) => s.toLowerCase() === query)
+
+  function pickSupplier(name: string) {
+    setSupplierName(name)
+    // Si no escribió descripción (o quedó la de la categoría), se completa sola.
+    if (!description.trim() || description === categoryName || description.startsWith("Compra a ")) setDescription(`Compra a ${name}`)
+  }
   // Sueldos, impuestos, honorarios…: nunca traen IVA que se pueda descontar.
   const noVat = withoutVatCredit(categoryName)
 
@@ -118,6 +136,41 @@ export function ExpenseForm({
           ))}
         </div>
       </Field>
+      {toSupplier ? (
+        <Field label="¿A qué proveedor le compraste?" htmlFor="e-supplier">
+          <div className="space-y-2">
+            {supplierOptions.length ? (
+              <div className="flex flex-wrap gap-2">
+                {supplierOptions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => pickSupplier(s)}
+                    aria-pressed={supplierName === s}
+                    className={cn(
+                      "rounded-full border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/50",
+                      supplierName === s && "border-primary bg-accent text-accent-foreground ring-1 ring-primary",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <Input
+              id="e-supplier"
+              value={supplierName}
+              onChange={(e) => setSupplierName(e.target.value)}
+              placeholder={suppliers.length ? "Busca o escribe uno nuevo" : "Nombre del proveedor"}
+              maxLength={80}
+              className="h-10"
+            />
+            {isNewSupplier ? (
+              <p className="text-xs text-muted-foreground">Es nuevo: al guardar creamos su ficha en Proveedores.</p>
+            ) : null}
+          </div>
+        </Field>
+      ) : null}
       <Field label="Descripción" htmlFor="e-desc" error={errors.description}>
         <Input
           id="e-desc"
@@ -128,19 +181,28 @@ export function ExpenseForm({
           className="h-10"
         />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className={cn("grid gap-3", !toSupplier && "grid-cols-2")}>
         <Field label="Fecha" htmlFor="e-date">
           <Input id="e-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
         </Field>
-        <Field label="Proveedor" htmlFor="e-supplier" optional>
-          <Input
-            id="e-supplier"
-            value={supplierName}
-            onChange={(e) => setSupplierName(e.target.value)}
-            maxLength={80}
-            className="h-10"
-          />
-        </Field>
+        {toSupplier ? null : (
+          <Field label="Proveedor" htmlFor="e-supplier" optional>
+            {/* Sugiere los proveedores registrados mientras escribe. */}
+            <Input
+              id="e-supplier"
+              list="e-supplier-list"
+              value={supplierName}
+              onChange={(e) => setSupplierName(e.target.value)}
+              maxLength={80}
+              className="h-10"
+            />
+            <datalist id="e-supplier-list">
+              {suppliers.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </Field>
+        )}
       </div>
       {chargesVat && !noVat ? (
         <label htmlFor="e-invoice" className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">

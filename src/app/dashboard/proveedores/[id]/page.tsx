@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
-import { OpenQuickAction } from "@/components/app/open-quick-action"
 import { ProGate } from "@/components/app/pro-gate"
 import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { PayableActions } from "@/components/contacts/payables"
 import { SupplierDialog } from "@/components/contacts/supplier-dialog"
+import { RegisterPurchaseButton } from "@/components/contacts/register-purchase-button"
 import { formatMoney } from "@/lib/currency"
 import { formatDate } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
@@ -78,6 +78,7 @@ export default async function SupplierDetailPage({ params }: PageProps<"/dashboa
         </div>
         {canManage ? (
           <div className="flex items-center gap-2">
+            {can(ctx.role, "expenses:create") ? <RegisterPurchaseButton supplierName={s.name} /> : null}
             <SupplierDialog
               id={s.id}
               currency={ctx.currency}
@@ -164,8 +165,8 @@ export default async function SupplierDetailPage({ params }: PageProps<"/dashboa
           {detail.expenses.length === 0 ? (
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>Todavía no hay compras registradas a este proveedor.</p>
-              <p>Al registrar un gasto, escribe “{s.name}” en Proveedor para que aparezca aquí.</p>
-              <OpenQuickAction action="expense" label="Registrar gasto" />
+              <p>Cada compra que registres a este proveedor aparece aquí.</p>
+              {can(ctx.role, "expenses:create") ? <RegisterPurchaseButton supplierName={s.name} /> : null}
             </div>
           ) : (
             <>

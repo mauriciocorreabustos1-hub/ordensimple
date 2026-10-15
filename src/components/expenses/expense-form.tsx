@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
 import { useSuppliers } from "@/components/app/quick-actions"
+import { GUIDE_EXPENSE_SAVED } from "@/components/app/guided-tour"
 import { MoneyInput } from "@/components/app/money-input"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
@@ -104,6 +105,7 @@ export function ExpenseForm({
             : `Gasto de ${formatMoney(amount, currency)} guardado`,
       )
       if (editing) return onDone?.()
+      window.dispatchEvent(new Event(GUIDE_EXPENSE_SAVED))
       setAmount(0)
       setDescription("")
       setCategoryId(undefined)

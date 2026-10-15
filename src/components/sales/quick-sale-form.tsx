@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { GUIDE_SALE_SAVED } from "@/components/app/guided-tour"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -77,6 +78,7 @@ export function QuickSaleForm({
               : `Venta de ${formatMoney(amount, currency)} guardada`,
       )
       if (!editing) {
+        window.dispatchEvent(new Event(GUIDE_SALE_SAVED))
         setAmount(0)
         setNote("")
         setCustomerName("")

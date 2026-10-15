@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation"
 import { Plus, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AppModal } from "@/components/app/app-modal"
-import { usePlanFlags, useQuickActions } from "@/components/app/quick-actions"
+import { usePlanFlags } from "@/components/app/quick-actions"
 import { cn } from "@/lib/utils"
 import { markWelcomeTourSeen } from "@/server/actions/settings"
+import { GUIDE_START } from "@/components/app/guided-tour"
 
 /** Evento para abrir el tutorial desde el menú ("Cómo usar OrdenSimple"). */
 export const OPEN_WELCOME_TOUR = "abrir-tutorial"
@@ -69,7 +70,6 @@ const STEPS = [
  * hay que buscar en cada momento. Se abre solo la primera vez (`show`) y desde el menú cuando la persona quiera.
  */
 export function WelcomeTour({ show }: { show: boolean }) {
-  const { open: openQuick } = useQuickActions()
   const pathname = usePathname()
   const [open, setOpen] = React.useState(false)
   const [step, setStep] = React.useState(0)
@@ -150,10 +150,10 @@ export function WelcomeTour({ show }: { show: boolean }) {
                 className="flex-1 sm:flex-none"
                 onClick={() => {
                   close()
-                  openQuick("sale")
+                  window.dispatchEvent(new Event(GUIDE_START))
                 }}
               >
-                Anotar mi primera venta
+                Hagámoslo juntos
               </Button>
             ) : (
               <Button type="button" onClick={() => setStep(step + 1)} className="flex-1 sm:flex-none">

@@ -146,7 +146,7 @@ export function QuickActionButton({
 }) {
   const { open } = useQuickActions()
   return (
-    <button type="button" onClick={() => open(action)} className={className}>
+    <button type="button" onClick={() => open(action)} className={className} data-tour={action === "sale" ? "registrar-venta" : "registrar-gasto"}>
       {children}
     </button>
   )

@@ -20,6 +20,7 @@ export function NavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => 
             key={item.href}
             href={item.href}
             onClick={onNavigate}
+            data-tour={`menu-${item.href.split("/").pop()}`}
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

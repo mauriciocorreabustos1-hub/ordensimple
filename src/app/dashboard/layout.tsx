@@ -6,6 +6,7 @@ import { QuickActionsProvider } from "@/components/app/quick-actions"
 import { EmailConfirmedToast, EmailVerifyBanner } from "@/components/app/email-verify-banner"
 import { UserMenu } from "@/components/app/user-menu"
 import { WelcomeTour } from "@/components/app/welcome-tour"
+import { GuidedTour } from "@/components/app/guided-tour"
 import { OfflineSalesBar, OfflineSalesProvider } from "@/components/app/offline-sales"
 import { db } from "@/lib/db"
 import { canUseFeature } from "@/lib/plans"
@@ -90,6 +91,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} />
         {/* Tutorial de bienvenida: se abre solo la primera vez que la persona entra a la app. */}
         <WelcomeTour show={!(ctx.user as { welcomeTourAt?: Date | null }).welcomeTourAt} />
+        {/* Guía práctica (anotar una venta, un gasto…): empieza desde la bienvenida. */}
+        <GuidedTour />
       </QuickActionsProvider>
     </OfflineSalesProvider>
   )

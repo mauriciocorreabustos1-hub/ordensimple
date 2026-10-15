@@ -154,7 +154,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <QuickButtons />
-        <section aria-labelledby="hoy" className="space-y-3">
+        <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
           <h2 id="hoy" className="text-base font-semibold">
             Hoy en el negocio
           </h2>
@@ -247,7 +247,7 @@ export default async function DashboardPage() {
 
       <QuickButtons />
 
-      <section aria-labelledby="hoy" className="space-y-3">
+      <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
         <h2 id="hoy" className="text-base font-semibold">
           Hoy
         </h2>

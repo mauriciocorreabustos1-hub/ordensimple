@@ -409,7 +409,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "¿Es realmente gratis?",
-        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior. El fiado, el inventario, el cierre de caja y el equipo son del plan Pro.",
+        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador. El fiado, el inventario, el cierre de caja y el equipo son del plan Pro.",
       },
       BILLING_ENABLED
         ? {
@@ -495,7 +495,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Clientes, fiado y cobro por WhatsApp", values: [false, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
-  { label: "Calculadoras con tus números", values: [false, true, true] },
+  { label: "Calculadoras con tus números", values: [true, true, true] },
   { label: "Reportes", values: ["Este mes y el anterior", "Todo el historial", "Todo el historial"] },
   { label: "Consejos para tu negocio", values: [false, true, true] },
   { label: "Flujo de caja", values: [false, "Con lo que viene", "Con lo que viene"] },

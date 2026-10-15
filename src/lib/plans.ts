@@ -65,14 +65,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 1,
     maxProducts: 20,
     maxMembers: 1, // solo el dueño
-    // Gratis: lo básico, anotar ventas y gastos, saber cuánto queda y los reportes de este mes y el anterior.
-    features: ["reports"],
+    // Gratis: lo básico, anotar ventas y gastos, saber cuánto queda, los reportes de este mes y el anterior y las calculadoras.
+    features: ["reports", "tools"],
     highlights: [
       "1 negocio, solo tú",
       "Ventas y gastos sin límite",
       "Hasta 20 productos",
       "Cuánto te quedó hoy y en el mes",
       "Reportes de este mes y el anterior",
+      "Calculadoras: precio de venta, metas y simulador",
       "Resumen por correo cada lunes",
     ],
   },
@@ -96,7 +97,6 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Inventario, escaneo y alertas de stock",
       "Reportes de cualquier fecha y consejos",
       "Tú + 20 trabajadores y hasta 3 sucursales",
-      "Calculadoras con tus números: precio, metas y simulador",
       "Productos ilimitados",
       "Resultados e IVA: tu utilidad real y tu F29 (IVA + PPM)",
       "Flujo de caja con lo que viene: pagos y fiado por cobrar",

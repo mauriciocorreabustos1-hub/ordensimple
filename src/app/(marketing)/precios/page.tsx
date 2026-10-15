@@ -15,7 +15,7 @@ import { BILLING_ENABLED } from "@/lib/plans"
 export const metadata: Metadata = {
   title: "Precios",
   description: BILLING_ENABLED
-    ? "Empieza gratis con ventas, gastos y cierre de caja. Pro desde $6.990 al mes suma fiado y clientes, inventario, reportes, proveedores, resultados e IVA y un equipo más grande. Cancelas cuando quieras."
+    ? "Empieza gratis con ventas, gastos y reportes del mes. Pro desde $6.990 al mes suma fiado y clientes, inventario, cierre de caja, reportes de cualquier fecha, proveedores, resultados e IVA y un equipo más grande. Cancelas cuando quieras."
     : "Empieza gratis. Durante el lanzamiento, las funciones Pro (inventario, fiado, clientes, reportes y equipo) también son gratis.",
   alternates: { canonical: "/precios" },
 }

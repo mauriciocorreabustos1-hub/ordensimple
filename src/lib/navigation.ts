@@ -43,7 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/clientes", label: "Clientes", icon: Users, pro: true },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },
   { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator, pro: true, permission: "finances:view" },
-  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, pro: true, permission: "reports:view" },
+  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports:view" },
   { href: "/dashboard/resultados", label: "Resultados e IVA", icon: Landmark, pro: true, permission: "reports:view" },
   { href: "/dashboard/sucursales", label: "Sucursales", icon: Store, permission: "finances:view" },
   { href: "/dashboard/invitar", label: "Invita y gana", icon: Gift },

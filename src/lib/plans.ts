@@ -65,13 +65,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 1,
     maxProducts: 20,
     maxMembers: 1, // solo el dueño
-    // Gratis: lo básico, anotar ventas y gastos y saber cuánto queda. Todo lo demás es de Pro.
-    features: [],
+    // Gratis: lo básico, anotar ventas y gastos, saber cuánto queda y los reportes de este mes y el anterior.
+    features: ["reports"],
     highlights: [
       "1 negocio, solo tú",
       "Ventas y gastos sin límite",
       "Hasta 20 productos",
       "Cuánto te quedó hoy y en el mes",
+      "Reportes de este mes y el anterior",
       "Resumen por correo cada lunes",
     ],
   },

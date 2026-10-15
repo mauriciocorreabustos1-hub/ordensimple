@@ -13,6 +13,8 @@ import { addDays, dateKeyToUtc, formatDate, toDateKey } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 import { getCashDay } from "@/server/queries/cash"
 import { trackFeature } from "@/server/feature-usage"
+import { ProGate } from "@/components/app/pro-gate"
+import { canUseFeature } from "@/lib/plans"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Cierre de caja" }
@@ -21,6 +23,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export default async function CashPage({ searchParams }: PageProps<"/dashboard/caja">) {
   const ctx = await requireBusiness()
+  if (!canUseFeature(ctx.business.plan, "cashClose")) {
+    return <ProGate title="Cierre de caja" description="Cuenta la plata al final del día y mira si cuadra con lo que vendiste." />
+  }
   trackFeature(ctx.businessId, ctx.timezone, "caja")
   const params = await searchParams
   const today = toDateKey(new Date(), ctx.timezone)

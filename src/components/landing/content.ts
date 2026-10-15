@@ -409,7 +409,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "¿Es realmente gratis?",
-        a: "Sí. El plan Gratis incluye ventas, gastos, hasta 50 productos, dashboard y calculadoras, sin costo y sin tarjeta.",
+        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. El fiado, el inventario, el cierre de caja, los reportes y el equipo son del plan Pro.",
       },
       BILLING_ENABLED
         ? {
@@ -486,19 +486,19 @@ export const FAQ_GROUPS: FaqGroup[] = [
 export type ComparisonRow = { label: string; values: [string | boolean, string | boolean, string | boolean] }
 
 export const PLAN_COMPARISON: ComparisonRow[] = [
-  { label: "Ideal para", values: ["1 a 3 personas", "Pymes con equipo e IVA", "Empresas con varios locales"] },
-  { label: "Trabajadores (además de ti)", values: ["2", "20", "Sin límite"] },
+  { label: "Ideal para", values: ["Quien atiende solo", "Pymes con equipo e IVA", "Empresas con varios locales"] },
+  { label: "Trabajadores (además de ti)", values: [false, "20", "Sin límite"] },
   { label: "Negocios o sucursales", values: ["1", "Hasta 3", "Hasta 10"] },
-  { label: "Productos", values: ["Hasta 50", "Ilimitados", "Ilimitados"] },
+  { label: "Productos", values: ["Hasta 20", "Ilimitados", "Ilimitados"] },
   { label: "Ventas y gastos", values: [true, true, true] },
-  { label: "Cierre de caja", values: [true, true, true] },
+  { label: "Cierre de caja", values: [false, true, true] },
   { label: "Clientes, fiado y cobro por WhatsApp", values: [false, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
-  { label: "Calculadoras y descarga de tus datos", values: [true, true, true] },
+  { label: "Calculadoras con tus números", values: [false, true, true] },
   { label: "Reportes y consejos", values: [false, "Todo el historial", "Todo el historial"] },
-  { label: "Flujo de caja", values: ["Este mes", "Con lo que viene", "Con lo que viene"] },
-  { label: "Escanear al vender", values: ["De a uno", "Continuo (modo caja)", "Continuo (modo caja)"] },
+  { label: "Flujo de caja", values: [false, "Con lo que viene", "Con lo que viene"] },
+  { label: "Escanear al vender", values: [false, "Continuo (modo caja)", "Continuo (modo caja)"] },
   { label: "Merma y vencidos", values: [false, true, true] },
   { label: "Balance, retiros del dueño y préstamos", values: [false, true, true] },
   { label: "Proveedores y pagos pendientes", values: [false, true, true] },

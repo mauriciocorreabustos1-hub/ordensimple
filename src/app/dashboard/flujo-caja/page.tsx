@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Explainer } from "@/components/app/explainer"
 import { PageHeader } from "@/components/app/page-header"
-import { ProUpsell } from "@/components/app/pro-gate"
+import { ProGate, ProUpsell } from "@/components/app/pro-gate"
 import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { PAYMENT_LABEL } from "@/lib/constants"
@@ -27,6 +27,9 @@ const key = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`
 export default async function CashFlowPage({ searchParams }: PageProps<"/dashboard/flujo-caja">) {
   const ctx = await requireBusiness()
   if (!can(ctx.role, "finances:view")) redirect("/dashboard")
+  if (!canUseFeature(ctx.business.plan, "cashflow")) {
+    return <ProGate title="Flujo de caja" description="Cuánta plata entra y sale cada mes, y lo que viene." />
+  }
   trackFeature(ctx.businessId, ctx.timezone, "flujo-caja")
   const params = await searchParams
   const now = new Date()

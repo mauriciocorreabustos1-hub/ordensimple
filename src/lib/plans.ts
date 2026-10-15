@@ -21,6 +21,10 @@ export type PlanFeature =
   | "fastScan"
   /** Balance (lo que tienes y lo que debes), retiros del dueño y préstamos. */
   | "balance"
+  /** Cierre de caja diario. */
+  | "cashClose"
+  /** Flujo de caja (en Pro, también meses anteriores y lo que viene: ver cashflowPlus). */
+  | "cashflow"
   | "multiUser"
   | "branches"
 
@@ -57,20 +61,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceNote: "Para siempre · sin tarjeta",
     monthlyPrice: null,
     description: "Para empezar a ordenar tus ventas y gastos.",
-    audience: "Almacenes, minimarkets y emprendimientos de 1 a 3 personas",
+    audience: "Quien recién parte y atiende solo",
     maxBusinesses: 1,
-    maxProducts: 50,
-    maxMembers: 3, // tú + 2 trabajadores
-    // Gratis: anotar ventas y gastos y saber cuánto queda. Fiado, inventario y reportes son de Pro.
-    features: ["tools"],
+    maxProducts: 20,
+    maxMembers: 1, // solo el dueño
+    // Gratis: lo básico, anotar ventas y gastos y saber cuánto queda. Todo lo demás es de Pro.
+    features: [],
     highlights: [
-      "1 negocio · tú + 2 trabajadores",
-      "Hasta 50 productos",
+      "1 negocio, solo tú",
       "Ventas y gastos sin límite",
+      "Hasta 20 productos",
       "Cuánto te quedó hoy y en el mes",
-      "Cierre de caja diario",
-      "Flujo de caja del mes",
-      "Calculadoras de precio y metas",
       "Resumen por correo cada lunes",
     ],
   },
@@ -86,13 +87,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "balance"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance"],
     highlights: [
       "Todo lo de Gratis, y además:",
       "Fiado y clientes, con cobro por WhatsApp",
+      "Cierre de caja diario",
       "Inventario, escaneo y alertas de stock",
       "Reportes de cualquier fecha y consejos",
       "Tú + 20 trabajadores y hasta 3 sucursales",
+      "Calculadoras con tus números: precio, metas y simulador",
       "Productos ilimitados",
       "Resultados e IVA: tu utilidad real y tu F29 (IVA + PPM)",
       "Flujo de caja con lo que viene: pagos y fiado por cobrar",
@@ -114,7 +117,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // en la práctica, sin límite
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashflowPlus", "waste", "history", "fastScan", "balance", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Trabajadores sin límite",

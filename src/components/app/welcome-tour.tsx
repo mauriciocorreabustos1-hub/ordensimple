@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Plus, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AppModal } from "@/components/app/app-modal"
-import { useQuickActions } from "@/components/app/quick-actions"
+import { usePlanFlags, useQuickActions } from "@/components/app/quick-actions"
 import { cn } from "@/lib/utils"
 import { markWelcomeTourSeen } from "@/server/actions/settings"
 
@@ -97,7 +97,10 @@ export function WelcomeTour({ show }: { show: boolean }) {
     }
   }
 
+  const plan = usePlanFlags()
   const s = STEPS[step]
+  // En Gratis, el cierre de caja es de Pro: el paso lo dice.
+  const text = s.time === "21:00" && !plan.cashClose ? `Con el plan Pro, ${s.text.charAt(0).toLowerCase()}${s.text.slice(1)}` : s.text
   const last = step === STEPS.length - 1
 
   return (
@@ -124,7 +127,7 @@ export function WelcomeTour({ show }: { show: boolean }) {
 
         <div className="space-y-2">
           <p className="font-display text-2xl font-semibold tracking-tight">{s.title}</p>
-          <p className="text-pretty text-muted-foreground">{s.text}</p>
+          <p className="text-pretty text-muted-foreground">{text}</p>
         </div>
 
         <div className="flex min-h-28 items-center justify-center rounded-xl border border-dashed bg-muted/40 p-5" aria-hidden>

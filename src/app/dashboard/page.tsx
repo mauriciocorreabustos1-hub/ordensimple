@@ -33,7 +33,7 @@ import { getYearSummary } from "@/server/queries/results"
 import { payablesDueBefore } from "@/server/queries/payables"
 import { addDays, startOfDay } from "@/lib/dates"
 import { InsightsCard } from "@/components/dashboard/insights-card"
-import { canUseFeature, PLANS, PLANS_ENFORCED, checkoutPath } from "@/lib/plans"
+import { canUseFeature, memberLimit, PLANS, PLANS_ENFORCED, checkoutPath } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 import { db } from "@/lib/db"
@@ -83,7 +83,8 @@ export default async function DashboardPage() {
       })
     : null
   const firstSteps: FirstStep[] | null = counts
-    ? [
+    ? (
+        [
         {
           key: "producto",
           label: "Crea tu primer producto",
@@ -113,7 +114,12 @@ export default async function DashboardPage() {
           done: counts._count.members > 1,
           href: "/dashboard/configuracion#equipo",
         },
-      ]
+      ] as FirstStep[]
+      ).filter(
+        (s) =>
+          (s.key !== "caja" || canUseFeature(ctx.business.plan, "cashClose")) &&
+          (s.key !== "equipo" || memberLimit(ctx.business.plan, ctx.business.extraMembers) > 1),
+      )
     : null
 
   const health = businessHealth({

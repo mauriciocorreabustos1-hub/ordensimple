@@ -14,9 +14,8 @@ type QuickActionsContextValue = { open: (action: Action) => void }
 
 const QuickActionsContext = React.createContext<QuickActionsContextValue | null>(null)
 
-/** Qué permite el plan en los formularios de venta (por ahora: vender al fiado). */
-const ALL_ALLOWED = { fiado: true }
-const NO_FIADO = { fiado: false }
+/** Qué permite el plan en pantallas del navegador: vender al fiado y el cierre de caja (Pro). */
+const ALL_ALLOWED = { fiado: true, cashClose: true }
 const PlanFlagsContext = React.createContext(ALL_ALLOWED)
 export function usePlanFlags() {
   return React.useContext(PlanFlagsContext)
@@ -40,6 +39,7 @@ export function QuickActionsProvider({
   customers,
   continuousScan = true,
   fiado = true,
+  cashClose = true,
 }: {
   children: React.ReactNode
   currency: string
@@ -53,14 +53,17 @@ export function QuickActionsProvider({
   continuousScan?: boolean
   /** El plan permite vender al fiado (Pro). */
   fiado?: boolean
+  /** El plan incluye el cierre de caja (Pro). */
+  cashClose?: boolean
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
   const value = React.useMemo(() => ({ open: (a: Action) => setAction(a) }), [])
   const close = () => setAction(null)
+  const flags = React.useMemo(() => ({ fiado, cashClose }), [fiado, cashClose])
 
   return (
     <QuickActionsContext.Provider value={value}>
-      <PlanFlagsContext.Provider value={fiado ? ALL_ALLOWED : NO_FIADO}>
+      <PlanFlagsContext.Provider value={flags}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
         <Tabs defaultValue="detailed" className="gap-5">

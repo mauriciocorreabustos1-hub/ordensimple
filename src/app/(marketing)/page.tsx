@@ -60,15 +60,18 @@ export default async function LandingPage() {
                 <Link href="/como-funciona">Ver cómo funciona</Link>
               </Button>
             </div>
-            <p className="text-sm text-pretty text-muted-foreground">
-              {users ? (
-                <>
-                  <span className="tabular font-semibold text-foreground">{users.toLocaleString("es-CL")}</span>{" "}
-                  {users === 1 ? "persona ya ordena su negocio" : "personas ya ordenan su negocio"} con OrdenSimple.{" "}
-                </>
-              ) : null}
-              El plan básico es gratis para siempre y no te pedimos tarjeta.
-            </p>
+            {/* Cuántos somos: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
+            {users ? (
+              <p className="flex items-center gap-4 border-l-2 border-primary py-1 pl-4">
+                <span className="font-display tabular text-4xl leading-none font-semibold text-primary sm:text-5xl">
+                  {users.toLocaleString("es-CL")}
+                </span>
+                <span className="max-w-[16rem] text-pretty text-muted-foreground">
+                  {users === 1 ? "persona ya ordena su negocio" : "personas ya ordenan su negocio"} con OrdenSimple
+                </span>
+              </p>
+            ) : null}
+            <p className="text-sm text-muted-foreground">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
           </div>
           <div className="relative pt-11 lg:-mr-24 xl:-mr-32">
             <PriceTag className="absolute top-0 left-3 z-10 -rotate-3 sm:left-6">

@@ -1,5 +1,6 @@
 "use server"
 
+import { canUseFeature } from "@/lib/plans"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { cashClosingSchema, type CashClosingInput } from "@/lib/validations"
@@ -16,6 +17,7 @@ export async function saveCashClosing(input: CashClosingInput): Promise<ActionRe
   const parsed = cashClosingSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   const { day, opening, counted, expensesFromCash, note } = parsed.data
+  if (!canUseFeature(ctx.business.plan, "cashClose")) return { ok: false, message: "El cierre de caja es parte del plan Pro." }
 
   try {
     assertCan(ctx, "sales:create")

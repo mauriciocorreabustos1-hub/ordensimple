@@ -214,7 +214,8 @@ export async function sendComandaToKitchen(id: string): Promise<ActionResult<{ s
     const items = (await db.comandaItem.findMany({ where: { comandaId: id }, select: { id: true, quantity: true, sentQty: true } })).filter((i) => i.quantity > i.sentQty)
     if (!items.length) return { ok: false, message: "No hay nada nuevo para enviar a la cocina." }
     sent = items.reduce((sum, i) => sum + i.quantity - i.sentQty, 0)
-    await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { sentQty: i.quantity } })))
+    const sentAt = new Date()
+    await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { sentQty: i.quantity, sentAt } })))
   } catch (error) {
     return toActionError(error)
   }

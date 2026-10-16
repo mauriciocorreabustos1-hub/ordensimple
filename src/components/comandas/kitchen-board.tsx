@@ -22,17 +22,29 @@ function minutesSince(iso: string, now: number) {
   return Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60_000))
 }
 
-/** Pitido corto (solo si la cocina activó el sonido: el navegador lo exige). */
+const SOUND_KEY = "ordensimple-cocina-sonido"
+
+/**
+ * Aviso de pedido nuevo: tres tonos fuertes tipo timbre, para oírse en una cocina con ruido.
+ * Solo suena si la cocina activó el sonido (el navegador exige tocar la pantalla una vez).
+ */
 function beep(ctx: AudioContext) {
-  const o = ctx.createOscillator()
-  const g = ctx.createGain()
-  o.frequency.value = 880
-  g.gain.setValueAtTime(0.0001, ctx.currentTime)
-  g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02)
-  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35)
-  o.connect(g).connect(ctx.destination)
-  o.start()
-  o.stop(ctx.currentTime + 0.4)
+  // Si el navegador pausó el audio (pantalla bloqueada, pestaña en segundo plano), se reanuda.
+  if (ctx.state === "suspended") void ctx.resume()
+  const t0 = ctx.currentTime + 0.05
+  ;[988, 1319, 988].forEach((freq, i) => {
+    const start = t0 + i * 0.22
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = "square"
+    o.frequency.value = freq
+    g.gain.setValueAtTime(0.0001, start)
+    g.gain.exponentialRampToValueAtTime(0.35, start + 0.015)
+    g.gain.exponentialRampToValueAtTime(0.0001, start + 0.18)
+    o.connect(g).connect(ctx.destination)
+    o.start(start)
+    o.stop(start + 0.2)
+  })
 }
 
 export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
@@ -41,6 +53,32 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
   // Platos que se acaban de marcar listos: se esconden al tiro, sin esperar al servidor.
   const [hidden, setHidden] = React.useState<Set<string>>(() => new Set())
   const [sound, setSound] = React.useState<AudioContext | null>(null)
+  // Si la cocina tenía el sonido activado antes, se le recuerda volver a activarlo (el navegador lo apaga al recargar).
+  const [wantedSound, setWantedSound] = React.useState(false)
+  React.useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- preferencia guardada en este dispositivo, solo se lee al abrir
+      setWantedSound(localStorage.getItem(SOUND_KEY) === "1")
+    } catch {}
+  }, [])
+
+  function toggleSound() {
+    if (sound) {
+      void sound.close()
+      setSound(null)
+      setWantedSound(false)
+      try {
+        localStorage.removeItem(SOUND_KEY)
+      } catch {}
+      return
+    }
+    const ctx = new AudioContext()
+    beep(ctx)
+    setSound(ctx)
+    try {
+      localStorage.setItem(SOUND_KEY, "1")
+    } catch {}
+  }
 
   // Se actualiza sola: así llegan los pedidos nuevos sin recargar.
   React.useEffect(() => {
@@ -51,26 +89,33 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
     return () => clearInterval(t)
   }, [router])
 
-  // Platos nuevos (que no estaban en la vista anterior): se destacan y suena el aviso.
-  const allIds = tickets.flatMap((t) => t.items.map((i) => i.id))
-  const [known, setKnown] = React.useState(() => new Set(allIds))
+  // Lo que llega nuevo (un plato nuevo, o más unidades de uno que ya estaba): se destaca y suena el aviso.
+  // Cada plato se reconoce por su id y la hora en que se envió por última vez.
+  const keyOf = (i: KitchenTicket["items"][number]) => `${i.id}@${i.since}`
+  const allKeys = tickets.flatMap((t) => t.items.map(keyOf))
+  const [known, setKnown] = React.useState(() => new Set(allKeys))
   const [fresh, setFresh] = React.useState<Set<string>>(() => new Set())
+  const [arrivals, setArrivals] = React.useState(0)
   const [lastTickets, setLastTickets] = React.useState(tickets)
   if (lastTickets !== tickets) {
     setLastTickets(tickets)
-    const arrived = allIds.filter((id) => !known.has(id))
+    const arrived = tickets.flatMap((t) => t.items).filter((i) => !known.has(keyOf(i)))
     if (arrived.length) {
-      setKnown(new Set([...known, ...arrived]))
-      setFresh(new Set([...fresh, ...arrived]))
+      setKnown(new Set([...known, ...arrived.map(keyOf)]))
+      setFresh(new Set([...fresh, ...arrived.map((i) => i.id)]))
+      setArrivals((n) => n + 1)
     }
   }
+  // Suena una vez por cada tanda de pedidos que llega.
+  React.useEffect(() => {
+    if (arrivals && sound) beep(sound)
+  }, [arrivals, sound])
   const freshCount = fresh.size
   React.useEffect(() => {
-    if (freshCount && sound) beep(sound)
     if (!freshCount) return
     const t = setTimeout(() => setFresh(new Set()), 45_000)
     return () => clearTimeout(t)
-  }, [freshCount, sound])
+  }, [freshCount])
 
   async function ready(target: { itemId?: string; comandaId?: string }, ids: string[], label: string) {
     setHidden((h) => new Set([...h, ...ids]))
@@ -102,21 +147,9 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
         <p className="mr-auto text-sm text-muted-foreground">
           {visible.length ? `${visible.length} pedido${visible.length === 1 ? "" : "s"} por preparar` : "Sin pedidos pendientes"} · se actualiza solo
         </p>
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (sound) {
-              void sound.close()
-              setSound(null)
-            } else {
-              const ctx = new AudioContext()
-              beep(ctx)
-              setSound(ctx)
-            }
-          }}
-        >
+        <Button variant={sound ? "outline" : wantedSound ? "default" : "outline"} onClick={toggleSound}>
           {sound ? <Bell /> : <BellOff />}
-          {sound ? "Sonido activado" : "Activar sonido"}
+          {sound ? "Sonido activado" : wantedSound ? "Toca para reactivar el sonido" : "Activar sonido"}
         </Button>
         <Button variant="outline" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => null)}>
           <Maximize />

@@ -983,6 +983,8 @@ model ComandaItem {
   note        String?
   /// Cuántas se enviaron a la cocina (lo que se agrega después espera a que el garzón lo envíe).
   sentQty     Int      @default(0)
+  /// Cuándo se envió a la cocina por última vez (la cocina ordena y avisa según esto).
+  sentAt      DateTime?
   /// Cuántas de estas ya marcó la cocina como listas (si agregan más, lo nuevo vuelve a la cocina).
   readyQty    Int      @default(0)
   createdAt   DateTime @default(now())

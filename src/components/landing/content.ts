@@ -409,7 +409,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "¿Es realmente gratis?",
-        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador. El fiado, el inventario, el cierre de caja y el equipo son del plan Pro.",
+        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador, y llevas tus clientes y el fiado con cobro por WhatsApp. El inventario, el cierre de caja, los proveedores y el equipo son del plan Pro.",
       },
       BILLING_ENABLED
         ? {
@@ -418,7 +418,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
           }
         : {
             q: "¿Puedo usar las funciones Pro ahora?",
-            a: "Sí, gratis. Durante el lanzamiento, inventario, clientes y fiado, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro.",
+            a: "Sí, gratis. Durante el lanzamiento, inventario, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro.",
           },
       ...(BILLING_ENABLED
         ? [

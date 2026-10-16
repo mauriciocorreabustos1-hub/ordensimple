@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
-import { cancelComanda, chargeComanda, createComanda, saveComanda } from "@/server/actions/comandas"
+import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
-/** readyQty: cuántas ya marcó la cocina como listas. */
-export type ComandaLine = { id: string; productId: string | null; description: string; quantity: number; unitPrice: number; note: string; readyQty: number }
+/** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas. */
+export type ComandaLine = { id: string; productId: string | null; description: string; quantity: number; unitPrice: number; note: string; sentQty: number; readyQty: number }
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
 export type ComandaProduct = { id: string; name: string; price: number; category: string | null }
 
@@ -23,7 +23,10 @@ const QUICK_LABELS = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Mesa 5", "Mesa 6"
 
 const totalOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
 const countOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity, 0)
-const pendingOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + Math.max(0, i.quantity - i.readyQty), 0)
+/** Lo que falta enviar a la cocina. */
+const unsentOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + Math.max(0, i.quantity - i.sentQty), 0)
+/** Lo que la cocina está preparando. */
+const cookingOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + Math.max(0, i.sentQty - i.readyQty), 0)
 
 /** Reloj que avanza cada 30 segundos (para "hace 12 min"). */
 function useNow() {
@@ -41,12 +44,6 @@ function elapsed(from: string, now: number) {
   if (min < 60) return `hace ${min} min`
   const h = Math.floor(min / 60)
   return `hace ${h} h ${min % 60} min`
-}
-
-/** Texto de la comanda para mandarla a la cocina por WhatsApp. */
-function kitchenText(c: ComandaData) {
-  const lines = c.items.map((i) => `${i.quantity} × ${i.description}${i.note ? ` (${i.note})` : ""}`)
-  return [`*${c.label}*`, ...lines].join("\n")
 }
 
 export function ComandasBoard({
@@ -78,8 +75,15 @@ export function ComandasBoard({
         const local = c.id === openId ? comandas.find((l) => l.id === c.id) : undefined
         if (!local) return c
         // La que estás editando se queda como la tienes, pero con lo que la cocina ya marcó listo.
-        const ready = new Map(c.items.map((i) => [i.id, i.readyQty]))
-        return { ...local, items: local.items.map((i) => ({ ...i, readyQty: Math.min(i.quantity, ready.get(i.id) ?? i.readyQty) })) }
+        const server = new Map(c.items.map((i) => [i.id, i]))
+        return {
+          ...local,
+          items: local.items.map((i) => ({
+            ...i,
+            sentQty: Math.min(i.quantity, server.get(i.id)?.sentQty ?? i.sentQty),
+            readyQty: Math.min(i.quantity, server.get(i.id)?.readyQty ?? i.readyQty),
+          })),
+        }
       }),
     )
   }
@@ -178,13 +182,13 @@ export function ComandasBoard({
               </span>
               <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 {elapsed(c.createdAt, now)}
-                {c.items.length ? (
-                  pendingOf(c.items) ? (
-                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">En cocina</span>
-                  ) : (
-                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">Listo para servir</span>
-                  )
-                ) : null}
+                {!c.items.length ? null : unsentOf(c.items) ? (
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 font-medium text-foreground">Sin enviar a cocina</span>
+                ) : cookingOf(c.items) ? (
+                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">En cocina</span>
+                ) : (
+                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">Listo para servir</span>
+                )}
               </span>
               <span className="mt-2 line-clamp-2 text-xs text-muted-foreground">
                 {c.items.length ? c.items.map((i) => `${i.quantity} ${i.description}`).join(" · ") : "Sin productos todavía"}
@@ -344,7 +348,7 @@ function ComandaEditor({
 
   const setItems = (change: (items: ComandaLine[]) => ComandaLine[]) => onChange((c) => ({ ...c, items: change(c.items) }))
 
-  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "readyQty">) {
+  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "sentQty" | "readyQty">) {
     const id = crypto.randomUUID()
     setItems((items) => {
       // Si ya está (sin nota), suma uno; si no, agrega la línea al final.
@@ -354,7 +358,7 @@ function ComandaEditor({
         toast.error("Máximo 50 productos distintos por comanda.")
         return items
       }
-      return [...items, { ...line, id, quantity: 1, note: "", readyQty: 0 }]
+      return [...items, { ...line, id, quantity: 1, note: "", sentQty: 0, readyQty: 0 }]
     })
   }
   const setQty = (index: number, quantity: number) =>
@@ -387,10 +391,23 @@ function ComandaEditor({
     })
   }
 
+  const unsent = unsentOf(comanda.items)
+
+  /** Manda a la pantalla de Cocina lo que todavía no se había enviado. */
   function sendToKitchen() {
-    if (!comanda.items.length) return toast.info("Agrega productos antes de mandarla a la cocina.")
-    window.open(`https://wa.me/?text=${encodeURIComponent(kitchenText(comanda))}`, "_blank", "noopener,noreferrer")
+    startTransition(async () => {
+      await flush()
+      const r = await sendComandaToKitchen(comanda.id)
+      if (!r.ok) {
+        toast.error(r.message)
+        return
+      }
+      onChange((c) => ({ ...c, items: c.items.map((i) => ({ ...i, sentQty: i.quantity })) }))
+      const sent = r.data?.sent ?? unsent
+      toast.success(`${comanda.label}: ${sent} enviado${sent === 1 ? "" : "s"} a la cocina`)
+    })
   }
+
 
   return (
     <AppModal
@@ -574,12 +591,21 @@ function ComandaEditor({
                         <span className="min-w-0 flex-1 text-sm leading-tight">
                           {item.description}
                           {item.note && noteFor !== i ? <span className="block text-xs text-amber-700 dark:text-amber-400">{item.note}</span> : null}
+                          {item.quantity > item.sentQty ? (
+                            <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
+                              {item.sentQty ? `+${item.quantity - item.sentQty} sin enviar a cocina` : "Sin enviar a cocina"}
+                            </span>
+                          ) : null}
                         </span>
-                        {item.readyQty >= item.quantity ? (
+                        {item.quantity > item.sentQty ? null : item.readyQty >= item.quantity ? (
                           <span title="La cocina lo marcó listo" className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <Check className="size-3" />
                           </span>
-                        ) : null}
+                        ) : (
+                          <span title="En la cocina" className="flex size-5 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15">
+                            <ChefHat className="size-3" />
+                          </span>
+                        )}
                         <span className="tabular text-sm font-medium">{money(item.quantity * item.unitPrice)}</span>
                         <button
                           type="button"
@@ -616,11 +642,11 @@ function ComandaEditor({
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setStep("cancel")}>
               Anular
             </Button>
-            <Button variant="outline" onClick={sendToKitchen}>
-              <ChefHat />
-              A cocina
+            <Button variant={unsent ? "default" : "outline"} onClick={sendToKitchen} disabled={pending || !unsent}>
+              {pending ? <Loader2 className="animate-spin" /> : <ChefHat />}
+              {unsent ? `Enviar a cocina (${unsent})` : "Enviado a cocina"}
             </Button>
-            <Button onClick={() => setStep("charge")} disabled={!comanda.items.length}>
+            <Button variant={unsent ? "outline" : "default"} onClick={() => setStep("charge")} disabled={!comanda.items.length}>
               Cobrar
             </Button>
           </div>

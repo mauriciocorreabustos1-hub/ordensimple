@@ -83,6 +83,7 @@ export default async function ComandasPage() {
           items: c.items.map((i) => ({
             id: i.id,
             readyQty: i.readyQty,
+            sentQty: i.sentQty,
             productId: i.productId,
             description: i.description,
             quantity: i.quantity,

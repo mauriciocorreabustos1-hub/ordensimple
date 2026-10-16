@@ -131,7 +131,7 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
             <ChefHat className="size-6" />
           </span>
           <p className="font-medium">Todo al día</p>
-          <p className="max-w-sm text-sm text-muted-foreground">Cuando el garzón agregue algo a una comanda, aparecerá aquí.</p>
+          <p className="max-w-sm text-sm text-muted-foreground">Cuando el garzón toque «Enviar a cocina» en una comanda, el pedido aparecerá aquí.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -978,6 +978,8 @@ model ComandaItem {
   unitPrice   Int
   /// "sin mayo", "para llevar"…
   note        String?
+  /// Cuántas se enviaron a la cocina (lo que se agrega después espera a que el garzón lo envíe).
+  sentQty     Int      @default(0)
   /// Cuántas de estas ya marcó la cocina como listas (si agregan más, lo nuevo vuelve a la cocina).
   readyQty    Int      @default(0)
   createdAt   DateTime @default(now())

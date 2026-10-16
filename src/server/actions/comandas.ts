@@ -93,8 +93,15 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
         .map((i) =>
           db.comandaItem.update({
             where: { id: i.id },
-            // Si bajan la cantidad, lo listo no puede ser más que lo pedido.
-            data: { quantity: i.quantity, note: i.note ?? null, unitPrice: i.unitPrice, description: i.description, readyQty: Math.min(existing.get(i.id)!.readyQty, i.quantity) },
+            // Si bajan la cantidad, lo enviado y lo listo no pueden ser más que lo pedido.
+            data: {
+              quantity: i.quantity,
+              note: i.note ?? null,
+              unitPrice: i.unitPrice,
+              description: i.description,
+              sentQty: Math.min(existing.get(i.id)!.sentQty, i.quantity),
+              readyQty: Math.min(existing.get(i.id)!.readyQty, i.quantity),
+            },
           }),
         ),
       db.comanda.update({
@@ -194,6 +201,27 @@ export async function cancelComanda(id: string): Promise<ActionResult> {
 
 // ─── Cocina ─────────────────────────────────────────────────────────────────
 
+/** El garzón envía a la cocina lo que todavía no se había enviado. */
+export async function sendComandaToKitchen(id: string): Promise<ActionResult<{ sent: number }>> {
+  const ctx = await requireBusiness()
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Comanda no encontrada" }
+  let sent = 0
+  try {
+    assertCan(ctx, "sales:create")
+    const reason = blocked(ctx)
+    if (reason) return { ok: false, message: reason }
+    if (!(await findOpen(ctx, id))) return { ok: false, message: "Esta comanda ya se cobró o se anuló. Recarga la página." }
+    const items = (await db.comandaItem.findMany({ where: { comandaId: id }, select: { id: true, quantity: true, sentQty: true } })).filter((i) => i.quantity > i.sentQty)
+    if (!items.length) return { ok: false, message: "No hay nada nuevo para enviar a la cocina." }
+    sent = items.reduce((sum, i) => sum + i.quantity - i.sentQty, 0)
+    await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { sentQty: i.quantity } })))
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidate()
+  return { ok: true, message: "Enviado a la cocina", data: { sent } }
+}
+
 /** La cocina marca un plato (o toda la mesa) como listo. undo = vuelve a dejarlo pendiente. */
 export async function markKitchenReady(target: { itemId?: string; comandaId?: string }, undo = false): Promise<ActionResult> {
   const ctx = await requireBusiness()
@@ -206,10 +234,11 @@ export async function markKitchenReady(target: { itemId?: string; comandaId?: st
     if (reason) return { ok: false, message: reason }
     const items = await db.comandaItem.findMany({
       where: { ...(itemId ? { id: itemId } : { comandaId }), comanda: { businessId: ctx.businessId, status: "OPEN" } },
-      select: { id: true, quantity: true },
+      select: { id: true, sentQty: true },
     })
     if (!items.length) return { ok: false, message: "Esta comanda ya se cobró o se anuló." }
-    await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { readyQty: undo ? 0 : i.quantity } })))
+    // Solo se marca listo lo que se envió a la cocina.
+    await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { readyQty: undo ? 0 : i.sentQty } })))
   } catch (error) {
     return toActionError(error)
   }

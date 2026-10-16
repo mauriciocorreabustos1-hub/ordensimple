@@ -11,6 +11,7 @@ const FOOTER = [
       { href: "/como-funciona", label: "Cómo funciona" },
       { href: "/precios", label: "Precios" },
       { href: "/calculadoras", label: "Calculadoras gratis" },
+      { href: "/restaurantes", label: "Para restaurantes" },
     ],
   },
   {

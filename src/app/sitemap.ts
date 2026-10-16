@@ -5,6 +5,7 @@ import { getAppUrl } from "@/lib/app-url"
 const PAGES = [
   "",
   "/funciones",
+  "/restaurantes",
   "/como-funciona",
   "/precios",
   "/instalar",

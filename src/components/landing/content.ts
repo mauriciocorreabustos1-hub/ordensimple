@@ -1,4 +1,5 @@
 import {
+  ChefHat,
   BarChart3,
   Boxes,
   Calculator,
@@ -132,6 +133,22 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Escribe cuánto contaste y te decimos si falta o sobra plata",
       "Historial de cierres de los últimos días",
       "Comparte el cierre del día por WhatsApp",
+    ],
+  },
+  {
+    id: "restaurantes",
+    icon: ChefHat,
+    title: "Comandas y cocina",
+    description: "Para restaurantes, cafés, sangucherías y carros de comida (plan Pro).",
+    points: [
+      "Abre una comanda por mesa o pedido: Mesa 4, Barra, Para llevar, Delivery",
+      "Tus mesas, las que quieras: hasta 200, más barra, terraza o lo que uses",
+      "Ves al tiro qué mesas están ocupadas y cuánto lleva cada una",
+      "Notas por plato: «sin mayo», «bien cocido», «para llevar»",
+      "Enviar a cocina: el pedido aparece en la pantalla de la cocina, sin papel",
+      "La cocina marca cada plato listo y el garzón ve «Listo para servir»",
+      "Si piden algo más, a la cocina le llega solo lo nuevo",
+      "Al cobrar queda como venta: descuenta stock y suma a la caja y a tus reportes",
     ],
   },
   {
@@ -399,6 +416,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Almacenes, minimarkets, restaurantes, cafeterías, tiendas, peluquerías, talleres, servicios profesionales y emprendimientos en general: cualquier negocio que venda y tenga gastos.",
       },
       {
+        q: "¿Sirve para un restaurante o un café?",
+        a: "Sí. Si marcas el rubro «Restaurante, café o comida», con el plan Pro tienes comandas por mesa y una pantalla para la cocina: el garzón anota y envía el pedido, la cocina lo marca listo y al cobrar queda como venta. Eliges cuántas mesas tienes en Configuración.",
+      },
+      {
         q: "¿Funciona en otros países?",
         a: "Partimos en Chile con pesos chilenos, pero ya puedes usar dólares, euros, soles, pesos argentinos, colombianos y mexicanos.",
       },
@@ -492,7 +513,8 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Productos", values: ["Hasta 20", "Ilimitados", "Ilimitados"] },
   { label: "Ventas y gastos", values: [true, true, true] },
   { label: "Cierre de caja", values: [false, true, true] },
-  { label: "Clientes, fiado y cobro por WhatsApp", values: [false, true, true] },
+  { label: "Clientes, fiado y cobro por WhatsApp", values: [true, true, true] },
+  { label: "Comandas y pantalla de cocina (restaurantes y cafés)", values: [false, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
   { label: "Calculadoras con tus números", values: [true, true, true] },

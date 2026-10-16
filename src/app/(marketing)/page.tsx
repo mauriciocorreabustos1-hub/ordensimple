@@ -8,6 +8,7 @@ import { FAQ_GROUPS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { SocialSection } from "@/components/landing/social-section"
+import { ComandasPreview } from "@/components/landing/comandas-preview"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -51,7 +52,7 @@ export default async function LandingPage() {
               Administra tu negocio sin complicarte.
             </h1>
             <p className="max-w-lg text-lg text-pretty text-muted-foreground">
-              Para almacenes, botillerías, peluquerías y ferias: anota ventas, gastos, fiados y productos desde el celular, y sabe cada día
+              Para almacenes, restaurantes, botillerías, peluquerías y ferias: anota ventas, gastos, fiados y productos desde el celular, y sabe cada día
               cuánto estás ganando de verdad.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -139,6 +140,31 @@ export default async function LandingPage() {
             </div>
           </div>
           <ReceiptSteps />
+        </div>
+      </Section>
+
+      {/* Para restaurantes y cafés: comandas y cocina. */}
+      <Section className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              title="¿Tienes un restaurante, café o sanguchería?"
+              description="Anota las comandas por mesa desde el celular, mándalas a la pantalla de la cocina y cobra al final. Todo queda como venta."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Tus mesas, las que quieras, y ves cuáles están ocupadas", "La cocina marca cada plato listo y el garzón lo ve al tiro", "Sin comprar nada: celular, tablet o computador"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <Button size="lg" variant="outline" className="h-11" asChild>
+              <Link href="/restaurantes">Ver comandas y cocina</Link>
+            </Button>
+          </div>
+          <ComandasPreview />
         </div>
       </Section>
 

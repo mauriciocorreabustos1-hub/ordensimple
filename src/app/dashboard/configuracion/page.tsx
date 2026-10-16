@@ -12,6 +12,8 @@ import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
+import { TablesSettings } from "@/components/settings/tables-settings"
+import { isFoodBusiness } from "@/lib/business-kind"
 import { PpmRate } from "@/components/settings/ppm-rate"
 import { vatInfo } from "@/lib/vat"
 import { ThemePicker } from "@/components/settings/theme-picker"
@@ -139,6 +141,18 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
           />
         </CardContent>
       </Card>
+
+      {isFoodBusiness(ctx.business.type) ? (
+        <Card id="mesas" className="scroll-mt-20">
+          <CardHeader>
+            <CardTitle>Mesas</CardTitle>
+            <CardDescription>Las mesas y lugares de tu local. Aparecen al abrir una comanda, y ves al tiro cuáles están ocupadas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TablesSettings count={ctx.settings.tableCount} extras={ctx.settings.tableExtras} disabled={!canManage} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {vat ? (
         <Card>

@@ -7,7 +7,8 @@ import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
 import { ComandasBoard } from "@/components/comandas/comandas-board"
 import { db } from "@/lib/db"
-import { isFoodBusiness } from "@/lib/business-kind"
+import { isFoodBusiness, tableLabels } from "@/lib/business-kind"
+import { can } from "@/lib/roles"
 import { formatMoney } from "@/lib/currency"
 import { startOfDay } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
@@ -93,6 +94,8 @@ export default async function ComandasPage() {
         }))}
         products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null }))}
         customers={customers.map((c) => c.name)}
+        tables={tableLabels(ctx.settings.tableCount, ctx.settings.tableExtras)}
+        canEditTables={can(ctx.role, "settings:manage")}
       />
     </div>
   )

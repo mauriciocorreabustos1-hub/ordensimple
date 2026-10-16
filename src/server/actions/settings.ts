@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
+import { isFoodBusiness } from "@/lib/business-kind"
 import { COUNTRIES } from "@/lib/constants"
 import { isPurchaseCategory } from "@/lib/income-statement"
 import {
@@ -64,12 +65,19 @@ export async function updatePreferences(input: PreferencesInput): Promise<Action
   const parsed = preferencesSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
 
+  const data = { ...parsed.data }
+  // Las mesas son solo para negocios de comida; los nombres repetidos se guardan una vez.
+  if ((data.tableCount !== undefined || data.tableExtras) && !isFoodBusiness(ctx.business.type)) {
+    return { ok: false, message: "Las mesas son para restaurantes, cafés y negocios de comida." }
+  }
+  if (data.tableExtras) data.tableExtras = [...new Map(data.tableExtras.map((t) => [t.toLowerCase(), t])).values()]
+
   try {
     assertCan(ctx, "settings:manage")
     await db.businessSettings.upsert({
       where: { businessId: ctx.businessId },
-      create: { businessId: ctx.businessId, ...parsed.data },
-      update: parsed.data,
+      create: { businessId: ctx.businessId, ...data },
+      update: data,
     })
   } catch (error) {
     return toActionError(error)

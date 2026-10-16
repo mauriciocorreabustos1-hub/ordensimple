@@ -10,3 +10,8 @@ export function isFoodBusiness(type: string | null | undefined) {
   if (!type) return false
   return type.includes(FOOD_BUSINESS_TYPE) || FOOD_WORDS.test(type)
 }
+
+/** Mesas y lugares para abrir comandas: Mesa 1…N y los que el negocio nombró (Barra, Para llevar…). */
+export function tableLabels(count: number, extras: string[]) {
+  return [...Array.from({ length: count }, (_, i) => `Mesa ${i + 1}`), ...extras]
+}

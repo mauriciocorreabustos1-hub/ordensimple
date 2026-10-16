@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Check, ChefHat, Loader2, Minus, PencilLine, Plus, Search, X } from "lucide-react"
 import { toast } from "sonner"
@@ -19,7 +20,6 @@ export type ComandaLine = { id: string; productId: string | null; description: s
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
 export type ComandaProduct = { id: string; name: string; price: number; category: string | null }
 
-const QUICK_LABELS = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Mesa 5", "Mesa 6", "Para llevar", "Delivery"]
 
 const totalOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
 const countOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity, 0)
@@ -52,12 +52,17 @@ export function ComandasBoard({
   comandas: initial,
   products,
   customers,
+  tables,
+  canEditTables,
 }: {
   currency: string
   defaultPayment: PaymentMethod
   comandas: ComandaData[]
   products: ComandaProduct[]
   customers: string[]
+  /** Mesas y lugares configurados (Mesa 1…N, Barra, Para llevar…). */
+  tables: string[]
+  canEditTables: boolean
 }) {
   const router = useRouter()
   const now = useNow()
@@ -205,7 +210,13 @@ export function ComandasBoard({
       <NewComandaModal
         open={creating}
         onOpenChange={setCreating}
+        tables={tables}
+        canEditTables={canEditTables}
         taken={comandas.map((c) => c.label)}
+        onOpenExisting={(label) => {
+          const c = comandas.find((x) => x.label === label)
+          if (c) setOpenId(c.id)
+        }}
         onCreated={(c) => {
           setComandas((list) => [...list, c])
           setOpenId(c.id)
@@ -239,12 +250,18 @@ export function ComandasBoard({
 function NewComandaModal({
   open,
   onOpenChange,
+  tables,
+  canEditTables,
   taken,
+  onOpenExisting,
   onCreated,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  tables: string[]
+  canEditTables: boolean
   taken: string[]
+  onOpenExisting: (label: string) => void
   onCreated: (c: ComandaData) => void
 }) {
   const [label, setLabel] = React.useState("")
@@ -267,23 +284,33 @@ function NewComandaModal({
 
   return (
     <AppModal open={open} onOpenChange={onOpenChange} title="Nueva comanda" description="¿Para qué mesa, cliente o pedido es?">
-      <div className="flex flex-wrap gap-2">
-        {QUICK_LABELS.map((l) => {
-          const used = taken.includes(l)
-          return (
-            <button
-              key={l}
-              type="button"
-              disabled={pending || used}
-              onClick={() => create(l)}
-              title={used ? "Ya tiene una comanda abierta" : undefined}
-              className="rounded-full border bg-card px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary/50 disabled:opacity-40"
-            >
-              {l}
-            </button>
-          )
-        })}
-      </div>
+      {tables.length ? (
+        <div className="grid max-h-[45dvh] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+          {tables.map((l) => {
+            const used = taken.includes(l)
+            return (
+              <button
+                key={l}
+                type="button"
+                disabled={pending}
+                // Si la mesa ya tiene comanda, se abre esa en vez de crear otra.
+                onClick={() => {
+                  if (!used) return create(l)
+                  onOpenChange(false)
+                  onOpenExisting(l)
+                }}
+                className={cn(
+                  "flex min-h-14 flex-col items-center justify-center rounded-xl border px-2 py-2 text-center text-sm font-medium transition-colors",
+                  used ? "border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : "bg-card hover:border-primary/50 hover:bg-accent/40",
+                )}
+              >
+                <span className="leading-tight">{l}</span>
+                {used ? <span className="text-[11px] font-normal">ocupada · ver</span> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
       <form
         className="flex gap-2"
         onSubmit={(e) => {
@@ -294,7 +321,7 @@ function NewComandaModal({
         <Input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="Ej.: Mesa 12, Juan, Pedido WhatsApp"
+          placeholder={tables.length ? "U otro nombre: Juan, Pedido WhatsApp…" : "Ej.: Mesa 12, Juan, Pedido WhatsApp"}
           maxLength={40}
           aria-label="Nombre de la comanda"
           className="h-11"
@@ -304,6 +331,15 @@ function NewComandaModal({
           Abrir
         </Button>
       </form>
+      {canEditTables ? (
+        <p className="text-xs text-muted-foreground">
+          ¿Tienes más mesas o una barra?{" "}
+          <Link href="/dashboard/configuracion#mesas" className="font-medium text-primary hover:underline">
+            Cámbialas en Configuración
+          </Link>
+          .
+        </p>
+      ) : null}
     </AppModal>
   )
 }

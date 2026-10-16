@@ -4,6 +4,7 @@ import {
   Crown,
   Boxes,
   Calculator,
+  ClipboardList,
   Gift,
   Home,
   Landmark,
@@ -27,6 +28,8 @@ export type NavItem = {
   icon: LucideIcon
   soon?: boolean
   pro?: boolean
+  /** Solo para negocios de comida (restaurantes, cafés…). */
+  food?: boolean
   /** Si se indica, solo se muestra a quien tenga este permiso. */
   permission?: Permission
 }
@@ -34,6 +37,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/dashboard/ventas", label: "Ventas", icon: ShoppingBag },
+  { href: "/dashboard/comandas", label: "Comandas", icon: ClipboardList, pro: true, food: true },
   { href: "/dashboard/gastos", label: "Gastos", icon: Receipt },
   { href: "/dashboard/caja", label: "Cierre de caja", icon: Vault, pro: true },
   { href: "/dashboard/flujo-caja", label: "Flujo de caja", icon: ArrowLeftRight, pro: true, permission: "finances:view" },
@@ -51,9 +55,9 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]
 
-/** Menú según el rol: a los empleados no se les muestra lo que no pueden usar. */
-export function navItemsFor(role: Role) {
-  return NAV_ITEMS.filter((item) => !item.permission || can(role, item.permission))
+/** Menú según el rol (a los empleados no se les muestra lo que no pueden usar) y el rubro del negocio. */
+export function navItemsFor(role: Role, { food = false }: { food?: boolean } = {}) {
+  return NAV_ITEMS.filter((item) => (!item.permission || can(role, item.permission)) && (!item.food || food))
 }
 
 export function isActive(pathname: string, href: string) {

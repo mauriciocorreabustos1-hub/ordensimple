@@ -1,0 +1,96 @@
+import type { Metadata } from "next"
+import Link from "next/link"
+import { ClipboardList } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/app/empty-state"
+import { PageHeader } from "@/components/app/page-header"
+import { ProGate } from "@/components/app/pro-gate"
+import { ComandasBoard } from "@/components/comandas/comandas-board"
+import { db } from "@/lib/db"
+import { isFoodBusiness } from "@/lib/business-kind"
+import { formatMoney } from "@/lib/currency"
+import { startOfDay } from "@/lib/dates"
+import { canUseFeature } from "@/lib/plans"
+import { requireBusiness } from "@/server/session"
+
+export const metadata: Metadata = { title: "Comandas" }
+
+const TITLE = "Comandas"
+const DESCRIPTION = "Abre una cuenta por mesa o pedido, ve sumando lo que piden y cóbrala al final. Al cobrar queda como venta."
+
+export default async function ComandasPage() {
+  const ctx = await requireBusiness()
+  if (!isFoodBusiness(ctx.business.type)) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={TITLE} description={DESCRIPTION} />
+        <EmptyState
+          icon={ClipboardList}
+          title="Las comandas son para restaurantes, cafés y negocios de comida"
+          description="Si tu negocio es de comida, márcalo en Configuración (rubro «Restaurante, café o comida») y aparecerán aquí."
+          action={
+            <Button asChild variant="outline">
+              <Link href="/dashboard/configuracion">Ir a Configuración</Link>
+            </Button>
+          }
+        />
+      </div>
+    )
+  }
+  if (!canUseFeature(ctx.business.plan, "comandas")) {
+    return <ProGate title={TITLE} description={DESCRIPTION} />
+  }
+
+  const dayStart = startOfDay(new Date(), ctx.timezone)
+  const [open, products, customers, paidToday] = await Promise.all([
+    db.comanda.findMany({
+      where: { businessId: ctx.businessId, status: "OPEN" },
+      include: { items: { orderBy: { createdAt: "asc" } } },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+    }),
+    db.product.findMany({
+      where: { businessId: ctx.businessId, active: true },
+      select: { id: true, name: true, price: true, category: { select: { name: true } } },
+      orderBy: { name: "asc" },
+      take: 500,
+    }),
+    db.customer.findMany({ where: { businessId: ctx.businessId }, select: { name: true }, orderBy: { name: "asc" }, take: 500 }),
+    db.comanda.findMany({
+      where: { businessId: ctx.businessId, status: "PAID", closedAt: { gte: dayStart } },
+      select: { sale: { select: { total: true } } },
+    }),
+  ])
+  const paidTotal = paidToday.reduce((sum, c) => sum + (c.sale?.total ?? 0), 0)
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={TITLE}
+        description={
+          paidToday.length
+            ? `Hoy cobraste ${paidToday.length} comanda${paidToday.length === 1 ? "" : "s"} por ${formatMoney(paidTotal, ctx.currency)}.`
+            : DESCRIPTION
+        }
+      />
+      <ComandasBoard
+        currency={ctx.currency}
+        defaultPayment={ctx.settings.defaultPayment}
+        comandas={open.map((c) => ({
+          id: c.id,
+          label: c.label,
+          createdAt: c.createdAt.toISOString(),
+          items: c.items.map((i) => ({
+            productId: i.productId,
+            description: i.description,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            note: i.note ?? "",
+          })),
+        }))}
+        products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null }))}
+        customers={customers.map((c) => c.name)}
+      />
+    </div>
+  )
+}

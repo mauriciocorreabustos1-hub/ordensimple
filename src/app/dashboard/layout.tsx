@@ -9,6 +9,7 @@ import { WelcomeTour } from "@/components/app/welcome-tour"
 import { GuidedTour } from "@/components/app/guided-tour"
 import { OfflineSalesBar, OfflineSalesProvider } from "@/components/app/offline-sales"
 import { db } from "@/lib/db"
+import { isFoodBusiness } from "@/lib/business-kind"
 import { canUseFeature } from "@/lib/plans"
 import { isAdmin as checkAdmin } from "@/server/admin"
 import { requireBusiness } from "@/server/session"
@@ -48,6 +49,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       take: 200,
     }),
   ])
+  const food = isFoodBusiness(ctx.business.type)
   const businesses = memberships.map((m) => ({ ...m.business, active: m.business.id === ctx.businessId }))
 
   return (
@@ -75,6 +77,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           userImage={ctx.user.image}
           businesses={businesses}
           isAdmin={isAdmin}
+          food={food}
         />
         <div className="min-h-dvh bg-background lg:pl-64">
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
@@ -88,7 +91,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             {children}
           </main>
         </div>
-        <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} />
+        <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} food={food} />
         {/* Tutorial de bienvenida: se abre solo la primera vez que la persona entra a la app. */}
         <WelcomeTour show={!(ctx.user as { welcomeTourAt?: Date | null }).welcomeTourAt} />
         {/* Guía práctica (anotar una venta, un gasto…): empieza desde la bienvenida. */}

@@ -192,6 +192,7 @@ model Business {
   specialLinkUses   SpecialLinkUse[]
   payables          Payable[]
   productBarcodes   ProductBarcode[]
+  comandas          Comanda[]
   featureUsage      FeatureUsage[]
   ownerWithdrawals  OwnerWithdrawal[]
   loans             Loan[]
@@ -293,6 +294,7 @@ model Product {
   /// Códigos de barras adicionales (el principal es `sku`).
   barcodes  ProductBarcode[]
 
+  comandaItems ComandaItem[]
   @@unique([businessId, sku])
   @@index([businessId, active])
   @@index([categoryId])
@@ -321,6 +323,7 @@ model Sale {
 
   items     SaleItem[]
   movements InventoryMovement[]
+  comanda   Comanda?
 
   @@unique([businessId, clientId])
   @@index([businessId, date])
@@ -934,4 +937,50 @@ model AdminUser {
   createdAt DateTime @default(now())
 
   @@map("admin_user")
+}
+
+// ─── Comandas (restaurantes, cafés y comida) ────────────────────────────────
+
+enum ComandaStatus {
+  OPEN
+  PAID
+  CANCELLED
+}
+
+/// Cuenta abierta de una mesa o pedido. Al cobrarla se crea una venta normal (saleId).
+model Comanda {
+  id          String        @id @default(cuid())
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  label       String
+  status      ComandaStatus @default(OPEN)
+  saleId      String?       @unique
+  sale        Sale?         @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdById String?
+  closedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  items ComandaItem[]
+
+  @@index([businessId, status])
+  @@map("comanda")
+}
+
+model ComandaItem {
+  id          String   @id @default(cuid())
+  comandaId   String
+  comanda     Comanda  @relation(fields: [comandaId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Int
+  unitPrice   Int
+  /// "sin mayo", "para llevar"…
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([comandaId])
+  @@index([productId])
+  @@map("comanda_item")
 }

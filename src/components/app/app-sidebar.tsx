@@ -10,11 +10,11 @@ import { BusinessLogo } from "@/components/app/business-logo"
 import { SocialLinks } from "@/components/landing/social-links"
 import { cn } from "@/lib/utils"
 
-export function NavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
+export function NavLinks({ role, food = false, onNavigate }: { role: Role; food?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname()
   return (
     <nav className="grid gap-0.5" aria-label="Principal">
-      {navItemsFor(role).map((item) => {
+      {navItemsFor(role, { food }).map((item) => {
         const active = isActive(pathname, item.href)
         return (
           <Link
@@ -54,6 +54,7 @@ export function AppSidebar({
   userImage = null,
   businesses = [],
   isAdmin = false,
+  food = false,
 }: {
   businessId: string
   logoUpdatedAt: Date | null
@@ -64,6 +65,8 @@ export function AppSidebar({
   userImage?: string | null
   businesses?: BusinessOption[]
   isAdmin?: boolean
+  /** Negocio de comida: muestra Comandas. */
+  food?: boolean
 }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-sidebar lg:flex">
@@ -77,7 +80,7 @@ export function AppSidebar({
         </p>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <NavLinks role={role} />
+        <NavLinks role={role} food={food} />
       </div>
       <div className="flex items-center justify-between border-t px-5 py-2.5">
         <span className="text-xs font-medium text-muted-foreground">Síguenos</span>

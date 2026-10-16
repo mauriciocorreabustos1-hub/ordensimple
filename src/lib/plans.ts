@@ -25,6 +25,8 @@ export type PlanFeature =
   | "cashClose"
   /** Flujo de caja (en Pro, también meses anteriores y lo que viene: ver cashflowPlus). */
   | "cashflow"
+  /** Comandas: cuentas abiertas por mesa o pedido (solo para negocios de comida). */
+  | "comandas"
   | "multiUser"
   | "branches"
 
@@ -90,10 +92,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas"],
     highlights: [
       "Todo lo de Gratis, y además:",
       "Cierre de caja diario",
+      "Comandas por mesa o pedido (restaurantes y cafés)",
       "Inventario, escaneo y alertas de stock",
       "Reportes de cualquier fecha y consejos",
       "Tú + 20 trabajadores y hasta 3 sucursales",
@@ -118,7 +121,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // en la práctica, sin límite
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Trabajadores sin límite",

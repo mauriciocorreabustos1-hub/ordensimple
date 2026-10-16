@@ -286,3 +286,18 @@ export const cashClosingSchema = z.object({
   note: optionalText(300),
 })
 export type CashClosingInput = z.input<typeof cashClosingSchema>
+
+// ─── Comandas ───────────────────────────────────────────────────────────────
+
+export const comandaItemSchema = saleItemSchema.extend({ note: optionalText(80) })
+
+export const comandaSchema = z.object({
+  label: z.string().trim().min(1, "Ponle un nombre: mesa, cliente o pedido").max(40, "Máximo 40 caracteres"),
+  items: z.array(comandaItemSchema).max(50, "Máximo 50 productos por comanda"),
+})
+export type ComandaInput = z.input<typeof comandaSchema>
+
+export const comandaChargeSchema = z
+  .object({ paymentMethod, customerName: optionalText(80) })
+  .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
+export type ComandaChargeInput = z.input<typeof comandaChargeSchema>

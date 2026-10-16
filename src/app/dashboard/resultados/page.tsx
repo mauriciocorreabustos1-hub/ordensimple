@@ -425,49 +425,50 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="-mx-2 overflow-x-auto px-2">
-            <table className="w-full min-w-[640px] text-sm">
+          <p className="mb-2 text-xs text-muted-foreground md:hidden">Desliza para ver todas las columnas →</p>
+          <div className="-mx-2 overflow-x-auto px-2 pb-1">
+            <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
-                  <th className="py-2 pr-3 font-medium">Mes</th>
-                  <th className="py-2 pr-3 text-right font-medium">Ventas</th>
-                  <th className="py-2 pr-3 text-right font-medium">Costo de venta</th>
-                  <th className="py-2 pr-3 text-right font-medium">Utilidad bruta</th>
-                  <th className="py-2 pr-3 text-right font-medium">Gastos</th>
-                  <th className="py-2 pr-3 text-right font-medium">Utilidad</th>
-                  {chargesVat ? <th className="py-2 pr-3 text-right font-medium">{L} a pagar</th> : null}
-                  {ppmRate > 0 ? <th className="py-2 text-right font-medium">PPM</th> : null}
+                  <th className="sticky left-0 z-10 bg-card py-2 pr-2 align-bottom font-medium">Mes</th>
+                  <th className="py-2 pr-2 text-right align-bottom leading-tight font-medium">Ventas</th>
+                  <th className="py-2 pr-2 text-right align-bottom leading-tight font-medium">Costo de venta</th>
+                  <th className="py-2 pr-2 text-right align-bottom leading-tight font-medium">Utilidad bruta</th>
+                  <th className="py-2 pr-2 text-right align-bottom leading-tight font-medium">Gastos</th>
+                  <th className="py-2 pr-2 text-right align-bottom leading-tight font-medium">Utilidad</th>
+                  {chargesVat ? <th className="py-2 pr-2 text-right align-bottom leading-tight font-medium">{L} a pagar</th> : null}
+                  {ppmRate > 0 ? <th className="py-2 pr-1 text-right align-bottom leading-tight font-medium">PPM</th> : null}
                 </tr>
               </thead>
               <tbody className="tabular">
                 {visibleRows.map((r) => (
-                  <tr key={r.month} className={cn("border-b last:border-0", r.month === month && "bg-accent/50")}>
-                    <td className="py-2 pr-3 capitalize">
+                  <tr key={r.month} className={cn("border-b last:border-0", r.month === month && "bg-accent")}>
+                    <td className={cn("sticky left-0 z-10 py-2 pr-2 capitalize", r.month === month ? "bg-accent" : "bg-card")}>
                       <Link href={`/dashboard/resultados?mes=${key(year, r.month)}`} className="hover:text-primary hover:underline">
                         {formatDate(zonedTimeToUtc(year, r.month, 1, ctx.timezone), ctx.timezone, { month: "long" })}
                       </Link>
                     </td>
-                    <td className="py-2 pr-3 text-right">{money(r.s.netSales)}</td>
-                    <td className="py-2 pr-3 text-right">{money(r.s.costOfSales)}</td>
-                    <td className="py-2 pr-3 text-right">{money(r.s.grossProfit)}</td>
-                    <td className="py-2 pr-3 text-right">{money(r.s.operatingExpenses + r.s.waste)}</td>
-                    <td className={cn("py-2 pr-3 text-right font-medium", r.s.profit < 0 && "text-danger")}>{money(r.s.profit)}</td>
-                    {chargesVat ? <td className="py-2 pr-3 text-right">{money(r.vatToPay)}</td> : null}
-                    {ppmRate > 0 ? <td className="py-2 text-right">{money(ppmAmount(r.s.netSales, ppmRate))}</td> : null}
+                    <td className="py-2 pr-2 text-right whitespace-nowrap">{money(r.s.netSales)}</td>
+                    <td className="py-2 pr-2 text-right whitespace-nowrap">{money(r.s.costOfSales)}</td>
+                    <td className="py-2 pr-2 text-right whitespace-nowrap">{money(r.s.grossProfit)}</td>
+                    <td className="py-2 pr-2 text-right whitespace-nowrap">{money(r.s.operatingExpenses + r.s.waste)}</td>
+                    <td className={cn("py-2 pr-2 text-right font-medium whitespace-nowrap", r.s.profit < 0 && "text-danger")}>{money(r.s.profit)}</td>
+                    {chargesVat ? <td className="py-2 pr-2 text-right whitespace-nowrap">{money(r.vatToPay)}</td> : null}
+                    {ppmRate > 0 ? <td className="py-2 pr-1 text-right whitespace-nowrap">{money(ppmAmount(r.s.netSales, ppmRate))}</td> : null}
                   </tr>
                 ))}
               </tbody>
               <tfoot className="tabular">
                 <tr className="border-t-2 font-semibold">
-                  <td className="py-3 pr-3">Total {year}</td>
-                  <td className="py-3 pr-3 text-right">{money(totals.netSales)}</td>
-                  <td className="py-3 pr-3 text-right">{money(totals.costOfSales)}</td>
-                  <td className="py-3 pr-3 text-right">{money(totals.grossProfit)}</td>
-                  <td className="py-3 pr-3 text-right">{money(totals.operatingExpenses)}</td>
-                  <td className={cn("py-3 pr-3 text-right", totals.profit < 0 ? "text-danger" : "text-success")}>{money(totals.profit)}</td>
-                  {chargesVat ? <td className="py-3 pr-3 text-right">{money(totals.vatToPay)}</td> : null}
+                  <td className="sticky left-0 z-10 bg-card py-3 pr-2 whitespace-nowrap">Total {year}</td>
+                  <td className="py-3 pr-2 text-right whitespace-nowrap">{money(totals.netSales)}</td>
+                  <td className="py-3 pr-2 text-right whitespace-nowrap">{money(totals.costOfSales)}</td>
+                  <td className="py-3 pr-2 text-right whitespace-nowrap">{money(totals.grossProfit)}</td>
+                  <td className="py-3 pr-2 text-right whitespace-nowrap">{money(totals.operatingExpenses)}</td>
+                  <td className={cn("py-3 pr-2 text-right whitespace-nowrap", totals.profit < 0 ? "text-danger" : "text-success")}>{money(totals.profit)}</td>
+                  {chargesVat ? <td className="py-3 pr-2 text-right whitespace-nowrap">{money(totals.vatToPay)}</td> : null}
                   {ppmRate > 0 ? (
-                    <td className="py-3 text-right">{money(rows.reduce((acc, r) => acc + ppmAmount(r.s.netSales, ppmRate), 0))}</td>
+                    <td className="py-3 pr-1 text-right whitespace-nowrap">{money(rows.reduce((acc, r) => acc + ppmAmount(r.s.netSales, ppmRate), 0))}</td>
                   ) : null}
                 </tr>
               </tfoot>

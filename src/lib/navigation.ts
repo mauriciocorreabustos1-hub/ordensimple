@@ -40,7 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/balance", label: "Balance y retiros", icon: Scale, pro: true, permission: "finances:view" },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true },
-  { href: "/dashboard/clientes", label: "Clientes", icon: Users, pro: true },
+  { href: "/dashboard/clientes", label: "Clientes", icon: Users },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },
   { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator, permission: "finances:view" },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports:view" },

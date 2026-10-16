@@ -104,7 +104,6 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
         </p>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             if (sound) {
               void sound.close()
@@ -119,7 +118,7 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
           {sound ? <Bell /> : <BellOff />}
           {sound ? "Sonido activado" : "Activar sonido"}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => null)}>
+        <Button variant="outline" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => null)}>
           <Maximize />
           Pantalla completa
         </Button>
@@ -171,7 +170,7 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
                           {i.note ? <span className="mt-0.5 block text-base font-semibold text-amber-700 dark:text-amber-400">{i.note}</span> : null}
                         </span>
                         {fresh.has(i.id) ? <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Nuevo</span> : null}
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full border text-muted-foreground">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border text-muted-foreground">
                           <Check className="size-4" />
                         </span>
                       </button>

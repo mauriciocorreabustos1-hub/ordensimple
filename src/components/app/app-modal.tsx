@@ -11,6 +11,7 @@ export function AppModal({
   description,
   children,
   className,
+  noAutoFocus = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -18,10 +19,13 @@ export function AppModal({
   description?: string
   children: React.ReactNode
   className?: string
+  /** No enfocar el primer campo al abrir (en el celular abriría el teclado y taparía la pantalla). */
+  noAutoFocus?: boolean
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        onOpenAutoFocus={noAutoFocus ? (e) => e.preventDefault() : undefined}
         className={cn(
           "max-h-[92dvh] gap-5 overflow-y-auto p-5 sm:max-w-lg sm:p-6",
           "max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))]",

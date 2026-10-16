@@ -174,26 +174,35 @@ export function ComandasBoard({
         </button>
         {comandas.map((c) => {
           const total = totalOf(c.items)
+          const state = !c.items.length ? "empty" : unsentOf(c.items) ? "unsent" : cookingOf(c.items) ? "cooking" : "ready"
           return (
             <button
               key={c.id}
               type="button"
               onClick={() => setOpenId(c.id)}
-              className="flex min-h-36 flex-col rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/50"
+              className={cn(
+                "flex min-h-36 flex-col rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/50",
+                state === "ready" && "border-primary/60 bg-accent/40 ring-1 ring-primary/30",
+              )}
             >
               <span className="flex items-start justify-between gap-2">
                 <span className="font-display text-lg leading-tight font-semibold">{c.label}</span>
-                <ChefHat className="size-4 shrink-0 text-muted-foreground" />
+                {state === "unsent" ? (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">Sin enviar</span>
+                ) : state === "cooking" ? (
+                  <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                    En cocina
+                  </span>
+                ) : state === "ready" ? (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                    <Check className="size-3" />
+                    Listo
+                  </span>
+                ) : null}
               </span>
-              <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="mt-1 text-xs text-muted-foreground">
                 {elapsed(c.createdAt, now)}
-                {!c.items.length ? null : unsentOf(c.items) ? (
-                  <span className="rounded-full bg-muted px-1.5 py-0.5 font-medium text-foreground">Sin enviar a cocina</span>
-                ) : cookingOf(c.items) ? (
-                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">En cocina</span>
-                ) : (
-                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">Listo para servir</span>
-                )}
+                {state === "ready" ? " · listo para servir" : ""}
               </span>
               <span className="mt-2 line-clamp-2 text-xs text-muted-foreground">
                 {c.items.length ? c.items.map((i) => `${i.quantity} ${i.description}`).join(" · ") : "Sin productos todavía"}
@@ -452,6 +461,7 @@ function ComandaEditor({
       title={step === "charge" ? `Cobrar ${comanda.label}` : step === "cancel" ? `¿Anular ${comanda.label}?` : comanda.label}
       description={step === "edit" ? (saving ? "Guardando…" : "Los cambios se guardan solos.") : undefined}
       className="sm:max-w-4xl"
+      noAutoFocus
     >
       {step === "charge" ? (
         <div className="space-y-5">
@@ -527,7 +537,7 @@ function ComandaEditor({
                       type="button"
                       onClick={() => setCategory(c)}
                       className={cn(
-                        "shrink-0 rounded-full border px-3 py-1 text-xs font-medium",
+                        "h-9 shrink-0 rounded-full border px-3.5 text-xs font-medium sm:h-8",
                         category === c ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/50",
                       )}
                     >
@@ -600,7 +610,9 @@ function ComandaEditor({
             {/* Lo que lleva la comanda */}
             <div className="min-w-0 space-y-2 md:border-l md:pl-5">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">Pedido</p>
+                <p id="comanda-pedido" className="scroll-mt-4 text-sm font-medium">
+                  Pedido
+                </p>
                 <input
                   value={comanda.label}
                   onChange={(e) => onChange((c) => ({ ...c, label: e.target.value.slice(0, 40) || c.label }))}
@@ -616,11 +628,11 @@ function ComandaEditor({
                     <li key={item.id} className="space-y-1.5 p-2.5">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center rounded-lg border">
-                          <button type="button" className="flex size-8 items-center justify-center" aria-label="Quitar uno" onClick={() => setQty(i, item.quantity - 1)}>
+                          <button type="button" className="flex size-9 items-center justify-center sm:size-8" aria-label="Quitar uno" onClick={() => setQty(i, item.quantity - 1)}>
                             <Minus className="size-3.5" />
                           </button>
                           <span className="tabular w-6 text-center text-sm font-semibold">{item.quantity}</span>
-                          <button type="button" className="flex size-8 items-center justify-center" aria-label="Agregar uno" onClick={() => setQty(i, item.quantity + 1)}>
+                          <button type="button" className="flex size-9 items-center justify-center sm:size-8" aria-label="Agregar uno" onClick={() => setQty(i, item.quantity + 1)}>
                             <Plus className="size-3.5" />
                           </button>
                         </div>
@@ -647,7 +659,7 @@ function ComandaEditor({
                           type="button"
                           aria-label="Agregar nota"
                           onClick={() => setNoteFor(noteFor === i ? null : i)}
-                          className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted", item.note && "text-amber-700")}
+                          className={cn("flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted sm:size-8", item.note && "text-amber-700")}
                         >
                           <PencilLine className="size-3.5" />
                         </button>
@@ -672,10 +684,17 @@ function ComandaEditor({
 
           <div className="sticky -bottom-5 -mx-5 flex flex-wrap items-center gap-2 border-t bg-background px-5 pt-3 pb-1 sm:-bottom-6 sm:-mx-6 sm:px-6">
             <div className="mr-auto">
-              <p className="text-xs text-muted-foreground">{countOf(comanda.items)} productos</p>
+              {/* En el celular el pedido queda abajo de los productos: tocar aquí lleva a él. */}
+              <button
+                type="button"
+                onClick={() => document.getElementById("comanda-pedido")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="-my-2 py-2 text-xs text-muted-foreground underline-offset-2 hover:underline md:pointer-events-none md:no-underline"
+              >
+                {countOf(comanda.items)} productos<span className="md:hidden"> · ver pedido</span>
+              </button>
               <p className="tabular text-xl font-semibold">{money(total)}</p>
             </div>
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setStep("cancel")}>
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => setStep("cancel")}>
               Anular
             </Button>
             <Button variant={unsent ? "default" : "outline"} onClick={sendToKitchen} disabled={pending || !unsent}>

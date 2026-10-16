@@ -87,14 +87,14 @@ export function TablesSettings({ count: initialCount, extras: initialExtras, dis
         {extras.length ? (
           <div className="flex flex-wrap gap-2">
             {extras.map((e) => (
-              <span key={e} className="inline-flex items-center gap-1 rounded-full border bg-card py-1 pr-1 pl-3 text-sm">
+              <span key={e} className="inline-flex items-center gap-0.5 rounded-full border bg-card py-0.5 pr-0.5 pl-3 text-sm">
                 {e}
                 <button
                   type="button"
                   disabled={disabled}
                   onClick={() => removeExtra(e)}
                   aria-label={`Quitar ${e}`}
-                  className="flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-3.5" />
                 </button>

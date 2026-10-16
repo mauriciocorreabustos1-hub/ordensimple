@@ -7,6 +7,7 @@ import { PriceTag } from "@/components/landing/price-tag"
 import { FAQ_GROUPS } from "@/components/landing/content"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
+import { SocialSection } from "@/components/landing/social-section"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -164,6 +165,8 @@ export default async function LandingPage() {
           <FaqList items={TOP_FAQ} />
         </div>
       </Section>
+
+      <SocialSection />
 
       <CtaSection users={users} />
     </>

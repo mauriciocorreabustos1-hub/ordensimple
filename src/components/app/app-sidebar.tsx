@@ -7,6 +7,7 @@ import { SignOutButton, UserMenu, type BusinessOption } from "@/components/app/u
 import type { Role } from "@/generated/prisma/enums"
 import { isActive, navItemsFor } from "@/lib/navigation"
 import { BusinessLogo } from "@/components/app/business-logo"
+import { SocialLinks } from "@/components/landing/social-links"
 import { cn } from "@/lib/utils"
 
 export function NavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
@@ -77,6 +78,10 @@ export function AppSidebar({
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
         <NavLinks role={role} />
+      </div>
+      <div className="flex items-center justify-between border-t px-5 py-2.5">
+        <span className="text-xs font-medium text-muted-foreground">Síguenos</span>
+        <SocialLinks size="sm" />
       </div>
       <div className="grid grid-cols-1 gap-1 border-t p-3">
         <UserMenu name={userName} email={userEmail} image={userImage} businesses={businesses} showDetails isAdmin={isAdmin} hideSignOut className="w-full" />

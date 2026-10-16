@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/app/logo"
 import { SignOutButton } from "@/components/app/user-menu"
+import { SocialButtons, SocialLinks } from "@/components/landing/social-links"
 import { useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +50,7 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="hidden items-center gap-2 lg:flex">
+          <SocialLinks size="sm" className="mr-1 hidden xl:flex" />
           {loggedIn ? (
             <>
               <SignOutButton />
@@ -93,6 +95,10 @@ export function SiteHeader() {
                 </Link>
               ))}
             </nav>
+            <div className="space-y-2 px-4 pt-2">
+              <p className="px-1 text-sm font-medium text-muted-foreground">Síguenos</p>
+              <SocialButtons />
+            </div>
             <div className="mt-auto grid gap-2 p-4">
               {loggedIn ? (
                 <>

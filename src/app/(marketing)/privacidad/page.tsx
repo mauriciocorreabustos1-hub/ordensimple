@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Política de privacidad"
-      updated="4 de octubre de 2026"
+      updated="16 de octubre de 2026"
       intro={
         <p>
           Esta política explica qué datos personales recopila OrdenSimple, para qué los usa, con quién los comparte y cómo
@@ -56,6 +56,14 @@ export default function PrivacyPage() {
           <li>
             <strong>Datos técnicos:</strong> dirección IP, tipo de navegador y registros de acceso, que usamos para mantener
             tu sesión, proteger tu cuenta (por ejemplo, limitar intentos fallidos de inicio de sesión) y detectar errores.
+          </li>
+          <li>
+            <strong>Cómo nos conociste:</strong> al crear tu cuenta guardamos de qué anuncio o página llegaste y, si fue así,
+            quién te invitó. Lo usamos solo para saber qué medios nos funcionan y entregar los premios de «Invita y gana» (ver{" "}
+            <a href="#cookies" className="text-primary underline-offset-4 hover:underline">
+              Cookies
+            </a>
+            ).
           </li>
           <li>
             <strong>Estadísticas de visitas:</strong> medimos de forma agregada qué páginas se visitan, desde qué país y tipo
@@ -151,10 +159,34 @@ export default function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection n={8} title="Cookies">
+      <LegalSection n={8} title="Cookies" id="cookies">
         <p>
-          Usamos solo cookies necesarias para mantener tu sesión iniciada y recordar tu tema (claro u oscuro). No usamos
-          cookies de publicidad ni de seguimiento.
+          Usamos solo cookies propias de OrdenSimple. No usamos cookies de publicidad ni de terceros, y no compartimos esta
+          información con nadie. Son estas:
+        </p>
+        <ul>
+          <li>
+            <strong>Sesión (necesaria):</strong> mantiene tu sesión iniciada y protege tu cuenta, incluida la verificación en
+            dos pasos. Sin ella no podrías usar la app. Dura lo que dure tu sesión.
+          </li>
+          <li>
+            <strong>Cómo nos conociste (os_origen):</strong> la primera vez que entras, guarda de qué anuncio o página llegaste
+            (por ejemplo, Instagram o Google). Si creas una cuenta, ese dato se guarda en ella para saber qué medios nos
+            funcionan. Dura 60 días.
+          </li>
+          <li>
+            <strong>Invitación de un amigo (os_amigo):</strong> si entras por un enlace de «Invita y gana», guarda el código
+            de quien te invitó para darle su premio cuando te registres. Dura 60 días.
+          </li>
+        </ul>
+        <p>
+          Además, tu navegador guarda algunas preferencias en tu propio dispositivo (no son cookies y no se envían a nuestros
+          servidores): el tema claro u oscuro, el correo para iniciar sesión si eliges recordarlo, los avisos que cerraste y
+          las ventas guardadas sin internet. Las estadísticas de visitas que usamos no usan cookies.
+        </p>
+        <p>
+          Puedes borrar las cookies desde la configuración de tu navegador cuando quieras. Si borras la de sesión, tendrás que
+          volver a iniciar sesión.
         </p>
       </LegalSection>
 

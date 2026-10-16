@@ -24,9 +24,9 @@ export function LegalPage({
   )
 }
 
-export function LegalSection({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+export function LegalSection({ n, title, id, children }: { n: number; title: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3">
+    <section id={id} className="scroll-mt-24 space-y-3">
       <h2 className="text-xl font-semibold tracking-tight">
         {n}. {title}
       </h2>

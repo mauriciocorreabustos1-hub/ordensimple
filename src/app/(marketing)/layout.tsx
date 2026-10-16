@@ -2,6 +2,7 @@ import Link from "next/link"
 import { SocialButtons } from "@/components/landing/social-links"
 import { Logo } from "@/components/app/logo"
 import { SiteHeader } from "@/components/landing/site-header"
+import { CookieNotice } from "@/components/landing/cookie-notice"
 
 const FOOTER = [
   {
@@ -71,6 +72,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </p>
         </div>
       </footer>
+      <CookieNotice />
     </div>
   )
 }

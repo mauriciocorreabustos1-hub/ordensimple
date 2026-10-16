@@ -1,4 +1,5 @@
 import { Logo } from "@/components/app/logo"
+import { CookieNotice } from "@/components/landing/cookie-notice"
 
 // Datos de ejemplo para la boleta (no son datos reales).
 const PAYMENTS = [
@@ -71,6 +72,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <p className="text-deep-foreground/75">Ventas, gastos, fiado y productos, desde el celular. Sin planillas ni fórmulas.</p>
         </div>
       </div>
+      <CookieNotice />
     </div>
   )
 }

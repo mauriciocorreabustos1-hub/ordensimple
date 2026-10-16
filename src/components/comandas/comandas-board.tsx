@@ -14,7 +14,8 @@ import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { cancelComanda, chargeComanda, createComanda, saveComanda } from "@/server/actions/comandas"
 
-export type ComandaLine = { productId: string | null; description: string; quantity: number; unitPrice: number; note: string }
+/** readyQty: cuántas ya marcó la cocina como listas. */
+export type ComandaLine = { id: string; productId: string | null; description: string; quantity: number; unitPrice: number; note: string; readyQty: number }
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
 export type ComandaProduct = { id: string; name: string; price: number; category: string | null }
 
@@ -22,6 +23,7 @@ const QUICK_LABELS = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Mesa 5", "Mesa 6"
 
 const totalOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
 const countOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity, 0)
+const pendingOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + Math.max(0, i.quantity - i.readyQty), 0)
 
 /** Reloj que avanza cada 30 segundos (para "hace 12 min"). */
 function useNow() {
@@ -71,7 +73,15 @@ export function ComandasBoard({
   const [serverData, setServerData] = React.useState(initial)
   if (serverData !== initial) {
     setServerData(initial)
-    setComandas(initial.map((c) => (c.id === openId ? (comandas.find((l) => l.id === c.id) ?? c) : c)))
+    setComandas(
+      initial.map((c) => {
+        const local = c.id === openId ? comandas.find((l) => l.id === c.id) : undefined
+        if (!local) return c
+        // La que estás editando se queda como la tienes, pero con lo que la cocina ya marcó listo.
+        const ready = new Map(c.items.map((i) => [i.id, i.readyQty]))
+        return { ...local, items: local.items.map((i) => ({ ...i, readyQty: Math.min(i.quantity, ready.get(i.id) ?? i.readyQty) })) }
+      }),
+    )
   }
 
   // Guardado automático: cada cambio se guarda medio segundo después.
@@ -83,7 +93,7 @@ export function ComandasBoard({
     setSaving(true)
     const p = saveComanda(c.id, {
       label: c.label,
-      items: c.items.map((i) => ({ productId: i.productId ?? undefined, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })),
+      items: c.items.map((i) => ({ id: i.id, productId: i.productId ?? undefined, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })),
     }).then((r) => {
       if (!r.ok) toast.error(r.message)
       return r
@@ -94,20 +104,26 @@ export function ComandasBoard({
     setSaving(pendingSave.current.size > 0)
   }, [])
 
-  const update = React.useCallback(
-    (id: string, change: (c: ComandaData) => ComandaData) => {
-      setComandas((list) => {
-        const next = list.map((c) => (c.id === id ? change(c) : c))
-        const updated = next.find((c) => c.id === id)
-        if (updated) {
-          clearTimeout(timers.current.get(id))
-          timers.current.set(id, setTimeout(() => void persist(updated), 500))
-        }
-        return next
-      })
-    },
-    [persist],
-  )
+  // Lo último que hay en pantalla (los cambios se calculan sobre esto, fuera de setState, para que el guardado sea exactamente lo que se ve).
+  const latest = React.useRef(comandas)
+  React.useLayoutEffect(() => {
+    latest.current = comandas
+  }, [comandas])
+
+  function update(id: string, change: (c: ComandaData) => ComandaData) {
+    const next = latest.current.map((c) => (c.id === id ? change(c) : c))
+    latest.current = next
+    setComandas(next)
+    clearTimeout(timers.current.get(id))
+    timers.current.set(
+      id,
+      setTimeout(() => {
+        timers.current.delete(id)
+        const c = latest.current.find((x) => x.id === id)
+        if (c) void persist(c)
+      }, 500),
+    )
+  }
 
   /** Guarda ya lo pendiente (antes de cobrar o de cerrar). */
   async function flush(id: string) {
@@ -115,13 +131,19 @@ export function ComandasBoard({
     if (t) {
       clearTimeout(t)
       timers.current.delete(id)
-      const c = comandas.find((x) => x.id === id)
+      const c = latest.current.find((x) => x.id === id)
       if (c) await persist(c)
     }
     await pendingSave.current.get(id)
   }
 
   const current = comandas.find((c) => c.id === openId) ?? null
+
+  // Se actualiza sola para ver lo que la cocina marcó listo y lo que abrieron otros garzones.
+  React.useEffect(() => {
+    const t = setInterval(() => router.refresh(), 15_000)
+    return () => clearInterval(t)
+  }, [router])
 
   function closeEditor() {
     if (openId) void flush(openId).then(() => router.refresh())
@@ -154,7 +176,16 @@ export function ComandasBoard({
                 <span className="font-display text-lg leading-tight font-semibold">{c.label}</span>
                 <ChefHat className="size-4 shrink-0 text-muted-foreground" />
               </span>
-              <span className="mt-1 text-xs text-muted-foreground">{elapsed(c.createdAt, now)}</span>
+              <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                {elapsed(c.createdAt, now)}
+                {c.items.length ? (
+                  pendingOf(c.items) ? (
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">En cocina</span>
+                  ) : (
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">Listo para servir</span>
+                  )
+                ) : null}
+              </span>
               <span className="mt-2 line-clamp-2 text-xs text-muted-foreground">
                 {c.items.length ? c.items.map((i) => `${i.quantity} ${i.description}`).join(" · ") : "Sin productos todavía"}
               </span>
@@ -313,7 +344,8 @@ function ComandaEditor({
 
   const setItems = (change: (items: ComandaLine[]) => ComandaLine[]) => onChange((c) => ({ ...c, items: change(c.items) }))
 
-  function add(line: Omit<ComandaLine, "quantity" | "note">) {
+  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "readyQty">) {
+    const id = crypto.randomUUID()
     setItems((items) => {
       // Si ya está (sin nota), suma uno; si no, agrega la línea al final.
       const i = items.findIndex((x) => x.productId === line.productId && x.description === line.description && !x.note)
@@ -322,7 +354,7 @@ function ComandaEditor({
         toast.error("Máximo 50 productos distintos por comanda.")
         return items
       }
-      return [...items, { ...line, quantity: 1, note: "" }]
+      return [...items, { ...line, id, quantity: 1, note: "", readyQty: 0 }]
     })
   }
   const setQty = (index: number, quantity: number) =>
@@ -528,7 +560,7 @@ function ComandaEditor({
               ) : (
                 <ul className="divide-y rounded-xl border">
                   {comanda.items.map((item, i) => (
-                    <li key={`${item.productId ?? "x"}-${item.description}-${i}`} className="space-y-1.5 p-2.5">
+                    <li key={item.id} className="space-y-1.5 p-2.5">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center rounded-lg border">
                           <button type="button" className="flex size-8 items-center justify-center" aria-label="Quitar uno" onClick={() => setQty(i, item.quantity - 1)}>
@@ -543,6 +575,11 @@ function ComandaEditor({
                           {item.description}
                           {item.note && noteFor !== i ? <span className="block text-xs text-amber-700 dark:text-amber-400">{item.note}</span> : null}
                         </span>
+                        {item.readyQty >= item.quantity ? (
+                          <span title="La cocina lo marcó listo" className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <Check className="size-3" />
+                          </span>
+                        ) : null}
                         <span className="tabular text-sm font-medium">{money(item.quantity * item.unitPrice)}</span>
                         <button
                           type="button"

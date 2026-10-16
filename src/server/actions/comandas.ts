@@ -54,7 +54,7 @@ export async function createComanda(input: ComandaInput): Promise<ActionResult<{
         businessId: ctx.businessId,
         label,
         createdById: ctx.user.id,
-        items: { create: items.map((i) => ({ productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })) },
+        items: { create: items.map((i) => ({ id: i.id, productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })) },
       },
       select: { id: true },
     })
@@ -77,13 +77,31 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
     if (!(await findOpen(ctx, id))) return { ok: false, message: "Esta comanda ya se cobró o se anuló. Recarga la página." }
     const { label, items } = parsed.data
     if (!(await validProducts(ctx, items))) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
+    const existing = new Map((await db.comandaItem.findMany({ where: { comandaId: id } })).map((i) => [i.id, i]))
+    const fresh = items.filter((i) => !existing.has(i.id))
+    if (fresh.length && (await db.comandaItem.count({ where: { id: { in: fresh.map((i) => i.id) } } }))) {
+      return { ok: false, message: "No se pudo guardar. Recarga la página." }
+    }
+    const keep = new Set(items.map((i) => i.id))
     await db.$transaction([
-      db.comandaItem.deleteMany({ where: { comandaId: id } }),
+      db.comandaItem.deleteMany({ where: { comandaId: id, id: { notIn: [...keep] } } }),
+      ...items
+        .filter((i) => {
+          const old = existing.get(i.id)
+          return old && (old.quantity !== i.quantity || old.note !== (i.note ?? null) || old.unitPrice !== i.unitPrice || old.description !== i.description)
+        })
+        .map((i) =>
+          db.comandaItem.update({
+            where: { id: i.id },
+            // Si bajan la cantidad, lo listo no puede ser más que lo pedido.
+            data: { quantity: i.quantity, note: i.note ?? null, unitPrice: i.unitPrice, description: i.description, readyQty: Math.min(existing.get(i.id)!.readyQty, i.quantity) },
+          }),
+        ),
       db.comanda.update({
         where: { id },
         data: {
           label,
-          items: { create: items.map((i) => ({ productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })) },
+          items: { create: fresh.map((i) => ({ id: i.id, productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })) },
         },
       }),
     ])
@@ -172,4 +190,29 @@ export async function cancelComanda(id: string): Promise<ActionResult> {
   }
   revalidate()
   return { ok: true, message: "Comanda anulada" }
+}
+
+// ─── Cocina ─────────────────────────────────────────────────────────────────
+
+/** La cocina marca un plato (o toda la mesa) como listo. undo = vuelve a dejarlo pendiente. */
+export async function markKitchenReady(target: { itemId?: string; comandaId?: string }, undo = false): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  const itemId = target.itemId && idSchema.safeParse(target.itemId).success ? target.itemId : undefined
+  const comandaId = target.comandaId && idSchema.safeParse(target.comandaId).success ? target.comandaId : undefined
+  if (!itemId && !comandaId) return { ok: false, message: "Plato no encontrado" }
+  try {
+    assertCan(ctx, "sales:create")
+    const reason = blocked(ctx)
+    if (reason) return { ok: false, message: reason }
+    const items = await db.comandaItem.findMany({
+      where: { ...(itemId ? { id: itemId } : { comandaId }), comanda: { businessId: ctx.businessId, status: "OPEN" } },
+      select: { id: true, quantity: true },
+    })
+    if (!items.length) return { ok: false, message: "Esta comanda ya se cobró o se anuló." }
+    await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { readyQty: undo ? 0 : i.quantity } })))
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidate()
+  return { ok: true, message: undo ? "Vuelve a la cocina" : "Listo" }
 }

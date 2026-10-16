@@ -978,7 +978,10 @@ model ComandaItem {
   unitPrice   Int
   /// "sin mayo", "para llevar"…
   note        String?
+  /// Cuántas de estas ya marcó la cocina como listas (si agregan más, lo nuevo vuelve a la cocina).
+  readyQty    Int      @default(0)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@index([comandaId])
   @@index([productId])

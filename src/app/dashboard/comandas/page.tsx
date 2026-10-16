@@ -81,6 +81,8 @@ export default async function ComandasPage() {
           label: c.label,
           createdAt: c.createdAt.toISOString(),
           items: c.items.map((i) => ({
+            id: i.id,
+            readyQty: i.readyQty,
             productId: i.productId,
             description: i.description,
             quantity: i.quantity,

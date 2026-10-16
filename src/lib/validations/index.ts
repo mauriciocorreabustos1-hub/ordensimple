@@ -289,7 +289,8 @@ export type CashClosingInput = z.input<typeof cashClosingSchema>
 
 // ─── Comandas ───────────────────────────────────────────────────────────────
 
-export const comandaItemSchema = saleItemSchema.extend({ note: optionalText(80) })
+/** El id lo pone el celular: así cada plato conserva lo que la cocina ya marcó como listo. */
+export const comandaItemSchema = saleItemSchema.extend({ id: z.string().regex(/^[\w-]{8,40}$/), note: optionalText(80) })
 
 export const comandaSchema = z.object({
   label: z.string().trim().min(1, "Ponle un nombre: mesa, cliente o pedido").max(40, "Máximo 40 caracteres"),

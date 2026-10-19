@@ -15,6 +15,7 @@ import {
   applyStock,
   buildLines,
   checkDiscount,
+  customItemsBlocked,
   DISCOUNT_USED_MESSAGE,
   FIADO_PRO,
   fiadoBlocked,
@@ -22,6 +23,8 @@ import {
   lineData,
   MAX_TOTAL,
   priceBelowList,
+  productsOnly,
+  QUICK_SALE_BLOCKED,
   resolveCustomer,
   revertStock,
 } from "@/server/sale-core"
@@ -66,6 +69,7 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
 
   try {
     assertCan(ctx, "sales:create")
+    if (productsOnly(ctx)) return { ok: false, message: QUICK_SALE_BLOCKED }
     if (fiadoBlocked(ctx, paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     await db.$transaction(async (tx) => {
@@ -144,7 +148,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
-    const below = priceBelowList(ctx, lines)
+    const below = customItemsBlocked(ctx, lines) ?? priceBelowList(ctx, lines)
     if (below) return { ok: false, message: below }
     const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
     if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }

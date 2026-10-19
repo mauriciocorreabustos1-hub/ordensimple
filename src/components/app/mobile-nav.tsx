@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import type { Role } from "@/generated/prisma/enums"
 import { NavLinks } from "@/components/app/app-sidebar"
 import { useQuickActions } from "@/components/app/quick-actions"
-import { SocialButtons } from "@/components/landing/social-links"
+import { SocialButtons, WhatsAppButton } from "@/components/landing/social-links"
 import { useSignOut } from "@/components/app/user-menu"
 import { isActive } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
@@ -113,6 +113,7 @@ export function MobileNav({ userName, userEmail, role, food = false }: { userNam
             <div className="mt-3 border-t px-1 pt-3">
               <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">Síguenos: trucos para tu negocio</p>
               <SocialButtons tone="sidebar" />
+              <WhatsAppButton tone="sidebar" text="Hola, necesito ayuda con OrdenSimple" />
             </div>
           </div>
           <div className="border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">

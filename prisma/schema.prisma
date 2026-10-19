@@ -253,6 +253,8 @@ model BusinessSettings {
   /// Negocios de comida: cuántas mesas tiene (Mesa 1…N) y lugares con nombre propio (Barra, Terraza, Para llevar…).
   tableCount            Int           @default(6)
   tableExtras           String[]      @default(["Para llevar", "Delivery"])
+  /// Los empleados solo venden productos guardados (sin venta rápida ni productos escritos a mano): así todo descuento pasa por aprobación.
+  employeesProductsOnly Boolean       @default(true)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 

@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { SocialButtons } from "@/components/landing/social-links"
+import { SocialButtons, WhatsAppButton } from "@/components/landing/social-links"
+import { WhatsAppFloat } from "@/components/landing/whatsapp-float"
 import { Logo } from "@/components/app/logo"
 import { SiteHeader } from "@/components/landing/site-header"
 import { CookieNotice } from "@/components/landing/cookie-notice"
@@ -49,6 +50,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <div className="w-full max-w-xs space-y-2 pt-1 text-left">
               <p className="text-center text-sm font-medium md:text-left">Síguenos</p>
               <SocialButtons />
+              <p className="pt-2 text-center text-sm font-medium md:text-left">¿Dudas? Escríbenos</p>
+              <WhatsAppButton />
             </div>
           </div>
           {FOOTER.map((col) => (
@@ -72,6 +75,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </p>
         </div>
       </footer>
+      <WhatsAppFloat />
       <CookieNotice />
     </div>
   )

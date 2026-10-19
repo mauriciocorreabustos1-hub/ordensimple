@@ -7,7 +7,7 @@ import { SignOutButton, UserMenu, type BusinessOption } from "@/components/app/u
 import type { Role } from "@/generated/prisma/enums"
 import { isActive, navItemsFor } from "@/lib/navigation"
 import { BusinessLogo } from "@/components/app/business-logo"
-import { SocialLinks } from "@/components/landing/social-links"
+import { SocialLinks, WhatsAppButton } from "@/components/landing/social-links"
 import { cn } from "@/lib/utils"
 
 export function NavLinks({ role, food = false, onNavigate }: { role: Role; food?: boolean; onNavigate?: () => void }) {
@@ -82,7 +82,10 @@ export function AppSidebar({
       <div className="flex-1 overflow-y-auto px-3 py-2">
         <NavLinks role={role} food={food} />
       </div>
-      <div className="flex items-center justify-between border-t px-5 py-2.5">
+      <div className="border-t px-3 pt-2">
+        <WhatsAppButton tone="sidebar" text="Hola, necesito ayuda con OrdenSimple" />
+      </div>
+      <div className="flex items-center justify-between px-5 py-2.5">
         <span className="text-xs font-medium text-muted-foreground">Síguenos</span>
         <SocialLinks size="sm" />
       </div>

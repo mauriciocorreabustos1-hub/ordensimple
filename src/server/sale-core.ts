@@ -101,6 +101,20 @@ export const lineData = (l: Line) => ({
 
 // ─── Descuentos ─────────────────────────────────────────────────────────────
 
+/** Empleado de un negocio que exige vender solo productos guardados (lo normal): sin venta rápida ni productos a mano. */
+export function productsOnly(ctx: BusinessContext) {
+  return !canApproveDiscounts(ctx.role) && ctx.settings.employeesProductsOnly
+}
+
+export const QUICK_SALE_BLOCKED = "En este negocio, los empleados registran las ventas con los productos guardados. Usa «Con detalle»."
+
+/** Un empleado restringido no puede agregar productos escritos a mano (con precio libre). */
+export function customItemsBlocked(ctx: BusinessContext, items: { productId?: string | null; description: string }[]) {
+  if (!productsOnly(ctx)) return null
+  const custom = items.find((i) => !i.productId)
+  return custom ? `Solo puedes vender productos guardados. Pide al encargado que agregue «${custom.description}» en Productos.` : null
+}
+
 /** Un descuento aprobado sirve por un rato: si pasan más de 3 horas, hay que pedirlo de nuevo. */
 export const DISCOUNT_VALID_MS = 3 * 60 * 60 * 1000
 

@@ -66,6 +66,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         fiado={canUseFeature(ctx.business.plan, "customers")}
         cashClose={canUseFeature(ctx.business.plan, "cashClose")}
         canApproveDiscounts={canApproveDiscounts(ctx.role)}
+        productsOnly={!canApproveDiscounts(ctx.role) && ctx.settings.employeesProductsOnly}
         products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}

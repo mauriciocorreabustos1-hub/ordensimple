@@ -268,6 +268,16 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             branches={ctx.role === "OWNER" ? owned.map((o) => ({ id: o.business.id, name: o.business.name })) : []}
             currentBranchId={ctx.businessId}
           />
+          {can(ctx.role, "settings:manage") ? (
+            <div className="mt-4 border-t pt-2">
+              <PreferenceSwitch
+                name="employeesProductsOnly"
+                label="Los empleados solo venden productos guardados"
+                description="Sin venta rápida ni productos escritos a mano: así cobran siempre el precio de lista y todo descuento pasa por tu aprobación. Desactívalo si tu equipo vende servicios sin precio fijo."
+                checked={ctx.settings.employeesProductsOnly}
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

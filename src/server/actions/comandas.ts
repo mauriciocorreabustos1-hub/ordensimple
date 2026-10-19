@@ -15,6 +15,7 @@ import {
   applyStock,
   buildLines,
   checkDiscount,
+  customItemsBlocked,
   DISCOUNT_USED_MESSAGE,
   FIADO_PRO,
   fiadoBlocked,
@@ -60,6 +61,8 @@ export async function createComanda(input: ComandaInput): Promise<ActionResult<{
     const reason = blocked(ctx)
     if (reason) return { ok: false, message: reason }
     const { label, items } = parsed.data
+    const custom = customItemsBlocked(ctx, items)
+    if (custom) return { ok: false, message: custom }
     if (!(await validProducts(ctx, items))) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     const comanda = await db.comanda.create({
       data: {
@@ -88,6 +91,8 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
     if (reason) return { ok: false, message: reason }
     if (!(await findOpen(ctx, id))) return { ok: false, message: "Esta comanda ya se cobró o se anuló. Recarga la página." }
     const { label, items } = parsed.data
+    const custom = customItemsBlocked(ctx, items)
+    if (custom) return { ok: false, message: custom }
     if (!(await validProducts(ctx, items))) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     const existing = new Map((await db.comandaItem.findMany({ where: { comandaId: id } })).map((i) => [i.id, i]))
     const fresh = items.filter((i) => !existing.has(i.id))
@@ -160,7 +165,7 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       })),
     )
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Quítalo de la comanda y vuelve a cobrar." }
-    const below = priceBelowList(ctx, lines)
+    const below = customItemsBlocked(ctx, lines) ?? priceBelowList(ctx, lines)
     if (below) return { ok: false, message: below }
     const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
     if (subtotal <= 0) return { ok: false, message: "El total de la comanda debe ser mayor a 0." }

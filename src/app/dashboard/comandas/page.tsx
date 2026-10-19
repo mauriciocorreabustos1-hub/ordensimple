@@ -97,6 +97,7 @@ export default async function ComandasPage() {
         tables={tableLabels(ctx.settings.tableCount, ctx.settings.tableExtras)}
         canEditTables={can(ctx.role, "settings:manage")}
         canApproveDiscounts={canApproveDiscounts(ctx.role)}
+        productsOnly={!canApproveDiscounts(ctx.role) && ctx.settings.employeesProductsOnly}
       />
     </div>
   )

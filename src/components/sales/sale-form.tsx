@@ -47,7 +47,10 @@ export function SaleForm({
   editing,
   onDone,
   continuousScan = true,
+  productsOnly = false,
 }: {
+  /** Solo productos guardados (empleados, según la configuración del negocio): sin "Otro producto". */
+  productsOnly?: boolean
   /** Escaneo continuo (Pro): la cámara queda abierta. Si no, se escanea de a un producto. */
   continuousScan?: boolean
   currency: string
@@ -62,7 +65,7 @@ export function SaleForm({
 }) {
   const newLine = (): Line => ({
     key: ++lineKey,
-    productId: products.length ? "" : CUSTOM,
+    productId: products.length || productsOnly ? "" : CUSTOM,
     description: "",
     quantity: 1,
     unitPrice: 0,
@@ -182,6 +185,13 @@ export function SaleForm({
 
   return (
     <form onSubmit={submit} className="grid gap-5">
+      {productsOnly ? (
+        <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+          {products.length
+            ? "Vendes con los productos guardados. Si falta alguno, pídele al encargado que lo agregue en Productos."
+            : "Todavía no hay productos guardados. Pídele al encargado que los agregue en Productos para poder vender."}
+        </p>
+      ) : null}
       <div className="grid gap-3">
         {products.length ? (
           <div className="flex *:h-11 *:w-full *:text-base">
@@ -222,7 +232,7 @@ export function SaleForm({
                         {p.name} · {formatMoney(p.price, currency)}
                       </SelectItem>
                     ))}
-                    <SelectItem value={CUSTOM}>Otro producto o servicio…</SelectItem>
+                    {productsOnly ? null : <SelectItem value={CUSTOM}>Otro producto o servicio…</SelectItem>}
                   </SelectContent>
                 </Select>
               ) : null}

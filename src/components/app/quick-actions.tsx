@@ -56,6 +56,7 @@ export function QuickActionsProvider({
   fiado = true,
   cashClose = true,
   canApproveDiscounts = true,
+  productsOnly = false,
 }: {
   children: React.ReactNode
   currency: string
@@ -75,6 +76,8 @@ export function QuickActionsProvider({
   cashClose?: boolean
   /** Dueño o administrador: aplica descuentos directo. Empleado: los pide. */
   canApproveDiscounts?: boolean
+  /** Empleado que solo vende productos guardados: sin venta rápida ni productos a mano. */
+  productsOnly?: boolean
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
   const [preset, setPreset] = React.useState<Preset | undefined>()
@@ -98,10 +101,12 @@ export function QuickActionsProvider({
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
         <Tabs defaultValue="detailed" className="gap-5">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="detailed">Con detalle</TabsTrigger>
-            <TabsTrigger value="quick">Venta rápida</TabsTrigger>
-          </TabsList>
+          {productsOnly ? null : (
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="detailed">Con detalle</TabsTrigger>
+              <TabsTrigger value="quick">Venta rápida</TabsTrigger>
+            </TabsList>
+          )}
           <TabsContent value="quick">
             <QuickSaleForm
               currency={currency}
@@ -119,6 +124,7 @@ export function QuickActionsProvider({
               products={products}
               customers={customers}
               continuousScan={continuousScan}
+              productsOnly={productsOnly}
               onDone={close}
             />
           </TabsContent>

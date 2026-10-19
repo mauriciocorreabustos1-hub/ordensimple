@@ -73,6 +73,7 @@ export async function requireBusiness() {
     ppmRate: 0.00125,
     tableCount: 6,
     tableExtras: ["Para llevar", "Delivery"],
+    employeesProductsOnly: true,
     ownerSalary: null,
     openingCash: null,
     openingCashAt: null,

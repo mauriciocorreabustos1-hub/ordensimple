@@ -1,6 +1,7 @@
 import "server-only"
 import { getAppUrl } from "@/lib/app-url"
 import { formatMoney } from "@/lib/currency"
+import { WHATSAPP } from "@/lib/contact"
 
 // Plantillas HTML de correo. Usan tablas y estilos en línea porque los clientes de correo
 // (Gmail, Outlook) no soportan CSS moderno. Siempre van acompañadas de una versión en texto.
@@ -44,7 +45,7 @@ function layout({ preview, body, footer }: { preview: string; body: string; foot
       </td></tr>
       <tr><td style="padding:20px 4px 0;font-size:12px;line-height:18px;color:${MUTED};">
         ${footer ?? "Recibes este correo porque tienes una cuenta en OrdenSimple."}<br>
-        ¿Dudas? Responde este correo o escríbenos a contacto@ordensimple.cl.<br>
+        ¿Dudas? Responde este correo, escríbenos a contacto@ordensimple.cl o por <a href="${WHATSAPP.link("Hola, tengo una consulta sobre OrdenSimple")}" style="color:${MUTED};">WhatsApp al ${WHATSAPP.display}</a>.<br>
         Síguenos en <a href="https://www.instagram.com/ordensimple.cl/" style="color:${MUTED};">Instagram</a> y <a href="https://www.tiktok.com/@ordensimple.cl" style="color:${MUTED};">TikTok</a>: @ordensimple.cl
       </td></tr>
     </table>

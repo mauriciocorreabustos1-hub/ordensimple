@@ -56,6 +56,7 @@ export function ComandasBoard({
   tables,
   canEditTables,
   canApproveDiscounts,
+  productsOnly = false,
 }: {
   currency: string
   defaultPayment: PaymentMethod
@@ -67,6 +68,8 @@ export function ComandasBoard({
   canEditTables: boolean
   /** Dueño o administrador: aplica descuentos directo. Empleado: los pide. */
   canApproveDiscounts: boolean
+  /** Empleado que solo vende productos guardados: sin "Otro producto". */
+  productsOnly?: boolean
 }) {
   const router = useRouter()
   const now = useNow()
@@ -246,6 +249,7 @@ export function ComandasBoard({
           currency={currency}
           defaultPayment={defaultPayment}
           canApproveDiscounts={canApproveDiscounts}
+          productsOnly={productsOnly}
           saving={saving}
           onChange={(change) => update(current.id, change)}
           onClose={closeEditor}
@@ -365,6 +369,7 @@ function ComandaEditor({
   currency,
   defaultPayment,
   canApproveDiscounts,
+  productsOnly,
   saving,
   onChange,
   onClose,
@@ -377,6 +382,7 @@ function ComandaEditor({
   currency: string
   defaultPayment: PaymentMethod
   canApproveDiscounts: boolean
+  productsOnly: boolean
   saving: boolean
   onChange: (change: (c: ComandaData) => ComandaData) => void
   onClose: () => void
@@ -587,14 +593,16 @@ function ComandaEditor({
                     </button>
                   )
                 })}
-                <button
-                  type="button"
-                  onClick={() => setCustom({ description: query.trim(), price: 0 })}
-                  className="flex min-h-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed p-3 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                >
-                  <Plus className="size-4" />
-                  Otro producto
-                </button>
+                {productsOnly ? null : (
+                  <button
+                    type="button"
+                    onClick={() => setCustom({ description: query.trim(), price: 0 })}
+                    className="flex min-h-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed p-3 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  >
+                    <Plus className="size-4" />
+                    Otro producto
+                  </button>
+                )}
               </div>
               {custom ? (
                 <form

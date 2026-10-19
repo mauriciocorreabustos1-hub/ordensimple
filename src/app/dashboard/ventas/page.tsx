@@ -179,6 +179,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                           <p className="line-clamp-2 text-xs text-muted-foreground">
                             {formatTime(s.date, ctx.timezone)} · {PAYMENT_LABEL[s.paymentMethod]}
                             {s.customer ? ` · ${s.customer.name}` : ""}
+                            {s.createdBy && s.createdBy.id !== ctx.user.id ? ` · por ${s.createdBy.name.split(" ")[0]}` : ""}
                           </p>
                           {s.discount > 0 ? <p className="text-xs font-medium text-amber-700 dark:text-amber-400">{discountInfo(s)}</p> : null}
                         </div>
@@ -238,7 +239,12 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                             ) : null}
                           </span>
                         </TableCell>
-                        <TableCell>{PAYMENT_LABEL[s.paymentMethod]}</TableCell>
+                        <TableCell>
+                          {PAYMENT_LABEL[s.paymentMethod]}
+                          {s.createdBy && s.createdBy.id !== ctx.user.id ? (
+                            <span className="block text-xs text-muted-foreground">por {s.createdBy.name.split(" ")[0]}</span>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{s.customer?.name ?? "—"}</TableCell>
                         <TableCell className="tabular text-right font-medium">{money(s.total)}</TableCell>
                         {canDelete || canEdit ? (

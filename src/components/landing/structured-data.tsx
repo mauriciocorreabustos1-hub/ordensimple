@@ -1,4 +1,5 @@
 import { getAppUrl } from "@/lib/app-url"
+import { WHATSAPP } from "@/lib/contact"
 import { SOCIAL_LINKS } from "@/components/landing/social-links"
 
 /**
@@ -26,6 +27,8 @@ export function StructuredData() {
         url,
         logo: `${url}/pwa-icon/512`,
         email: "contacto@ordensimple.cl",
+        telephone: WHATSAPP.phone,
+        contactPoint: { "@type": "ContactPoint", telephone: WHATSAPP.phone, contactType: "customer service", availableLanguage: "es", areaServed: "CL" },
         areaServed: "CL",
         sameAs: SOCIAL_LINKS.map((s) => s.href),
       },

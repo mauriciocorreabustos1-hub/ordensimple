@@ -421,6 +421,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí. Si marcas el rubro «Restaurante, café o comida», con el plan Pro tienes comandas por mesa y una pantalla para la cocina: el garzón anota y envía el pedido, la cocina lo marca listo y al cobrar queda como venta. Eliges cuántas mesas tienes en Configuración.",
       },
       {
+        q: "¿Cómo los contacto?",
+        a: "Por WhatsApp al +56 9 5459 1736 o por correo a contacto@ordensimple.cl. Te respondemos lo antes posible.",
+      },
+      {
         q: "¿Funciona en otros países?",
         a: "Partimos en Chile con pesos chilenos, pero ya puedes usar dólares, euros, soles, pesos argentinos, colombianos y mexicanos.",
       },

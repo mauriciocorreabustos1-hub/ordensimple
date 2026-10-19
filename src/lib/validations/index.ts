@@ -92,6 +92,7 @@ export const preferencesSchema = z.object({
   vatDueDay: z.number().int().min(1).max(28).optional(),
   ppmRate: z.number().min(0).max(0.05).optional(),
   tableCount: z.number().int().min(0).max(200).optional(),
+  employeesProductsOnly: z.boolean().optional(),
   tableExtras: z.array(z.string().trim().min(1).max(30, "Máximo 30 caracteres")).max(30, "Máximo 30 lugares").optional(),
 })
 export type PreferencesInput = z.input<typeof preferencesSchema>

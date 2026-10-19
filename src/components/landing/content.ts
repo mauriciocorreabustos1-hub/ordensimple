@@ -262,6 +262,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Invita por correo o por WhatsApp con un enlace",
       "Administrador: casi todo, incluidos reportes y configuración",
       "Empleado: registra ventas, gastos, stock y clientes, sin ver ganancias ni costos",
+      "Descuentos con aprobación: el empleado lo pide y tú lo apruebas o rechazas desde tu celular",
       "Cambia el rol o quita el acceso cuando quieras",
       "Si trabajas en más de un negocio, cambias entre ellos en un toque",
     ],

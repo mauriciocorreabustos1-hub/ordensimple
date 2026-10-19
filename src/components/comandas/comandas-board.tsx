@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
+import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas. */
@@ -54,6 +55,7 @@ export function ComandasBoard({
   customers,
   tables,
   canEditTables,
+  canApproveDiscounts,
 }: {
   currency: string
   defaultPayment: PaymentMethod
@@ -63,6 +65,8 @@ export function ComandasBoard({
   /** Mesas y lugares configurados (Mesa 1…N, Barra, Para llevar…). */
   tables: string[]
   canEditTables: boolean
+  /** Dueño o administrador: aplica descuentos directo. Empleado: los pide. */
+  canApproveDiscounts: boolean
 }) {
   const router = useRouter()
   const now = useNow()
@@ -241,6 +245,7 @@ export function ComandasBoard({
           customers={customers}
           currency={currency}
           defaultPayment={defaultPayment}
+          canApproveDiscounts={canApproveDiscounts}
           saving={saving}
           onChange={(change) => update(current.id, change)}
           onClose={closeEditor}
@@ -359,6 +364,7 @@ function ComandaEditor({
   customers,
   currency,
   defaultPayment,
+  canApproveDiscounts,
   saving,
   onChange,
   onClose,
@@ -370,6 +376,7 @@ function ComandaEditor({
   customers: string[]
   currency: string
   defaultPayment: PaymentMethod
+  canApproveDiscounts: boolean
   saving: boolean
   onChange: (change: (c: ComandaData) => ComandaData) => void
   onClose: () => void
@@ -386,7 +393,9 @@ function ComandaEditor({
   const [customer, setCustomer] = React.useState("")
   const [pending, startTransition] = React.useTransition()
 
-  const total = totalOf(comanda.items)
+  const subtotal = totalOf(comanda.items)
+  const [disc, setDisc] = React.useState<{ value: DiscountValue | null; blocked: string | null }>({ value: null, blocked: null })
+  const total = step === "charge" ? subtotal - (disc.value?.discount ?? 0) : subtotal
   const categories = [...new Set(products.map((p) => p.category).filter((c): c is string => Boolean(c)))]
   const q = query.trim().toLowerCase()
   const shown = products.filter((p) => (!category || p.category === category) && (!q || p.name.toLowerCase().includes(q))).slice(0, 60)
@@ -411,9 +420,14 @@ function ComandaEditor({
   const setNote = (index: number, note: string) => setItems((items) => items.map((x, k) => (k === index ? { ...x, note } : x)))
 
   function charge() {
+    if (disc.blocked) return toast.error(disc.blocked)
     startTransition(async () => {
       await flush()
-      const r = await chargeComanda(comanda.id, { paymentMethod: payment, customerName: payment === "FIADO" ? customer : undefined })
+      const r = await chargeComanda(comanda.id, {
+        paymentMethod: payment,
+        customerName: payment === "FIADO" ? customer : undefined,
+        ...(disc.value ?? {}),
+      })
       if (!r.ok) {
         toast.error(r.message)
         return
@@ -468,8 +482,12 @@ function ComandaEditor({
           <div className="rounded-2xl bg-accent/50 p-5 text-center">
             <p className="text-sm text-muted-foreground">Total a cobrar</p>
             <p className="tabular font-display text-4xl font-semibold">{money(total)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{countOf(comanda.items)} productos</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {countOf(comanda.items)} productos
+              {disc.value ? ` · ${money(subtotal)} con descuento de ${money(disc.value.discount)}` : ""}
+            </p>
           </div>
+          <DiscountField subtotal={subtotal} context={comanda.label} canApprove={canApproveDiscounts} currency={currency} onChange={setDisc} />
           <div className="space-y-2">
             <p className="text-sm font-medium">¿Cómo te pagaron?</p>
             <PaymentChips value={payment} onChange={setPayment} />

@@ -38,6 +38,7 @@ export async function listSales(businessId: string, from: Date, to: Date, take: 
       include: {
         items: { select: { description: true, quantity: true, productId: true, unitPrice: true }, orderBy: { createdAt: "asc" } },
         customer: { select: { name: true } },
+        discountRequest: { select: { requestedByName: true, decidedByName: true, reason: true } },
       },
     }),
     db.sale.count({ where }),

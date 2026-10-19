@@ -193,6 +193,7 @@ model Business {
   payables          Payable[]
   productBarcodes   ProductBarcode[]
   comandas          Comanda[]
+  discountRequests  DiscountRequest[]
   featureUsage      FeatureUsage[]
   ownerWithdrawals  OwnerWithdrawal[]
   loans             Loan[]
@@ -327,6 +328,9 @@ model Sale {
   items     SaleItem[]
   movements InventoryMovement[]
   comanda   Comanda?
+  /// Descuento sobre el total de los productos (el total ya lo tiene restado). Quién lo pidió y aprobó: discountRequest.
+  discount  Int       @default(0)
+  discountRequest DiscountRequest?
 
   @@unique([businessId, clientId])
   @@index([businessId, date])
@@ -993,4 +997,40 @@ model ComandaItem {
   @@index([comandaId])
   @@index([productId])
   @@map("comanda_item")
+}
+
+// ─── Descuentos con aprobación ──────────────────────────────────────────────
+
+enum DiscountStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  USED
+}
+
+/// Descuento que pide un trabajador y aprueba (o rechaza) el dueño o un administrador.
+/// Si lo aplica directamente el dueño o un administrador, se guarda ya aprobado por él mismo.
+model DiscountRequest {
+  id              String         @id @default(cuid())
+  businessId      String
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  requestedById   String
+  requestedByName String
+  /// Monto del descuento y total de los productos sobre el que se pidió.
+  amount          Int
+  subtotal        Int
+  reason          String
+  /// Dónde se pidió: "Mesa 4", "Venta"...
+  context         String
+  status          DiscountStatus @default(PENDING)
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  saleId          String?        @unique
+  sale            Sale?          @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([businessId, status])
+  @@map("discount_request")
 }

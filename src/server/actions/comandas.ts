@@ -11,7 +11,19 @@ import {
   type ComandaChargeInput,
   type ComandaInput,
 } from "@/lib/validations"
-import { applyStock, buildLines, FIADO_PRO, fiadoBlocked, lineData, MAX_TOTAL, resolveCustomer } from "@/server/sale-core"
+import {
+  applyStock,
+  buildLines,
+  checkDiscount,
+  DISCOUNT_USED_MESSAGE,
+  FIADO_PRO,
+  fiadoBlocked,
+  isDiscountUsed,
+  lineData,
+  MAX_TOTAL,
+  priceBelowList,
+  resolveCustomer,
+} from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -148,9 +160,13 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       })),
     )
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Quítalo de la comanda y vuelve a cobrar." }
-    const total = lines.reduce((sum, l) => sum + l.subtotal, 0)
-    if (total <= 0) return { ok: false, message: "El total de la comanda debe ser mayor a 0." }
-    if (total > MAX_TOTAL) return { ok: false, message: "El total de la comanda es demasiado alto." }
+    const below = priceBelowList(ctx, lines)
+    if (below) return { ok: false, message: below }
+    const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
+    if (subtotal <= 0) return { ok: false, message: "El total de la comanda debe ser mayor a 0." }
+    if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la comanda es demasiado alto." }
+    const disc = await checkDiscount(ctx, parsed.data, subtotal, comanda.label.slice(0, 40))
+    if (!disc.ok) return { ok: false, message: disc.message }
 
     await db.$transaction(async (tx) => {
       // Se cierra primero y solo si sigue abierta: si dos personas cobran a la vez, se cobra una sola vez.
@@ -160,7 +176,8 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       const sale = await tx.sale.create({
         data: {
           businessId: ctx.businessId,
-          total,
+          total: subtotal - disc.discount,
+          discount: disc.discount,
           paymentMethod,
           note: comanda.label.slice(0, 200),
           customerId,
@@ -170,8 +187,10 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       })
       await applyStock(tx, ctx, sale.id, lines, `Venta (${comanda.label})`.slice(0, 120))
       await tx.comanda.update({ where: { id }, data: { saleId: sale.id } })
+      await disc.link(tx, sale.id)
     })
   } catch (error) {
+    if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }
     if (error instanceof Error && error.message === "ALREADY_CLOSED") return { ok: false, message: "Esta comanda ya se cobró. Recarga la página." }
     return toActionError(error)
   }

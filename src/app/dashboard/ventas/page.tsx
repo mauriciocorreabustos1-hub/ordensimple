@@ -96,6 +96,13 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
       <EditSaleButton sale={toEditable(s)} currency={ctx.currency} timezone={ctx.timezone} products={products} customers={customerNames} />
     ) : null
   const money = (n: number) => formatMoney(n, ctx.currency)
+  // Quién pidió y quién aprobó el descuento de una venta.
+  const discountInfo = (s: (typeof list.rows)[number]) => {
+    const d = s.discountRequest
+    if (!d) return `Descuento de ${money(s.discount)}`
+    const who = d.requestedByName === d.decidedByName ? `aplicado por ${d.requestedByName}` : `pedido por ${d.requestedByName}, aprobado por ${d.decidedByName}`
+    return `Descuento de ${money(s.discount)}, ${who}. Motivo: ${d.reason}`
+  }
   const canDelete = can(ctx.role, "sales:delete")
   const avg = month.salesCount ? Math.round(month.sales / month.salesCount) : 0
 
@@ -173,6 +180,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                             {formatTime(s.date, ctx.timezone)} · {PAYMENT_LABEL[s.paymentMethod]}
                             {s.customer ? ` · ${s.customer.name}` : ""}
                           </p>
+                          {s.discount > 0 ? <p className="text-xs font-medium text-amber-700 dark:text-amber-400">{discountInfo(s)}</p> : null}
                         </div>
                         {editButton(s)}
                         {canDelete ? (
@@ -221,6 +229,11 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                               <Badge variant="secondary" className="gap-1">
                                 <Zap className="size-3" />
                                 Rápida
+                              </Badge>
+                            ) : null}
+                            {s.discount > 0 ? (
+                              <Badge variant="outline" className="shrink-0 border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300" title={discountInfo(s)}>
+                                Desc. −{money(s.discount)}
                               </Badge>
                             ) : null}
                           </span>

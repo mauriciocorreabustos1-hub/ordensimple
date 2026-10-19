@@ -109,8 +109,16 @@ export const saleItemSchema = z.object({
   unitPrice: positiveMoney,
 })
 
+/** Descuento sobre el total: si lo pide un empleado, debe venir aprobado (discountRequestId). */
+const discountFields = {
+  discount: money.optional(),
+  discountReason: optionalText(80),
+  discountRequestId: z.string().min(1).max(64).optional(),
+}
+
 export const saleSchema = z
   .object({
+    ...discountFields,
     items: z.array(saleItemSchema).min(1, "Agrega al menos un producto o servicio").max(50),
     date: dateKey,
     paymentMethod,
@@ -301,6 +309,16 @@ export const comandaSchema = z.object({
 export type ComandaInput = z.input<typeof comandaSchema>
 
 export const comandaChargeSchema = z
-  .object({ paymentMethod, customerName: optionalText(80) })
+  .object({ paymentMethod, customerName: optionalText(80), ...discountFields })
   .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
 export type ComandaChargeInput = z.input<typeof comandaChargeSchema>
+
+// ─── Descuentos ─────────────────────────────────────────────────────────────
+
+export const discountRequestSchema = z.object({
+  amount: positiveMoney,
+  subtotal: positiveMoney,
+  reason: z.string().trim().min(2, "Escribe el motivo del descuento").max(80, "Máximo 80 caracteres"),
+  context: z.string().trim().min(1).max(40),
+})
+export type DiscountRequestInput = z.input<typeof discountRequestSchema>

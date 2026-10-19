@@ -18,6 +18,8 @@ import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createSale, updateSale } from "@/server/actions/sales"
 import { useOfflineSales } from "@/components/app/offline-sales"
+import { useCanApproveDiscounts } from "@/components/app/quick-actions"
+import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 
 export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[] }
 
@@ -85,7 +87,12 @@ export function SaleForm({
   const offline = useOfflineSales()
   const byId = React.useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
-  const total = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  const subtotal = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  // Descuento (solo al registrar una venta nueva): directo si eres encargado, con aprobación si eres empleado.
+  const canApprove = useCanApproveDiscounts()
+  const [disc, setDisc] = React.useState<{ value: DiscountValue | null; blocked: string | null }>({ value: null, blocked: null })
+  const [discKey, setDiscKey] = React.useState(0)
+  const total = subtotal - (disc.value?.discount ?? 0)
 
   function update(key: number, patch: Partial<Line>) {
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
@@ -129,6 +136,10 @@ export function SaleForm({
       setError("Para fiar, escribe el nombre del cliente.")
       return
     }
+    if (!editing && disc.blocked) {
+      setError(disc.blocked)
+      return
+    }
     setError(null)
     startTransition(async () => {
       const input = {
@@ -142,6 +153,7 @@ export function SaleForm({
         date,
         customerName,
         note: editing?.note,
+        ...(!editing && disc.value ? disc.value : {}),
       }
       const result = editing
         ? await updateSale(editing.id, input)
@@ -161,6 +173,8 @@ export function SaleForm({
         window.dispatchEvent(new Event(GUIDE_SALE_SAVED))
         setLines([newLine()])
         setCustomerName("")
+        setDiscKey((k) => k + 1)
+        setDisc({ value: null, blocked: null })
       }
       onDone?.()
     })
@@ -253,7 +267,10 @@ export function SaleForm({
                   onValueChange={(v) => update(line.key, { unitPrice: v })}
                   currency={currency}
                   aria-label="Precio unitario"
-                  className="[&_input]:bg-background"
+                  // Los empleados no cambian el precio de un producto guardado: para cobrar menos, piden un descuento.
+                  readOnly={!canApprove && Boolean(product)}
+                  title={!canApprove && product ? "Para cobrar menos, agrega un descuento abajo" : undefined}
+                  className="[&_input]:bg-background [&_input:read-only]:text-muted-foreground"
                 />
               </div>
               {lowStock ? (
@@ -300,9 +317,34 @@ export function SaleForm({
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-      <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3">
-        <span className="text-sm text-muted-foreground">Total</span>
-        <span className="tabular text-xl font-semibold">{formatMoney(total, currency)}</span>
+      {!editing && subtotal > 0 ? (
+        <DiscountField
+          key={discKey}
+          subtotal={subtotal}
+          context="Venta"
+          canApprove={canApprove}
+          currency={currency}
+          onChange={(state) => {
+            setDisc(state)
+            // Si ya se puede guardar (aprobado o sin descuento), se quita el aviso.
+            if (!state.blocked) setError(null)
+          }}
+        />
+      ) : null}
+
+      <div className="rounded-xl bg-muted px-4 py-3">
+        {disc.value ? (
+          <div className="mb-1 flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              Subtotal {formatMoney(subtotal, currency)} · descuento
+            </span>
+            <span className="tabular">−{formatMoney(disc.value.discount, currency)}</span>
+          </div>
+        ) : null}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Total</span>
+          <span className="tabular text-xl font-semibold">{formatMoney(total, currency)}</span>
+        </div>
       </div>
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}

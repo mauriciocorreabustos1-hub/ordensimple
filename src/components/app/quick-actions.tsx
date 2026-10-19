@@ -23,6 +23,12 @@ export function usePlanFlags() {
   return React.useContext(PlanFlagsContext)
 }
 
+/** Si quien usa la app puede aplicar descuentos directo (dueño o administrador) o debe pedirlos (empleado). */
+const DiscountRoleContext = React.createContext(true)
+export function useCanApproveDiscounts() {
+  return React.useContext(DiscountRoleContext)
+}
+
 /** Proveedores registrados del negocio (para elegirlos al anotar un gasto). */
 const SuppliersContext = React.createContext<string[]>([])
 export function useSuppliers() {
@@ -49,6 +55,7 @@ export function QuickActionsProvider({
   continuousScan = true,
   fiado = true,
   cashClose = true,
+  canApproveDiscounts = true,
 }: {
   children: React.ReactNode
   currency: string
@@ -66,6 +73,8 @@ export function QuickActionsProvider({
   fiado?: boolean
   /** El plan incluye el cierre de caja (Pro). */
   cashClose?: boolean
+  /** Dueño o administrador: aplica descuentos directo. Empleado: los pide. */
+  canApproveDiscounts?: boolean
 }) {
   const [action, setAction] = React.useState<Action | null>(null)
   const [preset, setPreset] = React.useState<Preset | undefined>()
@@ -85,6 +94,7 @@ export function QuickActionsProvider({
     <QuickActionsContext.Provider value={value}>
       <PlanFlagsContext.Provider value={flags}>
       <SuppliersContext.Provider value={suppliers}>
+      <DiscountRoleContext.Provider value={canApproveDiscounts}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
         <Tabs defaultValue="detailed" className="gap-5">
@@ -129,6 +139,7 @@ export function QuickActionsProvider({
           onDone={close}
         />
       </AppModal>
+      </DiscountRoleContext.Provider>
       </SuppliersContext.Provider>
       </PlanFlagsContext.Provider>
     </QuickActionsContext.Provider>

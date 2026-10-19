@@ -7,10 +7,12 @@ import { EmailConfirmedToast, EmailVerifyBanner } from "@/components/app/email-v
 import { UserMenu } from "@/components/app/user-menu"
 import { WelcomeTour } from "@/components/app/welcome-tour"
 import { GuidedTour } from "@/components/app/guided-tour"
+import { DiscountApprovals } from "@/components/app/discount-approvals"
 import { OfflineSalesBar, OfflineSalesProvider } from "@/components/app/offline-sales"
 import { db } from "@/lib/db"
 import { isFoodBusiness } from "@/lib/business-kind"
 import { canUseFeature } from "@/lib/plans"
+import { canApproveDiscounts } from "@/lib/roles"
 import { isAdmin as checkAdmin } from "@/server/admin"
 import { requireBusiness } from "@/server/session"
 
@@ -18,7 +20,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const ctx = await requireBusiness()
   const isAdmin = await checkAdmin(ctx.user.email)
 
-  const [products, categories, customers, memberships, suppliers] = await Promise.all([
+  const [products, categories, customers, memberships, suppliers, teamSize] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
       select: { id: true, name: true, price: true, stock: true, trackStock: true, sku: true, barcodes: { select: { code: true } } },
@@ -48,6 +50,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       orderBy: [{ expenses: { _count: "desc" } }, { name: "asc" }],
       take: 200,
     }),
+    // Con equipo, el dueño y los administradores reciben las solicitudes de descuento.
+    canApproveDiscounts(ctx.role) ? db.businessMember.count({ where: { businessId: ctx.businessId } }) : Promise.resolve(0),
   ])
   const food = isFoodBusiness(ctx.business.type)
   const businesses = memberships.map((m) => ({ ...m.business, active: m.business.id === ctx.businessId }))
@@ -61,6 +65,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         continuousScan={canUseFeature(ctx.business.plan, "fastScan")}
         fiado={canUseFeature(ctx.business.plan, "customers")}
         cashClose={canUseFeature(ctx.business.plan, "cashClose")}
+        canApproveDiscounts={canApproveDiscounts(ctx.role)}
         products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}
@@ -96,6 +101,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         <WelcomeTour show={!(ctx.user as { welcomeTourAt?: Date | null }).welcomeTourAt} />
         {/* Guía práctica (anotar una venta, un gasto…): empieza desde la bienvenida. */}
         <GuidedTour />
+        {teamSize > 1 ? <DiscountApprovals currency={ctx.currency} /> : null}
       </QuickActionsProvider>
     </OfflineSalesProvider>
   )

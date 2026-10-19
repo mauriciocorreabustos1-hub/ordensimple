@@ -60,6 +60,11 @@ export const ROLE_LABEL: Record<Role, string> = {
   EMPLOYEE: "Empleado",
 }
 
+/** El dueño y los administradores aprueban (o aplican directamente) los descuentos; los empleados los piden. */
+export function canApproveDiscounts(role: Role) {
+  return can(role, "sales:edit")
+}
+
 export function can(role: Role, permission: Permission) {
   return PERMISSIONS[role].includes(permission)
 }

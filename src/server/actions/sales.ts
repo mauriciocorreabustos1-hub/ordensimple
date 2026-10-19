@@ -11,7 +11,20 @@ import {
   type QuickSaleInput,
   type SaleInput,
 } from "@/lib/validations"
-import { applyStock, buildLines, FIADO_PRO, fiadoBlocked, lineData, MAX_TOTAL, resolveCustomer, revertStock } from "@/server/sale-core"
+import {
+  applyStock,
+  buildLines,
+  checkDiscount,
+  DISCOUNT_USED_MESSAGE,
+  FIADO_PRO,
+  fiadoBlocked,
+  isDiscountUsed,
+  lineData,
+  MAX_TOTAL,
+  priceBelowList,
+  resolveCustomer,
+  revertStock,
+} from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -131,8 +144,12 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
-    const total = lines.reduce((sum, l) => sum + l.subtotal, 0)
-    if (total > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }
+    const below = priceBelowList(ctx, lines)
+    if (below) return { ok: false, message: below }
+    const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
+    if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }
+    const disc = await checkDiscount(ctx, parsed.data, subtotal, "Venta")
+    if (!disc.ok) return { ok: false, message: disc.message }
 
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
@@ -141,7 +158,8 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
           businessId: ctx.businessId,
           clientId,
           date: saleDate(date, ctx, soldAt),
-          total,
+          total: subtotal - disc.discount,
+          discount: disc.discount,
           paymentMethod,
           note,
           customerId,
@@ -150,9 +168,11 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
         },
       })
       await applyStock(tx, ctx, sale.id, lines, "Venta")
+      await disc.link(tx, sale.id)
     })
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
+    if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }
     return toActionError(error)
   }
   revalidate()
@@ -174,8 +194,10 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
     if (!sale) return { ok: false, message: "Venta no encontrada." }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
-    const total = lines.reduce((sum, l) => sum + l.subtotal, 0)
+    // Si la venta tenía un descuento aprobado, se mantiene.
+    const total = lines.reduce((sum, l) => sum + l.subtotal, 0) - sale.discount
     if (total > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }
+    if (total <= 0) return { ok: false, message: "Con el descuento que tiene esta venta, el total quedaría en cero. Revisa los productos." }
 
     await db.$transaction(async (tx) => {
       // Se deshace el stock de la versión anterior y se aplica el de la nueva.

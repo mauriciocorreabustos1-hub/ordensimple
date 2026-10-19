@@ -8,7 +8,7 @@ import { ProGate } from "@/components/app/pro-gate"
 import { ComandasBoard } from "@/components/comandas/comandas-board"
 import { db } from "@/lib/db"
 import { isFoodBusiness, tableLabels } from "@/lib/business-kind"
-import { can } from "@/lib/roles"
+import { can, canApproveDiscounts } from "@/lib/roles"
 import { formatMoney } from "@/lib/currency"
 import { startOfDay } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
@@ -96,6 +96,7 @@ export default async function ComandasPage() {
         customers={customers.map((c) => c.name)}
         tables={tableLabels(ctx.settings.tableCount, ctx.settings.tableExtras)}
         canEditTables={can(ctx.role, "settings:manage")}
+        canApproveDiscounts={canApproveDiscounts(ctx.role)}
       />
     </div>
   )

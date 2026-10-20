@@ -154,6 +154,17 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
                 <span>Total vendido</span>
                 <span className="tabular">{money(d.salesTotal)}</span>
               </li>
+              {d.tipsTotal ? (
+                <li className="flex items-center justify-between gap-3 pt-2 text-sm">
+                  <span>
+                    Propinas
+                    <span className="block text-xs text-muted-foreground">
+                      Aparte de las ventas: son para el equipo.{d.tipsCash ? ` ${money(d.tipsCash)} quedaron en efectivo en la caja.` : ""}
+                    </span>
+                  </span>
+                  <span className="tabular font-medium">{money(d.tipsTotal)}</span>
+                </li>
+              ) : null}
             </ul>
           </CardContent>
         </Card>
@@ -169,6 +180,7 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
           expensesTotal={d.expensesTotal}
           withdrawalsCash={d.withdrawalsCash}
           depositsCash={d.depositsCash}
+          tipsCash={d.tipsCash}
           salesTotal={d.salesTotal}
           summaryLines={summaryLines}
           initial={

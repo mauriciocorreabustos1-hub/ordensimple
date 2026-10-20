@@ -16,14 +16,28 @@ import { cn } from "@/lib/utils"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
-/** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas. */
-export type ComandaLine = { id: string; productId: string | null; description: string; quantity: number; unitPrice: number; note: string; sentQty: number; readyQty: number }
+/** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
+export type ComandaLine = {
+  id: string
+  productId: string | null
+  description: string
+  quantity: number
+  unitPrice: number
+  note: string
+  sentQty: number
+  readyQty: number
+  paidQty: number
+}
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
 export type ComandaProduct = { id: string; name: string; price: number; category: string | null }
 
-
-const totalOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
-const countOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + i.quantity, 0)
+/** Lo que falta pagar de cada plato (cuando cada uno paga lo suyo, lo pagado ya no se cobra). */
+const leftOf = (i: ComandaLine) => Math.max(0, i.quantity - i.paidQty)
+const totalOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + leftOf(i) * i.unitPrice, 0)
+const countOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + leftOf(i), 0)
+const productsLabel = (n: number) => `${n} ${n === 1 ? "producto" : "productos"}`
+/** Propina sugerida en Chile. */
+const TIP_RATE = 0.1
 /** Lo que falta enviar a la cocina. */
 const unsentOf = (items: ComandaLine[]) => items.reduce((sum, i) => sum + Math.max(0, i.quantity - i.sentQty), 0)
 /** Lo que la cocina está preparando. */
@@ -90,11 +104,17 @@ export function ComandasBoard({
         const server = new Map(c.items.map((i) => [i.id, i]))
         return {
           ...local,
-          items: local.items.map((i) => ({
-            ...i,
-            sentQty: Math.min(i.quantity, server.get(i.id)?.sentQty ?? i.sentQty),
-            readyQty: Math.min(i.quantity, server.get(i.id)?.readyQty ?? i.readyQty),
-          })),
+          items: local.items.map((i) => {
+            const paidQty = server.get(i.id)?.paidQty ?? i.paidQty
+            const quantity = Math.max(i.quantity, paidQty)
+            return {
+              ...i,
+              quantity,
+              paidQty,
+              sentQty: Math.min(quantity, server.get(i.id)?.sentQty ?? i.sentQty),
+              readyQty: Math.min(quantity, server.get(i.id)?.readyQty ?? i.readyQty),
+            }
+          }),
         }
       }),
     )
@@ -399,16 +419,27 @@ function ComandaEditor({
   const [customer, setCustomer] = React.useState("")
   const [pending, startTransition] = React.useTransition()
 
-  const subtotal = totalOf(comanda.items)
+  // Cobrar todo o "cada uno paga lo suyo" (se eligen los platos de esa persona).
+  const [split, setSplit] = React.useState<Record<string, number> | null>(null)
+  const [tipMode, setTipMode] = React.useState<"none" | "suggested" | "other">("none")
+  const [otherTip, setOtherTip] = React.useState(0)
+  const [people, setPeople] = React.useState(2)
+  /** Cambia en cada parte cobrada, para que el descuento empiece de cero con la siguiente persona. */
+  const [round, setRound] = React.useState(0)
+  const chargeLines = split
+    ? comanda.items.filter((i) => (split[i.id] ?? 0) > 0).map((i) => ({ ...i, take: split[i.id] }))
+    : comanda.items.filter((i) => leftOf(i) > 0).map((i) => ({ ...i, take: leftOf(i) }))
+  const subtotal = step === "charge" ? chargeLines.reduce((sum, i) => sum + i.take * i.unitPrice, 0) : totalOf(comanda.items)
   const [disc, setDisc] = React.useState<{ value: DiscountValue | null; blocked: string | null }>({ value: null, blocked: null })
   const total = step === "charge" ? subtotal - (disc.value?.discount ?? 0) : subtotal
+  const tip = payment === "FIADO" ? 0 : tipMode === "suggested" ? Math.round(total * TIP_RATE) : tipMode === "other" ? otherTip : 0
   const categories = [...new Set(products.map((p) => p.category).filter((c): c is string => Boolean(c)))]
   const q = query.trim().toLowerCase()
   const shown = products.filter((p) => (!category || p.category === category) && (!q || p.name.toLowerCase().includes(q))).slice(0, 60)
 
   const setItems = (change: (items: ComandaLine[]) => ComandaLine[]) => onChange((c) => ({ ...c, items: change(c.items) }))
 
-  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "sentQty" | "readyQty">) {
+  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "sentQty" | "readyQty" | "paidQty">) {
     const id = crypto.randomUUID()
     setItems((items) => {
       // Si ya está (sin nota), suma uno; si no, agrega la línea al final.
@@ -418,11 +449,14 @@ function ComandaEditor({
         toast.error("Máximo 50 productos distintos por comanda.")
         return items
       }
-      return [...items, { ...line, id, quantity: 1, note: "", sentQty: 0, readyQty: 0 }]
+      return [...items, { ...line, id, quantity: 1, note: "", sentQty: 0, readyQty: 0, paidQty: 0 }]
     })
   }
-  const setQty = (index: number, quantity: number) =>
+  const setQty = (index: number, quantity: number) => {
+    const paid = comanda.items[index]?.paidQty ?? 0
+    if (paid > 0 && quantity < paid) return void toast.info("Eso ya se pagó: no se puede quitar.")
     setItems((items) => (quantity <= 0 ? items.filter((_, k) => k !== index) : items.map((x, k) => (k === index ? { ...x, quantity } : x))))
+  }
   const setNote = (index: number, note: string) => setItems((items) => items.map((x, k) => (k === index ? { ...x, note } : x)))
 
   function charge() {
@@ -433,12 +467,26 @@ function ComandaEditor({
         paymentMethod: payment,
         customerName: payment === "FIADO" ? customer : undefined,
         ...(disc.value ?? {}),
+        tip,
+        parts: split ? chargeLines.map((i) => ({ id: i.id, quantity: i.take })) : undefined,
       })
       if (!r.ok) {
         toast.error(r.message)
         return
       }
-      toast.success(`${comanda.label}: ${r.message?.toLowerCase() ?? "cobrada"} (${money(total)})`)
+      const paidAll = !split || comanda.items.every((i) => leftOf(i) === (split[i.id] ?? 0))
+      const tipText = tip ? ` + propina ${money(tip)}` : ""
+      if (!paidAll) {
+        // Queda abierta con lo que falta: se marca lo pagado y se sigue cobrando al siguiente.
+        onChange((c) => ({ ...c, items: c.items.map((i) => ({ ...i, paidQty: i.paidQty + (split?.[i.id] ?? 0) })) }))
+        toast.success(`${comanda.label}: parte cobrada (${money(total)}${tipText}). Falta ${money(totalOf(comanda.items) - subtotal)}.`)
+        setSplit({})
+        setTipMode("none")
+        setDisc({ value: null, blocked: null })
+        setRound((n) => n + 1)
+        return
+      }
+      toast.success(`${comanda.label}: ${r.message?.toLowerCase() ?? "cobrada"} (${money(total)}${tipText})`)
       onClosed()
     })
   }
@@ -485,15 +533,128 @@ function ComandaEditor({
     >
       {step === "charge" ? (
         <div className="space-y-5">
-          <div className="rounded-2xl bg-accent/50 p-5 text-center">
-            <p className="text-sm text-muted-foreground">Total a cobrar</p>
-            <p className="tabular font-display text-4xl font-semibold">{money(total)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {countOf(comanda.items)} productos
-              {disc.value ? ` · ${money(subtotal)} con descuento de ${money(disc.value.discount)}` : ""}
-            </p>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Cómo se paga la cuenta">
+            {[
+              { key: "all", label: "Todo junto" },
+              { key: "split", label: "Cada uno lo suyo" },
+            ].map((t) => {
+              const active = (t.key === "split") === Boolean(split)
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setSplit(t.key === "split" ? {} : null)
+                    setRound((n) => n + 1)
+                    setDisc({ value: null, blocked: null })
+                  }}
+                  className={cn("rounded-lg py-2 text-sm font-medium transition-colors", active ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
           </div>
-          <DiscountField subtotal={subtotal} context={comanda.label} canApprove={canApproveDiscounts} currency={currency} onChange={setDisc} />
+
+          {split ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">¿Qué paga esta persona?</p>
+              <ul className="divide-y rounded-xl border">
+                {comanda.items
+                  .filter((i) => leftOf(i) > 0)
+                  .map((i) => {
+                    const n = split[i.id] ?? 0
+                    const set = (v: number) => setSplit({ ...split, [i.id]: Math.max(0, Math.min(leftOf(i), v)) })
+                    return (
+                      <li key={i.id} className="flex items-center gap-2 p-2.5">
+                        <span className="min-w-0 flex-1 text-sm leading-tight">
+                          {i.description}
+                          <span className="block text-xs text-muted-foreground">
+                            {money(i.unitPrice)} · {leftOf(i) === 1 ? "queda 1" : `quedan ${leftOf(i)}`}
+                          </span>
+                        </span>
+                        <div className="flex items-center rounded-lg border">
+                          <button type="button" className="flex size-9 items-center justify-center disabled:opacity-30" aria-label={`Uno menos de ${i.description}`} onClick={() => set(n - 1)} disabled={!n}>
+                            <Minus className="size-3.5" />
+                          </button>
+                          <span className="tabular w-6 text-center text-sm font-semibold">{n}</span>
+                          <button
+                            type="button"
+                            className="flex size-9 items-center justify-center disabled:opacity-30"
+                            aria-label={`Uno más de ${i.description}`}
+                            onClick={() => set(n + 1)}
+                            disabled={n >= leftOf(i)}
+                          >
+                            <Plus className="size-3.5" />
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="rounded-2xl bg-accent/50 p-5 text-center">
+            <p className="text-sm text-muted-foreground">{split ? "Paga esta persona" : "Total a cobrar"}</p>
+            <p className="tabular font-display text-4xl font-semibold">{money(total + tip)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {split ? `${chargeLines.reduce((s, i) => s + i.take, 0)} de ${countOf(comanda.items)} productos` : productsLabel(countOf(comanda.items))}
+              {disc.value ? ` · ${money(subtotal)} con descuento de ${money(disc.value.discount)}` : ""}
+              {tip ? ` · cuenta ${money(total)} + propina ${money(tip)}` : ""}
+            </p>
+            {!split && total > 0 ? (
+              <div className="mt-3 flex items-center justify-center gap-2 text-sm">
+                <span className="text-muted-foreground">Dividir entre</span>
+                <div className="flex items-center rounded-lg border bg-background">
+                  <button type="button" className="flex size-8 items-center justify-center disabled:opacity-30" aria-label="Una persona menos" onClick={() => setPeople(Math.max(2, people - 1))} disabled={people <= 2}>
+                    <Minus className="size-3.5" />
+                  </button>
+                  <span className="tabular w-6 text-center font-semibold">{people}</span>
+                  <button type="button" className="flex size-8 items-center justify-center" aria-label="Una persona más" onClick={() => setPeople(Math.min(30, people + 1))}>
+                    <Plus className="size-3.5" />
+                  </button>
+                </div>
+                <span>
+                  = <span className="tabular font-semibold">{money(Math.ceil((total + tip) / people))}</span> c/u
+                </span>
+              </div>
+            ) : null}
+          </div>
+          {subtotal > 0 ? (
+            <DiscountField key={round} subtotal={subtotal} context={comanda.label} canApprove={canApproveDiscounts} currency={currency} onChange={setDisc} />
+          ) : null}
+          {payment !== "FIADO" && total > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">¿Dejaron propina?</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { key: "none" as const, label: "Sin propina" },
+                  { key: "suggested" as const, label: `10% (${money(Math.round(total * TIP_RATE))})` },
+                  { key: "other" as const, label: "Otro monto" },
+                ].map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    aria-pressed={tipMode === t.key}
+                    onClick={() => setTipMode(t.key)}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                      tipMode === t.key ? "border-primary bg-primary/10 font-medium text-primary" : "hover:bg-muted",
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+                {tipMode === "other" ? (
+                  <MoneyInput value={otherTip} onValueChange={setOtherTip} currency={currency} aria-label="Monto de la propina" className="w-32" />
+                ) : null}
+              </div>
+              <p className="text-xs text-muted-foreground">La propina se guarda aparte: no suma a tus ventas.</p>
+            </div>
+          ) : null}
           <div className="space-y-2">
             <p className="text-sm font-medium">¿Cómo te pagaron?</p>
             <PaymentChips value={payment} onChange={setPayment} />
@@ -523,7 +684,7 @@ function ComandaEditor({
             <Button variant="outline" size="lg" className="h-12" onClick={() => setStep("edit")} disabled={pending}>
               Volver
             </Button>
-            <Button size="lg" className="h-12" onClick={charge} disabled={pending || (payment === "FIADO" && !customer.trim())}>
+            <Button size="lg" className="h-12" onClick={charge} disabled={pending || subtotal <= 0 || (payment === "FIADO" && !customer.trim())}>
               {pending ? <Loader2 className="animate-spin" /> : <Check />}
               Confirmar cobro
             </Button>
@@ -665,6 +826,11 @@ function ComandaEditor({
                         <span className="min-w-0 flex-1 text-sm leading-tight">
                           {item.description}
                           {item.note && noteFor !== i ? <span className="block text-xs text-amber-700 dark:text-amber-400">{item.note}</span> : null}
+                          {item.paidQty ? (
+                            <span className="mt-0.5 block text-[11px] font-medium text-primary">
+                              {item.paidQty >= item.quantity ? "Pagado" : `${item.paidQty} pagado${item.paidQty === 1 ? "" : "s"}`}
+                            </span>
+                          ) : null}
                           {item.quantity > item.sentQty ? (
                             <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
                               {item.sentQty ? `+${item.quantity - item.sentQty} sin enviar a cocina` : "Sin enviar a cocina"}
@@ -716,7 +882,7 @@ function ComandaEditor({
                 onClick={() => document.getElementById("comanda-pedido")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 className="-my-2 py-2 text-xs text-muted-foreground underline-offset-2 hover:underline md:pointer-events-none md:no-underline"
               >
-                {countOf(comanda.items)} productos<span className="md:hidden"> · ver pedido</span>
+                {productsLabel(countOf(comanda.items))}<span className="md:hidden"> · ver pedido</span>
               </button>
               <p className="tabular text-xl font-semibold">{money(total)}</p>
             </div>

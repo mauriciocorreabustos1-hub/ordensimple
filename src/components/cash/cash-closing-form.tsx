@@ -23,6 +23,7 @@ export function CashClosingForm({
   expensesTotal,
   withdrawalsCash = 0,
   depositsCash = 0,
+  tipsCash = 0,
   salesTotal,
   summaryLines,
   initial,
@@ -38,6 +39,8 @@ export function CashClosingForm({
   withdrawalsCash?: number
   /** Plata que el dueño puso en la caja ese día. */
   depositsCash?: number
+  /** Propinas pagadas en efectivo (quedan en la caja hasta repartirlas). */
+  tipsCash?: number
   salesTotal: number
   /** Líneas de resumen por método de pago, para compartir por WhatsApp. */
   summaryLines: string[]
@@ -52,7 +55,7 @@ export function CashClosingForm({
   const [pending, startTransition] = React.useTransition()
 
   const cashOut = expensesFromCash ? expensesTotal : 0
-  const expected = opening + cashSales + cashPayments + depositsCash - cashOut - withdrawalsCash
+  const expected = opening + cashSales + tipsCash + cashPayments + depositsCash - cashOut - withdrawalsCash
   const difference = counted - expected
 
   const status =
@@ -73,6 +76,7 @@ export function CashClosingForm({
     `Ventas del día: ${money(salesTotal)}`,
     ...summaryLines,
     cashPayments ? `Abonos de fiado en efectivo: ${money(cashPayments)}` : null,
+    tipsCash ? `Propinas en efectivo: ${money(tipsCash)}` : null,
     expensesFromCash && expensesTotal ? `Gastos pagados con caja: ${money(expensesTotal)}` : null,
     withdrawalsCash ? `Retiros del dueño: ${money(withdrawalsCash)}` : null,
     depositsCash ? `Plata que puso el dueño: ${money(depositsCash)}` : null,
@@ -113,6 +117,9 @@ export function CashClosingForm({
         <div className="space-y-1.5 rounded-xl bg-muted/60 p-4 text-sm">
           <div className="flex justify-between"><span className="text-muted-foreground">Efectivo inicial</span><span className="tabular">{money(opening)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">+ Ventas en efectivo</span><span className="tabular">{money(cashSales)}</span></div>
+          {tipsCash ? (
+            <div className="flex justify-between"><span className="text-muted-foreground">+ Propinas en efectivo</span><span className="tabular">{money(tipsCash)}</span></div>
+          ) : null}
           {cashPayments ? (
             <div className="flex justify-between"><span className="text-muted-foreground">+ Abonos de fiado en efectivo</span><span className="tabular">{money(cashPayments)}</span></div>
           ) : null}

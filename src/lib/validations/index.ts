@@ -320,8 +320,22 @@ export const comandaSchema = z.object({
 export type ComandaInput = z.input<typeof comandaSchema>
 
 export const comandaChargeSchema = z
-  .object({ paymentMethod, customerName: optionalText(80), ...discountFields })
+  .object({
+    paymentMethod,
+    customerName: optionalText(80),
+    ...discountFields,
+    /** Propina: va aparte del total de la venta. */
+    tip: money.optional(),
+    /** Cuando cada uno paga lo suyo: qué platos (y cuántos) se cobran ahora. Sin esto se cobra todo lo que falta. */
+    parts: z
+      .array(z.object({ id: z.string().regex(/^[\w-]{8,40}$/), quantity: z.number().int().min(1).max(10_000) }))
+      .min(1)
+      .max(50)
+      .refine((p) => new Set(p.map((x) => x.id)).size === p.length, "Hay productos repetidos")
+      .optional(),
+  })
   .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
+  .refine((d) => d.paymentMethod !== "FIADO" || !d.tip, { message: "La propina no se puede dejar al fiado.", path: ["tip"] })
 export type ComandaChargeInput = z.input<typeof comandaChargeSchema>
 
 // ─── Descuentos ─────────────────────────────────────────────────────────────

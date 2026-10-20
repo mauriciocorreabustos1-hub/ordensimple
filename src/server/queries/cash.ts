@@ -10,7 +10,7 @@ export async function getCashDay(businessId: string, timezone: string, day: stri
   const range = { gte: from, lt: to }
 
   const [sales, payments, expenses, closing, history, withdrawals, deposits] = await Promise.all([
-    db.sale.groupBy({ by: ["paymentMethod"], where: { businessId, date: range }, _sum: { total: true }, _count: true }),
+    db.sale.groupBy({ by: ["paymentMethod"], where: { businessId, date: range }, _sum: { total: true, tip: true }, _count: true }),
     db.customerPayment.groupBy({ by: ["paymentMethod"], where: { businessId, date: range }, _sum: { amount: true }, _count: true }),
     db.expense.aggregate({ where: { businessId, date: range }, _sum: { amount: true }, _count: true }),
     db.cashClosing.findUnique({ where: { businessId_day: { businessId, day } } }),
@@ -36,6 +36,9 @@ export async function getCashDay(businessId: string, timezone: string, day: stri
     salesCount: sales.reduce((s, x) => s + x._count, 0),
     paymentsTotal: payments.reduce((s, x) => s + (x._sum.amount ?? 0), 0),
     cashSales: salesBy.CASH?.total ?? 0,
+    /** Propinas: van aparte de las ventas, pero las en efectivo quedan en la caja. */
+    tipsTotal: sales.reduce((s, x) => s + (x._sum.tip ?? 0), 0),
+    tipsCash: sales.find((x) => x.paymentMethod === "CASH")?._sum.tip ?? 0,
     cashPayments: paymentsBy.CASH?.total ?? 0,
     expensesTotal: expenses._sum.amount ?? 0,
     expensesCount: expenses._count,
@@ -54,7 +57,7 @@ export async function getCashWindow(businessId: string, from: Date, to: Date, cl
   const [sales, count, cash, payments, expenses, withdrawals, deposits] = await Promise.all([
     client.sale.aggregate({ where: { businessId, date: range }, _sum: { total: true } }),
     client.sale.count({ where: { businessId, date: range, returnOfId: null } }),
-    client.sale.aggregate({ where: { businessId, date: range, paymentMethod: "CASH" }, _sum: { total: true } }),
+    client.sale.aggregate({ where: { businessId, date: range, paymentMethod: "CASH" }, _sum: { total: true, tip: true } }),
     client.customerPayment.aggregate({ where: { businessId, date: range, paymentMethod: "CASH" }, _sum: { amount: true } }),
     client.expense.aggregate({ where: { businessId, date: range }, _sum: { amount: true } }),
     client.ownerWithdrawal.aggregate({ where: { businessId, date: range, kind: "MONEY", source: "CASH" }, _sum: { amount: true } }),
@@ -64,6 +67,7 @@ export async function getCashWindow(businessId: string, from: Date, to: Date, cl
     salesTotal: sales._sum.total ?? 0,
     salesCount: count,
     cashSales: cash._sum.total ?? 0,
+    tipsCash: cash._sum.tip ?? 0,
     cashPayments: payments._sum.amount ?? 0,
     expensesTotal: expenses._sum.amount ?? 0,
     withdrawalsCash: withdrawals._sum.amount ?? 0,
@@ -76,7 +80,7 @@ export type CashWindow = Awaited<ReturnType<typeof getCashWindow>>
 /** Efectivo que debería haber al cerrar un turno o un día. */
 export function expectedCash(opening: number, w: CashWindow, expensesFromCash: boolean) {
   const cashOut = expensesFromCash ? w.expensesTotal : 0
-  return { cashOut, expected: opening + w.cashSales + w.cashPayments + w.depositsCash - cashOut - w.withdrawalsCash }
+  return { cashOut, expected: opening + w.cashSales + w.tipsCash + w.cashPayments + w.depositsCash - cashOut - w.withdrawalsCash }
 }
 
 /** El turno abierto (si hay) y los turnos que empezaron ese día, con quién los abrió y cerró. */

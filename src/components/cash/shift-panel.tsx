@@ -22,6 +22,7 @@ export type OpenShift = {
   salesTotal: number
   salesCount: number
   cashSales: number
+  tipsCash: number
   cashPayments: number
   expensesTotal: number
   withdrawalsCash: number
@@ -154,7 +155,7 @@ function CloseForm({
   const [note, setNote] = React.useState("")
   const [pending, startTransition] = React.useTransition()
   const cashOut = expensesFromCash ? shift.expensesTotal : 0
-  const expected = shift.opening + shift.cashSales + shift.cashPayments + shift.depositsCash - cashOut - shift.withdrawalsCash
+  const expected = shift.opening + shift.cashSales + shift.tipsCash + shift.cashPayments + shift.depositsCash - cashOut - shift.withdrawalsCash
   const difference = counted - expected
 
   function submit(e: React.FormEvent) {
@@ -189,6 +190,7 @@ function CloseForm({
       <div className="space-y-1.5 rounded-xl bg-muted/60 p-4 text-sm">
         {line("Efectivo al abrir", shift.opening)}
         {line("+ Ventas en efectivo", shift.cashSales)}
+        {shift.tipsCash ? line("+ Propinas en efectivo", shift.tipsCash) : null}
         {shift.cashPayments ? line("+ Abonos de fiado en efectivo", shift.cashPayments) : null}
         {shift.depositsCash ? line("+ Plata que puso el dueño", shift.depositsCash) : null}
         {cashOut ? line("− Gastos pagados con la caja", cashOut) : null}

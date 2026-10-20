@@ -198,6 +198,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                             {s.createdBy && s.createdBy.id !== ctx.user.id ? ` · por ${s.createdBy.name.split(" ")[0]}` : ""}
                           </p>
                           {s.discount > 0 ? <p className="text-xs font-medium text-amber-700 dark:text-amber-400">{discountInfo(s)}</p> : null}
+                          {s.tip > 0 ? <p className="text-xs text-muted-foreground">+ propina {money(s.tip)} (aparte)</p> : null}
                           {returnInfo(s) ? (
                             <p className={cn("text-xs font-medium", returnInfo(s)?.tone === "pending" ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
                               {returnInfo(s)?.text}
@@ -252,6 +253,11 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                               <Badge variant="secondary" className="gap-1">
                                 <Zap className="size-3" />
                                 Rápida
+                              </Badge>
+                            ) : null}
+                            {s.tip > 0 ? (
+                              <Badge variant="outline" className="shrink-0" title="La propina va aparte del total de la venta">
+                                Propina {money(s.tip)}
                               </Badge>
                             ) : null}
                             {s.discount > 0 ? (

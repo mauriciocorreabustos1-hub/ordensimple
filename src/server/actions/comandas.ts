@@ -100,16 +100,25 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
       return { ok: false, message: "No se pudo guardar. Recarga la página." }
     }
     const keep = new Set(items.map((i) => i.id))
+    // Lo ya pagado no se puede quitar ni cambiar de precio (ya es una venta).
+    const touchesPaid = items.some((i) => {
+      const old = existing.get(i.id)
+      return old && old.paidQty > 0 && (i.quantity < old.paidQty || old.unitPrice !== i.unitPrice || old.description !== i.description)
+    })
+    if (touchesPaid || [...existing.values()].some((o) => o.paidQty > 0 && !keep.has(o.id))) {
+      return { ok: false, message: "No puedes quitar ni cambiar lo que ya se pagó. Recarga la página." }
+    }
     await db.$transaction([
-      db.comandaItem.deleteMany({ where: { comandaId: id, id: { notIn: [...keep] } } }),
+      db.comandaItem.deleteMany({ where: { comandaId: id, id: { notIn: [...keep] }, paidQty: 0 } }),
       ...items
         .filter((i) => {
           const old = existing.get(i.id)
           return old && (old.quantity !== i.quantity || old.note !== (i.note ?? null) || old.unitPrice !== i.unitPrice || old.description !== i.description)
         })
         .map((i) =>
-          db.comandaItem.update({
-            where: { id: i.id },
+          // Solo si nadie cobró parte entretanto (el cobro revisa lo mismo al revés).
+          db.comandaItem.updateMany({
+            where: { id: i.id, paidQty: existing.get(i.id)!.paidQty },
             // Si bajan la cantidad, lo enviado y lo listo no pueden ser más que lo pedido.
             data: {
               quantity: i.quantity,
@@ -142,7 +151,9 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
   const parsed = comandaChargeSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   if (!idSchema.safeParse(id).success) return { ok: false, message: "Comanda no encontrada" }
-  const { paymentMethod, customerName } = parsed.data
+  const { paymentMethod, customerName, parts } = parsed.data
+  const tip = parsed.data.tip ?? 0
+  let finished = true
   try {
     assertCan(ctx, "sales:create")
     const reason = blocked(ctx)
@@ -153,14 +164,24 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       include: { items: { orderBy: { createdAt: "asc" } } },
     })
     if (!comanda) return { ok: false, message: "Esta comanda ya se cobró o se anuló. Recarga la página." }
-    if (!comanda.items.length) return { ok: false, message: "La comanda está vacía: agrega lo que pidieron." }
     if (comanda.items.length > 50) return { ok: false, message: "La comanda tiene demasiados productos." }
+    // Lo que se cobra ahora: lo elegido (cada uno paga lo suyo) o todo lo que falta por pagar.
+    const left = (i: (typeof comanda.items)[number]) => Math.max(0, i.quantity - i.paidQty)
+    const wanted = parts ? new Map(parts.map((p) => [p.id, p.quantity])) : null
+    if (wanted && [...wanted].some(([itemId, qty]) => { const it = comanda.items.find((i) => i.id === itemId); return !it || qty > left(it) })) {
+      return { ok: false, message: "Alguien ya cobró parte de esto. Recarga la página." }
+    }
+    const charged = comanda.items
+      .map((i) => ({ item: i, quantity: wanted ? (wanted.get(i.id) ?? 0) : left(i) }))
+      .filter((c) => c.quantity > 0)
+    if (!charged.length) return { ok: false, message: wanted ? "Elige qué se cobra." : "La comanda está vacía: agrega lo que pidieron." }
+    finished = comanda.items.every((i) => left(i) === (charged.find((c) => c.item.id === i.id)?.quantity ?? 0))
     const lines = await buildLines(
       ctx,
-      comanda.items.map((i) => ({
+      charged.map(({ item: i, quantity }) => ({
         productId: i.productId ?? undefined,
         description: i.note ? `${i.description} (${i.note})`.slice(0, 120) : i.description,
-        quantity: i.quantity,
+        quantity,
         unitPrice: i.unitPrice,
       })),
     )
@@ -168,14 +189,27 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
     const below = customItemsBlocked(ctx, lines) ?? priceBelowList(ctx, lines)
     if (below) return { ok: false, message: below }
     const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
-    if (subtotal <= 0) return { ok: false, message: "El total de la comanda debe ser mayor a 0." }
+    if (subtotal <= 0) return { ok: false, message: "El total a cobrar debe ser mayor a 0." }
     if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la comanda es demasiado alto." }
-    const disc = await checkDiscount(ctx, parsed.data, subtotal, comanda.label.slice(0, 40))
+    if (tip > subtotal) return { ok: false, message: "La propina no puede ser mayor que la cuenta. Revisa el monto." }
+    const label = finished && !comanda.items.some((i) => i.paidQty > 0) ? comanda.label : `${comanda.label} (parte)`
+    const disc = await checkDiscount(ctx, parsed.data, subtotal, label.slice(0, 40))
     if (!disc.ok) return { ok: false, message: disc.message }
 
     await db.$transaction(async (tx) => {
-      // Se cierra primero y solo si sigue abierta: si dos personas cobran a la vez, se cobra una sola vez.
-      const closed = await tx.comanda.updateMany({ where: { id, status: "OPEN" }, data: { status: "PAID", closedAt: new Date() } })
+      // Cada plato se marca pagado solo si nadie lo cobró ni lo cambió entretanto: así nada se cobra dos veces.
+      for (const { item, quantity } of charged) {
+        const paid = await tx.comandaItem.updateMany({
+          where: { id: item.id, comandaId: id, paidQty: item.paidQty, quantity: item.quantity },
+          data: { paidQty: item.paidQty + quantity },
+        })
+        if (paid.count !== 1) throw new Error("ALREADY_CLOSED")
+      }
+      // Si con esto se pagó todo, se cierra (y solo si seguía abierta).
+      const closed = await tx.comanda.updateMany({
+        where: { id, status: "OPEN" },
+        data: finished ? { status: "PAID", closedAt: new Date() } : { updatedAt: new Date() },
+      })
       if (closed.count !== 1) throw new Error("ALREADY_CLOSED")
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       const sale = await tx.sale.create({
@@ -183,23 +217,25 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
           businessId: ctx.businessId,
           total: subtotal - disc.discount,
           discount: disc.discount,
+          tip,
           paymentMethod,
-          note: comanda.label.slice(0, 200),
+          note: label.slice(0, 200),
           customerId,
           createdById: ctx.user.id,
           items: { create: lines.map(lineData) },
         },
       })
-      await applyStock(tx, ctx, sale.id, lines, `Venta (${comanda.label})`.slice(0, 120))
-      await tx.comanda.update({ where: { id }, data: { saleId: sale.id } })
+      await applyStock(tx, ctx, sale.id, lines, `Venta (${label})`.slice(0, 120))
+      if (finished) await tx.comanda.update({ where: { id }, data: { saleId: sale.id } })
       await disc.link(tx, sale.id)
     })
   } catch (error) {
     if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }
-    if (error instanceof Error && error.message === "ALREADY_CLOSED") return { ok: false, message: "Esta comanda ya se cobró. Recarga la página." }
+    if (error instanceof Error && error.message === "ALREADY_CLOSED") return { ok: false, message: "Alguien ya cobró esta comanda o la cambió. Recarga la página." }
     return toActionError(error)
   }
   revalidate()
+  if (!finished) return { ok: true, message: "Parte cobrada" }
   return { ok: true, message: paymentMethod === "FIADO" ? "Comanda cobrada al fiado" : "Comanda cobrada" }
 }
 

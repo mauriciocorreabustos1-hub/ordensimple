@@ -343,6 +343,8 @@ model Sale {
   comanda   Comanda?
   /// Descuento sobre el total de los productos (el total ya lo tiene restado). Quién lo pidió y aprobó: discountRequest.
   discount  Int       @default(0)
+  /// Propina (restaurantes). No es venta del negocio: va aparte del total, pero si fue en efectivo está en la caja.
+  tip       Int       @default(0)
   discountRequest DiscountRequest?
   /// Si esta venta es una devolución (venta en negativo), la venta original.
   returnOfId     String?
@@ -1039,6 +1041,8 @@ model ComandaItem {
   sentAt      DateTime?
   /// Cuántas de estas ya marcó la cocina como listas (si agregan más, lo nuevo vuelve a la cocina).
   readyQty    Int      @default(0)
+  /// Cuántas ya se pagaron (cuando cada uno paga lo suyo). Lo que falta cobrar es quantity - paidQty.
+  paidQty     Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 

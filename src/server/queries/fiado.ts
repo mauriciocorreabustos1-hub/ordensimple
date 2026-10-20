@@ -72,3 +72,42 @@ export async function getCustomerFiadoHistory(businessId: string, customerId: st
   ].sort((a, b) => b.date.getTime() - a.date.getTime())
   return entries
 }
+
+export type OverdueDebtor = { id: string; name: string; phone: string | null; balance: number; since: Date; days: number }
+
+/**
+ * Clientes que se pasaron del plazo de pago: se descuentan los abonos de lo fiado más antiguo primero,
+ * y se mira desde cuándo debe lo que queda.
+ */
+export async function getOverdueDebtors(businessId: string, days: number, now = new Date()): Promise<OverdueDebtor[]> {
+  const { balances } = await getDebtors(businessId)
+  const owing = [...balances].filter(([, b]) => b.balance > 0).map(([id]) => id)
+  if (!owing.length) return []
+  const [sales, paid, customers] = await Promise.all([
+    db.sale.findMany({
+      where: { businessId, paymentMethod: "FIADO", customerId: { in: owing } },
+      select: { customerId: true, date: true, total: true },
+      orderBy: { date: "asc" },
+    }),
+    db.customerPayment.groupBy({ by: ["customerId"], where: { businessId, customerId: { in: owing } }, _sum: { amount: true } }),
+    db.customer.findMany({ where: { businessId, id: { in: owing } }, select: { id: true, name: true, phone: true } }),
+  ])
+  // Las devoluciones de una venta fiada también rebajan la deuda (son ventas fiadas en negativo).
+  const credit = new Map(paid.map((p) => [p.customerId, p._sum.amount ?? 0]))
+  for (const s of sales) if (s.total < 0) credit.set(s.customerId!, (credit.get(s.customerId!) ?? 0) - s.total)
+  const since = new Map<string, Date>()
+  for (const s of sales) {
+    if (s.total <= 0 || since.has(s.customerId!)) continue
+    const left = credit.get(s.customerId!) ?? 0
+    if (left >= s.total) credit.set(s.customerId!, left - s.total)
+    else since.set(s.customerId!, s.date)
+  }
+  const limit = now.getTime() - days * 86_400_000
+  return customers
+    .flatMap((c) => {
+      const from = since.get(c.id)
+      if (!from || from.getTime() > limit) return []
+      return [{ ...c, balance: balances.get(c.id)!.balance, since: from, days: Math.floor((now.getTime() - from.getTime()) / 86_400_000) }]
+    })
+    .sort((a, b) => b.days - a.days)
+}

@@ -261,6 +261,11 @@ model BusinessSettings {
   expiryAlerts          Boolean       @default(true)
   expiryAlertKey        String?
   lastExpiryAlertAt     DateTime?
+  /// Fiado: plazo de pago (días) y aviso al dueño de los clientes que se pasaron. Qué se avisó y cuándo, para no repetir.
+  fiadoDays             Int           @default(15)
+  fiadoReminders        Boolean       @default(true)
+  fiadoReminderKey      String?
+  lastFiadoReminderAt   DateTime?
   /// Negocios de comida: cuántas mesas tiene (Mesa 1…N) y lugares con nombre propio (Barra, Terraza, Para llevar…).
   tableCount            Int           @default(6)
   tableExtras           String[]      @default(["Para llevar", "Delivery"])

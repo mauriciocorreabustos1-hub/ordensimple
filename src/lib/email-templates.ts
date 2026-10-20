@@ -681,3 +681,49 @@ export function noSalesEmail(d: { name: string; businessName: string; days: numb
   const text = `Hola ${first}, en ${d.businessName} no se han registrado ventas en los últimos ${d.days} días.\n\nSi vendiste, anótalo (puede ser el total de cada día como una sola venta): ${appUrl}/dashboard\n\nSi cerraste por unos días, ignora este mensaje.`
   return { subject: `${d.businessName}: llevas ${d.days} días sin anotar ventas`, html, text }
 }
+
+/** Para el dueño: clientes que se pasaron del plazo del fiado, para cobrarles. */
+export function fiadoOverdueEmail(d: {
+  name: string
+  businessName: string
+  currency: string
+  days: number
+  items: { name: string; balance: number; days: number }[]
+  more: number
+}) {
+  const appUrl = getAppUrl()
+  const money = (n: number) => formatMoney(n, d.currency)
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const count = d.items.length + d.more
+  const total = d.items.reduce((sum, i) => sum + i.balance, 0)
+  const rows = d.items
+    .map(
+      (i) => `<tr>
+  <td style="padding:12px 0;font-size:15px;color:${INK};border-bottom:1px solid #eef2f0;"><strong>${escapeHtml(i.name)}</strong><br><span style="font-size:13px;color:${MUTED};">Debe hace ${i.days} días</span></td>
+  <td align="right" style="padding:12px 0;font-size:15px;font-weight:700;color:${INK};border-bottom:1px solid #eef2f0;white-space:nowrap;">${money(i.balance)}</td>
+</tr>`,
+    )
+    .join("")
+  const html = layout({
+    preview: `${count === 1 ? "1 cliente" : `${count} clientes`} te deben hace más de ${d.days} días`,
+    body: [
+      h1("Tienes fiado por cobrar"),
+      p(`Hola ${escapeHtml(first)}, en ${escapeHtml(d.businessName)} ${count === 1 ? "este cliente se pasó" : "estos clientes se pasaron"} del plazo de ${d.days} días para pagar:`),
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;">${rows}</table>`,
+      d.more > 0 ? p(`Y ${d.more} cliente${d.more === 1 ? "" : "s"} más.`) : "",
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;background:#fff6e8;border-radius:12px;"><tr><td style="padding:14px 16px;font-size:15px;color:#7a4a0c;">Por cobrar${d.more ? " (los de arriba)" : ""}</td><td align="right" style="padding:14px 16px;font-size:18px;font-weight:700;color:#7a4a0c;">${money(total)}</td></tr></table>`,
+      `<p style="margin:0 0 12px;font-size:14px;line-height:21px;color:${MUTED};background:#f3f6f5;border-radius:12px;padding:12px 14px;"><strong style="color:${INK};">Consejo:</strong> en Clientes tienes un botón para mandarle a cada uno un mensaje amable por WhatsApp con lo que debe.</p>`,
+      button(`${appUrl}/dashboard/clientes`, "Cobrar por WhatsApp"),
+    ].join(""),
+    footer: alertFooter(),
+  })
+  const text = [
+    `Hola ${first}, en ${d.businessName} estos clientes se pasaron del plazo de ${d.days} días para pagar el fiado:`,
+    d.items.map((i) => `${i.name}: ${money(i.balance)} (hace ${i.days} días)`).join("\n"),
+    d.more > 0 ? `Y ${d.more} más.` : "",
+    `Cobrar por WhatsApp: ${appUrl}/dashboard/clientes`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+  return { subject: count === 1 ? `${d.items[0]?.name} te debe hace ${d.items[0]?.days} días` : `${count} clientes te deben fiado hace más de ${d.days} días`, html, text }
+}

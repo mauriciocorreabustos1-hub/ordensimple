@@ -87,6 +87,8 @@ export const preferencesSchema = z.object({
   easyMode: z.boolean().optional(),
   lowStockAlerts: z.boolean().optional(),
   expiryAlerts: z.boolean().optional(),
+  fiadoReminders: z.boolean().optional(),
+  fiadoDays: z.number().int().min(1).max(120).optional(),
   noSalesReminder: z.boolean().optional(),
   weeklySummary: z.boolean().optional(),
   chargesVat: z.boolean().optional(),

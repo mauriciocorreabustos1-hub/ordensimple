@@ -3,11 +3,11 @@ import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { db } from "@/lib/db"
 import { addDays, formatDate, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
 import { sendEmailBatch } from "@/lib/email"
-import { expiringEmail, lowStockEmail, noSalesEmail, payablesEmail, weeklyEmptyEmail, weeklySummaryEmail } from "@/lib/email-templates"
+import { expiringEmail, fiadoOverdueEmail, lowStockEmail, noSalesEmail, payablesEmail, weeklyEmptyEmail, weeklySummaryEmail } from "@/lib/email-templates"
 import { formatMoney } from "@/lib/currency"
 import { payablesDueBefore } from "@/server/queries/payables"
 import { totalsBetween } from "@/server/queries/aggregates"
-import { getDebtors } from "@/server/queries/fiado"
+import { getDebtors, getOverdueDebtors } from "@/server/queries/fiado"
 import { productStats } from "@/server/queries/reports"
 
 const DAY = 86_400_000
@@ -23,6 +23,10 @@ const LOW_STOCK_MAX_ITEMS = 8
 const EXPIRY_DAYS = 7
 const EXPIRY_REPEAT_DAYS = 3
 const EXPIRY_MAX_ITEMS = 8
+/** Fiado vencido: una vez por semana como máximo (antes si aparece alguien nuevo, pero nunca dos días seguidos). */
+const FIADO_REPEAT_DAYS = 7
+const FIADO_MIN_DAYS = 2
+const FIADO_MAX_ITEMS = 8
 
 type Email = Parameters<typeof sendEmailBatch>[0][number]
 
@@ -50,7 +54,7 @@ export async function sendBusinessAlerts(now = new Date()) {
   })
 
   const emails: Email[] = []
-  const counts = { weekly: 0, lowStock: 0, noSales: 0, payables: 0, expiring: 0 }
+  const counts = { weekly: 0, lowStock: 0, noSales: 0, payables: 0, expiring: 0, fiado: 0 }
 
   for (const b of businesses) {
     const s = b.settings!
@@ -159,6 +163,27 @@ export async function sendBusinessAlerts(now = new Date()) {
         counts.expiring++
       } else if (!key && s.expiryAlertKey) {
         await db.businessSettings.update({ where: { id: s.id }, data: { expiryAlertKey: null } })
+      }
+    }
+
+    // ─── Fiado vencido: clientes que se pasaron del plazo de pago ────────────
+    if (s.fiadoReminders && canUseFeature(effectivePlan(b), "customers")) {
+      const overdue = await getOverdueDebtors(b.id, s.fiadoDays, now)
+      const key = overdue.length ? overdue.map((x) => x.id).sort().join(",") : null
+      const since = s.lastFiadoReminderAt ? now.getTime() - s.lastFiadoReminderAt.getTime() : Infinity
+      const changed = key !== s.fiadoReminderKey && overdue.some((x) => !(s.fiadoReminderKey ?? "").split(",").includes(x.id))
+      if (key && (since >= FIADO_REPEAT_DAYS * DAY || (changed && since >= FIADO_MIN_DAYS * DAY))) {
+        await db.businessSettings.update({ where: { id: s.id }, data: { fiadoReminderKey: key, lastFiadoReminderAt: now } })
+        const shown = overdue.slice(0, FIADO_MAX_ITEMS).map((x) => ({ name: x.name, balance: x.balance, days: x.days }))
+        for (const r of recipients) {
+          emails.push({
+            to: r.email,
+            ...fiadoOverdueEmail({ name: r.name, businessName: b.name, currency: b.currency, days: s.fiadoDays, items: shown, more: overdue.length - shown.length }),
+          })
+        }
+        counts.fiado++
+      } else if (!key && s.fiadoReminderKey) {
+        await db.businessSettings.update({ where: { id: s.id }, data: { fiadoReminderKey: null } })
       }
     }
 

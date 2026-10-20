@@ -15,7 +15,8 @@ import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import { getCustomers, type CustomerSegment } from "@/server/queries/contacts"
-import { getDebtors } from "@/server/queries/fiado"
+import { getDebtors, getOverdueDebtors } from "@/server/queries/fiado"
+import { OverdueCard } from "@/components/contacts/overdue-card"
 import { requireBusiness } from "@/server/session"
 import { fiadoReminderText, whatsappLink } from "@/lib/whatsapp"
 
@@ -37,7 +38,11 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
   const params = await searchParams
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 80) : ""
   const segment = SEGMENTS.some((s) => s.value === params.segmento) ? (params.segmento as CustomerSegment) : "todos"
-  const [data, debts] = await Promise.all([getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined }), getDebtors(ctx.businessId)])
+  const [data, debts, overdue] = await Promise.all([
+    getCustomers(ctx.businessId, ctx.timezone, { q: q || undefined }),
+    getDebtors(ctx.businessId),
+    getOverdueDebtors(ctx.businessId, ctx.settings.fiadoDays),
+  ])
   const owes = (id: string) => Math.max(0, debts.balances.get(id)?.balance ?? 0)
   const debtors = data.rows.filter((r) => owes(r.id) > 0).sort((a, b) => owes(b.id) - owes(a.id))
   const money = (n: number) => formatMoney(n, ctx.currency)
@@ -108,6 +113,10 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
           hint={best ? `${money(best.total)} en ${best.purchases} compras.` : "Aún no hay ventas con cliente."}
         />
       </div>
+
+      {overdue.length && !q ? (
+        <OverdueCard debtors={overdue} days={ctx.settings.fiadoDays} currency={ctx.currency} businessName={ctx.business.name} />
+      ) : null}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-1.5 overflow-x-auto pb-1">

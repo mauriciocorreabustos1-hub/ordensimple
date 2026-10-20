@@ -10,6 +10,7 @@ import { PhotoUploader } from "@/components/settings/photo-uploader"
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
+import { FiadoDays } from "@/components/settings/fiado-days"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
 import { TablesSettings } from "@/components/settings/tables-settings"
@@ -23,7 +24,7 @@ import { TeamSection } from "@/components/settings/team-section"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
 import { getAppUrl } from "@/lib/app-url"
-import { memberLimit, PLANS } from "@/lib/plans"
+import { canUseFeature, memberLimit, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
@@ -193,7 +194,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="avisos" className="scroll-mt-20">
         <CardHeader>
           <CardTitle>Avisos por correo</CardTitle>
           <CardDescription>
@@ -215,6 +216,18 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             checked={ctx.settings.expiryAlerts}
             disabled={!canManage}
           />
+          {canUseFeature(ctx.business.plan, "customers") ? (
+            <>
+              <PreferenceSwitch
+                name="fiadoReminders"
+                label="Fiado por cobrar"
+                description="Una vez por semana, los clientes que se pasaron del plazo de pago, con cuánto deben."
+                checked={ctx.settings.fiadoReminders}
+                disabled={!canManage}
+              />
+              <FiadoDays value={ctx.settings.fiadoDays} disabled={!canManage} />
+            </>
+          ) : null}
           <PreferenceSwitch
             name="noSalesReminder"
             label="Días sin ventas"

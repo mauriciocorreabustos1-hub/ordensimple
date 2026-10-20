@@ -13,9 +13,12 @@ import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { percentChange } from "@/lib/calculations"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney, formatNumber, formatPercent } from "@/lib/currency"
-import { addDays, formatDate, startOfMonth, toDateKey } from "@/lib/dates"
+import { addDays, formatDate, monthName, startOfMonth, toDateKey } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
-import { can } from "@/lib/roles"
+import { can, ROLE_LABEL } from "@/lib/roles"
+import { db } from "@/lib/db"
+import { TeamCard, type TeamRow } from "@/components/reports/team-card"
+import { commissionOf, salesByMember } from "@/server/queries/team"
 import { getInsights } from "@/server/queries/insights"
 import { parseRange } from "@/server/queries/records"
 import { getReport } from "@/server/queries/reports"
@@ -71,10 +74,41 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
     range.desde = toDateKey(oldest, ctx.timezone)
     if (range.to <= range.from) range.to = addDays(range.from, 1, ctx.timezone)
   }
-  const [report, insights] = await Promise.all([
+  const monthStart = startOfMonth(new Date(), ctx.timezone)
+  const [report, insights, members, byMember, byMemberMonth] = await Promise.all([
     getReport(ctx.businessId, range.from, range.to, ctx.timezone),
     canUseFeature(ctx.business.plan, "tips") ? getInsights(ctx.businessId, ctx.timezone, ctx.currency) : Promise.resolve([]),
+    db.businessMember.findMany({
+      where: { businessId: ctx.businessId },
+      select: { id: true, userId: true, role: true, monthlyGoal: true, commissionRate: true, user: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    salesByMember(ctx.businessId, range.from, range.to),
+    salesByMember(ctx.businessId, monthStart, startOfMonth(new Date(), ctx.timezone, 1)),
   ])
+  // Con más de una persona en el negocio: cuánto vendió cada una, su meta y su comisión.
+  const team: TeamRow[] =
+    members.length > 1
+      ? members
+          .map((m) => {
+            const st = byMember.get(m.userId)
+            const net = st?.net ?? 0
+            return {
+              memberId: m.id,
+              name: m.user.name,
+              role: ROLE_LABEL[m.role],
+              net,
+              count: st?.count ?? 0,
+              discounts: st?.discounts ?? 0,
+              returned: st?.returned ?? 0,
+              monthNet: byMemberMonth.get(m.userId)?.net ?? 0,
+              monthlyGoal: m.monthlyGoal,
+              commissionRate: m.commissionRate,
+              commission: commissionOf(net, m.commissionRate),
+            }
+          })
+          .sort((a, b) => b.net - a.net)
+      : []
   const money = (n: number) => formatMoney(n, ctx.currency)
   const { current: cur, previous: prev } = report
   const prevLabel = `vs. ${formatDate(report.prevFrom, ctx.timezone, { day: "numeric", month: "short" })} – ${formatDate(addDays(range.from, -1, ctx.timezone), ctx.timezone, { day: "numeric", month: "short" })}`
@@ -166,6 +200,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
           <SalesExpensesChart data={report.chart} currency={ctx.currency} height={260} caption="Ventas y gastos del período" />
         </CardContent>
       </Card>
+
+      {team.length ? (
+        <TeamCard rows={team} currency={ctx.currency} canEdit={can(ctx.role, "members:manage")} monthLabel={monthName(new Date(), ctx.timezone)} />
+      ) : null}
 
       {insights.length ? <InsightsCard insights={insights} /> : null}
 

@@ -302,3 +302,35 @@ export async function acceptInvitation(token: string): Promise<ActionResult> {
   })
   redirect("/dashboard")
 }
+
+const goalSchema = z.object({
+  /** Meta de ventas del mes. 0 o vacío = sin meta. */
+  monthlyGoal: z.number().int().min(0).max(100_000_000_000).nullable(),
+  /** Comisión en porcentaje (5 = 5 %). 0 o vacío = sin comisión. */
+  commissionPercent: z.number().min(0).max(50).nullable(),
+})
+
+/** El dueño fija la meta del mes y la comisión de alguien de su equipo (en esta sucursal). */
+export async function setMemberGoal(memberId: string, input: z.input<typeof goalSchema>): Promise<ActionResult> {
+  if (!idSchema.safeParse(memberId).success) return { ok: false, message: "No encontramos a esa persona." }
+  const ctx = await requireBusiness()
+  const parsed = goalSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Revisa la meta y la comisión (la comisión va de 0 a 50 %)." }
+  try {
+    assertCan(ctx, "members:manage")
+    const { monthlyGoal, commissionPercent } = parsed.data
+    const updated = await db.businessMember.updateMany({
+      where: { id: memberId, businessId: ctx.businessId },
+      data: {
+        monthlyGoal: monthlyGoal || null,
+        commissionRate: commissionPercent ? Math.round(commissionPercent * 100) / 10_000 : null,
+      },
+    })
+    if (updated.count === 0) return { ok: false, message: "No encontramos a esa persona." }
+    revalidatePath("/dashboard/reportes")
+    revalidatePath("/dashboard")
+    return { ok: true, message: "Meta guardada" }
+  } catch (error) {
+    return toActionError(error)
+  }
+}

@@ -31,7 +31,9 @@ import { getInsights } from "@/server/queries/insights"
 import { getDebtors } from "@/server/queries/fiado"
 import { getYearSummary } from "@/server/queries/results"
 import { payablesDueBefore } from "@/server/queries/payables"
-import { addDays, startOfDay } from "@/lib/dates"
+import { addDays, startOfDay, startOfMonth } from "@/lib/dates"
+import { MyGoalCard } from "@/components/dashboard/my-goal-card"
+import { commissionOf, salesByMember } from "@/server/queries/team"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature, memberLimit, PLANS, PLANS_ENFORCED, checkoutPath } from "@/lib/plans"
 import { can } from "@/lib/roles"
@@ -56,7 +58,9 @@ export default async function DashboardPage() {
   const chargesVat = Boolean(vat && ctx.settings.chargesVat)
   const today = zonedParts(now, ctx.timezone)
   const showPayables = showFinances && canUseFeature(ctx.business.plan, "suppliers") && can(ctx.role, "suppliers:manage")
-  const [data, insights, debts, year, payables] = await Promise.all([
+  const hasGoal = Boolean(ctx.member.monthlyGoal || ctx.member.commissionRate)
+  const nextMonth = startOfMonth(now, ctx.timezone, 1)
+  const [data, insights, debts, year, payables, mine] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
     showFiado ? getDebtors(ctx.businessId) : Promise.resolve(null),
@@ -64,7 +68,21 @@ export default async function DashboardPage() {
       ? getYearSummary(ctx.businessId, today.year, today.month, ctx.timezone, chargesVat ? vat!.rate : null)
       : Promise.resolve(null),
     showPayables ? payablesDueBefore(ctx.businessId, addDays(startOfDay(now, ctx.timezone), 8, ctx.timezone)) : Promise.resolve([]),
+    hasGoal ? salesByMember(ctx.businessId, startOfMonth(now, ctx.timezone), nextMonth).then((m) => m.get(ctx.user.id)) : Promise.resolve(undefined),
   ])
+  // Meta y comisión del mes de quien usa la app (las fija el dueño en Reportes → Tu equipo).
+  const myNet = mine?.net ?? 0
+  const goalCard = hasGoal ? (
+    <MyGoalCard
+      net={myNet}
+      goal={ctx.member.monthlyGoal}
+      rate={ctx.member.commissionRate}
+      commission={commissionOf(myNet, ctx.member.commissionRate)}
+      currency={ctx.currency}
+      month={monthName(now, ctx.timezone)}
+      daysLeft={Math.max(0, Math.round((nextMonth.getTime() - startOfDay(now, ctx.timezone).getTime()) / 86_400_000))}
+    />
+  ) : null
   const payablesTotal = payables.reduce((sum, p) => sum + p.amount, 0)
   const overduePayables = payables.filter((p) => p.dueDate < startOfDay(now, ctx.timezone)).length
   const thisMonth = year?.rows[today.month - 1] ?? null
@@ -154,6 +172,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <QuickButtons />
+        {goalCard}
         <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
           <h2 id="hoy" className="text-base font-semibold">
             Hoy en el negocio
@@ -246,6 +265,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <QuickButtons />
+        {goalCard}
 
       <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
         <h2 id="hoy" className="text-base font-semibold">

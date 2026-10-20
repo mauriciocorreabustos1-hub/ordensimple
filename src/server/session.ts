@@ -82,6 +82,8 @@ export async function requireBusiness() {
   return {
     user,
     role,
+    /** Meta del mes y comisión de quien está usando la app (las fija el dueño en Reportes). */
+    member: { id: membership.id, monthlyGoal: membership.monthlyGoal, commissionRate: membership.commissionRate },
     business,
     settings,
     businessId: business.id,

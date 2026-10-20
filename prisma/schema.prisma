@@ -215,6 +215,9 @@ model BusinessMember {
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role       Role     @default(EMPLOYEE)
+  /// Meta de ventas del mes y comisión (% sobre lo que vende, menos devoluciones). Null = sin meta / sin comisión.
+  monthlyGoal    Int?
+  commissionRate Float?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

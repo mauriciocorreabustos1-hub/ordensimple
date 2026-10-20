@@ -200,6 +200,9 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
     if (await db.sale.count({ where: { returnOfId: sale.id } })) {
       return { ok: false, message: "Esta venta tiene devoluciones, así que no se puede editar. Si es necesario, elimina primero la devolución." }
     }
+    if (await db.saleReturn.count({ where: { saleId: sale.id, status: "PENDING" } })) {
+      return { ok: false, message: "Esta venta tiene una devolución esperando aprobación. Apruébala o recházala antes de editarla." }
+    }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     // Si la venta tenía un descuento aprobado, se mantiene.

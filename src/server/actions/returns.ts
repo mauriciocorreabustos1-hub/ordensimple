@@ -88,6 +88,29 @@ export async function getReturnable(saleId: string): Promise<ActionResult<Return
   }
 }
 
+class ReturnConflict extends Error {}
+
+/**
+ * Dentro de la transacción: bloquea la venta original (otra devolución de la misma venta espera su turno) y revisa
+ * que cada producto siga existiendo con el mismo precio y que no se devuelva más de lo vendido.
+ * `exclude` es la solicitud que se está aprobando (no se cuenta contra sí misma).
+ */
+async function assertAvailable(tx: Tx, saleId: string, items: ReturnItem[], exclude?: string) {
+  await tx.$queryRaw`SELECT "id" FROM "sale" WHERE "id" = ${saleId} FOR UPDATE`
+  const [saleItems, others] = await Promise.all([
+    tx.saleItem.findMany({ where: { saleId }, select: { id: true, quantity: true, unitPrice: true } }),
+    tx.saleReturn.findMany({ where: { saleId, status: { in: ["PENDING", "APPROVED"] }, ...(exclude ? { id: { not: exclude } } : {}) }, select: { items: true } }),
+  ])
+  const taken = new Map<string, number>()
+  for (const r of others) for (const i of r.items as ReturnItem[]) taken.set(i.saleItemId, (taken.get(i.saleItemId) ?? 0) + i.quantity)
+  const byId = new Map(saleItems.map((i) => [i.id, i]))
+  for (const i of items) {
+    const it = byId.get(i.saleItemId)
+    if (!it || it.unitPrice !== i.unitPrice) throw new ReturnConflict("La venta cambió desde que se pidió la devolución. Pídela de nuevo.")
+    if (i.quantity > it.quantity - (taken.get(i.saleItemId) ?? 0)) throw new ReturnConflict(`De «${i.description}» ya no se pueden devolver tantas unidades.`)
+  }
+}
+
 /** Registra la devolución aprobada: venta en negativo hoy, stock de vuelta (o merma) y fiado rebajado si corresponde. */
 async function applyReturn(tx: Tx, ctx: BusinessContext, ret: { id: string; saleId: string; items: ReturnItem[]; amount: number; reason: string; refundMethod: PaymentMethod; restock: boolean; requestedById: string }) {
   const original = await tx.sale.findUniqueOrThrow({ where: { id: ret.saleId }, include: { items: true } })
@@ -181,17 +204,22 @@ export async function requestReturn(input: ReturnRequestInput): Promise<ActionRe
       requestedByName: ctx.user.name,
     }
     if (!approver) {
-      await db.saleReturn.create({ data: base })
+      await db.$transaction(async (tx) => {
+        await assertAvailable(tx, saleId, items)
+        await tx.saleReturn.create({ data: base })
+      })
       revalidate()
       return { ok: true, message: "Devolución pedida: el encargado debe aprobarla.", data: { applied: false } }
     }
     await db.$transaction(async (tx) => {
+      await assertAvailable(tx, saleId, items)
       const ret = await tx.saleReturn.create({
         data: { ...base, status: "APPROVED", decidedById: ctx.user.id, decidedByName: ctx.user.name, decidedAt: new Date() },
       })
       await applyReturn(tx, ctx, { ...ret, items })
     })
   } catch (error) {
+    if (error instanceof ReturnConflict) return { ok: false, message: error.message }
     return toActionError(error)
   }
   revalidate()
@@ -251,12 +279,15 @@ export async function decideReturn(id: string, approve: boolean): Promise<Action
       if (res.count !== 1) return false
       if (approve) {
         const ret = await tx.saleReturn.findUniqueOrThrow({ where: { id } })
+        // Se vuelve a revisar justo al aprobar: la venta pudo cambiar, o pudo aprobarse otra devolución.
+        await assertAvailable(tx, ret.saleId, ret.items as ReturnItem[], ret.id)
         await applyReturn(tx, ctx, { ...ret, items: ret.items as ReturnItem[] })
       }
       return true
     })
     if (!done) return { ok: false, message: "Esta devolución ya fue respondida." }
   } catch (error) {
+    if (error instanceof ReturnConflict) return { ok: false, message: error.message }
     return toActionError(error)
   }
   revalidate()

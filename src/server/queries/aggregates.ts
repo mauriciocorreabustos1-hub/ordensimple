@@ -5,12 +5,13 @@ export type Totals = { sales: number; expenses: number; profit: number; salesCou
 
 /** Ventas y gastos entre dos instantes [from, to). */
 export async function totalsBetween(businessId: string, from: Date, to: Date): Promise<Totals> {
-  const [sales, expenses] = await Promise.all([
+  const [sales, count, expenses] = await Promise.all([
     db.sale.aggregate({
       where: { businessId, date: { gte: from, lt: to } },
       _sum: { total: true },
-      _count: true,
     }),
+    // Las devoluciones restan plata, pero no cuentan como una venta más.
+    db.sale.count({ where: { businessId, date: { gte: from, lt: to }, returnOfId: null } }),
     db.expense.aggregate({
       where: { businessId, date: { gte: from, lt: to } },
       _sum: { amount: true },
@@ -18,7 +19,7 @@ export async function totalsBetween(businessId: string, from: Date, to: Date): P
   ])
   const s = sales._sum.total ?? 0
   const e = expenses._sum.amount ?? 0
-  return { sales: s, expenses: e, profit: s - e, salesCount: sales._count }
+  return { sales: s, expenses: e, profit: s - e, salesCount: count }
 }
 
 type Row = { bucket: string; total: bigint | number | null }

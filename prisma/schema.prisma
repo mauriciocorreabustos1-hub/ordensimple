@@ -194,6 +194,7 @@ model Business {
   productBarcodes   ProductBarcode[]
   comandas          Comanda[]
   discountRequests  DiscountRequest[]
+  saleReturns       SaleReturn[]
   featureUsage      FeatureUsage[]
   ownerWithdrawals  OwnerWithdrawal[]
   loans             Loan[]
@@ -333,6 +334,12 @@ model Sale {
   /// Descuento sobre el total de los productos (el total ya lo tiene restado). Quién lo pidió y aprobó: discountRequest.
   discount  Int       @default(0)
   discountRequest DiscountRequest?
+  /// Si esta venta es una devolución (venta en negativo), la venta original.
+  returnOfId     String?
+  returnOf       Sale?        @relation("SaleReturnOf", fields: [returnOfId], references: [id], onDelete: SetNull)
+  returnedBy     Sale[]       @relation("SaleReturnOf")
+  returnRequests SaleReturn[] @relation("ReturnRequests")
+  returnRecord   SaleReturn?  @relation("ReturnSale")
 
   @@unique([businessId, clientId])
   @@index([businessId, date])
@@ -1035,4 +1042,44 @@ model DiscountRequest {
 
   @@index([businessId, status])
   @@map("discount_request")
+}
+
+// ─── Devoluciones ───────────────────────────────────────────────────────────
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Devolución de una venta: la pide un trabajador y la aprueba el dueño o un administrador (o la hacen ellos directo).
+/// Al aprobarse se registra como una venta en negativo (returnSaleId) el día en que se devuelve.
+model SaleReturn {
+  id              String        @id @default(cuid())
+  businessId      String
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleId          String
+  sale            Sale          @relation("ReturnRequests", fields: [saleId], references: [id], onDelete: Cascade)
+  returnSaleId    String?       @unique
+  returnSale      Sale?         @relation("ReturnSale", fields: [returnSaleId], references: [id], onDelete: SetNull)
+  /// [{ saleItemId, productId, description, quantity, unitPrice }]
+  items           Json
+  amount          Int
+  reason          String
+  /// Cómo se devuelve la plata (FIADO = se rebaja de lo que debe el cliente).
+  refundMethod    PaymentMethod
+  /// true: el producto vuelve al stock; false: viene dañado y se anota como merma.
+  restock         Boolean
+  status          ReturnStatus  @default(PENDING)
+  requestedById   String
+  requestedByName String
+  decidedById     String?
+  decidedByName   String?
+  decidedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([businessId, status])
+  @@index([saleId])
+  @@map("sale_return")
 }

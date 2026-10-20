@@ -12,10 +12,12 @@ import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { PAYMENT_LABEL } from "@/lib/constants"
 import { formatMoney } from "@/lib/currency"
 import { addDays, formatDate, formatTime } from "@/lib/dates"
-import { can } from "@/lib/roles"
+import { can, canApproveDiscounts } from "@/lib/roles"
 import { deleteSale } from "@/server/actions/sales"
 import { EditSaleButton, type EditableSale } from "@/components/sales/edit-sale-button"
+import { ReturnButton } from "@/components/sales/return-button"
 import { db } from "@/lib/db"
+import { cn } from "@/lib/utils"
 import { toDateKey } from "@/lib/dates"
 import { listSales, parseRange, periodTotals } from "@/server/queries/records"
 import { requireBusiness } from "@/server/session"
@@ -25,7 +27,9 @@ export const metadata: Metadata = { title: "Ventas" }
 function describe(items: { description: string; quantity: number }[]) {
   const first = items[0]
   if (!first) return "Venta"
-  const text = first.quantity > 1 ? `${first.quantity} × ${first.description}` : first.description
+  // Las devoluciones traen cantidades en negativo.
+  const q = Math.abs(first.quantity)
+  const text = q > 1 ? `${q} × ${first.description}` : first.description
   return items.length > 1 ? `${text} y ${items.length - 1} más` : text
 }
 
@@ -104,6 +108,17 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
     return `Descuento de ${money(s.discount)}, ${who}. Motivo: ${d.reason}`
   }
   const canDelete = can(ctx.role, "sales:delete")
+  // Devoluciones: cualquiera que vende puede pedirla; el encargado la aprueba.
+  const canApprove = canApproveDiscounts(ctx.role)
+  const title = (s: (typeof list.rows)[number]) => (s.returnOfId ? `Devolución: ${describe(s.items)}` : describe(s.items))
+  const returnInfo = (s: (typeof list.rows)[number]) => {
+    const back = -s.returnedBy.reduce((sum, r) => sum + r.total, 0)
+    if (s.returnRequests.length) return { text: "Devolución pendiente de aprobación", tone: "pending" as const }
+    if (back > 0) return { text: `Con devolución de ${money(back)}`, tone: "done" as const }
+    return null
+  }
+  const returnButton = (s: (typeof list.rows)[number]) =>
+    !s.returnOfId && s.total > 0 ? <ReturnButton saleId={s.id} currency={ctx.currency} timezone={ctx.timezone} canApprove={canApprove} /> : null
   const avg = month.salesCount ? Math.round(month.sales / month.salesCount) : 0
 
   return (
@@ -144,7 +159,8 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
         <DateRangeFilter desde={range.desde} hasta={range.hasta} timezone={ctx.timezone} />
         <div className="flex items-baseline justify-between text-sm">
           <span className="text-muted-foreground">
-            {list.count} {list.count === 1 ? "venta" : "ventas"} en el período
+            {list.count - list.returnsCount} {list.count - list.returnsCount === 1 ? "venta" : "ventas"} en el período
+            {list.returnsCount ? ` · devoluciones −${money(list.returned)}` : ""}
           </span>
           <span className="tabular font-semibold">{money(list.total)}</span>
         </div>
@@ -171,10 +187,10 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                       <li key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
                         <div className="min-w-0 flex-1 space-y-0.5">
                           <p className="flex items-baseline gap-2 text-sm">
-                            <span className="min-w-0 flex-1 truncate font-medium" title={describe(s.items)}>
-                              {describe(s.items)}
+                            <span className="min-w-0 flex-1 truncate font-medium" title={title(s)}>
+                              {title(s)}
                             </span>
-                            <span className="tabular shrink-0 font-semibold">{money(s.total)}</span>
+                            <span className={cn("tabular shrink-0 font-semibold", s.total < 0 && "text-danger")}>{money(s.total)}</span>
                           </p>
                           <p className="line-clamp-2 text-xs text-muted-foreground">
                             {formatTime(s.date, ctx.timezone)} · {PAYMENT_LABEL[s.paymentMethod]}
@@ -182,8 +198,14 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                             {s.createdBy && s.createdBy.id !== ctx.user.id ? ` · por ${s.createdBy.name.split(" ")[0]}` : ""}
                           </p>
                           {s.discount > 0 ? <p className="text-xs font-medium text-amber-700 dark:text-amber-400">{discountInfo(s)}</p> : null}
+                          {returnInfo(s) ? (
+                            <p className={cn("text-xs font-medium", returnInfo(s)?.tone === "pending" ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
+                              {returnInfo(s)?.text}
+                            </p>
+                          ) : null}
                         </div>
-                        {editButton(s)}
+                        {returnButton(s)}
+                        {s.returnOfId ? null : editButton(s)}
                         {canDelete ? (
                           <ConfirmDelete
                             title="¿Eliminar esta venta?"
@@ -208,7 +230,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                     <TableHead>Pago</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="text-right">Total</TableHead>
-                    {canDelete || canEdit ? <TableHead className="w-20" /> : null}
+                    <TableHead className="w-28" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -218,14 +240,14 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                         {dayLabel(g.key, g.date)}
                       </TableCell>
                       <TableCell className="tabular text-right text-sm whitespace-nowrap text-muted-foreground">{daySummary(g, i)}</TableCell>
-                      {canDelete || canEdit ? <TableCell /> : null}
+                      <TableCell />
                     </TableRow>,
                     ...g.rows.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="tabular pl-4 text-muted-foreground">{formatTime(s.date, ctx.timezone)}</TableCell>
                         <TableCell className="max-w-72">
                           <span className="flex items-center gap-2">
-                            <span className="truncate">{describe(s.items)}</span>
+                            <span className="truncate">{title(s)}</span>
                             {s.isQuick ? (
                               <Badge variant="secondary" className="gap-1">
                                 <Zap className="size-3" />
@@ -237,6 +259,14 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                                 Desc. −{money(s.discount)}
                               </Badge>
                             ) : null}
+                            {returnInfo(s) ? (
+                              <Badge
+                                variant="outline"
+                                className={cn("shrink-0", returnInfo(s)?.tone === "pending" && "border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300")}
+                              >
+                                {returnInfo(s)?.tone === "pending" ? "Devolución pendiente" : returnInfo(s)?.text.replace("Con devolución de ", "Devuelto ")}
+                              </Badge>
+                            ) : null}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -246,11 +276,11 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                           ) : null}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{s.customer?.name ?? "—"}</TableCell>
-                        <TableCell className="tabular text-right font-medium">{money(s.total)}</TableCell>
-                        {canDelete || canEdit ? (
-                          <TableCell className="pr-2">
+                        <TableCell className={cn("tabular text-right font-medium", s.total < 0 && "text-danger")}>{money(s.total)}</TableCell>
+                        <TableCell className="pr-2">
                             <div className="flex items-center justify-end gap-1">
-                              {editButton(s)}
+                              {returnButton(s)}
+                              {s.returnOfId ? null : editButton(s)}
                               {canDelete ? (
                                 <ConfirmDelete
                                   title="¿Eliminar esta venta?"
@@ -260,7 +290,6 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                               ) : null}
                             </div>
                           </TableCell>
-                        ) : null}
                       </TableRow>
                     )),
                   ])}

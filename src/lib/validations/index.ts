@@ -323,3 +323,17 @@ export const discountRequestSchema = z.object({
   context: z.string().trim().min(1).max(40),
 })
 export type DiscountRequestInput = z.input<typeof discountRequestSchema>
+
+// ─── Devoluciones ───────────────────────────────────────────────────────────
+
+export const returnRequestSchema = z.object({
+  saleId: z.string().min(1).max(64),
+  items: z
+    .array(z.object({ saleItemId: z.string().min(1).max(64), quantity: z.number().int().min(1).max(100_000) }))
+    .min(1, "Elige qué productos se devuelven")
+    .max(50),
+  reason: z.string().trim().min(2, "Escribe el motivo de la devolución").max(80, "Máximo 80 caracteres"),
+  refundMethod: paymentMethod,
+  restock: z.boolean(),
+})
+export type ReturnRequestInput = z.input<typeof returnRequestSchema>

@@ -91,6 +91,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Efectivo, débito, crédito, transferencia, otro o fiado",
       "Cliente opcional en cada venta (obligatorio si es fiado)",
       "Corrige o elimina una venta si te equivocaste",
+      "Devoluciones totales o parciales: vuelven al stock o quedan como merma, y la caja cuadra sola",
       "Historial con filtros por fecha: hoy, 7 días, este mes o el que elijas",
       "El stock se descuenta solo al vender un producto",
     ],

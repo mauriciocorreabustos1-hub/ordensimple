@@ -196,6 +196,10 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
     const sale = await db.sale.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId } })
     if (sale && fiadoBlocked(ctx, parsed.data.paymentMethod, sale.paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (!sale) return { ok: false, message: "Venta no encontrada." }
+    if (sale.returnOfId) return { ok: false, message: "Una devolución no se edita. Si te equivocaste, elimínala y hazla de nuevo." }
+    if (await db.sale.count({ where: { returnOfId: sale.id } })) {
+      return { ok: false, message: "Esta venta tiene devoluciones, así que no se puede editar. Si es necesario, elimina primero la devolución." }
+    }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     // Si la venta tenía un descuento aprobado, se mantiene.
@@ -243,8 +247,13 @@ export async function deleteSale(id: string): Promise<ActionResult> {
       include: { movements: true },
     })
     if (!sale) return { ok: false, message: "Venta no encontrada." }
+    if (await db.sale.count({ where: { returnOfId: sale.id } })) {
+      return { ok: false, message: "Esta venta tiene devoluciones. Elimina primero la devolución (aparece como una venta en negativo)." }
+    }
 
     await db.$transaction(async (tx) => {
+      // Si es una devolución, su solicitud se borra con ella (así se puede volver a devolver).
+      if (sale.returnOfId) await tx.saleReturn.deleteMany({ where: { returnSaleId: sale.id } })
       // Devuelve al stock lo que se había descontado, dejando registro.
       for (const m of sale.movements) {
         await tx.product.update({ where: { id: m.productId }, data: { stock: { increment: -m.quantity } } })

@@ -30,7 +30,7 @@ export function periodTotals(businessId: string, timezone: string, now = new Dat
 
 export async function listSales(businessId: string, from: Date, to: Date, take: number) {
   const where = { businessId, date: { gte: from, lt: to } }
-  const [rows, count, sum] = await Promise.all([
+  const [rows, count, sum, returns] = await Promise.all([
     db.sale.findMany({
       where,
       orderBy: { date: "desc" },
@@ -40,12 +40,16 @@ export async function listSales(businessId: string, from: Date, to: Date, take: 
         customer: { select: { name: true } },
         discountRequest: { select: { requestedByName: true, decidedByName: true, reason: true } },
         createdBy: { select: { id: true, name: true } },
+        returnedBy: { select: { total: true } },
+        returnRequests: { where: { status: "PENDING" }, select: { id: true } },
       },
     }),
     db.sale.count({ where }),
     db.sale.aggregate({ where, _sum: { total: true } }),
+    // Devoluciones del período (ventas en negativo).
+    db.sale.aggregate({ where: { ...where, returnOfId: { not: null } }, _sum: { total: true }, _count: true }),
   ])
-  return { rows, count, total: sum._sum.total ?? 0 }
+  return { rows, count, total: sum._sum.total ?? 0, returned: -(returns._sum.total ?? 0), returnsCount: returns._count }
 }
 
 export async function listExpenses(businessId: string, from: Date, to: Date, take: number) {

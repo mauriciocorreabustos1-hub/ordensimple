@@ -104,10 +104,13 @@ async function assertAvailable(tx: Tx, saleId: string, items: ReturnItem[], excl
   const taken = new Map<string, number>()
   for (const r of others) for (const i of r.items as ReturnItem[]) taken.set(i.saleItemId, (taken.get(i.saleItemId) ?? 0) + i.quantity)
   const byId = new Map(saleItems.map((i) => [i.id, i]))
+  // Se suman las cantidades de esta misma solicitud por producto (por si viniera repetido).
+  const asked = new Map<string, number>()
   for (const i of items) {
     const it = byId.get(i.saleItemId)
     if (!it || it.unitPrice !== i.unitPrice) throw new ReturnConflict("La venta cambió desde que se pidió la devolución. Pídela de nuevo.")
-    if (i.quantity > it.quantity - (taken.get(i.saleItemId) ?? 0)) throw new ReturnConflict(`De «${i.description}» ya no se pueden devolver tantas unidades.`)
+    asked.set(i.saleItemId, (asked.get(i.saleItemId) ?? 0) + i.quantity)
+    if (asked.get(i.saleItemId)! > it.quantity - (taken.get(i.saleItemId) ?? 0)) throw new ReturnConflict(`De «${i.description}» ya no se pueden devolver tantas unidades.`)
   }
 }
 

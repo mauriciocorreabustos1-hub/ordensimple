@@ -331,7 +331,9 @@ export const returnRequestSchema = z.object({
   items: z
     .array(z.object({ saleItemId: z.string().min(1).max(64), quantity: z.number().int().min(1).max(100_000) }))
     .min(1, "Elige qué productos se devuelven")
-    .max(50),
+    .max(50)
+    // Cada producto una sola vez (si se repitiera, podría devolverse más de lo vendido).
+    .refine((items) => new Set(items.map((i) => i.saleItemId)).size === items.length, "Hay productos repetidos en la devolución"),
   reason: z.string().trim().min(2, "Escribe el motivo de la devolución").max(80, "Máximo 80 caracteres"),
   refundMethod: paymentMethod,
   restock: z.boolean(),

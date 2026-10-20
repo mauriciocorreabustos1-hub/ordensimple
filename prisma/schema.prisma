@@ -251,6 +251,10 @@ model BusinessSettings {
   lastLowStockAlertAt   DateTime?
   /// Productos incluidos en el último aviso de stock bajo: si no cambian, no se repite el correo.
   lowStockAlertKey      String?
+  /// Aviso de productos por vencer (los próximos 7 días); qué se avisó y cuándo, para no repetir cada día.
+  expiryAlerts          Boolean       @default(true)
+  expiryAlertKey        String?
+  lastExpiryAlertAt     DateTime?
   /// Negocios de comida: cuántas mesas tiene (Mesa 1…N) y lugares con nombre propio (Barra, Terraza, Para llevar…).
   tableCount            Int           @default(6)
   tableExtras           String[]      @default(["Para llevar", "Delivery"])

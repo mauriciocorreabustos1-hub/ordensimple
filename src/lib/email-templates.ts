@@ -614,6 +614,56 @@ export function lowStockEmail(d: { name: string; businessName: string; items: { 
   }
 }
 
+/** Productos que vencen pronto (o ya vencieron) y todavía tienen stock: para venderlos antes de perderlos. */
+export function expiringEmail(d: {
+  name: string
+  businessName: string
+  currency: string
+  items: { name: string; units: number | null; value: number; days: number }[]
+  more: number
+}) {
+  const appUrl = getAppUrl()
+  const money = (n: number) => formatMoney(n, d.currency)
+  const first = (d.name.split(" ")[0] || d.name).trim()
+  const when = (days: number) => (days < 0 ? "Ya venció" : days === 0 ? "Vence hoy" : days === 1 ? "Vence mañana" : `En ${days} días`)
+  const color = (days: number) => (days <= 1 ? "#c2410c" : days <= 3 ? "#b45309" : INK)
+  const total = d.items.reduce((sum, i) => sum + i.value, 0)
+  const count = d.items.length + d.more
+  const rows = d.items
+    .map(
+      (i) => `<tr>
+  <td style="padding:12px 0;font-size:15px;color:${INK};border-bottom:1px solid #eef2f0;"><strong>${escapeHtml(i.name)}</strong><br><span style="font-size:13px;color:${MUTED};">${i.units !== null ? `${i.units} unidad${i.units === 1 ? "" : "es"} · ` : ""}${money(i.value)}</span></td>
+  <td align="right" style="padding:12px 0;font-size:15px;font-weight:700;color:${color(i.days)};border-bottom:1px solid #eef2f0;white-space:nowrap;">${when(i.days)}</td>
+</tr>`,
+    )
+    .join("")
+  const html = layout({
+    preview: d.items.slice(0, 3).map((i) => `${i.name}: ${when(i.days).toLowerCase()}`).join(" · "),
+    body: [
+      h1("Tienes productos por vencer"),
+      p(`Hola ${escapeHtml(first)}, en ${escapeHtml(d.businessName)} estos productos vencen pronto. Aún estás a tiempo de venderlos:`),
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;">${rows}</table>`,
+      d.more > 0 ? p(`Y ${d.more} producto${d.more === 1 ? "" : "s"} más.`) : "",
+      total > 0
+        ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;background:#fff6e8;border-radius:12px;"><tr><td style="padding:14px 16px;font-size:15px;color:#7a4a0c;">Valor en riesgo</td><td align="right" style="padding:14px 16px;font-size:18px;font-weight:700;color:#7a4a0c;">${money(total)}</td></tr></table>`
+        : "",
+      `<p style="margin:0 0 12px;font-size:14px;line-height:21px;color:${MUTED};background:#f3f6f5;border-radius:12px;padding:12px 14px;"><strong style="color:${INK};">Consejo:</strong> ponlos al frente del mostrador o en oferta. Si alguno se vence, regístralo como merma para que tus números cuadren.</p>`,
+      button(`${appUrl}/dashboard/inventario`, "Ver productos por vencer"),
+    ].join(""),
+    footer: alertFooter(),
+  })
+  const text = [
+    `Hola ${first}, en ${d.businessName} estos productos vencen pronto:`,
+    d.items.map((i) => `${i.name}: ${when(i.days).toLowerCase()}${i.units !== null ? ` (${i.units} unidades)` : ""}`).join("\n"),
+    d.more > 0 ? `Y ${d.more} más.` : "",
+    total > 0 ? `Valor en riesgo: ${money(total)}` : "",
+    `Ver productos por vencer: ${appUrl}/dashboard/inventario`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+  return { subject: count === 1 ? `Por vencer: ${d.items[0]?.name}` : `${count} productos vencen esta semana en ${d.businessName}`, html, text }
+}
+
 export function noSalesEmail(d: { name: string; businessName: string; days: number }) {
   const appUrl = getAppUrl()
   const first = (d.name.split(" ")[0] || d.name).trim()

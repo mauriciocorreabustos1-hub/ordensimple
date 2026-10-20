@@ -86,6 +86,7 @@ export type BusinessSettingsInput = z.input<typeof businessSettingsSchema>
 export const preferencesSchema = z.object({
   easyMode: z.boolean().optional(),
   lowStockAlerts: z.boolean().optional(),
+  expiryAlerts: z.boolean().optional(),
   noSalesReminder: z.boolean().optional(),
   weeklySummary: z.boolean().optional(),
   chargesVat: z.boolean().optional(),

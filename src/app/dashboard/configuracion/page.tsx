@@ -209,6 +209,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             disabled={!canManage}
           />
           <PreferenceSwitch
+            name="expiryAlerts"
+            label="Productos por vencer"
+            description="Lo que vence en los próximos 7 días y todavía tiene stock, con cuánta plata está en riesgo (plan Pro)."
+            checked={ctx.settings.expiryAlerts}
+            disabled={!canManage}
+          />
+          <PreferenceSwitch
             name="noSalesReminder"
             label="Días sin ventas"
             description="Si pasan 3 días sin ventas registradas, para que no se te olvide anotarlas."

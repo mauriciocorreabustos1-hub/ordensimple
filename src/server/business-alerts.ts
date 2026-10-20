@@ -3,7 +3,7 @@ import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { db } from "@/lib/db"
 import { addDays, formatDate, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
 import { sendEmailBatch } from "@/lib/email"
-import { lowStockEmail, noSalesEmail, payablesEmail, weeklyEmptyEmail, weeklySummaryEmail } from "@/lib/email-templates"
+import { expiringEmail, lowStockEmail, noSalesEmail, payablesEmail, weeklyEmptyEmail, weeklySummaryEmail } from "@/lib/email-templates"
 import { formatMoney } from "@/lib/currency"
 import { payablesDueBefore } from "@/server/queries/payables"
 import { totalsBetween } from "@/server/queries/aggregates"
@@ -19,6 +19,10 @@ const NO_SALES_MAX_DAYS = 45
 /** Si los productos con stock bajo no cambian, el aviso se repite como máximo una vez por semana. */
 const LOW_STOCK_REPEAT_DAYS = 7
 const LOW_STOCK_MAX_ITEMS = 8
+/** Productos por vencer: se avisa lo que vence en los próximos 7 días; si no cambia, se repite cada 3 días. */
+const EXPIRY_DAYS = 7
+const EXPIRY_REPEAT_DAYS = 3
+const EXPIRY_MAX_ITEMS = 8
 
 type Email = Parameters<typeof sendEmailBatch>[0][number]
 
@@ -46,7 +50,7 @@ export async function sendBusinessAlerts(now = new Date()) {
   })
 
   const emails: Email[] = []
-  const counts = { weekly: 0, lowStock: 0, noSales: 0, payables: 0 }
+  const counts = { weekly: 0, lowStock: 0, noSales: 0, payables: 0, expiring: 0 }
 
   for (const b of businesses) {
     const s = b.settings!
@@ -127,6 +131,34 @@ export async function sendBusinessAlerts(now = new Date()) {
       } else if (!key && s.lowStockAlertKey) {
         // Ya repuso todo: la próxima vez que algo se acabe, avisamos al tiro.
         await db.businessSettings.update({ where: { id: s.id }, data: { lowStockAlertKey: null } })
+      }
+    }
+
+    // ─── Productos por vencer (Merma y vencidos, plan Pro) ───────────────────
+    if (s.expiryAlerts && canUseFeature(effectivePlan(b), "waste")) {
+      const soon = await db.product.findMany({
+        where: { businessId: b.id, active: true, expiresAt: { not: null, lt: addDays(today, EXPIRY_DAYS + 1, tz) } },
+        select: { id: true, name: true, stock: true, trackStock: true, price: true, expiresAt: true },
+        orderBy: { expiresAt: "asc" },
+      })
+      // Solo lo que todavía se puede vender (con stock, o sin control de stock).
+      const items = soon.filter((x) => !x.trackStock || x.stock > 0)
+      const key = items.length ? items.map((x) => `${x.id}:${x.expiresAt!.toISOString().slice(0, 10)}`).sort().join(",") : null
+      const stale = !s.lastExpiryAlertAt || now.getTime() - s.lastExpiryAlertAt.getTime() >= EXPIRY_REPEAT_DAYS * DAY
+      if (key && (key !== s.expiryAlertKey || stale)) {
+        await db.businessSettings.update({ where: { id: s.id }, data: { expiryAlertKey: key, lastExpiryAlertAt: now } })
+        const shown = items.slice(0, EXPIRY_MAX_ITEMS).map((x) => ({
+          name: x.name,
+          units: x.trackStock ? x.stock : null,
+          value: x.trackStock ? Math.max(0, x.stock) * x.price : 0,
+          days: Math.round((startOfDay(x.expiresAt!, tz).getTime() - today.getTime()) / DAY),
+        }))
+        for (const r of recipients) {
+          emails.push({ to: r.email, ...expiringEmail({ name: r.name, businessName: b.name, currency: b.currency, items: shown, more: items.length - shown.length }) })
+        }
+        counts.expiring++
+      } else if (!key && s.expiryAlertKey) {
+        await db.businessSettings.update({ where: { id: s.id }, data: { expiryAlertKey: null } })
       }
     }
 

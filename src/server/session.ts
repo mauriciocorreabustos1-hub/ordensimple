@@ -65,6 +65,7 @@ export async function requireBusiness() {
   const settings = business.settings ?? {
     easyMode: false,
     lowStockAlerts: true,
+    expiryAlerts: true,
     noSalesReminder: true,
     weeklySummary: false,
     defaultPayment: "CASH" as const,

@@ -242,23 +242,27 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
               ) : (
                 <ul className="grid grid-cols-1 gap-2">
                   {items.map((p) => (
-                    <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Mínimo {formatNumber(p.minStock)} · vendiste {formatNumber(p.sold30)} en 30 días
-                        </p>
+                    <li key={p.id} className="flex flex-col gap-2 rounded-xl border bg-card p-3 sm:flex-row sm:items-center sm:gap-3">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium leading-snug sm:truncate">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Mínimo {formatNumber(p.minStock)} · vendiste {formatNumber(p.sold30)} en 30 días
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className={cn("tabular text-lg font-semibold", p.state === "out" && "text-danger")}>
+                            {formatNumber(p.stock)}
+                          </p>
+                          {showCosts ? (
+                            <p className="text-xs text-muted-foreground">{money(Math.max(0, p.stock) * p.cost)}</p>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className={cn("tabular text-lg font-semibold", p.state === "out" && "text-danger")}>
-                          {formatNumber(p.stock)}
-                        </p>
-                        {showCosts ? (
-                          <p className="text-xs text-muted-foreground">{money(Math.max(0, p.stock) * p.cost)}</p>
-                        ) : null}
+                      <div className="flex items-center justify-end gap-2">
+                        <StateBadge state={p.state} />
+                        {canManage ? <MovementDialog products={inv.productOptions} defaultProductId={p.id} compact allowWaste={wasteOn} /> : null}
                       </div>
-                      <StateBadge state={p.state} />
-                      {canManage ? <MovementDialog products={inv.productOptions} defaultProductId={p.id} compact allowWaste={wasteOn} /> : null}
                     </li>
                   ))}
                 </ul>

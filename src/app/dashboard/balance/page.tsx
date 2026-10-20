@@ -197,16 +197,17 @@ export default async function BalancePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground">Ganó el negocio</p>
-                <p className={cn("tabular text-lg font-semibold", w.profit < 0 && "text-danger")}>{money(w.profit)}</p>
+            {/* En el celular, una cifra por fila (los montos grandes no caben en tres columnas). */}
+            <div className="grid gap-2 sm:grid-cols-3 sm:text-center">
+              <div className="flex items-baseline justify-between gap-3 rounded-xl bg-muted/50 p-3 sm:block">
+                <p className="text-xs text-muted-foreground">{w.profit < 0 ? "Perdió el negocio" : "Ganó el negocio"}</p>
+                <p className={cn("tabular text-lg font-semibold", w.profit < 0 && "text-danger")}>{money(Math.abs(w.profit))}</p>
               </div>
-              <div className="rounded-xl bg-muted/50 p-3">
+              <div className="flex items-baseline justify-between gap-3 rounded-xl bg-muted/50 p-3 sm:block">
                 <p className="text-xs text-muted-foreground">Te llevaste</p>
                 <p className="tabular text-lg font-semibold">{money(w.total)}</p>
               </div>
-              <div className="rounded-xl bg-muted/50 p-3">
+              <div className="flex items-baseline justify-between gap-3 rounded-xl bg-muted/50 p-3 sm:block">
                 <p className="text-xs text-muted-foreground">Quedó en el negocio</p>
                 <p className={cn("tabular text-lg font-semibold", w.leftInBusiness < 0 ? "text-danger" : "text-success")}>
                   {money(w.leftInBusiness)}

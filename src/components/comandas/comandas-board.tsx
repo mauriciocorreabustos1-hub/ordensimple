@@ -192,8 +192,8 @@ export function ComandasBoard({
                 state === "ready" && "border-primary/60 bg-accent/40 ring-1 ring-primary/30",
               )}
             >
-              <span className="flex items-start justify-between gap-2">
-                <span className="font-display text-lg leading-tight font-semibold">{c.label}</span>
+              <span className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                <span className="max-w-full shrink-0 font-display text-lg leading-tight font-semibold">{c.label}</span>
                 {state === "unsent" ? (
                   <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">Sin enviar</span>
                 ) : state === "cooking" ? (

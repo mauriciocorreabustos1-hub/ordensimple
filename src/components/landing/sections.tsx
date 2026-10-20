@@ -313,19 +313,19 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
 function ComparisonValue({ value }: { value: string | boolean }) {
   if (value === true) return <Check className="mx-auto size-4 text-primary" aria-label="Incluido" />
   if (value === false) return <Minus className="mx-auto size-4 text-muted-foreground/60" aria-label="No incluido" />
-  return <span className="text-sm">{value}</span>
+  return <span>{value}</span>
 }
 
 export function PricingComparison() {
   const plans = Object.values(PLANS)
   return (
     <div className="overflow-x-auto rounded-2xl border bg-card">
-      <table className="w-full min-w-[560px] text-left">
+      <table className="w-full text-left text-xs sm:text-sm md:min-w-[560px]">
         <thead>
           <tr className="border-b bg-muted/40">
-            <th className="px-5 py-4 text-sm font-medium text-muted-foreground">Compara los planes</th>
+            <th className="px-3 py-3 font-medium text-muted-foreground sm:px-5 sm:py-4">Compara los planes</th>
             {plans.map((p) => (
-              <th key={p.id} className="px-4 py-4 text-center text-sm font-semibold">
+              <th key={p.id} className="px-2 py-3 text-center font-semibold sm:px-4 sm:py-4">
                 {p.name}
               </th>
             ))}
@@ -334,9 +334,9 @@ export function PricingComparison() {
         <tbody>
           {PLAN_COMPARISON.map((row) => (
             <tr key={row.label} className="border-b last:border-0">
-              <td className="px-5 py-3 text-sm">{row.label}</td>
+              <td className="px-3 py-2.5 sm:px-5 sm:py-3">{row.label}</td>
               {row.values.map((v, i) => (
-                <td key={i} className="px-4 py-3 text-center">
+                <td key={i} className="px-2 py-2.5 text-center sm:px-4 sm:py-3">
                   <ComparisonValue value={v} />
                 </td>
               ))}

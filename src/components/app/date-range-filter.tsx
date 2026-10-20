@@ -32,8 +32,9 @@ export function DateRangeFilter({ desde, hasta, timezone }: { desde: string; has
   }
 
   return (
-    <div className={cn("flex flex-col gap-2 md:flex-row md:items-center md:justify-between", pending && "opacity-70")}>
-      <div className="flex gap-1.5 overflow-x-auto pb-1 md:pb-0">
+    // Si no caben en una fila, las fechas bajan a la siguiente (nunca tapan los botones).
+    <div className={cn("flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between", pending && "opacity-70")}>
+      <div className="flex shrink-0 gap-1.5 overflow-x-auto pb-1 md:overflow-visible md:pb-0">
         {presets.map((p) => {
           const active = p.desde === desde && p.hasta === hasta
           return (

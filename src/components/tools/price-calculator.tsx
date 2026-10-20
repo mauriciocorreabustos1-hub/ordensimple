@@ -55,7 +55,7 @@ export function PriceCalculator({ currency }: { currency: string }) {
                   value={x.name}
                   onChange={(e) => updateExtra(x.key, { name: e.target.value })}
                   list="price-extra-names"
-                  placeholder={i === 0 ? "Ej.: bolsa, envío, comisión…" : "¿Qué otro costo?"}
+                  placeholder={i === 0 ? "Ej.: bolsa" : "Otro costo"}
                   aria-label={`Nombre del costo ${i + 1}`}
                   className="h-10 [&::-webkit-calendar-picker-indicator]:hidden"
                 />

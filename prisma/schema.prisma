@@ -87,6 +87,8 @@ model User {
   accounts      Account[]
   twoFactors    TwoFactor[]
   memberships   BusinessMember[]
+  shiftsOpened  CashShift[]      @relation("ShiftOpenedBy")
+  shiftsClosed  CashShift[]      @relation("ShiftClosedBy")
   sales         Sale[]
   expenses      Expense[]
   movements     InventoryMovement[]
@@ -183,6 +185,7 @@ model Business {
   goals             Goal[]
   customerPayments  CustomerPayment[]
   cashClosings      CashClosing[]
+  cashShifts        CashShift[]
   notifications     Notification[]
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
@@ -572,6 +575,35 @@ model CashClosing {
 
   @@unique([businessId, day])
   @@map("cash_closing")
+}
+
+/// Turno de caja (mañana, tarde…): quien abre deja el sencillo y al cerrar cuenta el efectivo.
+/// Cuenta lo que pasó entre openedAt y closedAt. Hay un solo turno abierto a la vez por negocio.
+model CashShift {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  openedById  String?
+  openedBy    User?     @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
+  openedAt    DateTime  @default(now())
+  opening     Int
+  closedById  String?
+  closedBy    User?     @relation("ShiftClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  closedAt    DateTime?
+  salesTotal  Int       @default(0)
+  salesCount  Int       @default(0)
+  cashSales   Int       @default(0)
+  cashIn      Int       @default(0)
+  cashOut     Int       @default(0)
+  expected    Int       @default(0)
+  counted     Int?
+  difference  Int?
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([businessId, openedAt])
+  @@map("cash_shift")
 }
 
 // ─── Registro de errores (se ve en /admin) ──────────────────────────────────

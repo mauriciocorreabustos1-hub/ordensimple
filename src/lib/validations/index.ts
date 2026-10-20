@@ -299,6 +299,15 @@ export const cashClosingSchema = z.object({
 })
 export type CashClosingInput = z.input<typeof cashClosingSchema>
 
+export const openShiftSchema = z.object({ opening: money })
+export const closeShiftSchema = z.object({
+  shiftId: z.string().min(1).max(40),
+  counted: money,
+  expensesFromCash: z.boolean(),
+  note: optionalText(300),
+})
+export type CloseShiftInput = z.input<typeof closeShiftSchema>
+
 // ─── Comandas ───────────────────────────────────────────────────────────────
 
 /** El id lo pone el celular: así cada plato conserva lo que la cocina ya marcó como listo. */

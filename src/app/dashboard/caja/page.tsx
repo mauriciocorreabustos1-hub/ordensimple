@@ -11,7 +11,8 @@ import { PAYMENT_METHODS } from "@/lib/constants"
 import { formatMoney, formatNumber } from "@/lib/currency"
 import { addDays, dateKeyToUtc, formatDate, toDateKey } from "@/lib/dates"
 import { cn } from "@/lib/utils"
-import { getCashDay } from "@/server/queries/cash"
+import { getCashDay, getShifts } from "@/server/queries/cash"
+import { ShiftPanel } from "@/components/cash/shift-panel"
 import { trackFeature } from "@/server/feature-usage"
 import { ProGate } from "@/components/app/pro-gate"
 import { canUseFeature } from "@/lib/plans"
@@ -31,10 +32,13 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
   const today = toDateKey(new Date(), ctx.timezone)
   const requested = typeof params.dia === "string" && DATE_RE.test(params.dia) ? params.dia : today
   const day = requested > today ? today : requested
-  const d = await getCashDay(ctx.businessId, ctx.timezone, day)
+  const dayDate = dateKeyToUtc(day, ctx.timezone)
+  const [d, shifts] = await Promise.all([
+    getCashDay(ctx.businessId, ctx.timezone, day),
+    getShifts(ctx.businessId, dayDate, addDays(dayDate, 1, ctx.timezone)),
+  ])
   const money = (n: number) => formatMoney(n, ctx.currency)
 
-  const dayDate = dateKeyToUtc(day, ctx.timezone)
   const prevDay = toDateKey(addDays(dayDate, -1, ctx.timezone), ctx.timezone)
   const nextDay = toDateKey(addDays(dayDate, 1, ctx.timezone), ctx.timezone)
   const dayLabel = formatDate(dayDate, ctx.timezone, { weekday: "long", day: "numeric", month: "long", year: "numeric" })
@@ -96,6 +100,36 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
           hint={`${formatNumber(d.expensesCount)} ${d.expensesCount === 1 ? "gasto" : "gastos"}`}
         />
       </div>
+
+      <ShiftPanel
+        isToday={day === today}
+        currency={ctx.currency}
+        timezone={ctx.timezone}
+        lastCounted={shifts.lastCounted}
+        open={
+          shifts.open && shifts.openWindow
+            ? {
+                id: shifts.open.id,
+                openedBy: shifts.open.openedBy?.name ?? "Alguien del equipo",
+                openedAt: shifts.open.openedAt.toISOString(),
+                opening: shifts.open.opening,
+                ...shifts.openWindow,
+              }
+            : null
+        }
+        shifts={shifts.day.map((s) => ({
+          id: s.id,
+          openedBy: s.openedBy?.name ?? "Alguien del equipo",
+          closedBy: s.closedBy?.name ?? "Alguien del equipo",
+          openedAt: s.openedAt.toISOString(),
+          closedAt: s.closedAt!.toISOString(),
+          salesTotal: s.salesTotal,
+          expected: s.expected,
+          counted: s.counted ?? 0,
+          difference: s.difference ?? 0,
+          note: s.note,
+        }))}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
         <Card className="h-fit">

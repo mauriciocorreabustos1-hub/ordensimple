@@ -8,5 +8,5 @@ export const WHATSAPP = {
   /** Para el enlace y los datos estructurados (formato internacional). */
   phone: "+56954591736",
   /** Enlace para abrir el chat, con un primer mensaje ya escrito. */
-  link: (text = "Hola, quiero saber más de OrdenSimple") => `https://wa.me/56954591736?text=${encodeURIComponent(text)}`,
+  link: (text = "Hola, quiero saber más de OrdenSimple") => `https://api.whatsapp.com/send?phone=56954591736&text=${encodeURIComponent(text)}`,
 }

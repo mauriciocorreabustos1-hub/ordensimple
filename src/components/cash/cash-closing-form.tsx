@@ -11,6 +11,7 @@ import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
+import { whatsappLink } from "@/lib/whatsapp"
 import { saveCashClosing } from "@/server/actions/cash"
 
 export function CashClosingForm({
@@ -195,7 +196,7 @@ export function CashClosingForm({
             {initial ? "Actualizar cierre" : "Cerrar caja"}
           </Button>
           <Button size="lg" variant="outline" className="h-11" asChild>
-            <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer">
+            <a href={whatsappLink(null, shareText)} target="_blank" rel="noopener noreferrer">
               <MessageCircle />
               Compartir por WhatsApp
             </a>

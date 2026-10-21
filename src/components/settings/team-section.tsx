@@ -22,6 +22,7 @@ import { Field } from "@/components/app/field"
 import { initials } from "@/components/app/user-menu"
 import { ChoiceChips } from "@/components/admin/choice-chips"
 import { ROLE_LABEL } from "@/lib/roles"
+import { whatsappLink } from "@/lib/whatsapp"
 import { cancelInvitation, changeMemberRole, inviteMember, leaveBusiness, removeMember, setMemberBranches } from "@/server/actions/team"
 
 type TeamRole = "ADMIN" | "EMPLOYEE"
@@ -62,7 +63,7 @@ const ROLE_HELP: Record<TeamRole, string> = {
 
 function whatsappUrl(businessName: string, url: string) {
   const text = `Te invité a ${businessName} en OrdenSimple para que registres ventas y gastos. Entra aquí: ${url}`
-  return `https://wa.me/?text=${encodeURIComponent(text)}`
+  return whatsappLink(null, text)
 }
 
 function copy(url: string) {

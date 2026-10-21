@@ -5,7 +5,9 @@
 export function whatsappLink(phone: string | null | undefined, text?: string) {
   const digits = (phone ?? "").replace(/\D/g, "")
   const number = digits.length === 9 ? `56${digits}` : digits.length >= 8 ? digits : ""
-  return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`
+  // Se usa api.whatsapp.com y no wa.me: al redirigir, wa.me rompe los emojis en algunos WhatsApp (sobre todo en el computador).
+  const qs = [number ? `phone=${number}` : null, text ? `text=${encodeURIComponent(text)}` : null].filter(Boolean).join("&")
+  return `https://api.whatsapp.com/send${qs ? `?${qs}` : ""}`
 }
 
 /** Mensaje amable para cobrar un fiado. */

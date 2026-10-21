@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Download, Landmark, Package, PiggyBank, Receipt, ShoppingBag, TrendingDown, Wallet } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, FileText, Landmark, Package, PiggyBank, Receipt, ShoppingBag, TrendingDown, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Explainer } from "@/components/app/explainer"
@@ -417,12 +417,20 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
             <CardTitle>Resumen de {year}</CardTitle>
             <CardDescription>Mes a mes, con la suma del año.{chargesVat ? ` Montos sin ${L}.` : ""}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/dashboard/resultados/exportar?anio=${year}`}>
-              <Download />
-              Descargar (Excel)
-            </a>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <a href={`/dashboard/resultados/exportar?anio=${year}&formato=pdf`} download>
+                <FileText />
+                PDF
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href={`/dashboard/resultados/exportar?anio=${year}`} download>
+                <Download />
+                Excel
+              </a>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <p className="mb-2 text-xs text-muted-foreground md:hidden">Desliza para ver todas las columnas →</p>

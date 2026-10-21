@@ -1,4 +1,5 @@
-import { getCurrency } from "@/lib/currency"
+import { formatMoney, getCurrency } from "@/lib/currency"
+import { PdfReport, pdfResponse } from "@/server/pdf"
 import { formatDate, zonedParts, zonedTimeToUtc } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
@@ -35,6 +36,57 @@ export async function GET(request: Request) {
   // Los meses vacíos antes de empezar a registrar no se incluyen.
   const first = rows.findIndex((r) => r.s.sales !== 0 || r.s.costOfSales !== 0 || r.s.operatingExpenses !== 0 || r.s.purchasesToInventory !== 0)
   const visible = first < 0 ? rows : rows.slice(first)
+
+  const monthLabel = (m: number) => formatDate(zonedTimeToUtc(year, m, 1, ctx.timezone), ctx.timezone, { month: "long" })
+
+  // PDF: el estado de resultados del año, mes a mes, listo para imprimir o mandar al contador.
+  if (new URL(request.url).searchParams.get("formato") === "pdf") {
+    const money = (n: number) => formatMoney(n, ctx.currency)
+    const report = await PdfReport.create({
+      businessName: ctx.business.name,
+      title: `Estado de resultados ${year}`,
+      subtitle: chargesVat ? `Mes a mes, con el ${L} de cada mes` : "Mes a mes",
+      generated: formatDate(new Date(), ctx.timezone, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }),
+      landscape: true,
+    })
+    report.kpis([
+      { label: chargesVat ? `Ventas sin ${L}` : "Ventas", value: money(totals.netSales) },
+      { label: "Costo de venta", value: money(totals.costOfSales) },
+      { label: "Gastos", value: money(totals.operatingExpenses) },
+      { label: totals.profit >= 0 ? "Utilidad del año" : "Pérdida del año", value: money(totals.profit), tone: totals.profit < 0 ? "bad" : "good" },
+    ])
+    const cols = chargesVat
+      ? [
+          { label: "Mes", width: 1.6 },
+          { label: "Ventas totales", width: 1.5, align: "right" as const },
+          { label: `${L} ventas`, width: 1.3, align: "right" as const },
+          { label: `Ventas sin ${L}`, width: 1.5, align: "right" as const },
+          { label: "Costo de venta", width: 1.4, align: "right" as const },
+          { label: "Utilidad bruta", width: 1.4, align: "right" as const },
+          { label: "Gastos", width: 1.3, align: "right" as const },
+          { label: "Utilidad", width: 1.4, align: "right" as const },
+          { label: `${L} a pagar`, width: 1.3, align: "right" as const },
+        ]
+      : [
+          { label: "Mes", width: 1.6 },
+          { label: "Ventas", width: 1.5, align: "right" as const },
+          { label: "Costo de venta", width: 1.5, align: "right" as const },
+          { label: "Utilidad bruta", width: 1.5, align: "right" as const },
+          { label: "Gastos", width: 1.5, align: "right" as const },
+          { label: "Utilidad", width: 1.5, align: "right" as const },
+        ]
+    type V = { sales: number; salesVat: number; netSales: number; costOfSales: number; grossProfit: number; operatingExpenses: number; profit: number; waste?: number }
+    const pdfLine = (label: string, v: V, vatToPay: number) =>
+      chargesVat
+        ? [label, money(v.sales), money(v.salesVat), money(v.netSales), money(v.costOfSales), money(v.grossProfit), money(v.operatingExpenses + (v.waste ?? 0)), money(v.profit), money(vatToPay)]
+        : [label, money(v.netSales), money(v.costOfSales), money(v.grossProfit), money(v.operatingExpenses + (v.waste ?? 0)), money(v.profit)]
+    report.heading("Mes a mes")
+    report.table(cols, visible.map((r) => pdfLine(monthLabel(r.month), r.s, r.vatToPay)), { total: pdfLine(`Total ${year}`, totals, totals.vatToPay) })
+    report.paragraph(
+      `Cálculo aproximado hecho con OrdenSimple con lo que registraste. Para tu declaración${vat?.form ? ` (${vat.form})` : ""}, revisa las cifras con tu contador.`,
+    )
+    return pdfResponse(await report.save(), `ordensimple-resultados-${year}.pdf`)
+  }
 
   const { decimals } = getCurrency(ctx.currency)
   const amount = (minor: number) => (minor / 10 ** decimals).toFixed(decimals).replace(".", ",")

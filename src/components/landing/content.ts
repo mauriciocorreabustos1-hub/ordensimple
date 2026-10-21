@@ -1,14 +1,15 @@
 import {
+  BellRing,
+  CalendarClock,
   ChefHat,
+  Globe,
   BarChart3,
   Boxes,
   Calculator,
   Clock,
-  FileDown,
   FlaskConical,
   HeartHandshake,
   LayoutDashboard,
-  Mail,
   NotebookPen,
   Package,
   Receipt,
@@ -54,16 +55,16 @@ export const HIGHLIGHTS: Feature[] = [
     text: "Ventas, gastos y ganancia de hoy y del mes, con gráficos simples y comparaciones.",
   },
   {
-    icon: Mail,
-    title: "Avisos por correo",
-    text: "Te avisamos cuando algo se está acabando, si llevas días sin anotar ventas y cada lunes con tu resumen.",
+    icon: BellRing,
+    title: "Avisos al celular y al correo",
+    text: "Un pedido nuevo, un descuento por aprobar, algo que se agota o un fiado atrasado: te avisamos al tiro.",
   },
   {
     icon: Package,
     title: "Productos e inventario",
     text: "Costo, precio y stock de cada producto: cuánto ganas por unidad y qué tienes que reponer.",
   },
-  { icon: UsersRound, title: "Tu equipo", text: "Invita a tus empleados: registran ventas y gastos sin ver tus ganancias." },
+  { icon: UsersRound, title: "Tu equipo", text: "Invita a tus empleados: venden sin ver tus ganancias, y tú ves sus metas y comisiones." },
   {
     icon: Calculator,
     title: "Calculadoras simples",
@@ -121,6 +122,8 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Registra abonos parciales o el pago completo",
       "Historial de lo fiado y lo abonado de cada cliente",
       "Filtro para ver solo a los clientes que te deben",
+      "Plazo de pago: ves quiénes se atrasaron y les cobras por WhatsApp en un toque",
+      "Aviso semanal con el fiado por cobrar, al correo y al celular",
     ],
   },
   {
@@ -134,6 +137,8 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Escribe cuánto contaste y te decimos si falta o sobra plata",
       "Historial de cierres de los últimos días",
       "Comparte el cierre del día por WhatsApp",
+      "Turnos de caja: cada persona abre con el sencillo y cuenta al salir; sabes en qué turno faltó o sobró",
+      "Las propinas en efectivo se suman a lo que debería haber en la caja",
     ],
   },
   {
@@ -152,6 +157,38 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Al cobrar queda como venta: descuenta stock y suma a la caja y a tus reportes",
       "Cuenta dividida: cobra todo junto o lo de cada persona por separado",
       "Propina sugerida del 10% u otro monto, guardada aparte de tus ventas",
+    ],
+  },
+  {
+    id: "tienda",
+    icon: Globe,
+    title: "Tienda online",
+    description: "Tu catálogo en internet para recibir pedidos por WhatsApp, sin comisiones (plan Pro).",
+    points: [
+      "Tu propia página: ordensimple.cl/tienda/tu-negocio",
+      "Tus productos con precio y stock, buscador y categorías",
+      "El cliente arma su pedido y te lo manda por WhatsApp, ordenado y con emojis",
+      "Retiro en el local o despacho, con la dirección",
+      "Los precios salen de tu sistema: nadie los puede cambiar",
+      "Pedidos web: lo registras como venta (o comanda) con un toque",
+      "Aviso al celular apenas entra un pedido",
+      "Compártela por WhatsApp o en tus redes con un botón",
+    ],
+  },
+  {
+    id: "agenda",
+    icon: CalendarClock,
+    title: "Agenda y reservas",
+    description: "Para peluquerías, barberías, estética, consultas, clases y talleres (plan Pro).",
+    points: [
+      "Servicios con precio y duración, aparte de tus productos",
+      "Agenda del día por profesional, sin choques de hora",
+      "Tus clientes reservan solos en tu página: eligen servicio, profesional, día y hora libre",
+      "Tú decides el horario de atención, cada cuánto hay horas y con cuánta anticipación",
+      "Recordatorio por WhatsApp a cada cliente, uno tras otro",
+      "Estados: agendada, confirmada, llegó, no vino o cancelada",
+      "Cobra la cita con un toque: queda como venta, con la comisión de quien atendió",
+      "Aviso al celular de cada reserva nueva y las citas del día cada mañana",
     ],
   },
   {
@@ -240,20 +277,25 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Resumen de cualquier período comparado con el anterior",
       "Productos más vendidos y más rentables",
       "Gastos por categoría y ventas por método de pago",
-      "Descarga tus ventas y gastos en Excel",
+      "Descarga el reporte del período en PDF, listo para imprimir o mandar",
+      "Tus ventas y gastos en PDF o Excel, y el estado de resultados del año",
+      "Ventas, metas y comisiones de cada persona de tu equipo",
       "Consejos automáticos calculados con tus números reales",
     ],
   },
   {
     id: "avisos",
-    icon: Mail,
-    title: "Avisos por correo",
+    icon: BellRing,
+    title: "Avisos al celular y al correo",
     description: "Tú atiende el negocio: nosotros vigilamos los números.",
     points: [
+      "En el celular, aunque tengas la app cerrada: pedidos web, reservas y solicitudes de tu equipo",
+      "Stock bajo o agotado y productos por vencer",
+      "Fiado atrasado y pagos a proveedores que vencen",
+      "Restaurantes: al garzón le llega «Listo para servir» cuando la cocina termina",
       "Resumen semanal cada lunes: cuánto vendiste, gastaste y te quedó",
-      "Stock bajo: qué productos se están acabando o se agotaron",
       "Días sin ventas: un recordatorio si pasan 3 días sin anotar",
-      "Actívalos o desactívalos cuando quieras en Configuración",
+      "Eliges qué avisos quieres en Configuración → Avisos",
     ],
   },
   {
@@ -265,7 +307,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Invita por correo o por WhatsApp con un enlace",
       "Administrador: casi todo, incluidos reportes y configuración",
       "Empleado: registra ventas, gastos, stock y clientes, sin ver ganancias ni costos",
-      "Descuentos con aprobación: el empleado lo pide y tú lo apruebas o rechazas desde tu celular",
+      "Descuentos y devoluciones con aprobación: el empleado lo pide y tú lo apruebas o rechazas desde tu celular",
+      "Meta del mes y comisión para cada persona: cada uno ve en su inicio cuánto lleva",
+      "Ventas de cada persona en Reportes, descontando lo que le devolvieron",
       "Cambia el rol o quita el acceso cuando quieras",
       "Si trabajas en más de un negocio, cambias entre ellos en un toque",
     ],
@@ -316,9 +360,7 @@ export const TOOLS: Feature[] = [
   },
 ]
 
-export const COMING_SOON: Feature[] = [
-  { icon: FileDown, title: "Reportes en PDF", text: "Resúmenes listos para imprimir o enviar." },
-]
+export const COMING_SOON: Feature[] = []
 
 export const BENEFITS: Feature[] = [
   { icon: Clock, title: "Adiós al Excel", text: "Deja de pelear con planillas. Registrar tu día te toma menos de un minuto." },
@@ -432,6 +474,14 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en «Pedidos web» lo registras como venta con un toque. Sin comisiones.",
       },
       {
+        q: "¿Me llegan avisos al celular?",
+        a: "Sí. En Configuración → Avisos activas «Avisos en este celular o computador» y te llegan aunque tengas la app cerrada: pedidos web, reservas, solicitudes de descuento o devolución de tu equipo, stock bajo, productos por vencer, fiado atrasado y pagos a proveedores. En iPhone, primero agrega OrdenSimple a tu pantalla de inicio.",
+      },
+      {
+        q: "¿Puedo descargar mis reportes?",
+        a: "Sí. Con el plan Pro descargas el reporte del período en PDF (listo para imprimir o mandar a tu contador), tus ventas y gastos en PDF o Excel, y el estado de resultados del año.",
+      },
+      {
         q: "¿Cómo los contacto?",
         a: "Por WhatsApp al +56 9 5459 1736 o por correo a contacto@ordensimple.cl. Te respondemos lo antes posible.",
       },
@@ -532,7 +582,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Clientes, fiado y cobro por WhatsApp", values: [true, true, true] },
   { label: "Comandas y pantalla de cocina (restaurantes y cafés)", values: [false, true, true] },
   { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
-  { label: "Agenda de citas (peluquerías, consultas, talleres)", values: [false, true, true] },
+  { label: "Agenda de citas y reservas online (peluquerías, consultas, talleres)", values: [false, true, true] },
   { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
@@ -545,7 +595,8 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Balance, retiros del dueño y préstamos", values: [false, true, true] },
   { label: "Proveedores y pagos pendientes", values: [false, true, true] },
   { label: "Resultados e IVA (utilidad y F29)", values: [false, true, true] },
-  { label: "Exportar a Excel", values: [false, true, true] },
+  { label: "Descargar reportes en PDF y Excel", values: [false, true, true] },
+  { label: "Avisos al celular", values: [true, true, true] },
   { label: "Equipo por sucursal", values: [false, true, true] },
   { label: "Resumen de todas tus sucursales", values: [false, true, true] },
 ]

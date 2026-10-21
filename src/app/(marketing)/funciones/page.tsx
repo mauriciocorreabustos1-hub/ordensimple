@@ -5,7 +5,7 @@ import { CtaSection, FeatureGrid, MoreLink, PageHero, Section, SectionTitle } fr
 export const metadata: Metadata = {
   title: "Funciones",
   description:
-    "Ventas, gastos, fiado, cierre de caja, inventario, avisos por correo, equipo y calculadoras para tu negocio, explicados en palabras simples.",
+    "Ventas, gastos, fiado, cierre de caja, inventario, tienda online, agenda y reservas, avisos al celular, reportes en PDF, equipo y calculadoras para tu negocio, explicados en palabras simples.",
   alternates: { canonical: "/funciones" },
 }
 
@@ -15,7 +15,7 @@ export default function FeaturesPage() {
       <PageHero
         eyebrow="Funciones"
         title="Todo lo que tu negocio necesita, en un solo lugar"
-        description="Registra lo que vendes y lo que gastas, lleva el fiado, cuadra la caja y sabe cuánto ganas, con avisos que te llegan solos al correo."
+        description="Registra lo que vendes y lo que gastas, lleva el fiado, cuadra la caja, recibe pedidos y reservas por internet y sabe cuánto ganas, con avisos que te llegan solos al celular y al correo."
       />
 
       <Section>

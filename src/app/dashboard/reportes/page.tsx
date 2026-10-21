@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Download, Landmark } from "lucide-react"
+import { Landmark } from "lucide-react"
+import { DownloadMenu } from "@/components/reports/download-menu"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DateRangeFilter } from "@/components/app/date-range-filter"
@@ -112,7 +113,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
   const money = (n: number) => formatMoney(n, ctx.currency)
   const { current: cur, previous: prev } = report
   const prevLabel = `vs. ${formatDate(report.prevFrom, ctx.timezone, { day: "numeric", month: "short" })} – ${formatDate(addDays(range.from, -1, ctx.timezone), ctx.timezone, { day: "numeric", month: "short" })}`
-  const exportHref = (tipo: string) => `/dashboard/reportes/exportar?tipo=${tipo}&desde=${range.desde}&hasta=${range.hasta}`
+  const exportHref = (tipo: string, formato?: "pdf") =>
+    `/dashboard/reportes/exportar?tipo=${tipo}&desde=${range.desde}&hasta=${range.hasta}${formato ? `&formato=${formato}` : ""}`
   const canExport = canUseFeature(ctx.business.plan, "exports")
   const avgTicket = cur.salesCount ? Math.round(cur.sales / cur.salesCount) : 0
   const margin = cur.sales > 0 ? cur.profit / cur.sales : null
@@ -131,20 +133,25 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
               </Link>
             </Button>
             {canExport ? (
-              <>
-                <Button variant="outline" asChild>
-                  <a href={exportHref("ventas")} download>
-                    <Download />
-                    Ventas (Excel)
-                  </a>
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href={exportHref("gastos")} download>
-                    <Download />
-                    Gastos (Excel)
-                  </a>
-                </Button>
-              </>
+              <DownloadMenu
+                groups={[
+                  { title: "Resumen", options: [{ label: "Reporte del período", hint: "Cifras, productos, gastos y pagos", href: exportHref("resumen", "pdf"), format: "pdf" }] },
+                  {
+                    title: "Ventas",
+                    options: [
+                      { label: "Ventas en PDF", href: exportHref("ventas", "pdf"), format: "pdf" },
+                      { label: "Ventas en Excel", href: exportHref("ventas"), format: "excel" },
+                    ],
+                  },
+                  {
+                    title: "Gastos",
+                    options: [
+                      { label: "Gastos en PDF", href: exportHref("gastos", "pdf"), format: "pdf" },
+                      { label: "Gastos en Excel", href: exportHref("gastos"), format: "excel" },
+                    ],
+                  },
+                ]}
+              />
             ) : null}
           </>
         }

@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { productCodes } from "@/lib/barcodes"
 import { toDateKey } from "@/lib/dates"
-import { AlertTriangle, Boxes, Package, PackageX, Scissors } from "lucide-react"
+import { AlertTriangle, Barcode, Boxes, Package, PackageX, Scissors } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
@@ -105,6 +105,12 @@ export default async function ProductsPage() {
                 <Link href="/dashboard/servicios">
                   <Scissors />
                   Servicios
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="h-10 px-4" asChild>
+                <Link href="/dashboard/productos/etiquetas">
+                  <Barcode />
+                  Etiquetas
                 </Link>
               </Button>
               <ProductDialog currency={ctx.currency} categories={categoryNames} />

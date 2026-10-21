@@ -310,14 +310,18 @@ export async function markKitchenReady(target: { itemId?: string; comandaId?: st
     if (comanda?.createdById) {
       const units = newlyReady.reduce((n, i) => n + (i.sentQty - i.readyQty), 0)
       const waiter = comanda.createdById
-      after(() =>
-        sendPush([waiter], {
+      const businessId = ctx.businessId
+      after(async () => {
+        // Solo si sigue siendo parte del negocio (a alguien que ya no trabaja ahí no le llega nada).
+        const member = await db.businessMember.findFirst({ where: { businessId, userId: waiter }, select: { id: true } })
+        if (!member) return
+        await sendPush([waiter], {
           title: `🍽️ ${comanda.label}: listo para servir`,
           body: newlyReady.length === 1 ? `${units} × ${newlyReady[0].description}` : `${units} platos listos: ${newlyReady.map((i) => i.description).slice(0, 3).join(", ")}`,
           url: "/dashboard/comandas",
           tag: `listo-${comanda.id}`,
-        }, typeof device === "string" ? device.slice(0, 1000) : undefined),
-      )
+        }, typeof device === "string" ? device.slice(0, 1000) : undefined)
+      })
     }
   } catch (error) {
     return toActionError(error)

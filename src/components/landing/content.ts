@@ -166,7 +166,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     description: "Tu catálogo en internet para recibir pedidos por WhatsApp, sin comisiones (plan Pro).",
     points: [
       "Tu propia página: ordensimple.cl/tienda/tu-negocio",
-      "Tus productos con precio y stock, buscador y categorías",
+      "Tus productos con foto, precio y stock, buscador y categorías: se ve como una vitrina",
       "El cliente arma su pedido y te lo manda por WhatsApp, ordenado y con emojis",
       "Retiro en el local o despacho, con la dirección",
       "Los precios salen de tu sistema: nadie los puede cambiar",
@@ -198,6 +198,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     description: "Tu catálogo con lo que te cuesta y lo que ganas en cada uno.",
     points: [
       "Costo, precio, categoría y código (SKU)",
+      "Foto de cada producto: la sacas con el celular y aparece en tu tienda y al vender",
+      "Etiquetas con código de barras para imprimir: hojas de stickers A4 o impresora de etiquetas",
+      "¿Un producto no trae código? Te creamos uno y lo vendes escaneando",
       "Ganancia por unidad y margen, explicados con ejemplos",
       "Aviso si un producto te deja pérdida",
       "Stock actual, stock mínimo y productos agotados",
@@ -474,6 +477,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en «Pedidos web» lo registras como venta con un toque. Sin comisiones.",
       },
       {
+        q: "¿Puedo imprimir etiquetas con código de barras?",
+        a: "Sí, en todos los planes. En Productos → Etiquetas eliges los productos y cuántas etiquetas quieres, con nombre, precio y código. Sirven hojas de stickers A4 en una impresora normal o una impresora de etiquetas. Si un producto no trae código, te creamos uno para que lo vendas escaneando.",
+      },
+      {
         q: "¿Me llegan avisos al celular?",
         a: "Sí. En Configuración → Avisos activas «Avisos en este celular o computador» y te llegan aunque tengas la app cerrada: pedidos web, reservas, solicitudes de descuento o devolución de tu equipo, stock bajo, productos por vencer, fiado atrasado y pagos a proveedores. En iPhone, primero agrega OrdenSimple a tu pantalla de inicio.",
       },
@@ -584,6 +591,8 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
   { label: "Agenda de citas y reservas online (peluquerías, consultas, talleres)", values: [false, true, true] },
   { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
+  { label: "Fotos de productos", values: [true, true, true] },
+  { label: "Etiquetas con código de barras para imprimir", values: [true, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
   { label: "Calculadoras con tus números", values: [true, true, true] },

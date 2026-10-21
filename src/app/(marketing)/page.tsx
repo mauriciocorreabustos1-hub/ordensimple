@@ -11,6 +11,7 @@ import { SocialSection } from "@/components/landing/social-section"
 import { ComandasPreview } from "@/components/landing/comandas-preview"
 import { StorePreview } from "@/components/landing/store-preview"
 import { AgendaPreview } from "@/components/landing/agenda-preview"
+import { LabelsPreview } from "@/components/landing/labels-preview"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -179,7 +180,7 @@ export default async function LandingPage() {
               align="left"
               eyebrow="Tienda online"
               title="¿Vendes por WhatsApp? Ten tu propia página web"
-              description="Tus productos con precio y stock en una página con tu nombre. Tus clientes arman el pedido y te llega por WhatsApp, ordenado y listo para despachar. Sin comisiones."
+              description="Tus productos con foto, precio y stock en una página con tu nombre. Tus clientes arman el pedido y te llega por WhatsApp, ordenado y listo para despachar. Sin comisiones."
             />
             <ul className="space-y-2 text-[15px]">
               {["Tu dirección: ordensimple.cl/tienda/tu-negocio","Retiro en el local o despacho, con la dirección del cliente","Con un toque el pedido queda como venta y se descuenta el stock","Te avisa al celular apenas entra un pedido"].map((t) => (
@@ -230,6 +231,37 @@ export default async function LandingPage() {
             </div>
           </div>
           <AgendaPreview />
+        </div>
+      </Section>
+
+      {/* Etiquetas con código de barras para lo que no trae código. */}
+      <Section muted className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5 lg:order-2">
+            <SectionTitle
+              align="left"
+              eyebrow="Etiquetas"
+              title="¿Tu producto no trae código? Imprímele uno"
+              description="Pan, quesos, verduras, ropa o lo que haces tú: imprime etiquetas con nombre, precio y código de barras, y véndelos escaneando como cualquier otro producto."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["En hojas de stickers A4 con tu impresora de siempre, o en una impresora de etiquetas","Te creamos el código si no tiene, sin repetir ninguno","Lo lee la cámara del celular o cualquier lector de caja","Gratis en todos los planes"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/productos/etiquetas" loggedInLabel="Imprimir mis etiquetas">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#productos">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <LabelsPreview className="lg:order-1" />
         </div>
       </Section>
 

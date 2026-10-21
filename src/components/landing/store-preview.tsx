@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils"
 // Dibujo de la tienda online y del pedido que llega por WhatsApp (datos de ejemplo).
 
 const PRODUCTS = [
-  { name: "Pan amasado (kg)", price: "$2.400", qty: 2 },
-  { name: "Queso gauda 250g", price: "$3.290", qty: 1 },
-  { name: "Huevos (docena)", price: "$3.990", qty: 0 },
-  { name: "Café de grano 250g", price: "$5.990", qty: 0 },
+  { name: "Pan amasado (kg)", price: "$2.400", qty: 2, photo: "🍞", tone: "bg-amber-100" },
+  { name: "Queso gauda 250g", price: "$3.290", qty: 1, photo: "🧀", tone: "bg-yellow-100" },
+  { name: "Huevos (docena)", price: "$3.990", qty: 0, photo: "🥚", tone: "bg-orange-50" },
+  { name: "Café de grano 250g", price: "$5.990", qty: 0, photo: "☕", tone: "bg-stone-200" },
 ]
 
 export function StorePreview({ className }: { className?: string }) {
@@ -31,6 +31,7 @@ export function StorePreview({ className }: { className?: string }) {
           <ul className="divide-y overflow-hidden rounded-xl border bg-card text-[13px]">
             {PRODUCTS.map((p) => (
               <li key={p.name} className="flex items-center gap-2 px-2.5 py-2">
+                <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-lg ${p.tone}`}>{p.photo}</span>
                 <span className="min-w-0 flex-1 leading-tight">
                   {p.name}
                   <span className="tabular block text-[11px] text-muted-foreground">{p.price}</span>

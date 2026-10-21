@@ -110,7 +110,7 @@ export function PushSettings({ publicKey }: { publicKey: string }) {
         ? "Este navegador no permite avisos. Prueba con Chrome, Edge o Safari actualizados."
         : state === "denied"
           ? "Bloqueaste los avisos para OrdenSimple. Actívalos en los permisos del navegador (el candado junto a la dirección) y vuelve aquí."
-          : "Pedidos web nuevos y solicitudes de descuento o devolución de tu equipo, aunque tengas la app cerrada. Se activa en cada aparato."
+          : "Pedidos web, solicitudes de tu equipo y platos listos en la cocina, aunque tengas la app cerrada. También stock bajo, vencimientos, fiado y pagos a proveedores, según lo que actives abajo. Se activa en cada aparato."
 
   return (
     <div className="space-y-3 py-3">

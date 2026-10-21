@@ -50,10 +50,10 @@ export type PushMessage = {
  * Manda un aviso a todos los celulares y computadores donde estas personas activaron los avisos.
  * Nunca falla hacia afuera: si algo sale mal, la acción que lo pidió sigue igual.
  */
-export async function sendPush(userIds: string[], message: PushMessage) {
+export async function sendPush(userIds: string[], message: PushMessage, exceptEndpoint?: string) {
   try {
     if (!userIds.length || !setup()) return
-    const subs = (await db.pushSubscription.findMany({ where: { userId: { in: [...new Set(userIds)] } } })).filter((s) => isPushEndpoint(s.endpoint))
+    const subs = (await db.pushSubscription.findMany({ where: { userId: { in: [...new Set(userIds)] } } })).filter((s) => isPushEndpoint(s.endpoint) && s.endpoint !== exceptEndpoint)
     const payload = JSON.stringify(message)
     const gone: string[] = []
     await Promise.all(

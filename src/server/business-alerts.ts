@@ -9,6 +9,7 @@ import { payablesDueBefore } from "@/server/queries/payables"
 import { totalsBetween } from "@/server/queries/aggregates"
 import { getDebtors, getOverdueDebtors } from "@/server/queries/fiado"
 import { productStats } from "@/server/queries/reports"
+import { sendPush, type PushMessage } from "@/server/push"
 
 const DAY = 86_400_000
 /** Días sin ventas antes de recordar, y cada cuánto se puede repetir el recordatorio. */
@@ -48,12 +49,16 @@ export async function sendBusinessAlerts(now = new Date()) {
       settings: true,
       members: {
         where: { role: { in: ["OWNER", "ADMIN"] } },
-        select: { user: { select: { name: true, email: true } } },
+        select: { user: { select: { id: true, name: true, email: true } } },
       },
     },
   })
 
   const emails: Email[] = []
+  // Los mismos avisos llegan también al celular de quien los activó (se mandan todos al final).
+  const pushes: { userIds: string[]; message: PushMessage }[] = []
+  /** Lista corta para el texto del aviso: "A, B y 3 más". */
+  const shortList = (names: string[]) => (names.length > 2 ? `${names.slice(0, 2).join(", ")} y ${names.length - 2} más` : names.join(" y "))
   const counts = { weekly: 0, lowStock: 0, noSales: 0, payables: 0, expiring: 0, fiado: 0 }
 
   for (const b of businesses) {
@@ -61,6 +66,7 @@ export async function sendBusinessAlerts(now = new Date()) {
     const recipients = b.members.map((m) => m.user)
     if (recipients.length === 0) continue
     const tz = b.timezone
+    const push = (message: PushMessage) => pushes.push({ userIds: recipients.map((r) => r.id), message })
     const today = startOfDay(now, tz)
 
     // ─── Resumen semanal: todos los lunes, sí o sí, de la semana anterior (lunes a domingo) ──
@@ -131,6 +137,13 @@ export async function sendBusinessAlerts(now = new Date()) {
         for (const r of recipients) {
           emails.push({ to: r.email, ...lowStockEmail({ name: r.name, businessName: b.name, items: shown, more: items.length - shown.length }) })
         }
+        const out = items.filter((x) => x.stock <= 0).length
+        push({
+          title: out ? `📦 Se ${out === 1 ? "agotó 1 producto" : `agotaron ${out} productos`}` : "📦 Stock bajo",
+          body: shortList(items.map((x) => (x.stock <= 0 ? `${x.name} (agotado)` : `${x.name} (quedan ${x.stock})`))),
+          url: "/dashboard/inventario",
+          tag: `stock-${b.id}`,
+        })
         counts.lowStock++
       } else if (!key && s.lowStockAlertKey) {
         // Ya repuso todo: la próxima vez que algo se acabe, avisamos al tiro.
@@ -160,6 +173,13 @@ export async function sendBusinessAlerts(now = new Date()) {
         for (const r of recipients) {
           emails.push({ to: r.email, ...expiringEmail({ name: r.name, businessName: b.name, currency: b.currency, items: shown, more: items.length - shown.length }) })
         }
+        const when = (d: number) => (d < 0 ? "vencido" : d === 0 ? "hoy" : d === 1 ? "mañana" : `en ${d} días`)
+        push({
+          title: `⏰ ${items.length === 1 ? "1 producto vence" : `${items.length} productos vencen`} pronto`,
+          body: shortList(shown.map((x) => `${x.name} (${when(x.days)})`)),
+          url: "/dashboard/inventario",
+          tag: `vence-${b.id}`,
+        })
         counts.expiring++
       } else if (!key && s.expiryAlertKey) {
         await db.businessSettings.update({ where: { id: s.id }, data: { expiryAlertKey: null } })
@@ -181,6 +201,13 @@ export async function sendBusinessAlerts(now = new Date()) {
             ...fiadoOverdueEmail({ name: r.name, businessName: b.name, currency: b.currency, days: s.fiadoDays, items: shown, more: overdue.length - shown.length }),
           })
         }
+        const owed = overdue.reduce((sum, x) => sum + x.balance, 0)
+        push({
+          title: `📒 Fiado por cobrar: ${formatMoney(owed, b.currency)}`,
+          body: `${shortList(overdue.map((x) => x.name))} ${overdue.length === 1 ? "se pasó" : "se pasaron"} del plazo de ${s.fiadoDays} días. Toca para cobrar por WhatsApp.`,
+          url: "/dashboard/clientes",
+          tag: `fiado-${b.id}`,
+        })
         counts.fiado++
       } else if (!key && s.fiadoReminderKey) {
         await db.businessSettings.update({ where: { id: s.id }, data: { fiadoReminderKey: null } })
@@ -222,10 +249,18 @@ export async function sendBusinessAlerts(now = new Date()) {
       })
       await db.payable.updateMany({ where: { id: { in: toRemind.map((x) => x.id) } }, data: { remindedAt: now } })
       for (const r of recipients) emails.push({ to: r.email, ...payablesEmail({ name: r.name, businessName: b.name, items }) })
+      const late = items.filter((x) => x.overdue).length
+      push({
+        title: late ? `🧾 ${late === 1 ? "Tienes 1 pago atrasado" : `Tienes ${late} pagos atrasados`}` : "🧾 Pagos a proveedores por vencer",
+        body: shortList(items.map((x) => `${x.supplier ?? x.description} ${x.amount} (${x.when})`)),
+        url: "/dashboard/proveedores",
+        tag: `pagos-${b.id}`,
+      })
       counts.payables++
     }
   }
 
   const result = emails.length ? await sendEmailBatch(emails) : { sent: 0, failed: 0 }
+  for (const p of pushes) await sendPush(p.userIds, p.message)
   return { businesses: businesses.length, ...counts, ...result }
 }

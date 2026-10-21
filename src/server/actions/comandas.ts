@@ -1,6 +1,8 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
+import { sendPush } from "@/server/push"
 import { db } from "@/lib/db"
 import { isFoodBusiness } from "@/lib/business-kind"
 import { canUseFeature } from "@/lib/plans"
@@ -284,7 +286,8 @@ export async function sendComandaToKitchen(id: string): Promise<ActionResult<{ s
 }
 
 /** La cocina marca un plato (o toda la mesa) como listo. undo = vuelve a dejarlo pendiente. */
-export async function markKitchenReady(target: { itemId?: string; comandaId?: string }, undo = false): Promise<ActionResult> {
+/** `device`: el aparato de la cocina (para no mandarle a él mismo el aviso de "listo"). */
+export async function markKitchenReady(target: { itemId?: string; comandaId?: string }, undo = false, device?: string): Promise<ActionResult> {
   const ctx = await requireBusiness()
   const itemId = target.itemId && idSchema.safeParse(target.itemId).success ? target.itemId : undefined
   const comandaId = target.comandaId && idSchema.safeParse(target.comandaId).success ? target.comandaId : undefined
@@ -295,11 +298,27 @@ export async function markKitchenReady(target: { itemId?: string; comandaId?: st
     if (reason) return { ok: false, message: reason }
     const items = await db.comandaItem.findMany({
       where: { ...(itemId ? { id: itemId } : { comandaId }), comanda: { businessId: ctx.businessId, status: "OPEN" } },
-      select: { id: true, sentQty: true },
+      select: { id: true, sentQty: true, readyQty: true, description: true, comanda: { select: { id: true, label: true, createdById: true } } },
     })
     if (!items.length) return { ok: false, message: "Esta comanda ya se cobró o se anuló." }
     // Solo se marca listo lo que se envió a la cocina.
     await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { readyQty: undo ? 0 : i.sentQty } })))
+    // Aviso al celular de quien abrió la comanda (el garzón). Si la cocina usa la misma cuenta, igual le llega
+    // en sus otros aparatos, menos en la pantalla de la cocina.
+    const newlyReady = undo ? [] : items.filter((i) => i.sentQty > i.readyQty)
+    const comanda = newlyReady[0]?.comanda
+    if (comanda?.createdById) {
+      const units = newlyReady.reduce((n, i) => n + (i.sentQty - i.readyQty), 0)
+      const waiter = comanda.createdById
+      after(() =>
+        sendPush([waiter], {
+          title: `🍽️ ${comanda.label}: listo para servir`,
+          body: newlyReady.length === 1 ? `${units} × ${newlyReady[0].description}` : `${units} platos listos: ${newlyReady.map((i) => i.description).slice(0, 3).join(", ")}`,
+          url: "/dashboard/comandas",
+          tag: `listo-${comanda.id}`,
+        }, typeof device === "string" ? device.slice(0, 1000) : undefined),
+      )
+    }
   } catch (error) {
     return toActionError(error)
   }

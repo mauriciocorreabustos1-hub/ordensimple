@@ -15,6 +15,9 @@ import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { FiadoDays } from "@/components/settings/fiado-days"
 import { PushSettings } from "@/components/settings/push-settings"
 import { StoreSettings } from "@/components/settings/store-settings"
+import { BookingSettings } from "@/components/settings/booking-settings"
+import { readBookingHours } from "@/lib/booking"
+import { businessProfile } from "@/lib/business-kind"
 import { ProUpsell } from "@/components/app/pro-gate"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
@@ -45,6 +48,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
   const canManage = can(ctx.role, "settings:manage")
   const section: SettingsSection = params["dos-pasos"] ? "cuenta" : (SETTINGS_SECTIONS.find((x) => x.id === params.seccion)?.id ?? "negocio")
   const current = SETTINGS_SECTIONS.find((x) => x.id === section)!
+  const profile = businessProfile(ctx.business.type)
   const twoFactorUser = ctx.user as { twoFactorEnabled?: boolean | null; twoFactorMethod?: string | null }
   const twoFactor = { enabled: Boolean(twoFactorUser.twoFactorEnabled), method: twoFactorUser.twoFactorMethod ?? null }
   const userIsAdmin = await isAdmin(ctx.user.email)
@@ -213,6 +217,33 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 )}
               </CardContent>
             </Card>
+            {profile.services ? (
+              <Card id="reservas" className="scroll-mt-20">
+                <CardHeader>
+                  <CardTitle>Reserva tu hora</CardTitle>
+                  <CardDescription>
+                    En tu página, tus clientes eligen el servicio, con quién y una hora libre según tu horario. La cita aparece sola en tu
+                    Agenda y te llega un aviso al celular.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {canUseFeature(ctx.business.plan, "agenda") && canUseFeature(ctx.business.plan, "store") ? (
+                    <BookingSettings
+                      enabled={ctx.settings.bookingEnabled}
+                      hours={readBookingHours(ctx.settings.bookingHours)}
+                      slotMin={ctx.settings.bookingSlotMin}
+                      noticeMin={ctx.settings.bookingMinNoticeMin}
+                      maxDays={ctx.settings.bookingMaxDays}
+                      storeReady={Boolean(ctx.business.storeEnabled && ctx.business.storeSlug)}
+                      servicesWithDuration={await db.product.count({ where: { businessId: ctx.businessId, active: true, trackStock: false, durationMin: { not: null }, price: { gt: 0 } } })}
+                      disabled={!canManage}
+                    />
+                  ) : (
+                    <ProUpsell title="Las reservas online son parte del plan Pro" text="Tus clientes reservan solos y la cita aparece en tu Agenda." />
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
             </>
           ) : null}
           {section === "impuestos" ? (

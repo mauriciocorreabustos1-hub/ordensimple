@@ -69,6 +69,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/dashboard
     note: a.note,
     charged: Boolean(a.saleId),
     reminded: Boolean(a.remindedAt),
+    online: a.source === "ONLINE",
   }))
 
   return (

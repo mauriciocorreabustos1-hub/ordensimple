@@ -276,6 +276,13 @@ model BusinessSettings {
   fiadoDays             Int           @default(15)
   fiadoReminders        Boolean       @default(true)
   fiadoReminderKey      String?
+  /// Reserva tu hora (negocios de servicios): horario por día [lun..dom] {open,close} o null si cierra,
+  /// cada cuánto se ofrecen horas, con cuánta anticipación mínima y hasta cuántos días adelante.
+  bookingEnabled        Boolean       @default(true)
+  bookingHours          Json?
+  bookingSlotMin        Int           @default(30)
+  bookingMinNoticeMin   Int           @default(60)
+  bookingMaxDays        Int           @default(30)
   lastFiadoReminderAt   DateTime?
   /// Negocios de comida: cuántas mesas tiene (Mesa 1…N) y lugares con nombre propio (Barra, Terraza, Para llevar…).
   tableCount            Int           @default(6)
@@ -648,6 +655,8 @@ model Appointment {
   saleId       String?           @unique
   createdById  String?
   remindedAt   DateTime?
+  /// APP (la agendó el negocio) u ONLINE (la reservó el cliente en la página del negocio).
+  source       String            @default("APP")
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 

@@ -7,6 +7,9 @@ import { StoreFront } from "@/components/store/store-front"
 import { db } from "@/lib/db"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { STORE_SLUG_RE } from "@/lib/store"
+import { toDateKey } from "@/lib/dates"
+import { BookingFlow } from "@/components/store/booking-flow"
+import { bookableDays, bookableServices, bookableStaff, getBookableBusiness } from "@/server/booking"
 
 /** Tienda publicada y con plan vigente; si no, la página no existe. */
 const getStore = cache(async (slug: string) => {
@@ -33,9 +36,10 @@ export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">):
   const { slug } = await params
   const store = await getStore(slug)
   if (!store) return { title: "Tienda no encontrada", robots: { index: false } }
-  const description = store.storeMessage || `Mira los productos de ${store.name} y haz tu pedido por WhatsApp.`
+  const booking = await getBookableBusiness(slug)
+  const description = store.storeMessage || (booking ? `Reserva tu hora en ${store.name} en un minuto.` : `Mira los productos de ${store.name} y haz tu pedido por WhatsApp.`)
   return {
-    title: { absolute: `${store.name} · Pedidos por WhatsApp` },
+    title: { absolute: `${store.name} · ${booking ? "Reserva tu hora" : "Pedidos por WhatsApp"}` },
     description,
     openGraph: { title: store.name, description },
   }
@@ -52,8 +56,17 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
     if (moved?.storeSlug) permanentRedirect(`/tienda/${moved.storeSlug}`)
     notFound()
   }
+  // Negocios de servicios: arriba se reserva hora; los servicios con duración no van al carro de compras.
+  const booking = await getBookableBusiness(slug)
+  const [services, staff] = booking ? await Promise.all([bookableServices(booking.id), bookableStaff(booking.id)]) : [[], []]
   const products = await db.product.findMany({
-    where: { businessId: store.id, active: true, price: { gt: 0 }, OR: [{ trackStock: false }, { stock: { gt: 0 } }] },
+    where: {
+      businessId: store.id,
+      active: true,
+      price: { gt: 0 },
+      OR: [{ trackStock: false }, { stock: { gt: 0 } }],
+      ...(booking ? { NOT: { trackStock: false, durationMin: { not: null } } } : {}),
+    },
     select: { id: true, name: true, price: true, stock: true, trackStock: true, category: { select: { name: true } } },
     orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
     take: 500,
@@ -66,11 +79,26 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
           <BusinessLogo businessId={store.id} name={store.name} logoUpdatedAt={store.logoUpdatedAt} className="size-12 rounded-xl border" />
           <div className="min-w-0">
             <h1 className="truncate text-xl font-semibold tracking-tight">{store.name}</h1>
-            <p className="text-sm text-muted-foreground">{store.storeMessage || "Elige tus productos y envía tu pedido por WhatsApp."}</p>
+            <p className="text-sm text-muted-foreground">
+              {store.storeMessage || (booking ? "Reserva tu hora en un minuto." : "Elige tus productos y envía tu pedido por WhatsApp.")}
+            </p>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 pt-4 pb-36">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 pt-4 pb-36">
+        {booking && services.length ? (
+          <BookingFlow
+            slug={slug}
+            businessName={store.name}
+            currency={store.currency}
+            services={services.map((s) => ({ id: s.id, name: s.name, price: s.price, durationMin: s.durationMin! }))}
+            staff={staff.map((p) => ({ id: p.id, name: p.name.split(" ")[0] }))}
+            days={bookableDays(booking)}
+            today={toDateKey(new Date(), booking.timezone)}
+          />
+        ) : null}
+        {booking && services.length && products.length ? <h2 className="pt-2 text-lg font-semibold">Productos</h2> : null}
+        {booking && services.length && !products.length ? null : (
         <StoreFront
           slug={slug}
           businessName={store.name}
@@ -83,6 +111,7 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
             max: p.trackStock ? Math.min(99, p.stock) : 99,
           }))}
         />
+        )}
       </main>
       <footer className="pb-28 text-center text-xs text-muted-foreground">
         Tienda hecha con{" "}

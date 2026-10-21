@@ -13,7 +13,8 @@ import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { RESERVED_SLUGS } from "@/lib/store"
 import { idSchema, paymentMethod as paymentMethodSchema, storeSettingsSchema, webOrderSchema, type StoreSettingsInput, type WebOrderInput } from "@/lib/validations"
 import { allowAttempt } from "@/server/rate-limit"
-import { applyStock, buildLines, lineData, MAX_TOTAL, type Tx } from "@/server/sale-core"
+import { applyStock, buildLines, lineData, MAX_TOTAL } from "@/server/sale-core"
+import { webCustomer } from "@/server/web-customer"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -125,25 +126,6 @@ async function loadOrder(businessId: string, id: string) {
 async function claim(tx: Pick<typeof db, "webOrder">, id: string, userId: string, data: { saleId?: string; comandaId?: string; status: "DONE" | "CANCELLED" }) {
   const r = await tx.webOrder.updateMany({ where: { id, status: "NEW" }, data: { ...data, handledById: userId, handledAt: new Date() } })
   if (r.count !== 1) throw new Error("ORDER_HANDLED")
-}
-
-const lastDigits = (phone: string | null | undefined) => (phone ?? "").replace(/\D/g, "").slice(-8)
-
-/** Cliente del pedido web: el que ya tienes con ese nombre y teléfono, o uno nuevo (marcado "web" si el nombre ya existe). */
-async function webCustomer(tx: Tx, businessId: string, name: string, phone: string | null) {
-  const sameName = await tx.customer.findMany({
-    where: { businessId, name: { equals: name, mode: "insensitive" } },
-    select: { id: true, phone: true },
-    take: 20,
-  })
-  const digits = lastDigits(phone)
-  const match = digits.length === 8 ? sameName.find((c) => lastDigits(c.phone) === digits) : undefined
-  if (match) return match.id
-  const created = await tx.customer.create({
-    data: { businessId, name: (sameName.length ? `${name} (web)` : name).slice(0, 80), phone, notes: "Llegó por la tienda online" },
-    select: { id: true },
-  })
-  return created.id
 }
 
 const HANDLED = "Este pedido ya lo atendió otra persona. Recarga la página."

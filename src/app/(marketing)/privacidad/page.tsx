@@ -54,9 +54,9 @@ export default function PrivacyPage() {
             tratamiento: solo los usamos para prestarte el servicio.
           </li>
           <li>
-            <strong>Pedidos en tiendas online:</strong> si haces un pedido en la tienda de un negocio que usa OrdenSimple,
-            guardamos tu nombre, el teléfono y la dirección o comentario que escribas y lo que pediste, para que ese negocio
-            lo atienda. El responsable de esos datos es el negocio; OrdenSimple solo los guarda por encargo suyo.
+            <strong>Pedidos y reservas en páginas de negocios:</strong> si haces un pedido o reservas una hora en la página de un negocio que usa OrdenSimple,
+            guardamos tu nombre, el teléfono y la dirección o comentario que escribas y lo que pediste o reservaste, para que
+            ese negocio lo atienda. El responsable de esos datos es el negocio; OrdenSimple solo los guarda por encargo suyo.
           </li>
           <li>
             <strong>Avisos en el celular:</strong> si los activas, guardamos la dirección que nos da tu navegador para mandarte

@@ -38,6 +38,8 @@ export type AgendaAppointment = {
   note: string | null
   charged: boolean
   reminded: boolean
+  /** La reservó el cliente en la página del negocio. */
+  online: boolean
 }
 type Staff = { id: string; name: string }
 type Service = { id: string; name: string; price: number; durationMin: number | null }
@@ -96,7 +98,10 @@ export function AgendaBoard({
     return () => clearInterval(t)
   }, [router])
 
+  const [reminding, setReminding] = React.useState(false)
   const active = appointments.filter((a) => a.status !== "CANCELLED" && a.status !== "NO_SHOW")
+  // A quién recordar: las citas del día que siguen en pie y no se han cobrado.
+  const remindable = appointments.filter((a) => (a.status === "SCHEDULED" || a.status === "CONFIRMED") && !a.charged)
   const expected = active.reduce((s, a) => s + a.price, 0)
   const minutes = (iso: string) => {
     const c = clockOf(iso, timezone)
@@ -138,7 +143,13 @@ export function AgendaBoard({
             <Link href="/dashboard/agenda">Hoy</Link>
           </Button>
         ) : null}
-        <Button className="ml-auto" onClick={() => setEditing({})}>
+        {remindable.length ? (
+          <Button variant="outline" className="ml-auto" onClick={() => setReminding(true)}>
+            <MessageCircle />
+            Recordar a todos ({remindable.length})
+          </Button>
+        ) : null}
+        <Button className={remindable.length ? "" : "ml-auto"} onClick={() => setEditing({})}>
           <Plus />
           Nueva cita
         </Button>
@@ -184,7 +195,10 @@ export function AgendaBoard({
             <button type="button" onClick={() => setOpenId(a.id)} className={cn("flex w-full items-stretch gap-3 rounded-xl border p-3 text-left", APPOINTMENT_STATUS[a.status].tone)}>
               <span className="tabular w-12 shrink-0 text-sm font-semibold">{hhmm(minutes(a.startAt))}</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{a.customerName}</span>
+                <span className="block truncate font-medium">
+                  {a.customerName}
+                  {a.online ? <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">Online</span> : null}
+                </span>
                 <span className="block truncate text-xs opacity-80">
                   {a.serviceName}
                   {a.staffName ? ` · ${a.staffName.split(" ")[0]}` : ""}
@@ -272,6 +286,18 @@ export function AgendaBoard({
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null)
+            router.refresh()
+          }}
+        />
+      ) : null}
+      {reminding ? (
+        <RemindAll
+          appointments={remindable}
+          day={day}
+          businessName={businessName}
+          timezone={timezone}
+          onClose={() => {
+            setReminding(false)
             router.refresh()
           }}
         />
@@ -565,6 +591,7 @@ function AppointmentDetail({
             </span>
           ) : null}
           <span className={cn("rounded-full border px-2 py-0.5 text-xs font-medium", APPOINTMENT_STATUS[a.status].tone)}>{APPOINTMENT_STATUS[a.status].label}</span>
+          {a.online ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Reservó online</span> : null}
         </div>
         {a.note ? <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm">{a.note}</p> : null}
 
@@ -632,6 +659,101 @@ function AppointmentDetail({
         )}
         <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
           <X />
+          Cerrar
+        </Button>
+      </div>
+    </AppModal>
+  )
+}
+
+/**
+ * Recordar a todos: WhatsApp no deja que una app mande mensajes sola, así que se prepara cada mensaje
+ * y la persona solo toca "Enviar" en WhatsApp, una cita tras otra.
+ */
+function RemindAll({
+  appointments,
+  day,
+  businessName,
+  timezone,
+  onClose,
+}: {
+  appointments: AgendaAppointment[]
+  day: string
+  businessName: string
+  timezone: string
+  onClose: () => void
+}) {
+  const [sent, setSent] = React.useState<Set<string>>(() => new Set(appointments.filter((a) => a.reminded).map((a) => a.id)))
+  const longDay = dayLabel(day, { weekday: "long", day: "numeric", month: "long" })
+  const pendingList = appointments.filter((a) => !sent.has(a.id))
+  const next = pendingList[0]
+
+  function textFor(a: AgendaAppointment) {
+    const c = clockOf(a.startAt, timezone)
+    return appointmentReminderText({
+      customerName: a.customerName,
+      businessName,
+      serviceName: a.serviceName,
+      dayLabel: longDay.charAt(0).toUpperCase() + longDay.slice(1),
+      time: hhmm(c.hour * 60 + c.minute),
+      staffName: a.staffName,
+    })
+  }
+
+  function markSent(a: AgendaAppointment) {
+    setSent((s) => new Set(s).add(a.id))
+    void markAppointmentReminded(a.id)
+  }
+
+  return (
+    <AppModal
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="Recordar a todos"
+      description={`${appointments.length} cita${appointments.length === 1 ? "" : "s"} · ${sent.size} recordada${sent.size === 1 ? "" : "s"}. Toca cada una: se abre WhatsApp con el mensaje listo y solo tocas Enviar.`}
+      noAutoFocus
+    >
+      <div className="space-y-4">
+        {next ? (
+          <Button asChild size="lg" className="h-12 w-full bg-[#25D366] text-white hover:bg-[#1fb757]">
+            <a href={whatsappLink(next.customerPhone, textFor(next))} target="_blank" rel="noopener noreferrer" onClick={() => markSent(next)}>
+              <MessageCircle />
+              Recordar a {next.customerName.split(" ")[0]} ({hhmm(clockOf(next.startAt, timezone).hour * 60 + clockOf(next.startAt, timezone).minute)})
+            </a>
+          </Button>
+        ) : (
+          <p className="rounded-xl bg-emerald-50 p-3 text-center text-sm font-medium text-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-200">
+            ✅ ¡Listo! Les recordaste a todos.
+          </p>
+        )}
+        <ul className="divide-y rounded-xl border">
+          {appointments.map((a) => {
+            const done = sent.has(a.id)
+            const c = clockOf(a.startAt, timezone)
+            return (
+              <li key={a.id} className="flex items-center gap-3 px-3 py-2.5 text-sm">
+                <span className="tabular w-11 shrink-0 font-semibold">{hhmm(c.hour * 60 + c.minute)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{a.customerName}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{a.customerPhone ? a.serviceName : "Sin teléfono: eliges el contacto en WhatsApp"}</span>
+                </span>
+                {done ? (
+                  <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                    <Check className="size-3.5" />
+                    Recordada
+                  </span>
+                ) : (
+                  <Button variant="outline" size="sm" asChild className="shrink-0">
+                    <a href={whatsappLink(a.customerPhone, textFor(a))} target="_blank" rel="noopener noreferrer" onClick={() => markSent(a)}>
+                      Enviar
+                    </a>
+                  </Button>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+        <Button variant="ghost" className="w-full" onClick={onClose}>
           Cerrar
         </Button>
       </div>

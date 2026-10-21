@@ -6,7 +6,7 @@ import { COUNTRIES } from "@/lib/constants"
 
 const MAX_AMOUNT = 2_000_000_000
 
-const optionalText = (max: number) =>
+export const optionalText = (max: number) =>
   z
     .string()
     .trim()
@@ -88,6 +88,20 @@ export const preferencesSchema = z.object({
   lowStockAlerts: z.boolean().optional(),
   expiryAlerts: z.boolean().optional(),
   fiadoReminders: z.boolean().optional(),
+  bookingEnabled: z.boolean().optional(),
+  /** Lunes a domingo: { open, close } en "HH:MM", o null si ese día no atiende. */
+  bookingHours: z
+    .array(
+      z
+        .object({ open: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), close: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/) })
+        .refine((h) => h.open < h.close, "La hora de cierre debe ser después de la de apertura")
+        .nullable(),
+    )
+    .length(7)
+    .optional(),
+  bookingSlotMin: z.union([z.literal(10), z.literal(15), z.literal(20), z.literal(30), z.literal(45), z.literal(60)]).optional(),
+  bookingMinNoticeMin: z.number().int().min(0).max(2880).optional(),
+  bookingMaxDays: z.number().int().min(1).max(90).optional(),
   fiadoDays: z.number().int().min(1).max(120).optional(),
   noSalesReminder: z.boolean().optional(),
   weeklySummary: z.boolean().optional(),

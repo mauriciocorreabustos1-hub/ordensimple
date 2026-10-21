@@ -172,6 +172,8 @@ model Business {
   /// Tienda online: catálogo público en /tienda/<storeSlug> con pedidos por WhatsApp (plan Pro).
   storeEnabled        Boolean   @default(false)
   storeSlug           String?   @unique
+  /// Direcciones que tuvo antes: nadie más las puede tomar y los enlaces viejos llevan a la nueva.
+  storeOldSlugs       String[]  @default([])
   storeWhatsapp       String?
   storeMessage        String?
   createdAt           DateTime  @default(now())

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { cache } from "react"
 import { BusinessLogo } from "@/components/app/business-logo"
 import { StoreFront } from "@/components/store/store-front"
@@ -44,7 +44,14 @@ export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">):
 export default async function StorePage({ params }: PageProps<"/tienda/[slug]">) {
   const { slug } = await params
   const store = await getStore(slug)
-  if (!store) notFound()
+  if (!store) {
+    // Si el negocio cambió la dirección de su tienda, los enlaces viejos llevan a la nueva.
+    const moved = STORE_SLUG_RE.test(slug)
+      ? await db.business.findFirst({ where: { storeOldSlugs: { has: slug }, storeSlug: { not: null } }, select: { storeSlug: true } })
+      : null
+    if (moved?.storeSlug) permanentRedirect(`/tienda/${moved.storeSlug}`)
+    notFound()
+  }
   const products = await db.product.findMany({
     where: { businessId: store.id, active: true, price: { gt: 0 }, OR: [{ trackStock: false }, { stock: { gt: 0 } }] },
     select: { id: true, name: true, price: true, stock: true, trackStock: true, category: { select: { name: true } } },

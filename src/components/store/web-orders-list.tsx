@@ -215,7 +215,7 @@ function SellDialog({
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-medium">¿Cómo te pagó?</p>
-          <PaymentChips value={payment} onChange={setPayment} />
+          <PaymentChips value={payment} onChange={setPayment} allowFiado={false} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" onClick={onClose} disabled={pending}>

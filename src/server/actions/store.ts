@@ -10,7 +10,7 @@ import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { RESERVED_SLUGS } from "@/lib/store"
 import { idSchema, paymentMethod as paymentMethodSchema, storeSettingsSchema, webOrderSchema, type StoreSettingsInput, type WebOrderInput } from "@/lib/validations"
 import { allowAttempt } from "@/server/rate-limit"
-import { applyStock, buildLines, FIADO_PRO, fiadoBlocked, lineData, MAX_TOTAL, resolveCustomer } from "@/server/sale-core"
+import { applyStock, buildLines, lineData, MAX_TOTAL, type Tx } from "@/server/sale-core"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -26,11 +26,17 @@ export async function updateStoreSettings(input: StoreSettingsInput): Promise<Ac
     assertCan(ctx, "settings:manage")
     if (!canUseFeature(ctx.business.plan, "store")) return { ok: false, message: PRO_ONLY }
     if (RESERVED_SLUGS.has(slug)) return { ok: false, message: "Esa dirección no se puede usar. Prueba con el nombre de tu negocio." }
-    const taken = await db.business.findFirst({ where: { storeSlug: slug, id: { not: ctx.businessId } }, select: { id: true } })
+    // Tampoco se puede tomar la dirección que otro negocio usó antes: sus enlaces viejos siguen llevando a él.
+    const taken = await db.business.findFirst({
+      where: { id: { not: ctx.businessId }, OR: [{ storeSlug: slug }, { storeOldSlugs: { has: slug } }] },
+      select: { id: true },
+    })
     if (taken) return { ok: false, message: "Esa dirección ya la usa otro negocio. Prueba agregando tu comuna (ej.: almacen-don-pedro-maipu)." }
+    const current = ctx.business.storeSlug
+    const old = current && current !== slug ? [...new Set([...ctx.business.storeOldSlugs, current])].filter((s) => s !== slug).slice(-10) : undefined
     await db.business.update({
       where: { id: ctx.businessId },
-      data: { storeEnabled: enabled, storeSlug: slug, storeWhatsapp: whatsapp, storeMessage: message ?? null },
+      data: { storeEnabled: enabled, storeSlug: slug, storeWhatsapp: whatsapp, storeMessage: message ?? null, ...(old ? { storeOldSlugs: old } : {}) },
     })
   } catch (error) {
     return toActionError(error)
@@ -105,6 +111,25 @@ async function claim(tx: Pick<typeof db, "webOrder">, id: string, userId: string
   if (r.count !== 1) throw new Error("ORDER_HANDLED")
 }
 
+const lastDigits = (phone: string | null | undefined) => (phone ?? "").replace(/\D/g, "").slice(-8)
+
+/** Cliente del pedido web: el que ya tienes con ese nombre y teléfono, o uno nuevo (marcado "web" si el nombre ya existe). */
+async function webCustomer(tx: Tx, businessId: string, name: string, phone: string | null) {
+  const sameName = await tx.customer.findMany({
+    where: { businessId, name: { equals: name, mode: "insensitive" } },
+    select: { id: true, phone: true },
+    take: 20,
+  })
+  const digits = lastDigits(phone)
+  const match = digits.length === 8 ? sameName.find((c) => lastDigits(c.phone) === digits) : undefined
+  if (match) return match.id
+  const created = await tx.customer.create({
+    data: { businessId, name: (sameName.length ? `${name} (web)` : name).slice(0, 80), phone, notes: "Llegó por la tienda online" },
+    select: { id: true },
+  })
+  return created.id
+}
+
 const HANDLED = "Este pedido ya lo atendió otra persona. Recarga la página."
 
 /** Convierte el pedido en una venta (descuenta stock y suma a la caja). */
@@ -115,7 +140,8 @@ export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<ty
   try {
     assertCan(ctx, "sales:create")
     if (!canUseFeature(ctx.business.plan, "store")) return { ok: false, message: PRO_ONLY }
-    if (fiadoBlocked(ctx, pm.data)) return { ok: false, message: FIADO_PRO }
+    // El nombre lo escribió alguien sin cuenta: no se fía a su nombre (podría coincidir con otro cliente).
+    if (pm.data === "FIADO") return { ok: false, message: "Un pedido web no se puede fiar. Si es un cliente tuyo, regístralo como venta fiada eligiéndolo." }
     const order = await loadOrder(ctx.businessId, id)
     if (!order) return { ok: false, message: HANDLED }
     const lines = await buildLines(
@@ -124,10 +150,9 @@ export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<ty
     )
     if (!lines) return { ok: false, message: "Un producto del pedido ya no existe. Regístralo como venta a mano." }
     await db.$transaction(async (tx) => {
-      const customerId = await resolveCustomer(tx, ctx.businessId, order.customerName)
-      if (customerId && order.customerPhone) {
-        await tx.customer.updateMany({ where: { id: customerId, phone: null }, data: { phone: order.customerPhone } })
-      }
+      // Solo se junta con un cliente que ya tienes si coincide el teléfono; si no, queda como cliente nuevo.
+      // Nunca se cambian los datos de un cliente existente con lo que escribió alguien sin cuenta.
+      const customerId = await webCustomer(tx, ctx.businessId, order.customerName, order.customerPhone)
       const sale = await tx.sale.create({
         data: {
           businessId: ctx.businessId,

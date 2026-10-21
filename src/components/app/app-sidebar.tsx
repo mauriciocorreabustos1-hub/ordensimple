@@ -5,16 +5,16 @@ import { usePathname } from "next/navigation"
 import { Logo } from "@/components/app/logo"
 import { SignOutButton, UserMenu, type BusinessOption } from "@/components/app/user-menu"
 import type { Role } from "@/generated/prisma/enums"
-import { isActive, navItemsFor } from "@/lib/navigation"
+import { isActive, navItemsFor, type NavProfile } from "@/lib/navigation"
 import { BusinessLogo } from "@/components/app/business-logo"
 import { SocialLinks, WhatsAppButton } from "@/components/landing/social-links"
 import { cn } from "@/lib/utils"
 
-export function NavLinks({ role, food = false, onNavigate }: { role: Role; food?: boolean; onNavigate?: () => void }) {
+export function NavLinks({ role, profile = {}, onNavigate }: { role: Role; profile?: NavProfile; onNavigate?: () => void }) {
   const pathname = usePathname()
   return (
     <nav className="grid gap-0.5" aria-label="Principal">
-      {navItemsFor(role, { food }).map((item) => {
+      {navItemsFor(role, profile).map((item) => {
         const active = isActive(pathname, item.href)
         return (
           <Link
@@ -54,7 +54,7 @@ export function AppSidebar({
   userImage = null,
   businesses = [],
   isAdmin = false,
-  food = false,
+  profile = {},
 }: {
   businessId: string
   logoUpdatedAt: Date | null
@@ -66,7 +66,8 @@ export function AppSidebar({
   businesses?: BusinessOption[]
   isAdmin?: boolean
   /** Negocio de comida: muestra Comandas. */
-  food?: boolean
+  /** Rubro del negocio: qué se muestra en el menú. */
+  profile?: NavProfile
 }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-sidebar lg:flex">
@@ -80,7 +81,7 @@ export function AppSidebar({
         </p>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <NavLinks role={role} food={food} />
+        <NavLinks role={role} profile={profile} />
       </div>
       <div className="border-t px-3 pt-2">
         <WhatsAppButton tone="sidebar" text="Hola, necesito ayuda con OrdenSimple" />

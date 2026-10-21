@@ -15,3 +15,31 @@ export function isFoodBusiness(type: string | null | undefined) {
 export function tableLabels(count: number, extras: string[]) {
   return [...Array.from({ length: count }, (_, i) => `Mesa ${i + 1}`), ...extras]
 }
+
+const SERVICE_TYPES = ["Belleza y estética", "Servicios profesionales", "Taller o reparaciones"]
+// Rubros escritos a mano en "Otro" que trabajan con horas o citas.
+const SERVICE_WORDS = /peluquer|barber|est[eé]tic|u[ñn]as|manicur|pedicur|spa\b|masaj|depila|pesta[ñn]|cejas|tatu|maquill|consult|cl[ií]nic|dent|odont|psic[oó]l|kinesi|nutric|fonoaud|terap|m[eé]dic|veterin|abogad|contad|asesor|clases|profesor|tutor|gimnasi|entrenad|yoga|pilates|fot[oó]graf|taller|mec[aá]nic|reparac|servicio t[eé]cnico|lavado de auto|car ?wash|gasfiter|electricist/i
+const PRODUCT_TYPES = ["Almacén o minimarket", "Tienda de ropa o accesorios", "Tienda online", "Ferretería o construcción", "Taller o reparaciones", FOOD_BUSINESS_TYPE]
+
+/** Peluquerías, consultas, talleres, clases…: trabajan con citas. A ellos se les muestra la Agenda. */
+export function isServiceBusiness(type: string | null | undefined) {
+  if (!type) return false
+  return SERVICE_TYPES.some((t) => type.includes(t)) || SERVICE_WORDS.test(type)
+}
+
+/** Cómo se adapta la app al rubro: qué se muestra en el menú y cómo se llama lo que vende. */
+export function businessProfile(type: string | null | undefined) {
+  const food = isFoodBusiness(type)
+  const services = !food && isServiceBusiness(type)
+  // Solo servicios (sin rubros de venta de productos): no se muestra el inventario.
+  const servicesOnly = services && !PRODUCT_TYPES.some((t) => (type ?? "").includes(t))
+  return {
+    food,
+    services,
+    servicesOnly,
+    /** Nombre del catálogo en el menú y en la página. */
+    catalog: servicesOnly ? "Servicios" : services ? "Servicios y productos" : "Productos",
+  }
+}
+
+export type BusinessProfile = ReturnType<typeof businessProfile>

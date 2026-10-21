@@ -4,6 +4,7 @@ import {
   Crown,
   Boxes,
   Calculator,
+  CalendarDays,
   ChefHat,
   ClipboardList,
   Gift,
@@ -32,12 +33,17 @@ export type NavItem = {
   pro?: boolean
   /** Solo para negocios de comida (restaurantes, cafés…). */
   food?: boolean
+  /** Solo para negocios de servicios (peluquerías, consultas, talleres…). */
+  services?: boolean
+  /** Se oculta en negocios que solo venden servicios (no manejan stock). */
+  stock?: boolean
   /** Si se indica, solo se muestra a quien tenga este permiso. */
   permission?: Permission
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Inicio", icon: Home },
+  { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays, pro: true, services: true },
   { href: "/dashboard/ventas", label: "Ventas", icon: ShoppingBag },
   { href: "/dashboard/comandas", label: "Comandas", icon: ClipboardList, pro: true, food: true },
   { href: "/dashboard/cocina", label: "Cocina", icon: ChefHat, pro: true, food: true },
@@ -47,7 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/flujo-caja", label: "Flujo de caja", icon: ArrowLeftRight, pro: true, permission: "finances:view" },
   { href: "/dashboard/balance", label: "Balance y retiros", icon: Scale, pro: true, permission: "finances:view" },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
-  { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true },
+  { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true, stock: true },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },
   { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator, permission: "finances:view" },
@@ -59,9 +65,14 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]
 
+export type NavProfile = { food?: boolean; services?: boolean; servicesOnly?: boolean; catalog?: string }
+
 /** Menú según el rol (a los empleados no se les muestra lo que no pueden usar) y el rubro del negocio. */
-export function navItemsFor(role: Role, { food = false }: { food?: boolean } = {}) {
-  return NAV_ITEMS.filter((item) => (!item.permission || can(role, item.permission)) && (!item.food || food))
+export function navItemsFor(role: Role, { food = false, services = false, servicesOnly = false, catalog }: NavProfile = {}) {
+  return NAV_ITEMS.filter(
+    (item) =>
+      (!item.permission || can(role, item.permission)) && (!item.food || food) && (!item.services || services) && (!item.stock || !servicesOnly),
+  ).map((item) => (item.href === "/dashboard/productos" && catalog ? { ...item, label: catalog } : item))
 }
 
 export function isActive(pathname: string, href: string) {

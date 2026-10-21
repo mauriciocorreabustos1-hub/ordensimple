@@ -11,6 +11,7 @@ import { ScanButton } from "@/components/app/barcode-scanner"
 import { MoneyInput } from "@/components/app/money-input"
 import { Explainer } from "@/components/app/explainer"
 import { marginRatio } from "@/lib/calculations"
+import { cn } from "@/lib/utils"
 import { formatMoney, formatPercent, referenceAmount } from "@/lib/currency"
 import type { ProductInput } from "@/lib/validations"
 import { createProduct, updateProduct } from "@/server/actions/products"
@@ -28,6 +29,8 @@ export type ProductFormValues = {
   active: boolean
   /** Próximo vencimiento "AAAA-MM-DD" o "". */
   expiresAt: string
+  /** Servicios: duración en minutos (para la Agenda). */
+  durationMin: number | null
 }
 
 export const EMPTY_PRODUCT: ProductFormValues = {
@@ -41,7 +44,11 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   trackStock: true,
   active: true,
   expiresAt: "",
+  durationMin: null,
 }
+
+/** Para negocios de servicios: lo nuevo parte como servicio (sin stock, con duración). */
+export const EMPTY_SERVICE: ProductFormValues = { ...EMPTY_PRODUCT, trackStock: false, durationMin: 30 }
 
 function intValue(v: string) {
   return Math.max(0, Number(v.replace(/\D/g, "")) || 0)
@@ -92,7 +99,8 @@ export function ProductForm({
     if (Object.keys(errs).length) return
     // Lo que quedó escrito sin tocar "Agregar" también se guarda.
     const codes = newCode.trim() && !v.codes.includes(newCode.trim()) ? [...v.codes, newCode.trim()] : v.codes
-    const input: ProductInput = { ...v, codes, sku: codes[0] }
+    // La duración solo aplica a lo que no lleva stock (servicios).
+    const input: ProductInput = { ...v, codes, sku: codes[0], durationMin: v.trackStock ? null : v.durationMin && v.durationMin >= 5 ? v.durationMin : null }
     startTransition(async () => {
       const result = productId ? await updateProduct(productId, input) : await createProduct(input)
       if (!result.ok) {
@@ -212,7 +220,34 @@ export function ProductForm({
             <Input id="p-exp" type="date" value={v.expiresAt} onChange={(e) => set("expiresAt", e.target.value)} className="h-10" />
           </Field>
         </div>
-      ) : null}
+      ) : (
+        <Field label="Duración" htmlFor="p-duration" optional hint="Si es un servicio con hora (corte, consulta, clase…): así la Agenda reserva el tiempo justo.">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              id="p-duration"
+              inputMode="numeric"
+              value={v.durationMin ?? ""}
+              onChange={(e) => {
+                const n = intValue(e.target.value)
+                set("durationMin", n ? Math.min(720, n) : null)
+              }}
+              placeholder="Ej: 45"
+              className="tabular h-10 w-24"
+            />
+            <span className="text-sm text-muted-foreground">minutos</span>
+            {[15, 30, 45, 60, 90].map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => set("durationMin", m)}
+                className={cn("rounded-full border px-2.5 py-1 text-xs", v.durationMin === m ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted")}
+              >
+                {m < 60 ? `${m} min` : m === 60 ? "1 h" : "1 h 30"}
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
       <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
         <div>
           <p className="text-sm font-medium">Producto activo</p>

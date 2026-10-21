@@ -1,7 +1,7 @@
 import "server-only"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { db } from "@/lib/db"
-import { addDays, formatDate, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
+import { addDays, formatDate, formatTime, startOfDay, startOfWeek, zonedParts } from "@/lib/dates"
 import { sendEmailBatch } from "@/lib/email"
 import { expiringEmail, fiadoOverdueEmail, lowStockEmail, noSalesEmail, payablesEmail, weeklyEmptyEmail, weeklySummaryEmail } from "@/lib/email-templates"
 import { formatMoney } from "@/lib/currency"
@@ -10,6 +10,7 @@ import { totalsBetween } from "@/server/queries/aggregates"
 import { getDebtors, getOverdueDebtors } from "@/server/queries/fiado"
 import { productStats } from "@/server/queries/reports"
 import { sendPush, type PushMessage } from "@/server/push"
+import { isServiceBusiness } from "@/lib/business-kind"
 
 const DAY = 86_400_000
 /** Días sin ventas antes de recordar, y cada cuánto se puede repetir el recordatorio. */
@@ -44,6 +45,7 @@ export async function sendBusinessAlerts(now = new Date()) {
       name: true,
       currency: true,
       timezone: true,
+      type: true,
       plan: true,
       planExpiresAt: true,
       settings: true,
@@ -118,6 +120,31 @@ export async function sendBusinessAlerts(now = new Date()) {
           })
         }
         counts.weekly++
+      }
+    }
+
+    // ─── Agenda: las citas de hoy, al celular (dueño y administradores ven el total; cada profesional las suyas) ──
+    if (isServiceBusiness(b.type) && canUseFeature(effectivePlan(b), "agenda")) {
+      const todays = await db.appointment.findMany({
+        where: { businessId: b.id, startAt: { gte: today, lt: addDays(today, 1, tz) }, status: { notIn: ["CANCELLED", "NO_SHOW", "DONE"] } },
+        select: { startAt: true, customerName: true, serviceName: true, staffId: true },
+        orderBy: { startAt: "asc" },
+      })
+      if (todays.length) {
+        const first = (list: typeof todays) => `la primera a las ${formatTime(list[0].startAt, tz)} (${list[0].customerName}, ${list[0].serviceName})`
+        const managers = recipients.map((r) => r.id)
+        pushes.push({
+          userIds: managers,
+          message: { title: `📅 Hoy hay ${todays.length} cita${todays.length === 1 ? "" : "s"}`, body: first(todays), url: "/dashboard/agenda", tag: `agenda-${b.id}` },
+        })
+        const byStaff = new Map<string, typeof todays>()
+        for (const a of todays) if (a.staffId && !managers.includes(a.staffId)) byStaff.set(a.staffId, [...(byStaff.get(a.staffId) ?? []), a])
+        for (const [staffId, list] of byStaff) {
+          pushes.push({
+            userIds: [staffId],
+            message: { title: `📅 Hoy tienes ${list.length} cita${list.length === 1 ? "" : "s"}`, body: first(list), url: "/dashboard/agenda", tag: `agenda-${b.id}` },
+          })
+        }
       }
     }
 

@@ -175,6 +175,8 @@ export const productSchema = z.object({
   active: z.boolean(),
   /** Próximo vencimiento (AAAA-MM-DD) o vacío. */
   expiresAt: z.union([dateKey, z.literal("")]).optional(),
+  /** Servicios: duración en minutos para la Agenda. */
+  durationMin: z.number().int().min(5).max(720).nullable().optional(),
   /** Todos sus códigos de barras (el primero queda como principal). */
   codes: z.array(z.string().trim().min(1).max(120)).max(30, "Máximo 30 códigos por producto").optional(),
 })
@@ -339,6 +341,24 @@ export const comandaChargeSchema = z
   .refine((d) => d.paymentMethod !== "FIADO" || Boolean(d.customerName), FIADO_NEEDS_CUSTOMER)
   .refine((d) => d.paymentMethod !== "FIADO" || !d.tip, { message: "La propina no se puede dejar al fiado.", path: ["tip"] })
 export type ComandaChargeInput = z.input<typeof comandaChargeSchema>
+
+// ─── Agenda ─────────────────────────────────────────────────────────────────
+
+export const appointmentSchema = z.object({
+  customerName: z.string().trim().min(2, "Escribe el nombre del cliente").max(80),
+  customerPhone: optionalText(20),
+  /** Servicio guardado; si no, se escribe a mano (serviceName + price). */
+  productId: z.string().min(1).max(40).optional(),
+  serviceName: z.string().trim().min(2, "Escribe el servicio").max(100),
+  price: money,
+  staffId: z.string().min(1).max(40).optional(),
+  /** Fecha AAAA-MM-DD y hora HH:MM en la zona del negocio. */
+  date: dateKey,
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora no válida"),
+  durationMin: z.number().int().min(5, "Mínimo 5 minutos").max(720, "Máximo 12 horas"),
+  note: optionalText(300),
+})
+export type AppointmentInput = z.input<typeof appointmentSchema>
 
 // ─── Tienda online ──────────────────────────────────────────────────────────
 

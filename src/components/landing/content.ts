@@ -424,6 +424,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí. Si marcas el rubro «Restaurante, café o comida», con el plan Pro tienes comandas por mesa y una pantalla para la cocina: el garzón anota y envía el pedido, la cocina lo marca listo y al cobrar queda como venta. Eliges cuántas mesas tienes en Configuración.",
       },
       {
+        q: "¿Sirve si vendo servicios o trabajo con horas, como una peluquería o una consulta?",
+        a: "Sí. Si marcas un rubro de servicios (belleza y estética, servicios profesionales, taller), OrdenSimple se adapta: tus productos pasan a ser servicios con su duración y, con el plan Pro, tienes una Agenda por profesional. Recuerdas cada cita por WhatsApp, la cobras con un toque y queda como venta, con la comisión de quien atendió.",
+      },
+      {
         q: "¿Puedo recibir pedidos por internet?",
         a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en «Pedidos web» lo registras como venta con un toque. Sin comisiones.",
       },
@@ -528,6 +532,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Clientes, fiado y cobro por WhatsApp", values: [true, true, true] },
   { label: "Comandas y pantalla de cocina (restaurantes y cafés)", values: [false, true, true] },
   { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
+  { label: "Agenda de citas (peluquerías, consultas, talleres)", values: [false, true, true] },
   { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Suspense } from "react"
 import {
   CalendarClock,
+  CalendarDays,
   ChevronRight,
   Globe,
   Crown,
@@ -25,7 +26,7 @@ import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { businessHealth, percentChange } from "@/lib/calculations"
 import { formatMoney, referenceAmount } from "@/lib/currency"
-import { greeting, monthName, zonedParts } from "@/lib/dates"
+import { formatTime, greeting, monthName, zonedParts } from "@/lib/dates"
 import { daysUntil, formatDueDate, ppmAmount, vatDueDate, vatInfo } from "@/lib/vat"
 import { getDashboardData } from "@/server/queries/dashboard"
 import { getInsights } from "@/server/queries/insights"
@@ -34,6 +35,7 @@ import { getYearSummary } from "@/server/queries/results"
 import { payablesDueBefore } from "@/server/queries/payables"
 import { addDays, startOfDay, startOfMonth } from "@/lib/dates"
 import { MyGoalCard } from "@/components/dashboard/my-goal-card"
+import { isServiceBusiness } from "@/lib/business-kind"
 import { commissionOf, salesByMember } from "@/server/queries/team"
 import { InsightsCard } from "@/components/dashboard/insights-card"
 import { canUseFeature, memberLimit, PLANS, PLANS_ENFORCED, checkoutPath } from "@/lib/plans"
@@ -61,7 +63,8 @@ export default async function DashboardPage() {
   const showPayables = showFinances && canUseFeature(ctx.business.plan, "suppliers") && can(ctx.role, "suppliers:manage")
   const hasGoal = Boolean(ctx.member.monthlyGoal || ctx.member.commissionRate)
   const nextMonth = startOfMonth(now, ctx.timezone, 1)
-  const [data, insights, debts, year, payables, webOrders, mine] = await Promise.all([
+  const showAgenda = isServiceBusiness(ctx.business.type) && canUseFeature(ctx.business.plan, "agenda")
+  const [data, insights, debts, year, payables, webOrders, mine, agendaToday] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
     showFiado ? getDebtors(ctx.businessId) : Promise.resolve(null),
@@ -73,7 +76,43 @@ export default async function DashboardPage() {
       ? db.webOrder.count({ where: { businessId: ctx.businessId, status: "NEW" } })
       : Promise.resolve(0),
     hasGoal ? salesByMember(ctx.businessId, startOfMonth(now, ctx.timezone), nextMonth).then((m) => m.get(ctx.user.id)) : Promise.resolve(undefined),
+    showAgenda
+      ? db.appointment.findMany({
+          where: {
+            businessId: ctx.businessId,
+            startAt: { gte: startOfDay(now, ctx.timezone), lt: addDays(startOfDay(now, ctx.timezone), 1, ctx.timezone) },
+            status: { notIn: ["CANCELLED", "NO_SHOW"] },
+            // Los empleados ven sus citas y las sin asignar; el dueño, todas.
+            ...(showFinances ? {} : { OR: [{ staffId: ctx.user.id }, { staffId: null }] }),
+          },
+          select: { startAt: true, endAt: true, customerName: true, serviceName: true, status: true },
+          orderBy: { startAt: "asc" },
+        })
+      : Promise.resolve([]),
   ])
+  // Agenda de hoy (negocios de servicios): cuántas citas quedan y cuál es la próxima.
+  const pendingToday = agendaToday.filter((a) => a.status !== "DONE")
+  const nextUp = pendingToday.find((a) => a.endAt > now)
+  const agendaCard = showAgenda ? (
+    <Link href="/dashboard/agenda" className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <CalendarDays className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">
+          {agendaToday.length ? `Hoy: ${agendaToday.length} cita${agendaToday.length === 1 ? "" : "s"}${agendaToday.length - pendingToday.length ? ` · ${agendaToday.length - pendingToday.length} cobrada${agendaToday.length - pendingToday.length === 1 ? "" : "s"}` : ""}` : "Hoy no tienes citas"}
+        </span>
+        <span className="block truncate text-sm text-muted-foreground">
+          {nextUp
+            ? `Próxima: ${formatTime(nextUp.startAt, ctx.timezone)} · ${nextUp.customerName} (${nextUp.serviceName})`
+            : agendaToday.length
+              ? "Ya no quedan citas por atender hoy."
+              : "Toca para agendar una."}
+        </span>
+      </span>
+      <ChevronRight className="size-5 text-muted-foreground" />
+    </Link>
+  ) : null
   // Meta y comisión del mes de quien usa la app (las fija el dueño en Reportes → Tu equipo).
   const myNet = mine?.net ?? 0
   const goalCard = hasGoal ? (
@@ -193,6 +232,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <QuickButtons />
+        {agendaCard}
         {webOrdersBanner}
         {goalCard}
         <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
@@ -287,6 +327,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <QuickButtons />
+        {agendaCard}
         {webOrdersBanner}
         {goalCard}
 

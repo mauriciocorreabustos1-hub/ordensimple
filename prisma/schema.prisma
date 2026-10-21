@@ -88,6 +88,7 @@ model User {
   twoFactors    TwoFactor[]
   memberships   BusinessMember[]
   pushSubscriptions PushSubscription[]
+  appointmentsAttended Appointment[] @relation("AppointmentStaff")
   shiftsOpened  CashShift[]      @relation("ShiftOpenedBy")
   shiftsClosed  CashShift[]      @relation("ShiftClosedBy")
   sales         Sale[]
@@ -195,6 +196,7 @@ model Business {
   cashClosings      CashClosing[]
   cashShifts        CashShift[]
   webOrders         WebOrder[]
+  appointments      Appointment[]
   notifications     Notification[]
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
@@ -316,6 +318,8 @@ model Product {
   trackStock Boolean   @default(true)
   /// Próximo vencimiento del stock (para avisar lo que está por vencer).
   expiresAt  DateTime?
+  /// Servicios: cuánto dura (minutos), para la Agenda.
+  durationMin Int?
   active     Boolean   @default(true)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -326,6 +330,7 @@ model Product {
   barcodes  ProductBarcode[]
 
   comandaItems ComandaItem[]
+  appointments Appointment[]
   @@unique([businessId, sku])
   @@index([businessId, active])
   @@index([categoryId])
@@ -447,6 +452,7 @@ model Customer {
   notes      String?
   sales      Sale[]
   payments   CustomerPayment[]
+  appointments Appointment[]
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
@@ -607,6 +613,47 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscription")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  ARRIVED
+  DONE
+  NO_SHOW
+  CANCELLED
+}
+
+/// Cita de la Agenda (peluquerías, consultas, talleres…). Al cobrarla se vuelve una venta.
+model Appointment {
+  id           String            @id @default(cuid())
+  businessId   String
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId   String?
+  customer     Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName String
+  customerPhone String?
+  productId    String?
+  product      Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  /// Nombre y precio del servicio al agendar (si después cambia el precio, la cita conserva el suyo).
+  serviceName  String
+  price        Int
+  /// Quién atiende (alguien del equipo). Vacío = cualquiera.
+  staffId      String?
+  staff        User?             @relation("AppointmentStaff", fields: [staffId], references: [id], onDelete: SetNull)
+  startAt      DateTime
+  endAt        DateTime
+  status       AppointmentStatus @default(SCHEDULED)
+  note         String?
+  saleId       String?           @unique
+  createdById  String?
+  remindedAt   DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([businessId, startAt])
+  @@index([staffId, startAt])
+  @@map("appointment")
 }
 
 enum WebOrderStatus {

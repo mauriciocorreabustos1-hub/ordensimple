@@ -3,18 +3,18 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ClipboardList, Home, LogOut, Menu, Plus, Receipt, ShoppingBag } from "lucide-react"
+import { CalendarDays, ClipboardList, Home, LogOut, Menu, Plus, Receipt, ShoppingBag } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import type { Role } from "@/generated/prisma/enums"
 import { NavLinks } from "@/components/app/app-sidebar"
 import { useQuickActions } from "@/components/app/quick-actions"
 import { SocialButtons, WhatsAppButton } from "@/components/landing/social-links"
 import { useSignOut } from "@/components/app/user-menu"
-import { isActive } from "@/lib/navigation"
+import { isActive, type NavProfile } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
 /** Barra inferior para celular: lo más usado a un toque, el resto en "Más". */
-export function MobileNav({ userName, userEmail, role, food = false }: { userName: string; userEmail: string; role: Role; food?: boolean }) {
+export function MobileNav({ userName, userEmail, role, profile = {} }: { userName: string; userEmail: string; role: Role; profile?: NavProfile }) {
   const pathname = usePathname()
   const { open } = useQuickActions()
   const signOut = useSignOut()
@@ -58,7 +58,11 @@ export function MobileNav({ userName, userEmail, role, food = false }: { userNam
             </button>
           </div>
           {/* En restaurantes y cafés, las comandas van a un toque; Gastos sigue en "Más". */}
-          {food ? tab("/dashboard/comandas", "Comandas", ClipboardList) : tab("/dashboard/gastos", "Gastos", Receipt)}
+          {profile.food
+            ? tab("/dashboard/comandas", "Comandas", ClipboardList)
+            : profile.services
+              ? tab("/dashboard/agenda", "Agenda", CalendarDays)
+              : tab("/dashboard/gastos", "Gastos", Receipt)}
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -109,7 +113,7 @@ export function MobileNav({ userName, userEmail, role, food = false }: { userNam
             <p className="truncate text-left text-xs text-muted-foreground">{userEmail}</p>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-3">
-            <NavLinks role={role} food={food} onNavigate={() => setMenuOpen(false)} />
+            <NavLinks role={role} profile={profile} onNavigate={() => setMenuOpen(false)} />
             <div className="mt-3 border-t px-1 pt-3">
               <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">Síguenos: trucos para tu negocio</p>
               <SocialButtons tone="sidebar" />

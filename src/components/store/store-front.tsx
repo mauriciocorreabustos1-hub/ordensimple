@@ -210,6 +210,7 @@ function Checkout({
       const text = orderWhatsappText({
         businessName,
         customerName: name.trim(),
+        customerPhone: phone.trim() || null,
         delivery,
         note: note.trim() || null,
         items: r.data.items,

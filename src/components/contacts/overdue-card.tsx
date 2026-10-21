@@ -31,7 +31,7 @@ export function OverdueCard({
         </CardTitle>
         <CardDescription>
           {debtors.length === 1 ? "1 cliente debe" : `${debtors.length} clientes deben`} {money(total)} hace más de {days} días.{" "}
-          <Link href="/dashboard/configuracion#avisos" className="text-primary hover:underline">
+          <Link href="/dashboard/configuracion?seccion=avisos" className="text-primary hover:underline">
             Cambiar plazo
           </Link>
         </CardDescription>

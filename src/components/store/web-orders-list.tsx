@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
+import { orderReplyText } from "@/lib/store"
 import { whatsappLink } from "@/lib/whatsapp"
 import { acceptWebOrderAsComanda, acceptWebOrderAsSale, cancelWebOrder } from "@/server/actions/store"
 
@@ -36,12 +37,14 @@ export function WebOrdersList({
   timezone,
   canComanda,
   defaultPayment,
+  businessName,
 }: {
   orders: WebOrderRow[]
   currency: string
   timezone: string
   canComanda: boolean
   defaultPayment: PaymentMethod
+  businessName: string
 }) {
   const router = useRouter()
   const money = (n: number) => formatMoney(n, currency)
@@ -123,7 +126,7 @@ export function WebOrdersList({
                 ) : null}
                 {o.customerPhone ? (
                   <Button variant="outline" size="icon" asChild aria-label={`Escribirle a ${o.customerName} por WhatsApp`}>
-                    <a href={whatsappLink(o.customerPhone, `Hola ${o.customerName.split(" ")[0]}, recibimos tu pedido n.º ${o.code}.`)} target="_blank" rel="noopener noreferrer">
+                    <a href={whatsappLink(o.customerPhone, orderReplyText(o.customerName, o.code, businessName))} target="_blank" rel="noopener noreferrer">
                       <MessageCircle />
                     </a>
                   </Button>

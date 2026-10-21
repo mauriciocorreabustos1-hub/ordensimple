@@ -434,7 +434,7 @@ export function nudgeEmail({
 // ─── Avisos del negocio (se activan o desactivan en Configuración) ──────────
 
 function alertFooter() {
-  return `Recibes este aviso porque lo tienes activado en OrdenSimple. <a href="${getAppUrl()}/dashboard/configuracion" style="color:${MUTED};">Cambiar mis avisos</a>.`
+  return `Recibes este aviso porque lo tienes activado en OrdenSimple. <a href="${getAppUrl()}/dashboard/configuracion?seccion=avisos" style="color:${MUTED};">Cambiar mis avisos</a>.`
 }
 
 /** El resumen de los lunes llega siempre: es parte del servicio, no un aviso que se apaga. */

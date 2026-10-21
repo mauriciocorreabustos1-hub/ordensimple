@@ -4,6 +4,8 @@ import { redirect } from "next/navigation"
 import { Crown } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/app/page-header"
+import { SettingsNav } from "@/components/settings/settings-nav"
+import { SETTINGS_SECTIONS, type SettingsSection } from "@/lib/settings-sections"
 import { BusinessForm } from "@/components/settings/business-form"
 import { LogoUploader } from "@/components/settings/logo-uploader"
 import { PhotoUploader } from "@/components/settings/photo-uploader"
@@ -40,6 +42,8 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
     redirect(`/dashboard/plan?${new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => typeof e[1] === "string"))}`)
   }
   const canManage = can(ctx.role, "settings:manage")
+  const section: SettingsSection = params["dos-pasos"] ? "cuenta" : (SETTINGS_SECTIONS.find((x) => x.id === params.seccion)?.id ?? "negocio")
+  const current = SETTINGS_SECTIONS.find((x) => x.id === section)!
   const twoFactorUser = ctx.user as { twoFactorEnabled?: boolean | null; twoFactorMethod?: string | null }
   const twoFactor = { enabled: Boolean(twoFactorUser.twoFactorEnabled), method: twoFactorUser.twoFactorMethod ?? null }
   const userIsAdmin = await isAdmin(ctx.user.email)
@@ -104,275 +108,308 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
         </p>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Modo Fácil</CardTitle>
-          <CardDescription>Ideal si recién empiezas: el inicio muestra solo lo esencial.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PreferenceSwitch
-            name="easyMode"
-            label="Activar Modo Fácil"
-            description="Verás solo ventas, gastos y ganancia de hoy, con botones grandes para registrar."
-            checked={ctx.settings.easyMode}
-            disabled={!canManage}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Datos del negocio</CardTitle>
-          <CardDescription>Logo, nombre, país y moneda en la que llevas tus cuentas.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <LogoUploader
-            businessId={ctx.businessId}
-            name={ctx.business.name}
-            logoUpdatedAt={ctx.business.logoUpdatedAt?.toISOString() ?? null}
-            disabled={!canManage}
-          />
-          <BusinessForm
-            initial={{
-              name: ctx.business.name,
-              type: ctx.business.type ?? "",
-              country: ctx.business.country,
-              currency: ctx.business.currency,
-            }}
-            currencyLocked={hasRecords}
-            disabled={!canManage}
-          />
-        </CardContent>
-      </Card>
-
-      {isFoodBusiness(ctx.business.type) ? (
-        <Card id="mesas" className="scroll-mt-20">
-          <CardHeader>
-            <CardTitle>Mesas</CardTitle>
-            <CardDescription>Las mesas y lugares de tu local. Aparecen al abrir una comanda, y ves al tiro cuáles están ocupadas.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TablesSettings count={ctx.settings.tableCount} extras={ctx.settings.tableExtras} disabled={!canManage} />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card id="tienda" className="scroll-mt-20">
-        <CardHeader>
-          <CardTitle>Tienda online</CardTitle>
-          <CardDescription>
-            Una página con tus productos y precios para compartir por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido
-            por WhatsApp; te queda en «Pedidos web» para registrarlo con un toque.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {canUseFeature(ctx.business.plan, "store") ? (
-            <StoreSettings
-              businessName={ctx.business.name}
-              enabled={ctx.business.storeEnabled}
-              slug={ctx.business.storeSlug}
-              whatsapp={ctx.business.storeWhatsapp}
-              message={ctx.business.storeMessage}
-              appUrl={getAppUrl()}
-              disabled={!canManage}
-            />
-          ) : (
-            <ProUpsell title="La tienda online es parte del plan Pro" text="Publica tu catálogo y recibe pedidos por WhatsApp, sin comisiones." />
-          )}
-        </CardContent>
-      </Card>
-
-      {vat ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Impuestos ({vat.label})</CardTitle>
-            <CardDescription>
-              Para calcular cuánto {vat.label} pagar cada mes y ver tus resultados sin {vat.label}. Es una ayuda para
-              prepararte: la cifra oficial es la que declaras{vat.form ? ` en el ${vat.form}` : ""}.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="divide-y">
-            <PreferenceSwitch
-              name="chargesVat"
-              label={`Mi negocio cobra ${vat.label}`}
-              description={
-                ctx.business.country === "CL"
-                  ? "Viene activado. Desactívalo si tu negocio no tiene inicio de actividades en el SII o no emite boletas ni facturas."
-                  : `Viene activado. Desactívalo si tus precios no incluyen ${vat.label} o no lo declaras cada mes.`
-              }
-              checked={ctx.settings.chargesVat}
-              disabled={!canManage}
-            />
-            {ctx.settings.chargesVat ? (
-              <VatDueDay value={ctx.settings.vatDueDay} chile={ctx.business.country === "CL"} disabled={!canManage} />
-            ) : null}
-            {ctx.settings.chargesVat && ctx.business.country === "CL" ? <PpmRate value={ctx.settings.ppmRate} disabled={!canManage} /> : null}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Categorías de gastos</CardTitle>
-          <CardDescription>Así agrupamos tus gastos para mostrarte en qué se va tu plata.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ExpenseCategories categories={categories} disabled={!canManage} />
-        </CardContent>
-      </Card>
-
-      <Card id="avisos" className="scroll-mt-20">
-        <CardHeader>
-          <CardTitle>Avisos por correo</CardTitle>
-          <CardDescription>
-            Elige de qué quieres que te avisemos. Llegan a {ctx.user.email} y a los administradores del negocio.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="divide-y">
-          <PreferenceSwitch
-            name="lowStockAlerts"
-            label="Stock bajo"
-            description="Cuando a un producto le queden menos unidades que el mínimo o se agote."
-            checked={ctx.settings.lowStockAlerts}
-            disabled={!canManage}
-          />
-          <PreferenceSwitch
-            name="expiryAlerts"
-            label="Productos por vencer"
-            description="Lo que vence en los próximos 7 días y todavía tiene stock, con cuánta plata está en riesgo (plan Pro)."
-            checked={ctx.settings.expiryAlerts}
-            disabled={!canManage}
-          />
-          {canUseFeature(ctx.business.plan, "customers") ? (
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <SettingsNav active={section} />
+        <div className="min-w-0 space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <current.icon className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">{current.label}</h2>
+              <p className="text-sm text-muted-foreground">{current.hint}</p>
+            </div>
+          </div>
+          {section === "negocio" ? (
             <>
-              <PreferenceSwitch
-                name="fiadoReminders"
-                label="Fiado por cobrar"
-                description="Una vez por semana, los clientes que se pasaron del plazo de pago, con cuánto deben."
-                checked={ctx.settings.fiadoReminders}
-                disabled={!canManage}
-              />
-              <FiadoDays value={ctx.settings.fiadoDays} disabled={!canManage} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Datos del negocio</CardTitle>
+                <CardDescription>Logo, nombre, país y moneda en la que llevas tus cuentas.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <LogoUploader
+                  businessId={ctx.businessId}
+                  name={ctx.business.name}
+                  logoUpdatedAt={ctx.business.logoUpdatedAt?.toISOString() ?? null}
+                  disabled={!canManage}
+                />
+                <BusinessForm
+                  initial={{
+                    name: ctx.business.name,
+                    type: ctx.business.type ?? "",
+                    country: ctx.business.country,
+                    currency: ctx.business.currency,
+                  }}
+                  currencyLocked={hasRecords}
+                  disabled={!canManage}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Modo Fácil</CardTitle>
+                <CardDescription>Ideal si recién empiezas: el inicio muestra solo lo esencial.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PreferenceSwitch
+                  name="easyMode"
+                  label="Activar Modo Fácil"
+                  description="Verás solo ventas, gastos y ganancia de hoy, con botones grandes para registrar."
+                  checked={ctx.settings.easyMode}
+                  disabled={!canManage}
+                />
+              </CardContent>
+            </Card>
+
+            {isFoodBusiness(ctx.business.type) ? (
+              <Card id="mesas" className="scroll-mt-20">
+                <CardHeader>
+                  <CardTitle>Mesas</CardTitle>
+                  <CardDescription>Las mesas y lugares de tu local. Aparecen al abrir una comanda, y ves al tiro cuáles están ocupadas.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TablesSettings count={ctx.settings.tableCount} extras={ctx.settings.tableExtras} disabled={!canManage} />
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Apariencia</CardTitle>
+                <CardDescription>Se guarda en este dispositivo.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemePicker />
+              </CardContent>
+            </Card>
             </>
           ) : null}
-          <PreferenceSwitch
-            name="noSalesReminder"
-            label="Días sin ventas"
-            description="Si pasan 3 días sin ventas registradas, para que no se te olvide anotarlas."
-            checked={ctx.settings.noSalesReminder}
-            disabled={!canManage}
-          />
-          <div className="space-y-0.5 py-3">
-            <p className="text-sm font-medium">Resumen de los lunes</p>
-            <p className="text-xs text-muted-foreground">
-              Cada lunes te llega cuánto vendiste, gastaste y te quedó la semana anterior. Llega siempre, para que nunca pierdas de vista tu
-              negocio.
-            </p>
-          </div>
-          <MarketingSwitch checked={Boolean((ctx.user as { marketingOptIn?: boolean }).marketingOptIn)} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Apariencia</CardTitle>
-          <CardDescription>Se guarda en este dispositivo.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ThemePicker />
-        </CardContent>
-      </Card>
-
-      <Card id="equipo">
-        <CardHeader>
-          <CardTitle>Usuarios</CardTitle>
-          <CardDescription>Las personas que tienen acceso a tu negocio y a tus sucursales.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TeamSection
-            members={members.map((m) => ({
-              id: m.id,
-              name: m.user.name,
-              email: m.user.email,
-              role: m.role,
-              isMe: m.userId === ctx.user.id,
-              userId: m.userId,
-              branchIds: branchesOf(m.userId),
-            }))}
-            invitations={invitations.map((inv) => ({
-              id: inv.id,
-              email: inv.email,
-              role: inv.role,
-              url: `${getAppUrl()}/invitacion/${inv.token}`,
-              expiresLabel: formatDate(inv.expiresAt, ctx.timezone, { day: "numeric", month: "short" }),
-              branchName: inv.business.name,
-            }))}
-            businessName={ctx.business.name}
-            canManage={can(ctx.role, "members:manage")}
-            isOwner={ctx.role === "OWNER"}
-            limit={memberLimit(ctx.business.plan, ctx.business.extraMembers)}
-            planName={PLANS[ctx.business.plan].name}
-            branches={ctx.role === "OWNER" ? owned.map((o) => ({ id: o.business.id, name: o.business.name })) : []}
-            currentBranchId={ctx.businessId}
-          />
-          {can(ctx.role, "settings:manage") ? (
-            <div className="mt-4 border-t pt-2">
-              <PreferenceSwitch
-                name="employeesProductsOnly"
-                label="Los empleados solo venden productos guardados"
-                description="Sin venta rápida ni productos escritos a mano: así cobran siempre el precio de lista y todo descuento pasa por tu aprobación. Desactívalo si tu equipo vende servicios sin precio fijo."
-                checked={ctx.settings.employeesProductsOnly}
-              />
-            </div>
+          {section === "tienda" ? (
+            <>
+            <Card id="tienda" className="scroll-mt-20">
+              <CardHeader>
+                <CardTitle>Tienda online</CardTitle>
+                <CardDescription>
+                  Una página con tus productos y precios para compartir por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido
+                  por WhatsApp; te queda en «Pedidos web» para registrarlo con un toque.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {canUseFeature(ctx.business.plan, "store") ? (
+                  <StoreSettings
+                    businessName={ctx.business.name}
+                    enabled={ctx.business.storeEnabled}
+                    slug={ctx.business.storeSlug}
+                    whatsapp={ctx.business.storeWhatsapp}
+                    message={ctx.business.storeMessage}
+                    appUrl={getAppUrl()}
+                    disabled={!canManage}
+                  />
+                ) : (
+                  <ProUpsell title="La tienda online es parte del plan Pro" text="Publica tu catálogo y recibe pedidos por WhatsApp, sin comisiones." />
+                )}
+              </CardContent>
+            </Card>
+            </>
           ) : null}
-        </CardContent>
-      </Card>
+          {section === "impuestos" ? (
+            <>
+            {vat ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Impuestos ({vat.label})</CardTitle>
+                  <CardDescription>
+                    Para calcular cuánto {vat.label} pagar cada mes y ver tus resultados sin {vat.label}. Es una ayuda para
+                    prepararte: la cifra oficial es la que declaras{vat.form ? ` en el ${vat.form}` : ""}.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="divide-y">
+                  <PreferenceSwitch
+                    name="chargesVat"
+                    label={`Mi negocio cobra ${vat.label}`}
+                    description={
+                      ctx.business.country === "CL"
+                        ? "Viene activado. Desactívalo si tu negocio no tiene inicio de actividades en el SII o no emite boletas ni facturas."
+                        : `Viene activado. Desactívalo si tus precios no incluyen ${vat.label} o no lo declaras cada mes.`
+                    }
+                    checked={ctx.settings.chargesVat}
+                    disabled={!canManage}
+                  />
+                  {ctx.settings.chargesVat ? (
+                    <VatDueDay value={ctx.settings.vatDueDay} chile={ctx.business.country === "CL"} disabled={!canManage} />
+                  ) : null}
+                  {ctx.settings.chargesVat && ctx.business.country === "CL" ? <PpmRate value={ctx.settings.ppmRate} disabled={!canManage} /> : null}
+                </CardContent>
+              </Card>
+            ) : null}
 
-      {canManage ? (
-        <Link
-          href="/dashboard/plan"
-          className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
-        >
-          <span className="flex items-center gap-2 font-medium">
-            <Crown className="size-4 text-warning" />
-            Tu plan: {PLANS[ctx.business.plan].name}
-          </span>
-          <span className="text-sm text-primary">Ver o cambiar plan →</span>
-        </Link>
-      ) : null}
-
-      <Card id="seguridad" className="scroll-mt-20">
-        <CardHeader>
-          <CardTitle>Verificación en dos pasos</CardTitle>
-          <CardDescription>Protege tu cuenta con un código además de la contraseña.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {params["dos-pasos"] === "admin" && !twoFactor.enabled ? (
-            <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
-              Para entrar al panel de administración, activa primero la verificación en dos pasos.
-            </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Categorías de gastos</CardTitle>
+                <CardDescription>Así agrupamos tus gastos para mostrarte en qué se va tu plata.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ExpenseCategories categories={categories} disabled={!canManage} />
+              </CardContent>
+            </Card>
+            </>
           ) : null}
-          <TwoFactorSettings enabled={twoFactor.enabled} method={twoFactor.method} isAdmin={userIsAdmin} />
-        </CardContent>
-      </Card>
+          {section === "avisos" ? (
+            <>
+            <Card id="avisos" className="scroll-mt-20">
+              <CardHeader>
+                <CardTitle>Avisos por correo</CardTitle>
+                <CardDescription>
+                  Elige de qué quieres que te avisemos. Llegan a {ctx.user.email} y a los administradores del negocio.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="divide-y">
+                <PreferenceSwitch
+                  name="lowStockAlerts"
+                  label="Stock bajo"
+                  description="Cuando a un producto le queden menos unidades que el mínimo o se agote."
+                  checked={ctx.settings.lowStockAlerts}
+                  disabled={!canManage}
+                />
+                <PreferenceSwitch
+                  name="expiryAlerts"
+                  label="Productos por vencer"
+                  description="Lo que vence en los próximos 7 días y todavía tiene stock, con cuánta plata está en riesgo (plan Pro)."
+                  checked={ctx.settings.expiryAlerts}
+                  disabled={!canManage}
+                />
+                {canUseFeature(ctx.business.plan, "customers") ? (
+                  <>
+                    <PreferenceSwitch
+                      name="fiadoReminders"
+                      label="Fiado por cobrar"
+                      description="Una vez por semana, los clientes que se pasaron del plazo de pago, con cuánto deben."
+                      checked={ctx.settings.fiadoReminders}
+                      disabled={!canManage}
+                    />
+                    <FiadoDays value={ctx.settings.fiadoDays} disabled={!canManage} />
+                  </>
+                ) : null}
+                <PreferenceSwitch
+                  name="noSalesReminder"
+                  label="Días sin ventas"
+                  description="Si pasan 3 días sin ventas registradas, para que no se te olvide anotarlas."
+                  checked={ctx.settings.noSalesReminder}
+                  disabled={!canManage}
+                />
+                <div className="space-y-0.5 py-3">
+                  <p className="text-sm font-medium">Resumen de los lunes</p>
+                  <p className="text-xs text-muted-foreground">
+                    Cada lunes te llega cuánto vendiste, gastaste y te quedó la semana anterior. Llega siempre, para que nunca pierdas de vista tu
+                    negocio.
+                  </p>
+                </div>
+                <MarketingSwitch checked={Boolean((ctx.user as { marketingOptIn?: boolean }).marketingOptIn)} />
+              </CardContent>
+            </Card>
+            </>
+          ) : null}
+          {section === "equipo" ? (
+            <>
+            <Card id="equipo">
+              <CardHeader>
+                <CardTitle>Usuarios</CardTitle>
+                <CardDescription>Las personas que tienen acceso a tu negocio y a tus sucursales.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TeamSection
+                  members={members.map((m) => ({
+                    id: m.id,
+                    name: m.user.name,
+                    email: m.user.email,
+                    role: m.role,
+                    isMe: m.userId === ctx.user.id,
+                    userId: m.userId,
+                    branchIds: branchesOf(m.userId),
+                  }))}
+                  invitations={invitations.map((inv) => ({
+                    id: inv.id,
+                    email: inv.email,
+                    role: inv.role,
+                    url: `${getAppUrl()}/invitacion/${inv.token}`,
+                    expiresLabel: formatDate(inv.expiresAt, ctx.timezone, { day: "numeric", month: "short" }),
+                    branchName: inv.business.name,
+                  }))}
+                  businessName={ctx.business.name}
+                  canManage={can(ctx.role, "members:manage")}
+                  isOwner={ctx.role === "OWNER"}
+                  limit={memberLimit(ctx.business.plan, ctx.business.extraMembers)}
+                  planName={PLANS[ctx.business.plan].name}
+                  branches={ctx.role === "OWNER" ? owned.map((o) => ({ id: o.business.id, name: o.business.name })) : []}
+                  currentBranchId={ctx.businessId}
+                />
+                {can(ctx.role, "settings:manage") ? (
+                  <div className="mt-4 border-t pt-2">
+                    <PreferenceSwitch
+                      name="employeesProductsOnly"
+                      label="Los empleados solo venden productos guardados"
+                      description="Sin venta rápida ni productos escritos a mano: así cobran siempre el precio de lista y todo descuento pasa por tu aprobación. Desactívalo si tu equipo vende servicios sin precio fijo."
+                      checked={ctx.settings.employeesProductsOnly}
+                    />
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+            </>
+          ) : null}
+          {section === "cuenta" ? (
+            <>
+            {canManage ? (
+              <Link
+                href="/dashboard/plan"
+                className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <Crown className="size-4 text-warning" />
+                  Tu plan: {PLANS[ctx.business.plan].name}
+                </span>
+                <span className="text-sm text-primary">Ver o cambiar plan →</span>
+              </Link>
+            ) : null}
 
-      <Card id="cuenta">
-        <CardHeader>
-          <CardTitle>Tu cuenta</CardTitle>
-          <CardDescription>Tu foto y tus datos. Son tuyos: puedes llevártelos o eliminarlos cuando quieras.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <PhotoUploader name={ctx.user.name} image={ctx.user.image ?? null} />
-          <AccountSection
-            email={ctx.user.email}
-            ownedBusinesses={owned.map((o) => ({
-              name: o.business.name,
-              sales: o.business._count.sales,
-              others: o.business._count.members - 1,
-            }))}
-          />
-        </CardContent>
-      </Card>
+            <Card id="seguridad" className="scroll-mt-20">
+              <CardHeader>
+                <CardTitle>Verificación en dos pasos</CardTitle>
+                <CardDescription>Protege tu cuenta con un código además de la contraseña.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {params["dos-pasos"] === "admin" && !twoFactor.enabled ? (
+                  <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+                    Para entrar al panel de administración, activa primero la verificación en dos pasos.
+                  </p>
+                ) : null}
+                <TwoFactorSettings enabled={twoFactor.enabled} method={twoFactor.method} isAdmin={userIsAdmin} />
+              </CardContent>
+            </Card>
+
+            <Card id="cuenta">
+              <CardHeader>
+                <CardTitle>Tu cuenta</CardTitle>
+                <CardDescription>Tu foto y tus datos. Son tuyos: puedes llevártelos o eliminarlos cuando quieras.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <PhotoUploader name={ctx.user.name} image={ctx.user.image ?? null} />
+                <AccountSection
+                  email={ctx.user.email}
+                  ownedBusinesses={owned.map((o) => ({
+                    name: o.business.name,
+                    sales: o.business._count.sales,
+                    others: o.business._count.members - 1,
+                  }))}
+                />
+              </CardContent>
+            </Card>
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

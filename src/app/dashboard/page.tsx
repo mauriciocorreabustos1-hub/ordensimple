@@ -151,7 +151,7 @@ export default async function DashboardPage() {
           label: "Invita a tu equipo",
           hint: "Si alguien más vende contigo.",
           done: counts._count.members > 1,
-          href: "/dashboard/configuracion#equipo",
+          href: "/dashboard/configuracion?seccion=equipo",
         },
       ] as FirstStep[]
       ).filter(

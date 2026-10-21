@@ -7,7 +7,7 @@ import { Field } from "@/components/app/field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { storePath, storeSlugFrom } from "@/lib/store"
+import { storePath, storeShareText, storeSlugFrom } from "@/lib/store"
 import { whatsappLink } from "@/lib/whatsapp"
 import { updateStoreSettings } from "@/server/actions/store"
 
@@ -96,7 +96,7 @@ export function StoreSettings({
               Copiar enlace
             </Button>
             <Button variant="outline" asChild>
-              <a href={whatsappLink(null, `¡Ahora puedes hacer tus pedidos a ${businessName} por aquí! ${url}`)} target="_blank" rel="noopener noreferrer">
+              <a href={whatsappLink(null, storeShareText(businessName, url))} target="_blank" rel="noopener noreferrer">
                 Compartir por WhatsApp
               </a>
             </Button>

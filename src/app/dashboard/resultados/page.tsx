@@ -278,7 +278,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
             ¿Tu negocio cobra {L}? Actívalo y te diremos cuánto pagar cada mes y hasta qué día.
           </span>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/configuracion">Activar {L}</Link>
+            <Link href="/dashboard/configuracion?seccion=impuestos">Activar {L}</Link>
           </Button>
         </div>
       ) : null}

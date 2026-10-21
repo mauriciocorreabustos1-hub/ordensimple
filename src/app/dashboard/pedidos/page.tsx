@@ -35,7 +35,7 @@ export default async function WebOrdersPage() {
           action={
             canSetup ? (
               <Button asChild>
-                <Link href="/dashboard/configuracion#tienda">Crear mi tienda</Link>
+                <Link href="/dashboard/configuracion?seccion=tienda">Crear mi tienda</Link>
               </Button>
             ) : undefined
           }
@@ -82,7 +82,7 @@ export default async function WebOrdersPage() {
         <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
           Tu tienda está apagada: nadie puede hacer pedidos.{" "}
           {canSetup ? (
-            <Link href="/dashboard/configuracion#tienda" className="font-medium underline">
+            <Link href="/dashboard/configuracion?seccion=tienda" className="font-medium underline">
               Actívala en Configuración
             </Link>
           ) : null}
@@ -94,6 +94,7 @@ export default async function WebOrdersPage() {
         timezone={ctx.timezone}
         canComanda={isFoodBusiness(ctx.business.type) && canUseFeature(ctx.business.plan, "comandas")}
         defaultPayment={ctx.settings.defaultPayment}
+        businessName={ctx.business.name}
       />
     </div>
   )

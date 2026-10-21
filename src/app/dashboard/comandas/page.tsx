@@ -52,7 +52,7 @@ export default async function ComandasPage() {
     }),
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
-      select: { id: true, name: true, price: true, category: { select: { name: true } } },
+      select: { id: true, name: true, price: true, imageUrl: true, category: { select: { name: true } } },
       orderBy: { name: "asc" },
       take: 500,
     }),
@@ -93,7 +93,7 @@ export default async function ComandasPage() {
             note: i.note ?? "",
           })),
         }))}
-        products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null }))}
+        products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null, imageUrl: p.imageUrl }))}
         customers={customers.map((c) => c.name)}
         tables={tableLabels(ctx.settings.tableCount, ctx.settings.tableExtras)}
         canEditTables={can(ctx.role, "settings:manage")}

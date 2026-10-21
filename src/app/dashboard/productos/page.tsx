@@ -13,6 +13,8 @@ import { PageHeader } from "@/components/app/page-header"
 import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { ActiveSwitch } from "@/components/products/active-switch"
 import { ProductDialog } from "@/components/products/product-dialog"
+import { ProductPhoto } from "@/components/products/product-photo"
+import { photosConfigured } from "@/server/product-photos"
 import type { ProductFormValues } from "@/components/products/product-form"
 import { marginRatio } from "@/lib/calculations"
 import { formatMoney, formatNumber, formatPercent, referenceAmount } from "@/lib/currency"
@@ -66,6 +68,7 @@ export default async function ProductsPage() {
   ])
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "products:manage")
+  const photos = canManage && photosConfigured()
   const categoryNames = categories.map((c) => c.name)
   const limit = productLimit(ctx.business.plan, ctx.business.extraProducts)
   const ref = referenceAmount(ctx.currency)
@@ -151,7 +154,8 @@ export default async function ProductsPage() {
               return (
                 <li key={p.id} className={`space-y-3 rounded-xl border bg-card p-3 ${p.active ? "" : "opacity-60"}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+                    <ProductPhoto productId={p.id} name={p.name} imageUrl={p.imageUrl} enabled={photos} className="size-12" />
+                    <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{p.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {p.category?.name ?? "Sin categoría"}
@@ -207,12 +211,17 @@ export default async function ProductsPage() {
                   const profit = p.price - p.cost
                   return (
                     <TableRow key={p.id} className={p.active ? "" : "opacity-60"}>
-                      <TableCell className="max-w-64 pl-4">
-                        <p className="truncate font-medium">{p.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {p.category?.name ?? "Sin categoría"}
-                          {p.sku ? ` · ${p.sku}${p.barcodes.length ? ` (+${p.barcodes.length})` : ""}` : ""}
-                        </p>
+                      <TableCell className="max-w-72 pl-4">
+                        <div className="flex items-center gap-3">
+                          <ProductPhoto productId={p.id} name={p.name} imageUrl={p.imageUrl} enabled={photos} className="size-10" />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{p.name}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {p.category?.name ?? "Sin categoría"}
+                              {p.sku ? ` · ${p.sku}${p.barcodes.length ? ` (+${p.barcodes.length})` : ""}` : ""}
+                            </p>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="tabular text-right text-muted-foreground">{money(p.cost)}</TableCell>
                       <TableCell className="tabular text-right">{money(p.price)}</TableCell>

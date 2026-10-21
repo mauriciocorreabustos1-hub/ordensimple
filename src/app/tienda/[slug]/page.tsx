@@ -69,7 +69,7 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
       // Los servicios se reservan arriba, no van al carro.
       isService: false,
     },
-    select: { id: true, name: true, price: true, stock: true, trackStock: true, category: { select: { name: true } } },
+    select: { id: true, name: true, price: true, stock: true, trackStock: true, imageUrl: true, category: { select: { name: true } } },
     orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
     take: 500,
   })
@@ -97,6 +97,7 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
         price: p.price,
         category: p.category?.name ?? null,
         max: p.trackStock ? Math.min(99, p.stock) : 99,
+        imageUrl: p.imageUrl,
       }))}
     />
   )

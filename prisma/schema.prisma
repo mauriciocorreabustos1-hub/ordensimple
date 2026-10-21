@@ -323,6 +323,8 @@ model Product {
   stock      Int       @default(0)
   minStock   Int       @default(0)
   trackStock Boolean   @default(true)
+  /// Foto del producto (Vercel Blob, ya achicada en el celular). Se muestra en la tienda online, al vender y en Productos.
+  imageUrl   String?
   /// Próximo vencimiento del stock (para avisar lo que está por vencer).
   expiresAt  DateTime?
   /// Servicio (corte, consulta, clase…): no lleva stock, se agenda y se reserva. Los productos son lo demás.

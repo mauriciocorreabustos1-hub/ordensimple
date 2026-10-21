@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { zonedTimeToUtc } from "@/lib/dates"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
+import { deletePhoto } from "@/server/product-photos"
 import { PLANS, productLimit } from "@/lib/plans"
 import { cleanCodes } from "@/lib/barcodes"
 import { idSchema, productSchema, type ProductInput } from "@/lib/validations"
@@ -193,8 +194,11 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   try {
     assertCan(ctx, "products:manage")
     // Las ventas antiguas conservan el nombre y precio; solo pierden el vínculo con el producto.
+    const photo = await db.product.findFirst({ where: { id: parsedId.data, businessId: ctx.businessId }, select: { imageUrl: true } })
     const { count } = await db.product.deleteMany({ where: { id: parsedId.data, businessId: ctx.businessId } })
     if (count === 0) return { ok: false, message: "Producto no encontrado." }
+    // Su foto ya no se usa: se borra para no pagar por guardarla.
+    await deletePhoto(photo?.imageUrl)
   } catch (error) {
     return toActionError(error)
   }

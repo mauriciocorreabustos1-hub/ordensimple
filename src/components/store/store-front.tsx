@@ -12,8 +12,9 @@ import { orderWhatsappText } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
 import { createWebOrder } from "@/server/actions/store"
+import { ProductImage } from "@/components/products/product-image"
 
-export type StoreProduct = { id: string; name: string; price: number; category: string | null; max: number }
+export type StoreProduct = { id: string; name: string; price: number; category: string | null; max: number; imageUrl?: string | null }
 
 const CART_KEY = (slug: string) => `ordensimple-carro-${slug}`
 
@@ -55,6 +56,34 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
       return next
     })
 
+  const withPhotos = products.some((p) => p.imageUrl)
+  /** "Agregar" o los botones − cantidad +. En las tarjetas ocupa todo el ancho. */
+  const quantity = (p: StoreProduct, wide: boolean) => {
+    const n = cart[p.id] ?? 0
+    return n ? (
+      <div className={cn("flex items-center rounded-lg border", wide && "justify-between")}>
+        <button type="button" className="flex size-10 items-center justify-center" aria-label={`Uno menos de ${p.name}`} onClick={() => set(p, n - 1)}>
+          <Minus className="size-4" />
+        </button>
+        <span className="tabular w-7 text-center font-semibold">{n}</span>
+        <button
+          type="button"
+          className="flex size-10 items-center justify-center disabled:opacity-30"
+          aria-label={`Uno más de ${p.name}`}
+          onClick={() => set(p, n + 1)}
+          disabled={n >= p.max}
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+    ) : (
+      <Button variant="outline" onClick={() => set(p, 1)} aria-label={`Agregar ${p.name}`} className={cn(wide && "w-full")}>
+        <Plus />
+        Agregar
+      </Button>
+    )
+  }
+
   if (!products.length) {
     return <p className="rounded-xl border bg-background p-6 text-center text-sm text-muted-foreground">Por ahora no hay productos publicados. Vuelve pronto.</p>
   }
@@ -89,41 +118,35 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
       {shown.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">No encontramos «{query}».</p>
       ) : (
-        <ul className="divide-y overflow-hidden rounded-2xl border bg-background">
-          {shown.map((p) => {
-            const n = cart[p.id] ?? 0
-            return (
+        withPhotos ? (
+          // Con fotos: tarjetas, como una vitrina.
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {shown.map((p) => (
+              <li key={p.id} className="flex flex-col overflow-hidden rounded-2xl border bg-background">
+                <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
+                <div className="flex flex-1 flex-col gap-2 p-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</p>
+                    <p className="tabular mt-1 font-semibold">{money(p.price)}</p>
+                  </div>
+                  {quantity(p, true)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="divide-y overflow-hidden rounded-2xl border bg-background">
+            {shown.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm leading-tight font-medium">{p.name}</p>
                   <p className="tabular mt-0.5 text-sm text-muted-foreground">{money(p.price)}</p>
                 </div>
-                {n ? (
-                  <div className="flex items-center rounded-lg border">
-                    <button type="button" className="flex size-10 items-center justify-center" aria-label={`Uno menos de ${p.name}`} onClick={() => set(p, n - 1)}>
-                      <Minus className="size-4" />
-                    </button>
-                    <span className="tabular w-7 text-center font-semibold">{n}</span>
-                    <button
-                      type="button"
-                      className="flex size-10 items-center justify-center disabled:opacity-30"
-                      aria-label={`Uno más de ${p.name}`}
-                      onClick={() => set(p, n + 1)}
-                      disabled={n >= p.max}
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <Button variant="outline" onClick={() => set(p, 1)} aria-label={`Agregar ${p.name}`}>
-                    <Plus />
-                    Agregar
-                  </Button>
-                )}
+                {quantity(p, false)}
               </li>
-            )
-          })}
-        </ul>
+            ))}
+          </ul>
+        )
       )}
 
       {count ? (

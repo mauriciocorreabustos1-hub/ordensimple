@@ -10,7 +10,8 @@ const csp = [
   // 'unsafe-inline': Next.js escribe pequeños scripts en la página. 'wasm-unsafe-eval': lector de códigos en iPhone.
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${dev ? " 'unsafe-eval'" : ""} https://sdk.mercadopago.com ${MP} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${MP}`,
+  // Fotos de productos guardadas en Vercel Blob.
+  `img-src 'self' data: blob: https://*.public.blob.vercel-storage.com ${MP}`,
   "font-src 'self' data:",
   "media-src 'self' blob:",
   `connect-src 'self' ${MP} https://api.mercadopago.com https://vitals.vercel-insights.com`,

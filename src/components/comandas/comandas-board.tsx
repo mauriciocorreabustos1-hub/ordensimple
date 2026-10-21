@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
+import { ProductImage } from "@/components/products/product-image"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
@@ -29,7 +30,7 @@ export type ComandaLine = {
   paidQty: number
 }
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
-export type ComandaProduct = { id: string; name: string; price: number; category: string | null }
+export type ComandaProduct = { id: string; name: string; price: number; category: string | null; imageUrl?: string | null }
 
 /** Lo que falta pagar de cada plato (cuando cada uno paga lo suyo, lo pagado ya no se cobra). */
 const leftOf = (i: ComandaLine) => Math.max(0, i.quantity - i.paidQty)
@@ -744,6 +745,7 @@ function ComandaEditor({
                         qty > 0 && "border-primary/60 bg-accent/40",
                       )}
                     >
+                      {p.imageUrl ? <ProductImage name={p.name} url={p.imageUrl} className="mb-1.5 aspect-[4/3] w-full" /> : null}
                       <span className="line-clamp-2 leading-snug font-medium">{p.name}</span>
                       <span className="tabular text-xs text-muted-foreground">{money(p.price)}</span>
                       {qty > 0 ? (

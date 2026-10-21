@@ -54,6 +54,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       { source: "/wasm/:file*", headers: forever },
+      // El service worker de los avisos: siempre se revisa si hay uno nuevo.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, max-age=0" }, { key: "Service-Worker-Allowed", value: "/" }] },
       { source: "/videos/:file*", headers: week },
       { source: "/brand/:file*", headers: week },
     ]

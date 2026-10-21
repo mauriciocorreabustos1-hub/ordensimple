@@ -87,6 +87,7 @@ model User {
   accounts      Account[]
   twoFactors    TwoFactor[]
   memberships   BusinessMember[]
+  pushSubscriptions PushSubscription[]
   shiftsOpened  CashShift[]      @relation("ShiftOpenedBy")
   shiftsClosed  CashShift[]      @relation("ShiftClosedBy")
   sales         Sale[]
@@ -590,6 +591,22 @@ model CashClosing {
 
   @@unique([businessId, day])
   @@map("cash_closing")
+}
+
+/// Celular o computador donde la persona activó los avisos (Web Push). Si el navegador la da de baja, se borra.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  /// Para mostrar "Este celular · Android" en la lista.
+  device    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_subscription")
 }
 
 enum WebOrderStatus {

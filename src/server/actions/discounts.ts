@@ -1,6 +1,9 @@
 "use server"
 
+import { after } from "next/server"
 import { db } from "@/lib/db"
+import { formatMoney } from "@/lib/currency"
+import { businessManagers, sendPush } from "@/server/push"
 import { canApproveDiscounts } from "@/lib/roles"
 import { discountRequestSchema, idSchema, type DiscountRequestInput } from "@/lib/validations"
 import { DISCOUNT_VALID_MS } from "@/server/sale-core"
@@ -30,6 +33,15 @@ export async function requestDiscount(input: DiscountRequestInput): Promise<Acti
       data: { businessId: ctx.businessId, requestedById: ctx.user.id, requestedByName: ctx.user.name, amount, subtotal, reason, context },
       select: { id: true },
     })
+    // Aviso al celular del dueño y los administradores (después de responder, para no demorar al trabajador).
+    after(async () =>
+      sendPush(await businessManagers(ctx.businessId, ctx.user.id), {
+        title: `💸 ${ctx.user.name.split(" ")[0]} pide un descuento`,
+        body: `−${formatMoney(amount, ctx.currency)} sobre ${formatMoney(subtotal, ctx.currency)} · ${reason}`,
+        url: "/dashboard",
+        tag: `descuento-${r.id}`,
+      }),
+    )
     return { ok: true, data: { id: r.id } }
   } catch (error) {
     return toActionError(error)

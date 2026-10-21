@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import type { PaymentMethod } from "@/generated/prisma/enums"
+import { after } from "next/server"
 import { db } from "@/lib/db"
+import { formatMoney } from "@/lib/currency"
+import { businessManagers, sendPush } from "@/server/push"
 import { canApproveDiscounts } from "@/lib/roles"
 import { idSchema, returnRequestSchema, type ReturnRequestInput } from "@/lib/validations"
 import type { Tx } from "@/server/sale-core"
@@ -212,6 +215,14 @@ export async function requestReturn(input: ReturnRequestInput): Promise<ActionRe
         await tx.saleReturn.create({ data: base })
       })
       revalidate()
+      after(async () =>
+        sendPush(await businessManagers(ctx.businessId, ctx.user.id), {
+          title: `↩️ ${ctx.user.name.split(" ")[0]} pide una devolución`,
+          body: `${formatMoney(amount, ctx.currency)} · ${base.reason}`,
+          url: "/dashboard",
+          tag: `devolucion-${saleId}`,
+        }),
+      )
       return { ok: true, message: "Devolución pedida: el encargado debe aprobarla.", data: { applied: false } }
     }
     await db.$transaction(async (tx) => {

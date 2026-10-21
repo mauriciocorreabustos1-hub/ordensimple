@@ -59,6 +59,10 @@ export default function PrivacyPage() {
             lo atienda. El responsable de esos datos es el negocio; OrdenSimple solo los guarda por encargo suyo.
           </li>
           <li>
+            <strong>Avisos en el celular:</strong> si los activas, guardamos la dirección que nos da tu navegador para mandarte
+            avisos (por ejemplo, un pedido nuevo). Puedes apagarlos cuando quieras en Configuración o en los permisos del navegador.
+          </li>
+          <li>
             <strong>Datos técnicos:</strong> dirección IP, tipo de navegador y registros de acceso, que usamos para mantener
             tu sesión, proteger tu cuenta (por ejemplo, limitar intentos fallidos de inicio de sesión) y detectar errores.
           </li>

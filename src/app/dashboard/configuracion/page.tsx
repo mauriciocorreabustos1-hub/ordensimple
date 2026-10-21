@@ -13,6 +13,7 @@ import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { FiadoDays } from "@/components/settings/fiado-days"
+import { PushSettings } from "@/components/settings/push-settings"
 import { StoreSettings } from "@/components/settings/store-settings"
 import { ProUpsell } from "@/components/app/pro-gate"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
@@ -266,6 +267,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 </CardDescription>
               </CardHeader>
               <CardContent className="divide-y">
+                {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? <PushSettings publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} /> : null}
                 <PreferenceSwitch
                   name="lowStockAlerts"
                   label="Stock bajo"

@@ -4,7 +4,10 @@ import { randomUUID } from "node:crypto"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { after } from "next/server"
 import { db } from "@/lib/db"
+import { formatMoney } from "@/lib/currency"
+import { businessManagers, sendPush } from "@/server/push"
 import { isFoodBusiness } from "@/lib/business-kind"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { RESERVED_SLUGS } from "@/lib/store"
@@ -67,7 +70,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
     }
     const business = await db.business.findUnique({
       where: { storeSlug: slug },
-      select: { id: true, storeEnabled: true, storeWhatsapp: true, plan: true, planExpiresAt: true },
+      select: { id: true, storeEnabled: true, storeWhatsapp: true, plan: true, planExpiresAt: true, currency: true },
     })
     if (!business || !business.storeEnabled || !business.storeWhatsapp || !canUseFeature(effectivePlan(business), "store")) {
       return { ok: false, message: "Esta tienda no está recibiendo pedidos." }
@@ -92,6 +95,15 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
       data: { businessId: business.id, customerName, customerPhone: customerPhone ?? null, delivery, note: note ?? null, items: orderItems, total },
       select: { id: true },
     })
+    const count = orderItems.reduce((s, i) => s + i.quantity, 0)
+    after(async () =>
+      sendPush(await businessManagers(business.id), {
+        title: "🛒 Nuevo pedido web",
+        body: `${customerName}: ${count} ${count === 1 ? "producto" : "productos"} · ${formatMoney(total, business.currency)}${delivery ? " · despacho" : ""}`,
+        url: "/dashboard/pedidos",
+        tag: `pedido-${order.id}`,
+      }),
+    )
     return {
       ok: true,
       message: "Pedido listo",

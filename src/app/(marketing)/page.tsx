@@ -9,6 +9,8 @@ import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { SocialSection } from "@/components/landing/social-section"
 import { ComandasPreview } from "@/components/landing/comandas-preview"
+import { StorePreview } from "@/components/landing/store-preview"
+import { AgendaPreview } from "@/components/landing/agenda-preview"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -165,6 +167,68 @@ export default async function LandingPage() {
             </Button>
           </div>
           <ComandasPreview />
+        </div>
+      </Section>
+
+      {/* Tienda online: catálogo propio con pedidos por WhatsApp. */}
+      <Section muted className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5 lg:order-2">
+            <SectionTitle
+              align="left"
+              eyebrow="Tienda online"
+              title="¿Vendes por WhatsApp? Ten tu propia página web"
+              description="Tus productos con precio y stock en una página con tu nombre. Tus clientes arman el pedido y te llega por WhatsApp, ordenado y listo para despachar. Sin comisiones."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Tu dirección: ordensimple.cl/tienda/tu-negocio","Retiro en el local o despacho, con la dirección del cliente","Con un toque el pedido queda como venta y se descuenta el stock","Te avisa al celular apenas entra un pedido"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <Link href="/registro">Crear mi tienda</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#tienda">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <StorePreview className="lg:order-1" />
+        </div>
+      </Section>
+
+      {/* Servicios: agenda por profesional y reservas por internet. */}
+      <Section className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              eyebrow="Agenda y servicios"
+              title="¿Atiendes con hora? Tus clientes reservan solos"
+              description="Para peluquerías, barberías, estética, consultas, clases y talleres. Tus servicios con precio y duración, una agenda para cada profesional y una página donde tus clientes eligen su hora."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Agenda del día por profesional, sin choques de hora","Reservas por internet según tu horario de atención","Recordatorio por WhatsApp a cada cliente","Cobras la cita con un toque, con la comisión de quien atendió"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <Link href="/registro">Crear mi agenda</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#agenda">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <AgendaPreview />
         </div>
       </Section>
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { Formula, GuideSection } from "@/components/landing/calculator-page"
 import { GuidePage } from "@/components/landing/guide-page"
+import { SignupLink } from "@/components/landing/signup-link"
 
 const HREF = "/guias/como-hacer-el-cierre-de-caja"
 
@@ -71,7 +71,7 @@ export default function CashGuidePage() {
 
       <GuideSection title="Hazlo en un minuto">
         <p>
-          En <Link href="/registro" className="text-primary underline-offset-4 hover:underline">OrdenSimple</Link> el cierre
+          En <SignupLink className="text-primary underline-offset-4 hover:underline">OrdenSimple</SignupLink> el cierre
           de caja ya tiene la cuenta hecha: te muestra cuánto vendiste con cada medio de pago y cuánto debería haber.
           Solo escribes cuánto contaste y te dice si falta o sobra. Además, puedes compartir el cierre por WhatsApp y ver los
           cierres de días anteriores.

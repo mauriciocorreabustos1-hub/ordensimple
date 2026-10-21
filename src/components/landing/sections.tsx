@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
 import { cn } from "@/lib/utils"
 import { BEFORE_AFTER, PLAN_COMPARISON, RECEIPT_STEPS, STEPS, type FaqGroup, type Feature } from "@/components/landing/content"
+import { SignupLink } from "@/components/landing/signup-link"
 
 export function Container({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("mx-auto max-w-6xl px-4 sm:px-6", className)}>{children}</div>
@@ -286,7 +287,7 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
             </ul>
             {plan.id === "FREE" ? (
               <Button size="lg" variant={featured ? "default" : "outline"} className="h-11" asChild>
-                <Link href="/registro">Comenzar gratis</Link>
+                <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
               </Button>
             ) : plan.id === "PRO" ? (
               <Button size="lg" className="h-11" asChild>
@@ -385,7 +386,7 @@ export function CtaSection({
         </div>
         <div className="space-y-2 md:text-right">
           <Button size="lg" className="h-12 w-full bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90 sm:w-auto" asChild>
-            <Link href="/registro">Crear mi cuenta gratis</Link>
+            <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
           </Button>
           <p className="text-sm text-deep-foreground/70">Gratis para siempre, sin tarjeta.</p>
         </div>

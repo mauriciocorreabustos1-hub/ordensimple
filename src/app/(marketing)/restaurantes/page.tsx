@@ -6,6 +6,7 @@ import { ComandasPreview } from "@/components/landing/comandas-preview"
 import { Container, CtaSection, FaqList, Section, SectionTitle } from "@/components/landing/sections"
 import { BILLING_ENABLED, PLANS } from "@/lib/plans"
 import { formatMoney } from "@/lib/currency"
+import { SignupLink } from "@/components/landing/signup-link"
 
 export const metadata: Metadata = {
   title: "Comandas y cocina para restaurantes y cafés",
@@ -78,7 +79,7 @@ export default function RestaurantsPage() {
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" asChild>
-                <Link href="/registro">Crear mi cuenta gratis</Link>
+                <SignupLink inApp="/dashboard/comandas" loggedInLabel="Ir a mis comandas">Crear mi cuenta gratis</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
                 <Link href="/precios">Ver el plan Pro</Link>

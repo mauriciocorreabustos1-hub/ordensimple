@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, Calculator, NotebookPen, PiggyBank, Vault } from 
 import { Button } from "@/components/ui/button"
 import { Container, CtaSection } from "@/components/landing/sections"
 import { getAppUrl } from "@/lib/app-url"
+import { SignupLink } from "@/components/landing/signup-link"
 
 export const GUIDES = [
   {
@@ -105,10 +106,10 @@ export function GuidePage({
             <p className="text-sm text-muted-foreground">OrdenSimple hace estas cuentas por ti. Gratis para empezar.</p>
           </div>
           <Button asChild size="lg" className="h-11 shrink-0 px-5 max-sm:w-full">
-            <Link href="/registro">
+            <SignupLink>
               Crear cuenta gratis
               <ArrowRight />
-            </Link>
+            </SignupLink>
           </Button>
         </div>
 

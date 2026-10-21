@@ -26,6 +26,7 @@ import {
   SectionTitle,
   ReceiptSteps,
 } from "@/components/landing/sections"
+import { SignupLink } from "@/components/landing/signup-link"
 
 export const metadata: Metadata = { alternates: { canonical: "/" } }
 
@@ -59,7 +60,7 @@ export default async function LandingPage() {
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" asChild>
-                <Link href="/registro">Crear mi cuenta gratis</Link>
+                <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
                 <Link href="/como-funciona">Ver cómo funciona</Link>
@@ -103,7 +104,7 @@ export default async function LandingPage() {
               Funciona en el celular y en el computador.
             </p>
             <Button size="lg" className="h-12 px-6 text-base" asChild>
-              <Link href="/registro">Pruébalo gratis</Link>
+              <SignupLink loggedInLabel="Ir a mi negocio">Pruébalo gratis</SignupLink>
             </Button>
           </div>
           <VideoDemo
@@ -134,7 +135,7 @@ export default async function LandingPage() {
             <SectionTitle align="left" title="Empieza en 2 minutos" description="Sin instalar nada y sin tarjeta. Esto es todo lo que tienes que hacer." />
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <Button size="lg" className="h-11" asChild>
-                <Link href="/registro">Crear mi cuenta gratis</Link>
+                <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-11" asChild>
                 <Link href="/como-funciona">Conoce cómo funciona</Link>
@@ -190,7 +191,7 @@ export default async function LandingPage() {
             </ul>
             <div className="flex flex-wrap gap-2">
               <Button size="lg" className="h-11" asChild>
-                <Link href="/registro">Crear mi tienda</Link>
+                <SignupLink inApp="/dashboard/configuracion?seccion=tienda" loggedInLabel="Ir a mi tienda">Crear mi tienda</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-11" asChild>
                 <Link href="/funciones#tienda">Ver cómo funciona</Link>
@@ -221,7 +222,7 @@ export default async function LandingPage() {
             </ul>
             <div className="flex flex-wrap gap-2">
               <Button size="lg" className="h-11" asChild>
-                <Link href="/registro">Crear mi agenda</Link>
+                <SignupLink inApp="/dashboard/servicios" loggedInLabel="Ir a mis servicios">Crear mi agenda</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-11" asChild>
                 <Link href="/funciones#agenda">Ver cómo funciona</Link>

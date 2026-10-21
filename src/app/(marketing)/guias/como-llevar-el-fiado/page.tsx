@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { Formula, GuideSection } from "@/components/landing/calculator-page"
 import { GuidePage } from "@/components/landing/guide-page"
+import { SignupLink } from "@/components/landing/signup-link"
 
 const HREF = "/guias/como-llevar-el-fiado"
 
@@ -67,7 +67,7 @@ export default function FiadoGuidePage() {
 
       <GuideSection title="Del cuaderno al celular">
         <p>
-          En <Link href="/registro" className="text-primary underline-offset-4 hover:underline">OrdenSimple</Link> el fiado
+          En <SignupLink className="text-primary underline-offset-4 hover:underline">OrdenSimple</SignupLink> el fiado
           es una forma de pago más:
         </p>
         <ul>

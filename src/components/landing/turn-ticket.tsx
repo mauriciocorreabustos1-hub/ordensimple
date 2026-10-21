@@ -1,4 +1,4 @@
-import Link from "next/link"
+import { SignupLink } from "@/components/landing/signup-link"
 
 /**
  * Cuántos somos, como el número de atención de un almacén: el próximo número (el de quien está mirando la
@@ -8,8 +8,8 @@ export function TurnTicket({ users }: { users: number }) {
   const next = users + 1
   const number = next < 1000 ? String(next).padStart(3, "0") : next.toLocaleString("es-CL")
   return (
-    <Link
-      href="/registro"
+    <SignupLink
+      inApp="/dashboard"
       className="group inline-block w-fit -rotate-2 drop-shadow-lg transition-transform duration-200 hover:rotate-0 focus-visible:rotate-0 motion-reduce:transition-none"
       aria-label={`Ya somos ${users} personas usando OrdenSimple. Crea tu cuenta: serías el número ${next}.`}
     >
@@ -28,6 +28,6 @@ export function TurnTicket({ users }: { users: number }) {
           <span className="font-medium text-[#007653] group-hover:underline">El próximo número es el tuyo</span>
         </div>
       </div>
-    </Link>
+    </SignupLink>
   )
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Formula, GuideSection } from "@/components/landing/calculator-page"
 import { GuidePage } from "@/components/landing/guide-page"
+import { SignupLink } from "@/components/landing/signup-link"
 
 const HREF = "/guias/como-calcular-la-ganancia-de-tu-negocio"
 
@@ -78,7 +79,7 @@ export default function ProfitGuidePage() {
 
       <GuideSection title="Que la cuenta se haga sola">
         <p>
-          En <Link href="/registro" className="text-primary underline-offset-4 hover:underline">OrdenSimple</Link> anotas
+          En <SignupLink className="text-primary underline-offset-4 hover:underline">OrdenSimple</SignupLink> anotas
           tus ventas y gastos (incluidas las compras de mercadería) y el panel te muestra la ganancia aproximada de hoy y
           del mes, comparada con el período anterior. Cada lunes, además, te llega al correo el resumen de tu semana.
         </p>

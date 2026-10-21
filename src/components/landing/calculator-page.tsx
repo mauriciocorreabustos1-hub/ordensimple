@@ -3,6 +3,7 @@ import { ArrowRight, Calculator, Scale, Tag, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Container, CtaSection, PageHero } from "@/components/landing/sections"
 import { cn } from "@/lib/utils"
+import { SignupLink } from "@/components/landing/signup-link"
 
 export const CALCULATORS = [
   {
@@ -101,10 +102,10 @@ export function CalculatorPage({
             </p>
           </div>
           <Button asChild size="lg" className="h-11 shrink-0 px-5 max-sm:w-full">
-            <Link href="/registro">
+            <SignupLink>
               Crear cuenta gratis
               <ArrowRight />
-            </Link>
+            </SignupLink>
           </Button>
         </div>
 

@@ -33,11 +33,11 @@ export async function updateStoreSettings(input: StoreSettingsInput): Promise<Ac
     })
     if (taken) return { ok: false, message: "Esa dirección ya la usa otro negocio. Prueba agregando tu comuna (ej.: almacen-don-pedro-maipu)." }
     const current = ctx.business.storeSlug
-    // Para que nadie acapare nombres cambiando la dirección una y otra vez: pocos cambios y solo se reservan las 3 últimas.
+    // Para que nadie acapare nombres cambiando la dirección una y otra vez: pocos cambios al mes. Las anteriores quedan reservadas para siempre (sus enlaces viejos no pueden llevar a otro negocio).
     if (current && current !== slug && !(await allowAttempt(`tienda-direccion:${ctx.businessId}`, 3, 30 * 86_400_000))) {
       return { ok: false, message: "Ya cambiaste la dirección de tu tienda varias veces este mes. Escríbenos si necesitas otra." }
     }
-    const old = current && current !== slug ? [...new Set([...ctx.business.storeOldSlugs, current])].filter((s) => s !== slug).slice(-3) : undefined
+    const old = current && current !== slug ? [...ctx.business.storeOldSlugs.filter((s) => s !== current && s !== slug), current] : undefined
     await db.business.update({
       where: { id: ctx.businessId },
       data: { storeEnabled: enabled, storeSlug: slug, storeWhatsapp: whatsapp, storeMessage: message ?? null, ...(old ? { storeOldSlugs: old } : {}) },

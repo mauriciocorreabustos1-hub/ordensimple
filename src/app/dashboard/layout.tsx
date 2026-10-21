@@ -53,7 +53,10 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     // Con equipo, el dueño y los administradores reciben las solicitudes de descuento.
     canApproveDiscounts(ctx.role) ? db.businessMember.count({ where: { businessId: ctx.businessId } }) : Promise.resolve(0),
   ])
-  const profile = businessProfile(ctx.business.type)
+  // Servicios y Agenda: por el rubro, o porque el negocio ya tiene servicios creados.
+  const kind = businessProfile(ctx.business.type)
+  const hasServices = kind.services || (await db.product.count({ where: { businessId: ctx.businessId, isService: true } })) > 0
+  const profile = { ...kind, services: hasServices }
   const businesses = memberships.map((m) => ({ ...m.business, active: m.business.id === ctx.businessId }))
 
   return (

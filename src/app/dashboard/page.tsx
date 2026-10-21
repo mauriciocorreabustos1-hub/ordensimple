@@ -63,7 +63,9 @@ export default async function DashboardPage() {
   const showPayables = showFinances && canUseFeature(ctx.business.plan, "suppliers") && can(ctx.role, "suppliers:manage")
   const hasGoal = Boolean(ctx.member.monthlyGoal || ctx.member.commissionRate)
   const nextMonth = startOfMonth(now, ctx.timezone, 1)
-  const showAgenda = isServiceBusiness(ctx.business.type) && canUseFeature(ctx.business.plan, "agenda")
+  const showAgenda =
+    canUseFeature(ctx.business.plan, "agenda") &&
+    (isServiceBusiness(ctx.business.type) || (await db.product.count({ where: { businessId: ctx.businessId, isService: true } })) > 0)
   const [data, insights, debts, year, payables, webOrders, mine, agendaToday] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),

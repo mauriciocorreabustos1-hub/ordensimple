@@ -60,6 +60,10 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   const parsed = productSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   const { categoryName, codes, ...data } = parsed.data
+  // Un servicio no lleva stock ni vencimiento, y siempre tiene duración (para la Agenda y las reservas).
+  if (data.isService) Object.assign(data, { trackStock: false, stock: 0, minStock: 0, expiresAt: "", durationMin: data.durationMin ?? 30 })
+  else data.durationMin = null
+  const noun = data.isService ? "Servicio" : "Producto"
 
   try {
     assertCan(ctx, "products:manage")
@@ -105,7 +109,7 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: "Producto creado" }
+  return { ok: true, message: `${noun} creado` }
 }
 
 export async function updateProduct(id: string, input: ProductInput): Promise<ActionResult> {
@@ -115,6 +119,10 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
   if (!parsedId.success) return { ok: false, message: "Producto no encontrado." }
   if (!parsed.success) return validationError(parsed.error)
   const { categoryName, codes, ...data } = parsed.data
+  // Un servicio no lleva stock ni vencimiento, y siempre tiene duración (para la Agenda y las reservas).
+  if (data.isService) Object.assign(data, { trackStock: false, stock: 0, minStock: 0, expiresAt: "", durationMin: data.durationMin ?? 30 })
+  else data.durationMin = null
+  const noun = data.isService ? "Servicio" : "Producto"
 
   try {
     assertCan(ctx, "products:manage")
@@ -155,7 +163,7 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
-  return { ok: true, message: "Producto actualizado" }
+  return { ok: true, message: `${noun} actualizado` }
 }
 
 export async function toggleProductActive(id: string, active: boolean): Promise<ActionResult> {

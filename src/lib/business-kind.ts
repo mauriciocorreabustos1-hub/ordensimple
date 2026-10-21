@@ -33,13 +33,7 @@ export function businessProfile(type: string | null | undefined) {
   const services = !food && isServiceBusiness(type)
   // Solo servicios (sin rubros de venta de productos): no se muestra el inventario.
   const servicesOnly = services && !PRODUCT_TYPES.some((t) => (type ?? "").includes(t))
-  return {
-    food,
-    services,
-    servicesOnly,
-    /** Nombre del catálogo en el menú y en la página. */
-    catalog: servicesOnly ? "Servicios" : services ? "Servicios y productos" : "Productos",
-  }
+  return { food, services, servicesOnly }
 }
 
 export type BusinessProfile = ReturnType<typeof businessProfile>

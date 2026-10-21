@@ -189,6 +189,8 @@ export const productSchema = z.object({
   active: z.boolean(),
   /** Próximo vencimiento (AAAA-MM-DD) o vacío. */
   expiresAt: z.union([dateKey, z.literal("")]).optional(),
+  /** Servicio (no lleva stock; se agenda y se reserva). */
+  isService: z.boolean().optional(),
   /** Servicios: duración en minutos para la Agenda. */
   durationMin: z.number().int().min(5).max(720).nullable().optional(),
   /** Todos sus códigos de barras (el primero queda como principal). */

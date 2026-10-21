@@ -19,7 +19,7 @@ export async function getInventory(businessId: string, timezone: string, now = n
 
   const [products, sold, movements, waste] = await Promise.all([
     db.product.findMany({
-      where: { businessId, active: true },
+      where: { businessId, active: true, isService: false },
       select: { id: true, name: true, sku: true, stock: true, minStock: true, cost: true, price: true, trackStock: true, expiresAt: true, barcodes: { select: { code: true } } },
       orderBy: { name: "asc" },
     }),

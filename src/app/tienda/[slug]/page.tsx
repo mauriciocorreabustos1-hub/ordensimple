@@ -9,6 +9,7 @@ import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { STORE_SLUG_RE } from "@/lib/store"
 import { toDateKey } from "@/lib/dates"
 import { BookingFlow } from "@/components/store/booking-flow"
+import { StoreTabs } from "@/components/store/store-tabs"
 import { bookableDays, bookableServices, bookableStaff, getBookableBusiness } from "@/server/booking"
 
 /** Tienda publicada y con plan vigente; si no, la página no existe. */
@@ -65,12 +66,40 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
       active: true,
       price: { gt: 0 },
       OR: [{ trackStock: false }, { stock: { gt: 0 } }],
-      ...(booking ? { NOT: { trackStock: false, durationMin: { not: null } } } : {}),
+      // Los servicios se reservan arriba, no van al carro.
+      isService: false,
     },
     select: { id: true, name: true, price: true, stock: true, trackStock: true, category: { select: { name: true } } },
     orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
     take: 500,
   })
+
+  const canBook = Boolean(booking && services.length)
+  const bookingFlow = canBook ? (
+    <BookingFlow
+      slug={slug}
+      businessName={store.name}
+      currency={store.currency}
+      services={services.map((s) => ({ id: s.id, name: s.name, price: s.price, durationMin: s.durationMin! }))}
+      staff={staff.map((p) => ({ id: p.id, name: p.name.split(" ")[0] }))}
+      days={bookableDays(booking!)}
+      today={toDateKey(new Date(), booking!.timezone)}
+    />
+  ) : null
+  const storeFront = (
+    <StoreFront
+      slug={slug}
+      businessName={store.name}
+      currency={store.currency}
+      products={products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        category: p.category?.name ?? null,
+        max: p.trackStock ? Math.min(99, p.stock) : 99,
+      }))}
+    />
+  )
 
   return (
     <div className="min-h-dvh bg-muted/30">
@@ -86,32 +115,7 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
         </div>
       </header>
       <main className="mx-auto max-w-3xl space-y-6 px-4 pt-4 pb-36">
-        {booking && services.length ? (
-          <BookingFlow
-            slug={slug}
-            businessName={store.name}
-            currency={store.currency}
-            services={services.map((s) => ({ id: s.id, name: s.name, price: s.price, durationMin: s.durationMin! }))}
-            staff={staff.map((p) => ({ id: p.id, name: p.name.split(" ")[0] }))}
-            days={bookableDays(booking)}
-            today={toDateKey(new Date(), booking.timezone)}
-          />
-        ) : null}
-        {booking && services.length && products.length ? <h2 className="pt-2 text-lg font-semibold">Productos</h2> : null}
-        {booking && services.length && !products.length ? null : (
-        <StoreFront
-          slug={slug}
-          businessName={store.name}
-          currency={store.currency}
-          products={products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            category: p.category?.name ?? null,
-            max: p.trackStock ? Math.min(99, p.stock) : 99,
-          }))}
-        />
-        )}
+        {canBook && products.length ? <StoreTabs booking={bookingFlow} products={storeFront} /> : canBook ? bookingFlow : storeFront}
       </main>
       <footer className="pb-28 text-center text-xs text-muted-foreground">
         Tienda hecha con{" "}

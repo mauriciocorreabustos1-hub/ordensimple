@@ -1,7 +1,6 @@
 import "server-only"
 import { cache } from "react"
 import { db } from "@/lib/db"
-import { businessProfile } from "@/lib/business-kind"
 import { readBookingHours, shiftDayKey, toMinutes, weekdayIndex } from "@/lib/booking"
 import { toDateKey, zonedTimeToUtc } from "@/lib/dates"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
@@ -19,7 +18,6 @@ export const getBookableBusiness = cache(async (slug: string) => {
     select: {
       id: true,
       name: true,
-      type: true,
       timezone: true,
       currency: true,
       plan: true,
@@ -31,7 +29,7 @@ export const getBookableBusiness = cache(async (slug: string) => {
   })
   if (!b || !b.storeEnabled || !b.storeWhatsapp) return null
   const plan = effectivePlan(b)
-  if (!canUseFeature(plan, "store") || !canUseFeature(plan, "agenda") || !businessProfile(b.type).services) return null
+  if (!canUseFeature(plan, "store") || !canUseFeature(plan, "agenda")) return null
   const s = b.settings
   if (s && !s.bookingEnabled) return null
   return {
@@ -49,10 +47,10 @@ export const getBookableBusiness = cache(async (slug: string) => {
 
 export type BookableBusiness = NonNullable<Awaited<ReturnType<typeof getBookableBusiness>>>
 
-/** Servicios que se pueden reservar: activos, sin stock, con precio y duración. */
+/** Servicios que se pueden reservar: activos, con precio y duración. */
 export function bookableServices(businessId: string) {
   return db.product.findMany({
-    where: { businessId, active: true, trackStock: false, price: { gt: 0 }, durationMin: { not: null } },
+    where: { businessId, isService: true, active: true, price: { gt: 0 }, durationMin: { not: null } },
     select: { id: true, name: true, price: true, durationMin: true },
     orderBy: { name: "asc" },
     take: 100,

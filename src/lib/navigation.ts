@@ -14,6 +14,7 @@ import {
   Package,
   Receipt,
   Scale,
+  Scissors,
   Settings,
   Store,
   ShoppingBag,
@@ -52,6 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/caja", label: "Cierre de caja", icon: Vault, pro: true },
   { href: "/dashboard/flujo-caja", label: "Flujo de caja", icon: ArrowLeftRight, pro: true, permission: "finances:view" },
   { href: "/dashboard/balance", label: "Balance y retiros", icon: Scale, pro: true, permission: "finances:view" },
+  { href: "/dashboard/servicios", label: "Servicios", icon: Scissors, permission: "products:manage", services: true },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true, stock: true },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
@@ -65,14 +67,14 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]
 
-export type NavProfile = { food?: boolean; services?: boolean; servicesOnly?: boolean; catalog?: string }
+export type NavProfile = { food?: boolean; services?: boolean; servicesOnly?: boolean }
 
 /** Menú según el rol (a los empleados no se les muestra lo que no pueden usar) y el rubro del negocio. */
-export function navItemsFor(role: Role, { food = false, services = false, servicesOnly = false, catalog }: NavProfile = {}) {
+export function navItemsFor(role: Role, { food = false, services = false, servicesOnly = false }: NavProfile = {}) {
   return NAV_ITEMS.filter(
     (item) =>
       (!item.permission || can(role, item.permission)) && (!item.food || food) && (!item.services || services) && (!item.stock || !servicesOnly),
-  ).map((item) => (item.href === "/dashboard/productos" && catalog ? { ...item, label: catalog } : item))
+  )
 }
 
 export function isActive(pathname: string, href: string) {

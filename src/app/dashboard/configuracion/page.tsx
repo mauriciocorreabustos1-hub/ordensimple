@@ -49,6 +49,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
   const section: SettingsSection = params["dos-pasos"] ? "cuenta" : (SETTINGS_SECTIONS.find((x) => x.id === params.seccion)?.id ?? "negocio")
   const current = SETTINGS_SECTIONS.find((x) => x.id === section)!
   const profile = businessProfile(ctx.business.type)
+  const hasServices = profile.services || (await db.product.count({ where: { businessId: ctx.businessId, isService: true } })) > 0
   const twoFactorUser = ctx.user as { twoFactorEnabled?: boolean | null; twoFactorMethod?: string | null }
   const twoFactor = { enabled: Boolean(twoFactorUser.twoFactorEnabled), method: twoFactorUser.twoFactorMethod ?? null }
   const userIsAdmin = await isAdmin(ctx.user.email)
@@ -217,7 +218,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 )}
               </CardContent>
             </Card>
-            {profile.services ? (
+            {hasServices ? (
               <Card id="reservas" className="scroll-mt-20">
                 <CardHeader>
                   <CardTitle>Reserva tu hora</CardTitle>
@@ -235,7 +236,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                       noticeMin={ctx.settings.bookingMinNoticeMin}
                       maxDays={ctx.settings.bookingMaxDays}
                       storeReady={Boolean(ctx.business.storeEnabled && ctx.business.storeSlug)}
-                      servicesWithDuration={await db.product.count({ where: { businessId: ctx.businessId, active: true, trackStock: false, durationMin: { not: null }, price: { gt: 0 } } })}
+                      servicesWithDuration={await db.product.count({ where: { businessId: ctx.businessId, active: true, isService: true, durationMin: { not: null }, price: { gt: 0 } } })}
                       disabled={!canManage}
                     />
                   ) : (

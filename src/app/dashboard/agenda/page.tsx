@@ -41,9 +41,9 @@ export default async function AgendaPage({ searchParams }: PageProps<"/dashboard
       orderBy: { createdAt: "asc" },
     }),
     db.product.findMany({
-      where: { businessId: ctx.businessId, active: true },
-      select: { id: true, name: true, price: true, durationMin: true, trackStock: true },
-      orderBy: [{ trackStock: "asc" }, { name: "asc" }],
+      where: { businessId: ctx.businessId, active: true, isService: true },
+      select: { id: true, name: true, price: true, durationMin: true },
+      orderBy: { name: "asc" },
       take: 300,
     }),
     db.customer.findMany({ where: { businessId: ctx.businessId }, select: { name: true, phone: true }, orderBy: { updatedAt: "desc" }, take: 300 }),
@@ -88,7 +88,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/dashboard
         staff={members.map((m) => ({ id: m.userId, name: m.user.name }))}
         services={services
           .filter((s) => s.price > 0)
-          .map((s) => ({ id: s.id, name: s.name, price: s.price, durationMin: s.durationMin ?? (s.trackStock ? null : 30) }))}
+          .map((s) => ({ id: s.id, name: s.name, price: s.price, durationMin: s.durationMin ?? 30 }))}
         customers={customers.map((c) => ({ name: c.name, phone: c.phone }))}
         currency={ctx.currency}
         timezone={ctx.timezone}

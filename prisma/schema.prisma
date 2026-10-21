@@ -325,6 +325,8 @@ model Product {
   trackStock Boolean   @default(true)
   /// Próximo vencimiento del stock (para avisar lo que está por vencer).
   expiresAt  DateTime?
+  /// Servicio (corte, consulta, clase…): no lleva stock, se agenda y se reserva. Los productos son lo demás.
+  isService  Boolean   @default(false)
   /// Servicios: cuánto dura (minutos), para la Agenda.
   durationMin Int?
   active     Boolean   @default(true)

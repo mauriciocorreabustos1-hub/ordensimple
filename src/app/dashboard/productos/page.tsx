@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { productCodes } from "@/lib/barcodes"
 import { toDateKey } from "@/lib/dates"
-import { AlertTriangle, Boxes, Package, PackageX } from "lucide-react"
+import { AlertTriangle, Boxes, Package, PackageX, Scissors } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
@@ -16,7 +18,6 @@ import { marginRatio } from "@/lib/calculations"
 import { formatMoney, formatNumber, formatPercent, referenceAmount } from "@/lib/currency"
 import { db } from "@/lib/db"
 import { productLimit } from "@/lib/plans"
-import { businessProfile } from "@/lib/business-kind"
 import { can } from "@/lib/roles"
 import { deleteProduct } from "@/server/actions/products"
 import { requireBusiness, requirePermission } from "@/server/session"
@@ -56,7 +57,8 @@ export default async function ProductsPage() {
   requirePermission(ctx, "products:manage")
   const [products, categories] = await Promise.all([
     db.product.findMany({
-      where: { businessId: ctx.businessId },
+      // Los servicios van aparte, en Servicios.
+      where: { businessId: ctx.businessId, isService: false },
       include: { category: { select: { name: true } }, barcodes: { select: { code: true }, orderBy: { createdAt: "asc" } } },
       orderBy: [{ active: "desc" }, { name: "asc" }],
     }),
@@ -85,31 +87,27 @@ export default async function ProductsPage() {
     trackStock: p.trackStock,
     active: p.active,
     expiresAt: p.expiresAt ? toDateKey(p.expiresAt, ctx.timezone) : "",
-    durationMin: p.durationMin,
   })
-  // El catálogo se llama según el rubro: Productos, Servicios, o Servicios y productos.
-  const profile = businessProfile(ctx.business.type)
-  const newButtons = profile.servicesOnly ? (
-    <ProductDialog kind="service" currency={ctx.currency} categories={categoryNames} />
-  ) : profile.services ? (
-    <>
-      <ProductDialog kind="service" currency={ctx.currency} categories={categoryNames} />
-      <ProductDialog currency={ctx.currency} categories={categoryNames} />
-    </>
-  ) : (
-    <ProductDialog currency={ctx.currency} categories={categoryNames} />
-  )
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={profile.catalog}
-        description={
-          profile.services
-            ? "Lo que ofreces, con su precio y cuánto dura. Te mostramos cuánto ganas con cada uno."
-            : "Tu catálogo con costos y precios. Te mostramos cuánto ganas con cada uno."
+        title="Productos"
+        description="Tu catálogo con costos y precios. Te mostramos cuánto ganas con cada uno."
+        actions={
+          canManage ? (
+            <>
+              {/* Los servicios (cortes, consultas, clases…) van aparte: se agendan y se reservan. */}
+              <Button variant="outline" size="lg" className="h-10 px-4" asChild>
+                <Link href="/dashboard/servicios">
+                  <Scissors />
+                  Servicios
+                </Link>
+              </Button>
+              <ProductDialog currency={ctx.currency} categories={categoryNames} />
+            </>
+          ) : null
         }
-        actions={canManage ? newButtons : null}
       />
 
       <div className={`grid gap-3 sm:grid-cols-3 ${STAT_GROUP}`}>
@@ -141,13 +139,9 @@ export default async function ProductsPage() {
       {products.length === 0 ? (
         <EmptyState
           icon={Package}
-          title={profile.servicesOnly ? "Aún no tienes servicios" : "Aún no tienes productos"}
-          description={
-            profile.services
-              ? "Agrega tus servicios con su precio y cuánto duran (ej.: Corte de pelo, 30 min). Así los eliges al agendar y al cobrar."
-              : "Agrega lo que vendes con su costo y precio. Así sabrás cuánto ganas con cada uno y podrás registrar ventas más rápido."
-          }
-          action={canManage ? newButtons : null}
+          title="Aún no tienes productos"
+          description="Agrega lo que vendes con su costo y precio. Así sabrás cuánto ganas con cada uno y podrás registrar ventas más rápido."
+          action={canManage ? <ProductDialog currency={ctx.currency} categories={categoryNames} /> : null}
         />
       ) : (
         <>
@@ -166,7 +160,7 @@ export default async function ProductsPage() {
                     </div>
                     {canManage ? (
                       <div className="flex shrink-0 items-center gap-1">
-                        <ProductDialog productId={p.id} initial={toForm(p)} kind={profile.services && !p.trackStock ? "service" : "product"} currency={ctx.currency} categories={categoryNames} />
+                        <ProductDialog productId={p.id} initial={toForm(p)} currency={ctx.currency} categories={categoryNames} />
                         <ConfirmDelete
                           title="¿Eliminar este producto?"
                           description={`"${p.name}" se eliminará. Las ventas anteriores se mantienen en tu historial.`}
@@ -235,7 +229,7 @@ export default async function ProductsPage() {
                       {canManage ? (
                         <TableCell className="pr-2">
                           <div className="flex items-center justify-end gap-1">
-                            <ProductDialog productId={p.id} initial={toForm(p)} kind={profile.services && !p.trackStock ? "service" : "product"} currency={ctx.currency} categories={categoryNames} />
+                            <ProductDialog productId={p.id} initial={toForm(p)} currency={ctx.currency} categories={categoryNames} />
                             <ConfirmDelete
                               title="¿Eliminar este producto?"
                               description={`"${p.name}" se eliminará. Las ventas anteriores se mantienen en tu historial.`}

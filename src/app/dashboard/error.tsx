@@ -4,9 +4,12 @@ import * as React from "react"
 import { RotateCcw, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { reportError } from "@/lib/report-error"
+import { isStaleVersionError, reloadForNewVersion } from "@/lib/stale-version"
 
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   React.useEffect(() => {
+    // Pestaña con una versión vieja de la app: se recarga sola en vez de mostrar el error.
+    if (isStaleVersionError(error) && reloadForNewVersion()) return
     // Los errores con "digest" vienen del servidor y ya quedaron registrados allá.
     if (!error.digest) reportError(error)
   }, [error])

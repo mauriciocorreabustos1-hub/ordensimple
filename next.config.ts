@@ -36,6 +36,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Cada publicación en Vercel tiene su identificador: si alguien tenía la app abierta con una versión anterior,
+  // al navegar se recarga sola con la nueva (en vez de fallar al guardar). En local no hace nada.
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
   // La dirección antigua de Vercel lleva al dominio propio (un solo origen para sesiones y buscadores).
   async redirects() {
     return [

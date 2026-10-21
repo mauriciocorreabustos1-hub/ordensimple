@@ -7,6 +7,28 @@ export function pushConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY)
 }
 
+/**
+ * Solo se aceptan direcciones de los servicios de avisos de los navegadores (Chrome, Safari, Firefox, Edge).
+ * Así nadie puede registrar una dirección cualquiera para que nuestro servidor le mande pedidos.
+ */
+const PUSH_HOSTS = [
+  /^fcm\.googleapis\.com$/,
+  /^android\.googleapis\.com$/,
+  /^updates\.push\.services\.mozilla\.com$/,
+  /^web\.push\.apple\.com$/,
+  /^[a-z0-9-]+\.push\.apple\.com$/,
+  /^[a-z0-9-]+\.notify\.windows\.com$/,
+]
+
+export function isPushEndpoint(endpoint: string) {
+  try {
+    const u = new URL(endpoint)
+    return u.protocol === "https:" && !u.port && !u.username && !u.password && PUSH_HOSTS.some((h) => h.test(u.hostname))
+  } catch {
+    return false
+  }
+}
+
 let ready = false
 function setup() {
   if (ready || !pushConfigured()) return ready
@@ -31,7 +53,7 @@ export type PushMessage = {
 export async function sendPush(userIds: string[], message: PushMessage) {
   try {
     if (!userIds.length || !setup()) return
-    const subs = await db.pushSubscription.findMany({ where: { userId: { in: [...new Set(userIds)] } } })
+    const subs = (await db.pushSubscription.findMany({ where: { userId: { in: [...new Set(userIds)] } } })).filter((s) => isPushEndpoint(s.endpoint))
     const payload = JSON.stringify(message)
     const gone: string[] = []
     await Promise.all(

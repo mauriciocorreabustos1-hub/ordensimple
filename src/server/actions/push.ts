@@ -2,7 +2,7 @@
 
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { pushConfigured, sendPush } from "@/server/push"
+import { isPushEndpoint, pushConfigured, sendPush } from "@/server/push"
 import { allowAttempt } from "@/server/rate-limit"
 import { requireUser } from "@/server/session"
 import { toActionError, type ActionResult } from "@/server/actions/result"
@@ -10,7 +10,7 @@ import { toActionError, type ActionResult } from "@/server/actions/result"
 const MAX_DEVICES = 10
 
 const subscriptionSchema = z.object({
-  endpoint: z.string().max(1000).startsWith("https://"),
+  endpoint: z.string().max(1000).refine(isPushEndpoint),
   keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(8).max(100) }),
   device: z.string().trim().max(60).optional(),
 })

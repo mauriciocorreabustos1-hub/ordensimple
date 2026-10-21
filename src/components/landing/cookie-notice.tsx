@@ -40,7 +40,7 @@ export function CookieNotice() {
         <p className="text-pretty text-muted-foreground">
           Usamos cookies propias para mantener tu sesión y saber cómo nos conociste. Sin publicidad ni terceros.{" "}
           <Link href="/privacidad#cookies" className="font-medium text-primary underline-offset-4 hover:underline">
-            Más información
+            Ver la política de cookies
           </Link>
         </p>
         <Button size="sm" onClick={close}>

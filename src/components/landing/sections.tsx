@@ -254,7 +254,7 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
               <div className="flex items-center justify-between">
                 <p className="text-lg font-semibold">{plan.name}</p>
                 {featured ? (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Recomendado</span>
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Recomendado</span>
                 ) : null}
               </div>
               <p className="text-sm text-muted-foreground">{plan.description}</p>

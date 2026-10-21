@@ -115,7 +115,7 @@ export function WhatsAppButton({ className, text, tone = "default" }: { classNam
         <span className={cn("block text-sm font-medium", tone === "sidebar" && "text-[13px]")}>{tone === "sidebar" ? "Ayuda por WhatsApp" : "WhatsApp"}</span>
         <span className="block truncate text-xs text-muted-foreground">{WHATSAPP.display}</span>
       </span>
-      {tone === "default" ? <span className="ml-auto text-xs font-medium text-[#128c4a] group-hover:underline">Escribir</span> : null}
+      {tone === "default" ? <span className="ml-auto text-xs font-semibold text-[#0b6b37] group-hover:underline dark:text-[#4ade80]">Escribir</span> : null}
     </a>
   )
 }

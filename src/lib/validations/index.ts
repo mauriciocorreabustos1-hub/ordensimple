@@ -340,6 +340,39 @@ export const comandaChargeSchema = z
   .refine((d) => d.paymentMethod !== "FIADO" || !d.tip, { message: "La propina no se puede dejar al fiado.", path: ["tip"] })
 export type ComandaChargeInput = z.input<typeof comandaChargeSchema>
 
+// ─── Tienda online ──────────────────────────────────────────────────────────
+
+export const storeSettingsSchema = z.object({
+  enabled: z.boolean(),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/, "Usa de 3 a 40 letras sin tilde, números o guiones (ej.: almacen-don-pedro)"),
+  whatsapp: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/[^\d+]/g, ""))
+    .refine((v) => v.replace(/\D/g, "").length >= 8 && v.replace(/\D/g, "").length <= 15, "Escribe un número de WhatsApp válido"),
+  message: optionalText(200),
+})
+export type StoreSettingsInput = z.input<typeof storeSettingsSchema>
+
+export const webOrderSchema = z.object({
+  slug: z.string().trim().toLowerCase().max(40),
+  customerName: z.string().trim().min(2, "Escribe tu nombre").max(60, "Máximo 60 caracteres"),
+  customerPhone: optionalText(20),
+  delivery: z.boolean(),
+  note: optionalText(300),
+  items: z
+    .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(99) }))
+    .min(1, "Agrega al menos un producto")
+    .max(30, "Máximo 30 productos por pedido"),
+  /** Campo trampa para robots: las personas no lo ven ni lo llenan. */
+  website: z.string().max(200).optional(),
+})
+export type WebOrderInput = z.input<typeof webOrderSchema>
+
 // ─── Descuentos ─────────────────────────────────────────────────────────────
 
 export const discountRequestSchema = z.object({

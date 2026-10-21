@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Política de privacidad"
-      updated="16 de octubre de 2026"
+      updated="21 de octubre de 2026"
       intro={
         <p>
           Esta política explica qué datos personales recopila OrdenSimple, para qué los usa, con quién los comparte y cómo
@@ -52,6 +52,11 @@ export default function PrivacyPage() {
             <strong>Datos de tus clientes y proveedores</strong> que decidas registrar (nombre, teléfono, correo, notas,
             compras y deudas). Respecto de estos datos, tú eres el responsable y OrdenSimple actúa como encargado del
             tratamiento: solo los usamos para prestarte el servicio.
+          </li>
+          <li>
+            <strong>Pedidos en tiendas online:</strong> si haces un pedido en la tienda de un negocio que usa OrdenSimple,
+            guardamos tu nombre, el teléfono y la dirección o comentario que escribas y lo que pediste, para que ese negocio
+            lo atienda. El responsable de esos datos es el negocio; OrdenSimple solo los guarda por encargo suyo.
           </li>
           <li>
             <strong>Datos técnicos:</strong> dirección IP, tipo de navegador y registros de acceso, que usamos para mantener
@@ -181,8 +186,8 @@ export default function PrivacyPage() {
         </ul>
         <p>
           Además, tu navegador guarda algunas preferencias en tu propio dispositivo (no son cookies y no se envían a nuestros
-          servidores): el tema claro u oscuro, el correo para iniciar sesión si eliges recordarlo, los avisos que cerraste y
-          las ventas guardadas sin internet. Las estadísticas de visitas que usamos no usan cookies.
+          servidores): el tema claro u oscuro, el correo para iniciar sesión si eliges recordarlo, los avisos que cerraste,
+          las ventas guardadas sin internet y el carro de compras de las tiendas online. Las estadísticas de visitas que usamos no usan cookies.
         </p>
         <p>
           Puedes borrar las cookies desde la configuración de tu navegador cuando quieras. Si borras la de sesión, tendrás que

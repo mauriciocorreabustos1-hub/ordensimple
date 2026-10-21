@@ -169,6 +169,11 @@ model Business {
   managesInventory    Boolean?
   monthlyRevenueRange String?
   onboardingCompleted Boolean   @default(false)
+  /// Tienda online: catálogo público en /tienda/<storeSlug> con pedidos por WhatsApp (plan Pro).
+  storeEnabled        Boolean   @default(false)
+  storeSlug           String?   @unique
+  storeWhatsapp       String?
+  storeMessage        String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -186,6 +191,7 @@ model Business {
   customerPayments  CustomerPayment[]
   cashClosings      CashClosing[]
   cashShifts        CashShift[]
+  webOrders         WebOrder[]
   notifications     Notification[]
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
@@ -582,6 +588,36 @@ model CashClosing {
 
   @@unique([businessId, day])
   @@map("cash_closing")
+}
+
+enum WebOrderStatus {
+  NEW
+  DONE
+  CANCELLED
+}
+
+/// Pedido hecho desde la tienda online. Los precios se toman del sistema al pedir; al aceptarlo se vuelve venta o comanda.
+model WebOrder {
+  id            String         @id @default(cuid())
+  businessId    String
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerPhone String?
+  /// "Retiro en el local" o "Despacho" (con la dirección en la nota).
+  delivery      Boolean        @default(false)
+  note          String?
+  /// [{ productId, name, quantity, unitPrice }]
+  items         Json
+  total         Int
+  status        WebOrderStatus @default(NEW)
+  saleId        String?
+  comandaId     String?
+  handledById   String?
+  handledAt     DateTime?
+  createdAt     DateTime       @default(now())
+
+  @@index([businessId, status, createdAt])
+  @@map("web_order")
 }
 
 /// Turno de caja (mañana, tarde…): quien abre deja el sencillo y al cerrar cuenta el efectivo.

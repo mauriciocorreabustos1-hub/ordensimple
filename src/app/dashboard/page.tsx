@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import {
   CalendarClock,
   ChevronRight,
+  Globe,
   Crown,
   Landmark,
   NotebookPen,
@@ -60,7 +61,7 @@ export default async function DashboardPage() {
   const showPayables = showFinances && canUseFeature(ctx.business.plan, "suppliers") && can(ctx.role, "suppliers:manage")
   const hasGoal = Boolean(ctx.member.monthlyGoal || ctx.member.commissionRate)
   const nextMonth = startOfMonth(now, ctx.timezone, 1)
-  const [data, insights, debts, year, payables, mine] = await Promise.all([
+  const [data, insights, debts, year, payables, webOrders, mine] = await Promise.all([
     getDashboardData(ctx.businessId, ctx.timezone, now),
     showTips ? getInsights(ctx.businessId, ctx.timezone, ctx.currency, now) : Promise.resolve([]),
     showFiado ? getDebtors(ctx.businessId) : Promise.resolve(null),
@@ -68,6 +69,9 @@ export default async function DashboardPage() {
       ? getYearSummary(ctx.businessId, today.year, today.month, ctx.timezone, chargesVat ? vat!.rate : null)
       : Promise.resolve(null),
     showPayables ? payablesDueBefore(ctx.businessId, addDays(startOfDay(now, ctx.timezone), 8, ctx.timezone)) : Promise.resolve([]),
+    ctx.business.storeSlug && canUseFeature(ctx.business.plan, "store")
+      ? db.webOrder.count({ where: { businessId: ctx.businessId, status: "NEW" } })
+      : Promise.resolve(0),
     hasGoal ? salesByMember(ctx.businessId, startOfMonth(now, ctx.timezone), nextMonth).then((m) => m.get(ctx.user.id)) : Promise.resolve(undefined),
   ])
   // Meta y comisión del mes de quien usa la app (las fija el dueño en Reportes → Tu equipo).
@@ -82,6 +86,23 @@ export default async function DashboardPage() {
       month={monthName(now, ctx.timezone)}
       daysLeft={Math.max(0, Math.round((nextMonth.getTime() - startOfDay(now, ctx.timezone).getTime()) / 86_400_000))}
     />
+  ) : null
+  const webOrdersBanner = webOrders ? (
+    <Link
+      href="/dashboard/pedidos"
+      className="flex items-center gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 hover:bg-primary/10"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+        <Globe className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">
+          {webOrders === 1 ? "Tienes 1 pedido web nuevo" : `Tienes ${webOrders} pedidos web nuevos`}
+        </span>
+        <span className="block text-sm text-muted-foreground">Confírmalo por WhatsApp y regístralo como venta.</span>
+      </span>
+      <ChevronRight className="size-5 text-muted-foreground" />
+    </Link>
   ) : null
   const payablesTotal = payables.reduce((sum, p) => sum + p.amount, 0)
   const overduePayables = payables.filter((p) => p.dueDate < startOfDay(now, ctx.timezone)).length
@@ -172,6 +193,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
         <QuickButtons />
+        {webOrdersBanner}
         {goalCard}
         <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
           <h2 id="hoy" className="text-base font-semibold">
@@ -265,6 +287,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <QuickButtons />
+        {webOrdersBanner}
         {goalCard}
 
       <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">

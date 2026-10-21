@@ -150,6 +150,8 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "La cocina marca cada plato listo y el garzón ve «Listo para servir»",
       "Si piden algo más, a la cocina le llega solo lo nuevo",
       "Al cobrar queda como venta: descuenta stock y suma a la caja y a tus reportes",
+      "Cuenta dividida: cobra todo junto o lo de cada persona por separado",
+      "Propina sugerida del 10% u otro monto, guardada aparte de tus ventas",
     ],
   },
   {
@@ -422,6 +424,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí. Si marcas el rubro «Restaurante, café o comida», con el plan Pro tienes comandas por mesa y una pantalla para la cocina: el garzón anota y envía el pedido, la cocina lo marca listo y al cobrar queda como venta. Eliges cuántas mesas tienes en Configuración.",
       },
       {
+        q: "¿Puedo recibir pedidos por internet?",
+        a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en «Pedidos web» lo registras como venta con un toque. Sin comisiones.",
+      },
+      {
         q: "¿Cómo los contacto?",
         a: "Por WhatsApp al +56 9 5459 1736 o por correo a contacto@ordensimple.cl. Te respondemos lo antes posible.",
       },
@@ -521,6 +527,8 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Cierre de caja", values: [false, true, true] },
   { label: "Clientes, fiado y cobro por WhatsApp", values: [true, true, true] },
   { label: "Comandas y pantalla de cocina (restaurantes y cafés)", values: [false, true, true] },
+  { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
+  { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
   { label: "Calculadoras con tus números", values: [true, true, true] },

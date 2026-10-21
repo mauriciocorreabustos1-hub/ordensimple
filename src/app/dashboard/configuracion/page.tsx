@@ -11,6 +11,8 @@ import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { FiadoDays } from "@/components/settings/fiado-days"
+import { StoreSettings } from "@/components/settings/store-settings"
+import { ProUpsell } from "@/components/app/pro-gate"
 import { PreferenceSwitch } from "@/components/settings/preference-switch"
 import { VatDueDay } from "@/components/settings/vat-due-day"
 import { TablesSettings } from "@/components/settings/tables-settings"
@@ -154,6 +156,31 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
           </CardContent>
         </Card>
       ) : null}
+
+      <Card id="tienda" className="scroll-mt-20">
+        <CardHeader>
+          <CardTitle>Tienda online</CardTitle>
+          <CardDescription>
+            Una página con tus productos y precios para compartir por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido
+            por WhatsApp; te queda en «Pedidos web» para registrarlo con un toque.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {canUseFeature(ctx.business.plan, "store") ? (
+            <StoreSettings
+              businessName={ctx.business.name}
+              enabled={ctx.business.storeEnabled}
+              slug={ctx.business.storeSlug}
+              whatsapp={ctx.business.storeWhatsapp}
+              message={ctx.business.storeMessage}
+              appUrl={getAppUrl()}
+              disabled={!canManage}
+            />
+          ) : (
+            <ProUpsell title="La tienda online es parte del plan Pro" text="Publica tu catálogo y recibe pedidos por WhatsApp, sin comisiones." />
+          )}
+        </CardContent>
+      </Card>
 
       {vat ? (
         <Card>

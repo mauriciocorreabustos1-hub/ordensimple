@@ -41,15 +41,22 @@ type Step = (typeof STEPS)[number]["id"]
 
 const clp = (n: number) => "$" + Math.round(n).toLocaleString("es-CL")
 
-function useCountUp(target: number, run: boolean) {
-  const [value, setValue] = React.useState(target)
-  const from = React.useRef(target)
+/**
+ * Número que sube animado. Cambia solo su propio texto en cada cuadro (sin volver a dibujar toda la vista),
+ * para que la animación no trabe el celular.
+ */
+function CountUp({ value, run }: { value: number; run: boolean }) {
+  const ref = React.useRef<HTMLSpanElement>(null)
+  const from = React.useRef(value)
+  // El texto inicial no cambia: después lo actualiza la animación directamente.
+  const [initial] = React.useState(value)
   React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
     // Al volver a empezar (o en pausa) el número salta; solo se anima cuando sube.
-    if (!run || target < from.current) {
-      from.current = target
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setValue(target)
+    if (!run || value < from.current) {
+      from.current = value
+      el.textContent = clp(value)
       return
     }
     const start = performance.now()
@@ -57,15 +64,14 @@ function useCountUp(target: number, run: boolean) {
     let raf = 0
     const tick = (now: number) => {
       const p = Math.min(1, (now - start) / 900)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setValue(begin + (target - begin) * eased)
+      el.textContent = clp(begin + (value - begin) * (1 - Math.pow(1 - p, 3)))
       if (p < 1) raf = requestAnimationFrame(tick)
-      else from.current = target
+      else from.current = value
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [target, run])
-  return value
+  }, [value, run])
+  return <span ref={ref}>{clp(initial)}</span>
 }
 
 /** Puntero que aparece y "hace clic" sobre un botón. */
@@ -127,7 +133,7 @@ export function DashboardPreview() {
   const saved = step === "saved"
   const running = scanned ? ITEMS.slice(0, scanned).reduce((t, i) => t + i.total, 0) : 0
 
-  const sales = useCountUp(BASE.sales + (saved ? SALE : 0), playing)
+  const sales = BASE.sales + (saved ? SALE : 0)
   const profit = sales - BASE.expenses
   const todayBar = saved ? 79 : 70
 
@@ -185,7 +191,9 @@ export function DashboardPreview() {
                     <span className="hidden sm:inline">{s.label}</span>
                   </span>
                 </div>
-                <p className="tabular text-sm font-semibold sm:text-xl">{clp(s.value)}</p>
+                <p className="tabular text-sm font-semibold sm:text-xl">
+                  <CountUp value={s.value} run={playing} />
+                </p>
               </div>
             ))}
           </div>

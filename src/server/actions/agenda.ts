@@ -11,7 +11,7 @@ import { canUseFeature } from "@/lib/plans"
 import { canApproveDiscounts } from "@/lib/roles"
 import { appointmentSchema, idSchema, paymentMethod as paymentMethodSchema, type AppointmentInput } from "@/lib/validations"
 import { sendPush } from "@/server/push"
-import { applyStock, buildLines, FIADO_PRO, fiadoBlocked, lineData, resolveCustomer, type Tx } from "@/server/sale-core"
+import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, priceBelowList, fiadoBlocked, lineData, resolveCustomer, type Tx } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -52,10 +52,11 @@ async function prepare(ctx: BusinessContext, input: AppointmentInput) {
     ? await db.product.findFirst({ where: { id: d.productId, businessId: ctx.businessId }, select: { id: true, price: true } })
     : null
   if (d.productId && !product) return { error: { ok: false, message: "Ese servicio ya no existe. Recarga la página." } as ActionResult<never> }
-  // Los empleados con "solo productos guardados" no inventan servicios ni bajan el precio (eso pasa por un descuento al cobrar).
-  if (!canApproveDiscounts(ctx.role) && ctx.settings.employeesProductsOnly) {
-    if (!product) return { error: { ok: false, message: "Elige un servicio de tu lista." } as ActionResult<never> }
-    if (d.price < product.price) return { error: { ok: false, message: "No puedes agendar con un precio menor al de la lista." } as ActionResult<never> }
+  // Los empleados no bajan el precio de un servicio guardado (eso es un descuento y lo aprueba el encargado).
+  // Con "solo productos guardados", tampoco inventan servicios.
+  if (!canApproveDiscounts(ctx.role)) {
+    if (!product && ctx.settings.employeesProductsOnly) return { error: { ok: false, message: "Elige un servicio de tu lista." } as ActionResult<never> }
+    if (product && d.price < product.price) return { error: { ok: false, message: "No puedes agendar con un precio menor al de la lista." } as ActionResult<never> }
   }
   return { data: { ...d, productId: product?.id ?? null, startAt, endAt } }
 }
@@ -259,6 +260,9 @@ export async function chargeAppointment(id: string, payment: z.input<typeof paym
     if (pm.data === "FIADO" && !a.customerId) return { ok: false, message: "Para fiar, la cita debe tener cliente." }
     const lines = await buildLines(ctx, [{ productId: a.productId ?? undefined, description: a.serviceName, quantity: 1, unitPrice: a.price }])
     if (!lines) return { ok: false, message: "El servicio ya no existe. Edita la cita y vuelve a cobrar." }
+    // Mismas reglas que una venta: un empleado no cobra bajo el precio de lista ni algo escrito a mano si no puede.
+    const below = customItemsBlocked(ctx, lines) ?? priceBelowList(ctx, lines)
+    if (below) return { ok: false, message: below }
     // Si quien atendió ya no es del negocio, la venta queda a nombre de quien cobra.
     const seller = a.staffId && (await db.businessMember.findFirst({ where: { businessId: ctx.businessId, userId: a.staffId }, select: { id: true } })) ? a.staffId : ctx.user.id
     await db.$transaction(async (tx) => {

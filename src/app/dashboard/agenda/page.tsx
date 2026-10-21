@@ -6,6 +6,7 @@ import { AgendaBoard, type AgendaAppointment } from "@/components/agenda/agenda-
 import { db } from "@/lib/db"
 import { addDays, dateKeyToUtc, startOfWeek, toDateKey } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
+import { canApproveDiscounts } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Agenda" }
@@ -94,6 +95,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/dashboard
         timezone={ctx.timezone}
         businessName={ctx.business.name}
         meId={ctx.user.id}
+        canDelete={canApproveDiscounts(ctx.role)}
         defaultPayment={ctx.settings.defaultPayment}
       />
       {rows.length === 0 && Object.keys(weekCounts).length === 0 ? (

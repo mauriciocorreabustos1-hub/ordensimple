@@ -290,3 +290,27 @@ export async function chargeAppointment(id: string, payment: z.input<typeof paym
   revalidatePath("/dashboard/ventas")
   return { ok: true, message: "Cita cobrada" }
 }
+
+/**
+ * Elimina una cita (solo el dueño o un administrador). Las cobradas no se eliminan: ya son una venta.
+ * Para dejar registro de que no se hizo, conviene más "Cancelada"; esto es para citas puestas por error.
+ */
+export async function deleteAppointment(id: string): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  if (!idSchema.safeParse(id).success) return { ok: false, message: "Cita no encontrada" }
+  try {
+    if (!canApproveDiscounts(ctx.role)) return { ok: false, message: "Solo el dueño o un administrador puede eliminar citas. Puedes marcarla como cancelada." }
+    const reason = blocked(ctx)
+    if (reason) return { ok: false, message: reason }
+    const a = await db.appointment.findFirst({ where: { id, businessId: ctx.businessId }, select: { saleId: true } })
+    if (!a) return { ok: false, message: CHANGED }
+    if (a.saleId) return { ok: false, message: "Esta cita ya se cobró y quedó como venta. Si fue un error, elimina la venta en Ventas." }
+    // Solo si sigue sin cobrar (si alguien la cobró justo ahora, no se toca).
+    const r = await db.appointment.deleteMany({ where: { id, businessId: ctx.businessId, saleId: null } })
+    if (r.count !== 1) return { ok: false, message: CHANGED }
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidate()
+  return { ok: true, message: "Cita eliminada" }
+}

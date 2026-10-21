@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Check, ChevronLeft, ChevronRight, Clock, Loader2, MessageCircle, Pencil, Plus, UserRound, X } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Clock, Loader2, MessageCircle, Pencil, Plus, Trash2, UserRound, X } from "lucide-react"
 import { toast } from "sonner"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { AppModal } from "@/components/app/app-modal"
@@ -20,6 +20,7 @@ import {
   createAppointment,
   markAppointmentReminded,
   setAppointmentStatus,
+  deleteAppointment,
   updateAppointment,
 } from "@/server/actions/agenda"
 
@@ -71,6 +72,7 @@ export function AgendaBoard({
   businessName,
   meId,
   defaultPayment,
+  canDelete = false,
 }: {
   day: string
   today: string
@@ -85,6 +87,8 @@ export function AgendaBoard({
   businessName: string
   meId: string
   defaultPayment: PaymentMethod
+  /** Dueño o administrador: puede eliminar citas. */
+  canDelete?: boolean
 }) {
   const router = useRouter()
   const money = (n: number) => formatMoney(n, currency)
@@ -310,6 +314,7 @@ export function AgendaBoard({
           currency={currency}
           timezone={timezone}
           defaultPayment={defaultPayment}
+          canDelete={canDelete}
           onEdit={() => {
             setOpenId(null)
             setEditing({ appointment: open })
@@ -533,10 +538,12 @@ function AppointmentDetail({
   currency,
   timezone,
   defaultPayment,
+  canDelete,
   onEdit,
   onClose,
   onChanged,
 }: {
+  canDelete: boolean
   appointment: AgendaAppointment
   day: string
   businessName: string
@@ -549,6 +556,7 @@ function AppointmentDetail({
 }) {
   const money = (n: number) => formatMoney(n, currency)
   const [charging, setCharging] = React.useState(false)
+  const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [payment, setPayment] = React.useState<PaymentMethod>(defaultPayment === "FIADO" ? "CASH" : defaultPayment)
   const [pending, startTransition] = React.useTransition()
   const start = clockOf(a.startAt, timezone)
@@ -562,6 +570,16 @@ function AppointmentDetail({
       const r = await setAppointmentStatus(a.id, s)
       if (!r.ok) return void toast.error(r.message)
       toast.success(r.message)
+      onChanged()
+    })
+  }
+
+  function remove() {
+    startTransition(async () => {
+      const r = await deleteAppointment(a.id)
+      if (!r.ok) return void toast.error(r.message)
+      toast.success(`${r.message}: ${a.customerName}, ${time}`)
+      onClose()
       onChanged()
     })
   }
@@ -642,7 +660,7 @@ function AppointmentDetail({
                   onClick={() => void markAppointmentReminded(a.id)}
                 >
                   <MessageCircle />
-                  {a.reminded ? "Recordar otra vez" : "Recordar por WhatsApp"}
+                  {a.reminded ? "Recordar de nuevo" : "Recordar"}
                 </a>
               </Button>
               <Button variant="outline" onClick={onEdit} disabled={pending}>
@@ -655,6 +673,30 @@ function AppointmentDetail({
               </Button>
             </div>
             {!a.customerPhone ? <p className="text-xs text-muted-foreground">Sin teléfono: WhatsApp te deja elegir el contacto.</p> : null}
+            {canDelete ? (
+              confirmDelete ? (
+                <div className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-sm">
+                    ¿Eliminar la cita de <span className="font-medium">{a.customerName}</span>? No se puede deshacer. Si el cliente no vendrá, mejor
+                    márcala como cancelada para que quede registro.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={pending}>
+                      No, volver
+                    </Button>
+                    <Button variant="destructive" onClick={remove} disabled={pending}>
+                      {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                      Sí, eliminar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setConfirmDelete(true)} disabled={pending}>
+                  <Trash2 />
+                  Eliminar cita
+                </Button>
+              )
+            ) : null}
           </>
         )}
         <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>

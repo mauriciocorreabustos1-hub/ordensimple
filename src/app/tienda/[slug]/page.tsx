@@ -7,6 +7,7 @@ import { StoreFront } from "@/components/store/store-front"
 import { db } from "@/lib/db"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { STORE_SLUG_RE } from "@/lib/store"
+import { activePromotions } from "@/server/sale-core"
 import { toDateKey } from "@/lib/dates"
 import { BookingFlow } from "@/components/store/booking-flow"
 import { StoreTabs } from "@/components/store/store-tabs"
@@ -27,6 +28,7 @@ const getStore = cache(async (slug: string) => {
       storeWhatsapp: true,
       storeMessage: true,
       logoUpdatedAt: true,
+      timezone: true,
     },
   })
   if (!b || !b.storeEnabled || !b.storeWhatsapp || !canUseFeature(effectivePlan(b), "store")) return null
@@ -69,11 +71,17 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
       // Los servicios se reservan arriba, no van al carro.
       isService: false,
     },
-    select: { id: true, name: true, price: true, stock: true, trackStock: true, imageUrl: true, category: { select: { name: true } } },
+    select: { id: true, name: true, price: true, stock: true, trackStock: true, imageUrl: true, categoryId: true, category: { select: { name: true } } },
     orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
     take: 500,
   })
 
+  // Promociones de la tienda (2×1, %) y si hay cupones activos para mostrar el campo.
+  const plan = effectivePlan(store)
+  const [promotions, hasCoupons] = await Promise.all([
+    activePromotions(store.id, plan),
+    canUseFeature(plan, "promos") ? db.storeCoupon.count({ where: { businessId: store.id, active: true } }).then((n) => n > 0) : Promise.resolve(false),
+  ])
   const canBook = Boolean(booking && services.length)
   const bookingFlow = canBook ? (
     <BookingFlow
@@ -88,6 +96,9 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
   ) : null
   const storeFront = (
     <StoreFront
+      promotions={promotions.filter((p) => p.online)}
+      timezone={store.timezone}
+      coupons={hasCoupons}
       slug={slug}
       businessName={store.name}
       currency={store.currency}
@@ -98,6 +109,7 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
         category: p.category?.name ?? null,
         max: p.trackStock ? Math.min(99, p.stock) : 99,
         imageUrl: p.imageUrl,
+        categoryId: p.categoryId,
       }))}
     />
   )

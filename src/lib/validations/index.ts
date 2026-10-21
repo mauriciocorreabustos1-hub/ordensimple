@@ -376,6 +376,58 @@ export const appointmentSchema = z.object({
 })
 export type AppointmentInput = z.input<typeof appointmentSchema>
 
+// ─── Promociones y cupones ──────────────────────────────────────────────────
+
+const dayKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+
+export const promotionSchema = z
+  .object({
+    name: z.string().trim().min(2, "Ponle un nombre (ej.: 2×1 en bebidas)").max(60, "Máximo 60 caracteres"),
+    kind: z.enum(["PERCENT", "BUY_X_PAY_Y"]),
+    percent: z.number().int().min(1, "Mínimo 1 %").max(90, "Máximo 90 %").nullable(),
+    buyQty: z.number().int().min(2).max(20).nullable(),
+    payQty: z.number().int().min(1).max(19).nullable(),
+    scope: z.enum(["ALL", "PRODUCTS", "CATEGORY"]),
+    productIds: z.array(z.string().min(1).max(40)).max(200),
+    categoryId: z.string().min(1).max(40).nullable(),
+    startsAt: dayKey.nullable(),
+    endsAt: dayKey.nullable(),
+    weekdays: z.array(z.number().int().min(0).max(6)).max(7),
+    fromTime: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+    toTime: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+    inStore: z.boolean(),
+    online: z.boolean(),
+    active: z.boolean(),
+  })
+  .refine((d) => d.kind !== "PERCENT" || d.percent !== null, { message: "Escribe el porcentaje de descuento", path: ["percent"] })
+  .refine((d) => d.kind !== "BUY_X_PAY_Y" || (d.buyQty !== null && d.payQty !== null && d.payQty < d.buyQty), {
+    message: "En «lleva X, paga Y», Y tiene que ser menor que X (ej.: lleva 2, paga 1)",
+    path: ["payQty"],
+  })
+  .refine((d) => d.scope !== "PRODUCTS" || d.productIds.length > 0, { message: "Elige al menos un producto", path: ["productIds"] })
+  .refine((d) => d.scope !== "CATEGORY" || Boolean(d.categoryId), { message: "Elige la categoría", path: ["categoryId"] })
+  .refine((d) => d.inStore || d.online, { message: "Elige dónde se aplica: en el local, en la tienda online o en los dos", path: ["inStore"] })
+  .refine((d) => !d.startsAt || !d.endsAt || d.startsAt <= d.endsAt, { message: "La fecha de término es antes que la de inicio", path: ["endsAt"] })
+  .refine((d) => (d.fromTime === null) === (d.toTime === null), { message: "Pon la hora de inicio y la de término", path: ["toTime"] })
+export type PromotionInput = z.input<typeof promotionSchema>
+
+export const couponSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9_-]{3,20}$/, "Usa de 3 a 20 letras o números, sin espacios (ej.: BIENVENIDO10)"),
+    percent: z.number().int().min(1).max(90).nullable(),
+    amount: z.number().int().min(1).max(100_000_000_000).nullable(),
+    minTotal: z.number().int().min(0).max(100_000_000_000),
+    maxUses: z.number().int().min(1).max(1_000_000).nullable(),
+    endsAt: dayKey.nullable(),
+    active: z.boolean(),
+  })
+  .refine((d) => (d.percent === null) !== (d.amount === null), { message: "Elige un porcentaje o un monto de descuento", path: ["percent"] })
+export type CouponInput = z.input<typeof couponSchema>
+
 // ─── Tienda online ──────────────────────────────────────────────────────────
 
 export const storeSettingsSchema = z.object({
@@ -404,6 +456,8 @@ export const webOrderSchema = z.object({
     .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(99) }))
     .min(1, "Agrega al menos un producto")
     .max(30, "Máximo 30 productos por pedido"),
+  /** Cupón de descuento del negocio (opcional). */
+  couponCode: optionalText(30),
   /** Campo trampa para robots: las personas no lo ven ni lo llenan. */
   website: z.string().max(200).optional(),
 })

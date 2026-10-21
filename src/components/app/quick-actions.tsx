@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import type { PaymentMethod } from "@/generated/prisma/enums"
+import type { PromoRule } from "@/lib/promotions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppModal } from "@/components/app/app-modal"
 import { QuickSaleForm } from "@/components/sales/quick-sale-form"
@@ -35,6 +36,12 @@ export function useSuppliers() {
   return React.useContext(SuppliersContext)
 }
 
+/** Promociones vigentes del negocio (para mostrar el descuento al vender; el servidor las recalcula al guardar). */
+const PromotionsContext = React.createContext<PromoRule[]>([])
+export function usePromotions() {
+  return React.useContext(PromotionsContext)
+}
+
 export function useQuickActions() {
   const ctx = React.useContext(QuickActionsContext)
   if (!ctx) throw new Error("useQuickActions debe usarse dentro de QuickActionsProvider")
@@ -57,7 +64,10 @@ export function QuickActionsProvider({
   cashClose = true,
   canApproveDiscounts = true,
   productsOnly = false,
+  promotions = [],
 }: {
+  /** Promociones activas (2×1, %, happy hour). */
+  promotions?: PromoRule[]
   children: React.ReactNode
   currency: string
   timezone: string
@@ -98,6 +108,7 @@ export function QuickActionsProvider({
       <PlanFlagsContext.Provider value={flags}>
       <SuppliersContext.Provider value={suppliers}>
       <DiscountRoleContext.Provider value={canApproveDiscounts}>
+      <PromotionsContext.Provider value={promotions}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
         <Tabs defaultValue="detailed" className="gap-5">
@@ -145,6 +156,7 @@ export function QuickActionsProvider({
           onDone={close}
         />
       </AppModal>
+      </PromotionsContext.Provider>
       </DiscountRoleContext.Provider>
       </SuppliersContext.Provider>
       </PlanFlagsContext.Provider>

@@ -1,4 +1,5 @@
 import {
+  BadgePercent,
   BellRing,
   CalendarClock,
   ChefHat,
@@ -189,6 +190,21 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Estados: agendada, confirmada, llegó, no vino o cancelada",
       "Cobra la cita con un toque: queda como venta, con la comisión de quien atendió",
       "Aviso al celular de cada reserva nueva y las citas del día cada mañana",
+    ],
+  },
+  {
+    id: "promociones",
+    icon: BadgePercent,
+    title: "Promociones y cupones",
+    description: "Descuentos que se aplican solos, sin que tu equipo tenga que acordarse (plan Pro).",
+    points: [
+      "2×1, 3×2 o «lleva X, paga Y» en los productos que elijas",
+      "% de descuento en un producto, una categoría o todo",
+      "Happy hour: solo ciertos días y horas (ej.: lunes a jueves de 18:00 a 20:00)",
+      "Con fecha de inicio y término, o para siempre",
+      "Se aplican solas al vender, en las comandas y en tu tienda online",
+      "Cupones para la tienda online (BIENVENIDO10): % o monto, compra mínima y límite de usos",
+      "En Reportes ves cuánto descontaste con cada una",
     ],
   },
   {
@@ -477,6 +493,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en «Pedidos web» lo registras como venta con un toque. Sin comisiones.",
       },
       {
+        q: "¿Puedo hacer promociones como 2×1 o happy hour?",
+        a: "Sí, con el plan Pro. En Promociones creas un 2×1, un % de descuento en productos o categorías, o un happy hour con días y horas. Se aplican solos al vender, en las comandas y en tu tienda online, y en Reportes ves cuánto descontaste. También puedes crear cupones para la tienda online.",
+      },
+      {
         q: "¿Puedo imprimir etiquetas con código de barras?",
         a: "Sí, en todos los planes. En Productos → Etiquetas eliges los productos y cuántas etiquetas quieres, con nombre, precio y código. Sirven hojas de stickers A4 en una impresora normal o una impresora de etiquetas. Si un producto no trae código, te creamos uno para que lo vendas escaneando.",
       },
@@ -591,6 +611,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
   { label: "Agenda de citas y reservas online (peluquerías, consultas, talleres)", values: [false, true, true] },
   { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
+  { label: "Promociones automáticas (2×1, %, happy hour) y cupones", values: [false, true, true] },
   { label: "Fotos de productos", values: [true, true, true] },
   { label: "Etiquetas con código de barras para imprimir", values: [true, true, true] },
   { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },

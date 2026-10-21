@@ -3,6 +3,7 @@ import { Logo } from "@/components/app/logo"
 import { MobileNav } from "@/components/app/mobile-nav"
 import { productCodes } from "@/lib/barcodes"
 import { QuickActionsProvider } from "@/components/app/quick-actions"
+import { activePromotions } from "@/server/sale-core"
 import { EmailConfirmedToast, EmailVerifyBanner } from "@/components/app/email-verify-banner"
 import { UserMenu } from "@/components/app/user-menu"
 import { WelcomeTour } from "@/components/app/welcome-tour"
@@ -20,10 +21,10 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const ctx = await requireBusiness()
   const isAdmin = await checkAdmin(ctx.user.email)
 
-  const [products, categories, customers, memberships, suppliers, teamSize] = await Promise.all([
+  const [products, categories, customers, memberships, suppliers, teamSize, promotions] = await Promise.all([
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
-      select: { id: true, name: true, price: true, stock: true, trackStock: true, sku: true, barcodes: { select: { code: true } } },
+      select: { id: true, name: true, price: true, stock: true, trackStock: true, categoryId: true, sku: true, barcodes: { select: { code: true } } },
       orderBy: { name: "asc" },
       take: 500,
     }),
@@ -52,6 +53,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     }),
     // Con equipo, el dueño y los administradores reciben las solicitudes de descuento.
     canApproveDiscounts(ctx.role) ? db.businessMember.count({ where: { businessId: ctx.businessId } }) : Promise.resolve(0),
+    // Promociones vigentes: se muestran al vender (el servidor las vuelve a calcular al guardar).
+    activePromotions(ctx.businessId, ctx.business.plan),
   ])
   // Servicios y Agenda: por el rubro, o porque el negocio ya tiene servicios creados.
   const kind = businessProfile(ctx.business.type)
@@ -70,6 +73,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         cashClose={canUseFeature(ctx.business.plan, "cashClose")}
         canApproveDiscounts={canApproveDiscounts(ctx.role)}
         productsOnly={!canApproveDiscounts(ctx.role) && ctx.settings.employeesProductsOnly}
+        promotions={promotions}
         products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}

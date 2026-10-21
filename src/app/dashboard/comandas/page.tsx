@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/app/empty-state"
 import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
 import { ComandasBoard } from "@/components/comandas/comandas-board"
+import { activePromotions } from "@/server/sale-core"
 import { db } from "@/lib/db"
 import { isFoodBusiness, tableLabels } from "@/lib/business-kind"
 import { can, canApproveDiscounts } from "@/lib/roles"
@@ -52,7 +53,7 @@ export default async function ComandasPage() {
     }),
     db.product.findMany({
       where: { businessId: ctx.businessId, active: true },
-      select: { id: true, name: true, price: true, imageUrl: true, category: { select: { name: true } } },
+      select: { id: true, name: true, price: true, imageUrl: true, categoryId: true, category: { select: { name: true } } },
       orderBy: { name: "asc" },
       take: 500,
     }),
@@ -93,7 +94,9 @@ export default async function ComandasPage() {
             note: i.note ?? "",
           })),
         }))}
-        products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null, imageUrl: p.imageUrl }))}
+        products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null, categoryId: p.categoryId, imageUrl: p.imageUrl }))}
+        promotions={await activePromotions(ctx.businessId, ctx.business.plan)}
+        timezone={ctx.timezone}
         customers={customers.map((c) => c.name)}
         tables={tableLabels(ctx.settings.tableCount, ctx.settings.tableExtras)}
         canEditTables={can(ctx.role, "settings:manage")}

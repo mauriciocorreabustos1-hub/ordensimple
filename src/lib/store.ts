@@ -29,6 +29,9 @@ export function orderWhatsappText(d: {
   total: string
   money: (n: number) => string
   code: string
+  /** Promociones y cupón aplicados (montos a descontar). */
+  promos?: { name: string; amount: number }[]
+  coupon?: { code: string; amount: number } | null
 }) {
   const count = d.items.reduce((s, i) => s + i.quantity, 0)
   return [
@@ -36,6 +39,8 @@ export function orderWhatsappText(d: {
     `¡Hola, ${d.businessName}! 👋 Quiero hacer este pedido:`,
     "",
     ...d.items.map((i) => `▪️ ${i.quantity} × ${i.name} — ${d.money(i.quantity * i.unitPrice)}`),
+    ...(d.promos ?? []).map((p) => `🏷️ ${p.name}: −${d.money(p.amount)}`),
+    d.coupon ? `🎟️ Cupón ${d.coupon.code}: −${d.money(d.coupon.amount)}` : null,
     "",
     `💰 *Total: ${d.total}* (${count} ${count === 1 ? "producto" : "productos"})`,
     d.delivery ? "🛵 *Entrega:* despacho a domicilio" : "🏪 *Entrega:* retiro en el local",

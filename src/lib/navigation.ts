@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  BadgePercent,
   BarChart3,
   Crown,
   Boxes,
@@ -56,6 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/servicios", label: "Servicios", icon: Scissors, permission: "products:manage", services: true },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true, stock: true },
+  { href: "/dashboard/promociones", label: "Promociones", icon: BadgePercent, pro: true, permission: "products:manage" },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },
   { href: "/dashboard/herramientas", label: "Herramientas", icon: Calculator, permission: "finances:view" },

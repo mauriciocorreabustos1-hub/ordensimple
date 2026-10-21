@@ -15,6 +15,7 @@ import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 import { ProductImage } from "@/components/products/product-image"
+import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
@@ -30,7 +31,7 @@ export type ComandaLine = {
   paidQty: number
 }
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
-export type ComandaProduct = { id: string; name: string; price: number; category: string | null; imageUrl?: string | null }
+export type ComandaProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; imageUrl?: string | null }
 
 /** Lo que falta pagar de cada plato (cuando cada uno paga lo suyo, lo pagado ya no se cobra). */
 const leftOf = (i: ComandaLine) => Math.max(0, i.quantity - i.paidQty)
@@ -72,7 +73,13 @@ export function ComandasBoard({
   canEditTables,
   canApproveDiscounts,
   productsOnly = false,
+  promotions = [],
+  timezone = "America/Santiago",
 }: {
+  /** Promociones vigentes en el local (se ven al cobrar; el servidor las vuelve a calcular). */
+  promotions?: PromoRule[]
+  /** Zona horaria del negocio (para el horario de las promociones). */
+  timezone?: string
   currency: string
   defaultPayment: PaymentMethod
   comandas: ComandaData[]
@@ -271,6 +278,8 @@ export function ComandasBoard({
           defaultPayment={defaultPayment}
           canApproveDiscounts={canApproveDiscounts}
           productsOnly={productsOnly}
+          promotions={promotions}
+          timezone={timezone}
           saving={saving}
           onChange={(change) => update(current.id, change)}
           onClose={closeEditor}
@@ -391,12 +400,16 @@ function ComandaEditor({
   defaultPayment,
   canApproveDiscounts,
   productsOnly,
+  promotions,
+  timezone,
   saving,
   onChange,
   onClose,
   flush,
   onClosed,
 }: {
+  promotions: PromoRule[]
+  timezone: string
   comanda: ComandaData
   products: ComandaProduct[]
   customers: string[]
@@ -432,7 +445,17 @@ function ComandaEditor({
     : comanda.items.filter((i) => leftOf(i) > 0).map((i) => ({ ...i, take: leftOf(i) }))
   const subtotal = step === "charge" ? chargeLines.reduce((sum, i) => sum + i.take * i.unitPrice, 0) : totalOf(comanda.items)
   const [disc, setDisc] = React.useState<{ value: DiscountValue | null; blocked: string | null }>({ value: null, blocked: null })
-  const total = step === "charge" ? subtotal - (disc.value?.discount ?? 0) : subtotal
+  // Promociones del local sobre lo que se cobra ahora (el servidor las vuelve a calcular al cobrar).
+  const categoryOf = new Map(products.map((p) => [p.id, p.categoryId ?? null]))
+  const promo =
+    step === "charge"
+      ? applyPromotions(
+          chargeLines.map((i) => ({ key: i.id, productId: i.productId, categoryId: i.productId ? (categoryOf.get(i.productId) ?? null) : null, quantity: i.take, unitPrice: i.unitPrice })),
+          promotions,
+          { now: new Date(), timezone, channel: "store" },
+        )
+      : { discount: 0, applied: [] }
+  const total = step === "charge" ? subtotal - promo.discount - (disc.value?.discount ?? 0) : subtotal
   const tip = payment === "FIADO" ? 0 : tipMode === "suggested" ? Math.round(total * TIP_RATE) : tipMode === "other" ? otherTip : 0
   const categories = [...new Set(products.map((p) => p.category).filter((c): c is string => Boolean(c)))]
   const q = query.trim().toLowerCase()
@@ -603,9 +626,18 @@ function ComandaEditor({
             <p className="tabular font-display text-4xl font-semibold">{money(total + tip)}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {split ? `${chargeLines.reduce((s, i) => s + i.take, 0)} de ${countOf(comanda.items)} productos` : productsLabel(countOf(comanda.items))}
-              {disc.value ? ` · ${money(subtotal)} con descuento de ${money(disc.value.discount)}` : ""}
+              {disc.value ? ` · descuento de ${money(disc.value.discount)}` : ""}
               {tip ? ` · cuenta ${money(total)} + propina ${money(tip)}` : ""}
             </p>
+            {promo.applied.length ? (
+              <div className="mt-2 space-y-0.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                {promo.applied.map((a) => (
+                  <p key={a.promotionId}>
+                    🏷️ {a.name}: −{money(a.amount)}
+                  </p>
+                ))}
+              </div>
+            ) : null}
             {!split && total > 0 ? (
               <div className="mt-3 flex items-center justify-center gap-2 text-sm">
                 <span className="text-muted-foreground">Dividir entre</span>
@@ -625,7 +657,7 @@ function ComandaEditor({
             ) : null}
           </div>
           {subtotal > 0 ? (
-            <DiscountField key={round} subtotal={subtotal} context={comanda.label} canApprove={canApproveDiscounts} currency={currency} onChange={setDisc} />
+            <DiscountField key={round} subtotal={subtotal - promo.discount} context={comanda.label} canApprove={canApproveDiscounts} currency={currency} onChange={setDisc} />
           ) : null}
           {payment !== "FIADO" && total > 0 ? (
             <div className="space-y-2">

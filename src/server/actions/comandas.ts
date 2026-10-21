@@ -26,6 +26,8 @@ import {
   MAX_TOTAL,
   priceBelowList,
   resolveCustomer,
+  linkPromotions,
+  promotionsFor,
 } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -195,7 +197,9 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
     if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la comanda es demasiado alto." }
     if (tip > subtotal) return { ok: false, message: "La propina no puede ser mayor que la cuenta. Revisa el monto." }
     const label = finished && !comanda.items.some((i) => i.paidQty > 0) ? comanda.label : `${comanda.label} (parte)`
-    const disc = await checkDiscount(ctx, parsed.data, subtotal, label.slice(0, 40))
+    // Promociones automáticas sobre lo que se cobra ahora; el descuento manual va sobre lo que queda.
+    const promo = await promotionsFor(ctx, lines, "store")
+    const disc = await checkDiscount(ctx, parsed.data, subtotal - promo.discount, label.slice(0, 40))
     if (!disc.ok) return { ok: false, message: disc.message }
 
     await db.$transaction(async (tx) => {
@@ -217,8 +221,9 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       const sale = await tx.sale.create({
         data: {
           businessId: ctx.businessId,
-          total: subtotal - disc.discount,
+          total: subtotal - promo.discount - disc.discount,
           discount: disc.discount,
+          promoDiscount: promo.discount,
           tip,
           paymentMethod,
           note: label.slice(0, 200),
@@ -229,6 +234,7 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       })
       await applyStock(tx, ctx, sale.id, lines, `Venta (${label})`.slice(0, 120))
       if (finished) await tx.comanda.update({ where: { id }, data: { saleId: sale.id } })
+      await linkPromotions(tx, sale.id, promo.applied)
       await disc.link(tx, sale.id)
     })
   } catch (error) {

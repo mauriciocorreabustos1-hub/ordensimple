@@ -18,10 +18,11 @@ import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createSale, updateSale } from "@/server/actions/sales"
 import { useOfflineSales } from "@/components/app/offline-sales"
-import { useCanApproveDiscounts } from "@/components/app/quick-actions"
+import { useCanApproveDiscounts, usePromotions } from "@/components/app/quick-actions"
+import { applyPromotions } from "@/lib/promotions"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 
-export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[] }
+export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[]; categoryId?: string | null }
 
 type Line = { key: number; productId: string; description: string; quantity: number; unitPrice: number }
 
@@ -90,7 +91,19 @@ export function SaleForm({
   const offline = useOfflineSales()
   const byId = React.useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
-  const subtotal = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  const gross = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  // Promociones vigentes (2×1, %, happy hour): se ven al tiro; al guardar, el servidor las vuelve a calcular.
+  const rules = usePromotions()
+  const promo = React.useMemo(
+    () =>
+      applyPromotions(
+        lines.map((l) => ({ key: l.key, productId: l.productId && l.productId !== CUSTOM ? l.productId : null, categoryId: byId.get(l.productId)?.categoryId ?? null, quantity: l.quantity, unitPrice: l.unitPrice })),
+        rules,
+        { now: new Date(), timezone, channel: "store" },
+      ),
+    [lines, rules, byId, timezone],
+  )
+  const subtotal = gross - promo.discount
   // Descuento (solo al registrar una venta nueva): directo si eres encargado, con aprobación si eres empleado.
   const canApprove = useCanApproveDiscounts()
   const [disc, setDisc] = React.useState<{ value: DiscountValue | null; blocked: string | null }>({ value: null, blocked: null })
@@ -343,6 +356,20 @@ export function SaleForm({
       ) : null}
 
       <div className="rounded-xl bg-muted px-4 py-3">
+        {promo.discount ? (
+          <>
+            <div className="mb-1 flex items-center justify-between text-sm text-muted-foreground">
+              <span>Productos</span>
+              <span className="tabular">{formatMoney(gross, currency)}</span>
+            </div>
+            {promo.applied.map((a) => (
+              <div key={a.promotionId} className="mb-1 flex items-center justify-between text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                <span>🏷️ {a.name}</span>
+                <span className="tabular">−{formatMoney(a.amount, currency)}</span>
+              </div>
+            ))}
+          </>
+        ) : null}
         {disc.value ? (
           <div className="mb-1 flex items-center justify-between text-sm text-muted-foreground">
             <span>

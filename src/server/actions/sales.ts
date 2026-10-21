@@ -27,6 +27,8 @@ import {
   QUICK_SALE_BLOCKED,
   resolveCustomer,
   revertStock,
+  linkPromotions,
+  promotionsFor,
 } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -152,7 +154,10 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
     if (below) return { ok: false, message: below }
     const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
     if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }
-    const disc = await checkDiscount(ctx, parsed.data, subtotal, "Venta")
+    const when = saleDate(date, ctx, soldAt)
+    // Promociones automáticas (2×1, %, happy hour) según el momento de la venta; el descuento manual va sobre lo que queda.
+    const promo = await promotionsFor(ctx, lines, "store", when)
+    const disc = await checkDiscount(ctx, parsed.data, subtotal - promo.discount, "Venta")
     if (!disc.ok) return { ok: false, message: disc.message }
 
     await db.$transaction(async (tx) => {
@@ -161,9 +166,10 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
         data: {
           businessId: ctx.businessId,
           clientId,
-          date: saleDate(date, ctx, soldAt),
-          total: subtotal - disc.discount,
+          date: when,
+          total: subtotal - promo.discount - disc.discount,
           discount: disc.discount,
+          promoDiscount: promo.discount,
           paymentMethod,
           note,
           customerId,
@@ -172,6 +178,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
         },
       })
       await applyStock(tx, ctx, sale.id, lines, "Venta")
+      await linkPromotions(tx, sale.id, promo.applied)
       await disc.link(tx, sale.id)
     })
   } catch (error) {
@@ -205,8 +212,11 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
     }
     const lines = await buildLines(ctx, items)
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
+    // Las promociones se recalculan con los productos nuevos (según el momento de la venta).
     // Si la venta tenía un descuento aprobado, se mantiene.
-    const total = lines.reduce((sum, l) => sum + l.subtotal, 0) - sale.discount
+    const newDate = resolveDate(date, ctx, sale.date)
+    const promo = await promotionsFor(ctx, lines, "store", newDate)
+    const total = lines.reduce((sum, l) => sum + l.subtotal, 0) - promo.discount - sale.discount
     if (total > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }
     if (total <= 0) return { ok: false, message: "Con el descuento que tiene esta venta, el total quedaría en cero. Revisa los productos." }
 
@@ -214,12 +224,14 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
       // Se deshace el stock de la versión anterior y se aplica el de la nueva.
       await revertStock(tx, sale.id)
       await tx.saleItem.deleteMany({ where: { saleId: sale.id } })
+      await tx.salePromotion.deleteMany({ where: { saleId: sale.id } })
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       await tx.sale.update({
         where: { id: sale.id },
         data: {
-          date: resolveDate(date, ctx, sale.date),
+          date: newDate,
           total,
+          promoDiscount: promo.discount,
           paymentMethod,
           isQuick: false,
           note: note ?? null,
@@ -228,6 +240,7 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
         },
       })
       await applyStock(tx, ctx, sale.id, lines, "Venta (editada)")
+      await linkPromotions(tx, sale.id, promo.applied)
     })
   } catch (error) {
     return toActionError(error)

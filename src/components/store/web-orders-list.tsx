@@ -27,6 +27,9 @@ export type WebOrderRow = {
   status: "NEW" | "DONE" | "CANCELLED"
   createdAt: string
   asComanda: boolean
+  promoDiscount: number
+  couponCode: string | null
+  couponDiscount: number
 }
 
 const POLL_MS = 20_000
@@ -109,6 +112,13 @@ export function WebOrdersList({
                 ))}
               </ul>
               {o.note ? <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm">{o.note}</p> : null}
+              {o.promoDiscount || o.couponDiscount ? (
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  {o.promoDiscount ? `🏷️ Promociones −${money(o.promoDiscount)}` : ""}
+                  {o.promoDiscount && o.couponDiscount ? " · " : ""}
+                  {o.couponDiscount ? `🎟️ Cupón ${o.couponCode} −${money(o.couponDiscount)}` : ""}
+                </p>
+              ) : null}
               <div className="flex items-center justify-between border-t pt-2">
                 <span className="text-sm text-muted-foreground">Total</span>
                 <span className="tabular text-lg font-semibold">{money(o.total)}</span>

@@ -196,6 +196,8 @@ model Business {
   cashClosings      CashClosing[]
   cashShifts        CashShift[]
   webOrders         WebOrder[]
+  promotions        Promotion[]
+  storeCoupons      StoreCoupon[]
   appointments      Appointment[]
   notifications     Notification[]
   couponRedemptions CouponRedemption[]
@@ -382,6 +384,9 @@ model Sale {
   returnedBy     Sale[]       @relation("SaleReturnOf")
   returnRequests SaleReturn[] @relation("ReturnRequests")
   returnRecord   SaleReturn?  @relation("ReturnSale")
+  /// Descuento de promociones automáticas (2×1, %…) y cupones; el total ya lo tiene restado. Detalle en `promotions`.
+  promoDiscount  Int          @default(0)
+  promotions     SalePromotion[]
 
   @@unique([businessId, clientId])
   @@index([businessId, date])
@@ -669,6 +674,83 @@ model Appointment {
   @@map("appointment")
 }
 
+enum PromotionKind {
+  PERCENT
+  BUY_X_PAY_Y
+}
+
+/// Promoción automática: se aplica sola al vender, en las comandas y en la tienda online si se cumplen sus condiciones.
+model Promotion {
+  id          String        @id @default(cuid())
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  kind        PromotionKind
+  /// PERCENT: cuánto % se descuenta.
+  percent     Int?
+  /// BUY_X_PAY_Y: lleva X, paga Y (2×1 = lleva 2 paga 1).
+  buyQty      Int?
+  payQty      Int?
+  /// ALL (todo), PRODUCTS (los de productIds) o CATEGORY (los de categoryId).
+  scope       String        @default("ALL")
+  productIds  String[]      @default([])
+  categoryId  String?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  /// Días de la semana (0 = domingo). Vacío = todos los días.
+  weekdays    Int[]         @default([])
+  /// Horario (minutos desde las 00:00, hora del negocio). Vacío = todo el día. Sirve para el happy hour.
+  fromMinute  Int?
+  toMinute    Int?
+  /// Dónde se aplica: al vender en el local (ventas y comandas) y en la tienda online.
+  inStore     Boolean       @default(true)
+  online      Boolean       @default(true)
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  sales SalePromotion[]
+
+  @@index([businessId, active])
+  @@map("promotion")
+}
+
+/// Cuánto descontó cada promoción en cada venta (para los reportes).
+model SalePromotion {
+  id          String     @id @default(cuid())
+  saleId      String
+  sale        Sale       @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  promotionId String?
+  promotion   Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  name        String
+  amount      Int
+
+  @@index([saleId])
+  @@index([promotionId])
+  @@map("sale_promotion")
+}
+
+/// Cupón de un negocio para su tienda online: el cliente escribe el código al hacer el pedido.
+/// (Distinto de Coupon, que son los códigos de descuento del plan de OrdenSimple.)
+model StoreCoupon {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  code       String
+  percent    Int?
+  amount     Int?
+  minTotal   Int       @default(0)
+  maxUses    Int?
+  uses       Int       @default(0)
+  endsAt     DateTime?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([businessId, code])
+  @@map("store_coupon")
+}
+
 enum WebOrderStatus {
   NEW
   DONE
@@ -694,6 +776,13 @@ model WebOrder {
   handledById   String?
   handledAt     DateTime?
   createdAt     DateTime       @default(now())
+
+  /// Promociones y cupón del pedido (el total ya los tiene restados).
+  promoDiscount Int            @default(0)
+  /// [{ promotionId, name, amount }]
+  promos        Json?
+  couponCode    String?
+  couponDiscount Int           @default(0)
 
   @@index([businessId, status, createdAt])
   @@map("web_order")

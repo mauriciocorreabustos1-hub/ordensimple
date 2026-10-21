@@ -5,6 +5,7 @@ import { canUseFeature } from "@/lib/plans"
 import { canApproveDiscounts } from "@/lib/roles"
 import type { SaleInput } from "@/lib/validations"
 import type { BusinessContext } from "@/server/session"
+import { applyPromotions, type AppliedPromo, type PromoRule } from "@/lib/promotions"
 
 // Piezas comunes para guardar una venta: las usan las ventas y el cobro de comandas.
 
@@ -194,3 +195,61 @@ export async function checkDiscount(ctx: BusinessContext, input: DiscountInput, 
 
 export const DISCOUNT_USED_MESSAGE = "Ese descuento ya se usó en otra venta. Pide uno nuevo."
 export const isDiscountUsed = (error: unknown) => error instanceof Error && error.message === "DISCOUNT_ALREADY_USED"
+
+// ─── Promociones automáticas ────────────────────────────────────────────────
+
+/** Promociones activas del negocio (para calcular y para mostrarlas al vender). Sin el plan, ninguna. */
+export async function activePromotions(businessId: string, plan: Parameters<typeof canUseFeature>[0]): Promise<PromoRule[]> {
+  if (!canUseFeature(plan, "promos")) return []
+  const now = new Date()
+  return db.promotion.findMany({
+    where: { businessId, active: true, OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+    select: {
+      id: true,
+      name: true,
+      kind: true,
+      percent: true,
+      buyQty: true,
+      payQty: true,
+      scope: true,
+      productIds: true,
+      categoryId: true,
+      startsAt: true,
+      endsAt: true,
+      weekdays: true,
+      fromMinute: true,
+      toMinute: true,
+      inStore: true,
+      online: true,
+    },
+  })
+}
+
+/**
+ * Descuento de promociones para las líneas de una venta, calculado en el servidor (lo que vale).
+ * `when` es el momento de la venta: así una venta registrada a las 19:00 respeta el happy hour.
+ */
+export async function promotionsFor(
+  ctx: { businessId: string; timezone: string; business: { plan: Parameters<typeof canUseFeature>[0] } },
+  lines: Pick<Line, "productId" | "quantity" | "unitPrice">[],
+  channel: "store" | "online",
+  when = new Date(),
+) {
+  const rules = await activePromotions(ctx.businessId, ctx.business.plan)
+  if (!rules.length) return { discount: 0, applied: [] as AppliedPromo[] }
+  const ids = [...new Set(lines.map((l) => l.productId).filter((id): id is string => Boolean(id)))]
+  const products = ids.length ? await db.product.findMany({ where: { businessId: ctx.businessId, id: { in: ids } }, select: { id: true, categoryId: true } }) : []
+  const category = new Map(products.map((p) => [p.id, p.categoryId]))
+  const r = applyPromotions(
+    lines.map((l, i) => ({ key: i, productId: l.productId, categoryId: l.productId ? (category.get(l.productId) ?? null) : null, quantity: l.quantity, unitPrice: l.unitPrice })),
+    rules,
+    { now: when, timezone: ctx.timezone, channel },
+  )
+  return { discount: r.discount, applied: r.applied }
+}
+
+/** Deja registrado cuánto descontó cada promoción en la venta (para los reportes). */
+export async function linkPromotions(tx: Tx, saleId: string, applied: AppliedPromo[]) {
+  if (!applied.length) return
+  await tx.salePromotion.createMany({ data: applied.map((a) => ({ saleId, promotionId: a.promotionId || null, name: a.name.slice(0, 80), amount: a.amount })) })
+}

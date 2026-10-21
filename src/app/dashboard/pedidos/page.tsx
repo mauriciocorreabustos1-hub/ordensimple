@@ -62,6 +62,9 @@ export default async function WebOrdersPage() {
     status: o.status,
     createdAt: o.createdAt.toISOString(),
     asComanda: Boolean(o.comandaId),
+    promoDiscount: o.promoDiscount,
+    couponCode: o.couponCode,
+    couponDiscount: o.couponDiscount,
   }))
 
   return (

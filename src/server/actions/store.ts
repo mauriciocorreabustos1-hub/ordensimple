@@ -13,7 +13,8 @@ import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { RESERVED_SLUGS } from "@/lib/store"
 import { idSchema, paymentMethod as paymentMethodSchema, storeSettingsSchema, webOrderSchema, type StoreSettingsInput, type WebOrderInput } from "@/lib/validations"
 import { allowAttempt } from "@/server/rate-limit"
-import { applyStock, buildLines, lineData, MAX_TOTAL } from "@/server/sale-core"
+import { applyStock, buildLines, lineData, linkPromotions, MAX_TOTAL, promotionsFor } from "@/server/sale-core"
+import { couponAmount, findCoupon } from "@/server/coupons"
 import { webCustomer } from "@/server/web-customer"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -58,10 +59,20 @@ export async function updateStoreSettings(input: StoreSettingsInput): Promise<Ac
  * Pedido desde la tienda pública (sin cuenta). Los precios se toman del sistema, nunca del navegador.
  * Devuelve el texto para mandarlo por WhatsApp al negocio.
  */
-export async function createWebOrder(input: WebOrderInput): Promise<ActionResult<{ code: string; whatsapp: string; total: number; items: { name: string; quantity: number; unitPrice: number }[] }>> {
+export type WebOrderResult = {
+  code: string
+  whatsapp: string
+  subtotal: number
+  promos: { name: string; amount: number }[]
+  coupon: { code: string; amount: number } | null
+  total: number
+  items: { name: string; quantity: number; unitPrice: number }[]
+}
+
+export async function createWebOrder(input: WebOrderInput): Promise<ActionResult<WebOrderResult>> {
   const parsed = webOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { slug, customerName, customerPhone, delivery, note, items, website } = parsed.data
+  const { slug, customerName, customerPhone, delivery, note, items, website, couponCode } = parsed.data
   // Los robots llenan el campo oculto: no se guarda nada.
   if (website) return { ok: false, message: "No se pudo enviar el pedido." }
   try {
@@ -71,7 +82,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
     }
     const business = await db.business.findUnique({
       where: { storeSlug: slug },
-      select: { id: true, storeEnabled: true, storeWhatsapp: true, plan: true, planExpiresAt: true, currency: true },
+      select: { id: true, storeEnabled: true, storeWhatsapp: true, plan: true, planExpiresAt: true, currency: true, timezone: true },
     })
     if (!business || !business.storeEnabled || !business.storeWhatsapp || !canUseFeature(effectivePlan(business), "store")) {
       return { ok: false, message: "Esta tienda no está recibiendo pedidos." }
@@ -90,11 +101,45 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
       return { ok: false, message: `De ${short.product!.name} quedan ${Math.max(0, short.product!.stock)}. Ajusta la cantidad.` }
     }
     const orderItems = lines.map((l) => ({ productId: l.product!.id, name: l.product!.name, quantity: l.quantity, unitPrice: l.product!.price }))
-    const total = orderItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
-    if (total > MAX_TOTAL) return { ok: false, message: "El pedido es demasiado grande." }
-    const order = await db.webOrder.create({
-      data: { businessId: business.id, customerName, customerPhone: customerPhone ?? null, delivery, note: note ?? null, items: orderItems, total },
-      select: { id: true },
+    const subtotal = orderItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
+    if (subtotal > MAX_TOTAL) return { ok: false, message: "El pedido es demasiado grande." }
+    // Promociones de la tienda y cupón: siempre se calculan aquí, nunca se confía en lo que manda el navegador.
+    const plan = effectivePlan(business)
+    const promo = await promotionsFor({ businessId: business.id, timezone: business.timezone, business: { plan } }, orderItems, "online")
+    let coupon: { id: string; code: string; amount: number; maxUses: number | null } | null = null
+    if (couponCode && canUseFeature(plan, "promos")) {
+      const found = await findCoupon(business.id, couponCode)
+      if ("error" in found) return { ok: false, message: found.error }
+      const base = subtotal - promo.discount
+      if (base < found.coupon.minTotal) return { ok: false, message: `El cupón ${found.coupon.code} es para compras desde ${formatMoney(found.coupon.minTotal, business.currency)}.` }
+      coupon = { id: found.coupon.id, code: found.coupon.code, amount: couponAmount(found.coupon, base), maxUses: found.coupon.maxUses }
+    }
+    const total = subtotal - promo.discount - (coupon?.amount ?? 0)
+    const order = await db.$transaction(async (tx) => {
+      // El cupón se cuenta como usado solo si quedan usos (si dos lo usan a la vez, no se pasa del límite).
+      if (coupon) {
+        const used = await tx.storeCoupon.updateMany({
+          where: { id: coupon.id, ...(coupon.maxUses !== null ? { uses: { lt: coupon.maxUses } } : {}) },
+          data: { uses: { increment: 1 } },
+        })
+        if (used.count !== 1) throw new Error("COUPON_USED_UP")
+      }
+      return tx.webOrder.create({
+        data: {
+          businessId: business.id,
+          customerName,
+          customerPhone: customerPhone ?? null,
+          delivery,
+          note: note ?? null,
+          items: orderItems,
+          total,
+          promoDiscount: promo.discount,
+          promos: promo.applied,
+          couponCode: coupon?.code ?? null,
+          couponDiscount: coupon?.amount ?? 0,
+        },
+        select: { id: true },
+      })
     })
     const count = orderItems.reduce((s, i) => s + i.quantity, 0)
     after(async () =>
@@ -108,9 +153,18 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
     return {
       ok: true,
       message: "Pedido listo",
-      data: { code: order.id.slice(-5).toUpperCase(), whatsapp: business.storeWhatsapp, total, items: orderItems.map(({ name, quantity, unitPrice }) => ({ name, quantity, unitPrice })) },
+      data: {
+        code: order.id.slice(-5).toUpperCase(),
+        whatsapp: business.storeWhatsapp,
+        subtotal,
+        promos: promo.applied.map((a) => ({ name: a.name, amount: a.amount })),
+        coupon: coupon ? { code: coupon.code, amount: coupon.amount } : null,
+        total,
+        items: orderItems.map(({ name, quantity, unitPrice }) => ({ name, quantity, unitPrice })),
+      },
     }
   } catch (error) {
+    if (error instanceof Error && error.message === "COUPON_USED_UP") return { ok: false, message: "Ese cupón se acaba de agotar." }
     return toActionError(error)
   }
 }
@@ -155,6 +209,7 @@ export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<ty
         data: {
           businessId: ctx.businessId,
           total: order.total,
+          promoDiscount: order.promoDiscount + order.couponDiscount,
           paymentMethod: pm.data,
           note: `Pedido web${order.delivery ? " (despacho)" : ""}`,
           customerId,
@@ -163,6 +218,12 @@ export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<ty
         },
       })
       await applyStock(tx, ctx, sale.id, lines, "Pedido web")
+      // Qué promociones y cupón tuvo el pedido, para los reportes.
+      const promos = Array.isArray(order.promos) ? (order.promos as { promotionId: string; name: string; amount: number }[]) : []
+      await linkPromotions(tx, sale.id, [
+        ...promos,
+        ...(order.couponCode && order.couponDiscount ? [{ promotionId: "", name: `Cupón ${order.couponCode}`, amount: order.couponDiscount }] : []),
+      ])
       await claim(tx, id, ctx.user.id, { saleId: sale.id, status: "DONE" })
     })
   } catch (error) {
@@ -227,4 +288,22 @@ export async function cancelWebOrder(id: string): Promise<ActionResult> {
   }
   revalidatePath("/dashboard", "layout")
   return { ok: true, message: "Pedido descartado" }
+}
+
+/** Revisa un cupón en la tienda pública (para mostrar el descuento antes de enviar; al enviar se vuelve a revisar). */
+export async function previewCoupon(slug: string, code: string): Promise<ActionResult<{ code: string; percent: number | null; amount: number | null; minTotal: number }>> {
+  if (typeof slug !== "string" || typeof code !== "string" || slug.length > 40 || code.length > 30) return { ok: false, message: "Cupón no válido." }
+  try {
+    const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "sin-ip"
+    // Límite para que nadie pruebe códigos al azar hasta adivinar uno.
+    if (!(await allowAttempt(`cupon:${ip}`, 20, 60 * 60_000))) return { ok: false, message: "Probaste muchos cupones seguidos. Espera un rato." }
+    const business = await db.business.findUnique({ where: { storeSlug: slug.toLowerCase() }, select: { id: true, storeEnabled: true, plan: true, planExpiresAt: true } })
+    if (!business?.storeEnabled || !canUseFeature(effectivePlan(business), "promos")) return { ok: false, message: "Esta tienda no tiene cupones." }
+    const found = await findCoupon(business.id, code)
+    if ("error" in found) return { ok: false, message: found.error }
+    const c = found.coupon
+    return { ok: true, data: { code: c.code, percent: c.percent, amount: c.amount, minTotal: c.minTotal } }
+  } catch (error) {
+    return toActionError(error)
+  }
 }

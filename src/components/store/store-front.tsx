@@ -11,15 +11,34 @@ import { formatMoney } from "@/lib/currency"
 import { orderWhatsappText } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
-import { createWebOrder } from "@/server/actions/store"
+import { createWebOrder, previewCoupon } from "@/server/actions/store"
+import { applyPromotions, promoActive, promoBadge, type PromoRule } from "@/lib/promotions"
 import { ProductImage } from "@/components/products/product-image"
 
-export type StoreProduct = { id: string; name: string; price: number; category: string | null; max: number; imageUrl?: string | null }
+export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null }
 
 const CART_KEY = (slug: string) => `ordensimple-carro-${slug}`
 
 /** Catálogo público: el cliente arma su pedido y lo envía por WhatsApp (queda guardado para el negocio). */
-export function StoreFront({ slug, businessName, currency, products }: { slug: string; businessName: string; currency: string; products: StoreProduct[] }) {
+export function StoreFront({
+  slug,
+  businessName,
+  currency,
+  products,
+  promotions = [],
+  timezone = "America/Santiago",
+  coupons = false,
+}: {
+  slug: string
+  businessName: string
+  currency: string
+  products: StoreProduct[]
+  /** Promociones de la tienda online (se muestran; el servidor las vuelve a calcular al pedir). */
+  promotions?: PromoRule[]
+  timezone?: string
+  /** Si la tienda acepta cupones. */
+  coupons?: boolean
+}) {
   const money = (n: number) => formatMoney(n, currency)
   const [query, setQuery] = React.useState("")
   const [category, setCategory] = React.useState<string | null>(null)
@@ -47,7 +66,19 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
   const shown = products.filter((p) => (!category || p.category === category) && (!q || p.name.toLowerCase().includes(q)))
   const lines = products.filter((p) => cart[p.id]).map((p) => ({ ...p, quantity: Math.min(cart[p.id], p.max) }))
   const count = lines.reduce((s, l) => s + l.quantity, 0)
-  const total = lines.reduce((s, l) => s + l.quantity * l.price, 0)
+  const gross = lines.reduce((s, l) => s + l.quantity * l.price, 0)
+  const promo = applyPromotions(
+    lines.map((l) => ({ key: l.id, productId: l.id, categoryId: l.categoryId ?? null, quantity: l.quantity, unitPrice: l.price })),
+    promotions,
+    { now: new Date(), timezone, channel: "online" },
+  )
+  const total = gross - promo.discount
+  // Etiqueta de promoción de cada producto ("2×1", "−20 %"), si tiene una vigente.
+  const live = promotions.filter((r) => r.online && promoActive(r, new Date(), timezone))
+  const badgeOf = (p: StoreProduct) => {
+    const r = live.find((x) => x.scope === "ALL" || (x.scope === "PRODUCTS" && x.productIds.includes(p.id)) || (x.scope === "CATEGORY" && x.categoryId === p.categoryId))
+    return r ? promoBadge(r) : null
+  }
   const set = (p: StoreProduct, n: number) =>
     setCart((c) => {
       const next = { ...c }
@@ -123,7 +154,10 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {shown.map((p) => (
               <li key={p.id} className="flex flex-col overflow-hidden rounded-2xl border bg-background">
-                <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
+                <div className="relative">
+                  <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
+                  {badgeOf(p) ? <span className="absolute top-2 left-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow">{badgeOf(p)}</span> : null}
+                </div>
                 <div className="flex flex-1 flex-col gap-2 p-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</p>
@@ -139,7 +173,10 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
             {shown.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-tight font-medium">{p.name}</p>
+                  <p className="text-sm leading-tight font-medium">
+                    {p.name}
+                    {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
+                  </p>
                   <p className="tabular mt-0.5 text-sm text-muted-foreground">{money(p.price)}</p>
                 </div>
                 {quantity(p, false)}
@@ -156,7 +193,10 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
               <p className="text-xs text-muted-foreground">
                 {count} {count === 1 ? "producto" : "productos"}
               </p>
-              <p className="tabular text-lg font-semibold">{money(total)}</p>
+              <p className="tabular text-lg font-semibold">
+                {money(total)}
+                {promo.discount ? <span className="ml-2 text-sm font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
+              </p>
             </div>
             <Button size="lg" className="h-12" onClick={() => setCheckout(true)}>
               <ShoppingBasket />
@@ -172,7 +212,10 @@ export function StoreFront({ slug, businessName, currency, products }: { slug: s
           businessName={businessName}
           money={money}
           lines={lines}
+          gross={gross}
+          promos={promo.applied}
           total={total}
+          coupons={coupons}
           done={done}
           onDone={(d) => {
             setDone(d)
@@ -193,11 +236,17 @@ function Checkout({
   businessName,
   money,
   lines,
+  gross,
+  promos,
   total,
+  coupons,
   done,
   onDone,
   onClose,
 }: {
+  gross: number
+  promos: { promotionId: string; name: string; amount: number }[]
+  coupons: boolean
   slug: string
   businessName: string
   money: (n: number) => string
@@ -214,6 +263,26 @@ function Checkout({
   const [website, setWebsite] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
   const [pending, startTransition] = React.useTransition()
+  const [couponText, setCouponText] = React.useState("")
+  const [coupon, setCoupon] = React.useState<{ code: string; percent: number | null; amount: number | null; minTotal: number } | null>(null)
+  const [couponMsg, setCouponMsg] = React.useState<string | null>(null)
+  const [checking, setChecking] = React.useState(false)
+  const couponOff = coupon && total >= coupon.minTotal ? Math.min(total, coupon.percent ? Math.round((total * coupon.percent) / 100) : (coupon.amount ?? 0)) : 0
+  const final = total - couponOff
+
+  async function applyCoupon() {
+    if (!couponText.trim()) return
+    setChecking(true)
+    setCouponMsg(null)
+    const r = await previewCoupon(slug, couponText)
+    setChecking(false)
+    if (!r.ok || !r.data) {
+      setCoupon(null)
+      return setCouponMsg(r.message ?? "Cupón no válido.")
+    }
+    setCoupon(r.data)
+    setCouponMsg(total < r.data.minTotal ? `Este cupón es para compras desde ${money(r.data.minTotal)}.` : null)
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -227,6 +296,7 @@ function Checkout({
         delivery,
         note: note || undefined,
         items: lines.map((l) => ({ productId: l.id, quantity: l.quantity })),
+        couponCode: coupon && couponOff ? coupon.code : undefined,
         website: website || undefined,
       })
       if (!r.ok || !r.data) return setError(r.message ?? "No se pudo enviar el pedido.")
@@ -240,6 +310,8 @@ function Checkout({
         total: money(r.data.total),
         money,
         code: r.data.code,
+        promos: r.data.promos,
+        coupon: r.data.coupon,
       })
       const link = whatsappLink(r.data.whatsapp, text)
       onDone({ link, code: r.data.code })
@@ -277,11 +349,44 @@ function Checkout({
                 <span className="tabular shrink-0">{money(l.quantity * l.price)}</span>
               </li>
             ))}
+            {promos.map((p) => (
+              <li key={p.promotionId} className="flex justify-between gap-3 font-medium text-emerald-700 dark:text-emerald-400">
+                <span>🏷️ {p.name}</span>
+                <span className="tabular shrink-0">−{money(p.amount)}</span>
+              </li>
+            ))}
+            {couponOff ? (
+              <li className="flex justify-between gap-3 font-medium text-emerald-700 dark:text-emerald-400">
+                <span>🎟️ Cupón {coupon?.code}</span>
+                <span className="tabular shrink-0">−{money(couponOff)}</span>
+              </li>
+            ) : null}
             <li className="flex justify-between border-t pt-2 text-base font-semibold">
               <span>Total</span>
-              <span className="tabular">{money(total)}</span>
+              <span className="tabular">
+                {money(final)}
+                {final < gross ? <span className="ml-2 text-xs font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
+              </span>
             </li>
           </ul>
+          {coupons ? (
+            <div className="space-y-1">
+              <div className="flex gap-2">
+                <Input
+                  value={couponText}
+                  onChange={(e) => setCouponText(e.target.value.toUpperCase().replace(/\s/g, "").slice(0, 20))}
+                  placeholder="¿Tienes un cupón?"
+                  className="h-10 font-mono uppercase"
+                  aria-label="Código del cupón"
+                />
+                <Button type="button" variant="outline" className="h-10" onClick={() => void applyCoupon()} disabled={checking || !couponText.trim()}>
+                  {checking ? <Loader2 className="animate-spin" /> : null}
+                  Aplicar
+                </Button>
+              </div>
+              {couponMsg ? <p className="text-xs text-destructive">{couponMsg}</p> : couponOff ? <p className="text-xs text-emerald-700 dark:text-emerald-400">¡Cupón aplicado!</p> : null}
+            </div>
+          ) : null}
           <div className="space-y-1.5">
             <label htmlFor="store-name" className="text-sm font-medium">
               Tu nombre

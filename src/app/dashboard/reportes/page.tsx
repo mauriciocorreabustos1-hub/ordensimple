@@ -76,7 +76,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
     if (range.to <= range.from) range.to = addDays(range.from, 1, ctx.timezone)
   }
   const monthStart = startOfMonth(new Date(), ctx.timezone)
-  const [report, insights, members, byMember, byMemberMonth] = await Promise.all([
+  const [report, insights, members, byMember, byMemberMonth, promoUse] = await Promise.all([
     getReport(ctx.businessId, range.from, range.to, ctx.timezone),
     canUseFeature(ctx.business.plan, "tips") ? getInsights(ctx.businessId, ctx.timezone, ctx.currency) : Promise.resolve([]),
     db.businessMember.findMany({
@@ -86,6 +86,15 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
     }),
     salesByMember(ctx.businessId, range.from, range.to),
     salesByMember(ctx.businessId, monthStart, startOfMonth(new Date(), ctx.timezone, 1)),
+    // Cuánto descontó cada promoción o cupón en el período.
+    db.salePromotion.groupBy({
+      by: ["name"],
+      where: { sale: { businessId: ctx.businessId, date: { gte: range.from, lt: range.to } } },
+      _sum: { amount: true },
+      _count: { _all: true },
+      orderBy: { _sum: { amount: "desc" } },
+      take: 10,
+    }),
   ])
   // Con más de una persona en el negocio: cuánto vendió cada una, su meta y su comisión.
   const team: TeamRow[] =
@@ -271,6 +280,24 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
             )}
           </CardContent>
         </Card>
+        {promoUse.length ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Promociones y cupones</CardTitle>
+              <CardDescription>Cuánto descontaste con cada una en estas fechas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BarList
+                format={money}
+                items={promoUse.map((p) => ({
+                  label: p.name,
+                  value: p._sum.amount ?? 0,
+                  sub: `Se usó en ${formatNumber(p._count._all)} ${p._count._all === 1 ? "venta" : "ventas"}`,
+                }))}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
         <Card>
           <CardHeader>
             <CardTitle>¿Cómo te pagan?</CardTitle>

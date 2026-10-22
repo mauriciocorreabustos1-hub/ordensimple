@@ -102,3 +102,18 @@ export function applyPromotions(
   const applied = [...totals.values()]
   return { discount: applied.reduce((s, a) => s + a.amount, 0), applied, byKey }
 }
+
+/**
+ * Para promociones "lleva X, paga Y": qué le falta al cliente para aprovecharla.
+ * Ej.: 2×1 con 1 unidad → "Agrega 1 más y te sale gratis". Null si ya la aprovecha completa.
+ */
+export function promoHint(rule: Pick<PromoRule, "kind" | "buyQty" | "payQty">, quantity: number) {
+  if (rule.kind !== "BUY_X_PAY_Y" || !rule.buyQty || rule.payQty === null || quantity <= 0) return null
+  const rest = quantity % rule.buyQty
+  if (rest === 0) return null
+  const missing = rule.buyQty - rest
+  const free = rule.buyQty - rule.payQty
+  // Si lo que falta es justo lo que sale gratis, agregarlo no cuesta nada.
+  if (missing <= free) return `Agrega ${missing} más y ${missing === 1 ? "te sale gratis" : "te salen gratis"}`
+  return `Lleva ${missing} más y ${free === 1 ? "1 te sale gratis" : `${free} te salen gratis`}`
+}

@@ -12,7 +12,7 @@ import { orderWhatsappText } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
 import { createWebOrder, previewCoupon } from "@/server/actions/store"
-import { applyPromotions, promoActive, promoBadge, type PromoRule } from "@/lib/promotions"
+import { applyPromotions, promoActive, promoBadge, promoHint, type PromoRule } from "@/lib/promotions"
 import { ProductImage } from "@/components/products/product-image"
 
 export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null }
@@ -75,10 +75,21 @@ export function StoreFront({
   const total = gross - promo.discount
   // Etiqueta de promoción de cada producto ("2×1", "−20 %"), si tiene una vigente.
   const live = promotions.filter((r) => r.online && promoActive(r, new Date(), timezone))
+  const ruleOf = (p: StoreProduct) =>
+    live.find((x) => x.scope === "ALL" || (x.scope === "PRODUCTS" && x.productIds.includes(p.id)) || (x.scope === "CATEGORY" && x.categoryId === p.categoryId))
   const badgeOf = (p: StoreProduct) => {
-    const r = live.find((x) => x.scope === "ALL" || (x.scope === "PRODUCTS" && x.productIds.includes(p.id)) || (x.scope === "CATEGORY" && x.categoryId === p.categoryId))
+    const r = ruleOf(p)
     return r ? promoBadge(r) : null
   }
+  /** "Agrega 1 más y te sale gratis" si lleva un 2×1 a medias. */
+  const hintOf = (p: StoreProduct) => {
+    const r = ruleOf(p)
+    return r ? promoHint(r, cart[p.id] ?? 0) : null
+  }
+  const hints = lines.flatMap((l) => {
+    const h = hintOf(l)
+    return h ? [{ id: l.id, text: `${l.name}: ${h.charAt(0).toLowerCase()}${h.slice(1)}` }] : []
+  })
   const set = (p: StoreProduct, n: number) =>
     setCart((c) => {
       const next = { ...c }
@@ -162,6 +173,7 @@ export function StoreFront({
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</p>
                     <p className="tabular mt-1 font-semibold">{money(p.price)}</p>
+                    {hintOf(p) ? <p className="mt-1 text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</p> : null}
                   </div>
                   {quantity(p, true)}
                 </div>
@@ -178,6 +190,7 @@ export function StoreFront({
                     {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
                   </p>
                   <p className="tabular mt-0.5 text-sm text-muted-foreground">{money(p.price)}</p>
+                  {hintOf(p) ? <p className="mt-0.5 text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</p> : null}
                 </div>
                 {quantity(p, false)}
               </li>
@@ -214,6 +227,7 @@ export function StoreFront({
           lines={lines}
           gross={gross}
           promos={promo.applied}
+          hints={hints}
           total={total}
           coupons={coupons}
           done={done}
@@ -237,6 +251,7 @@ function Checkout({
   money,
   lines,
   gross,
+  hints,
   promos,
   total,
   coupons,
@@ -245,6 +260,8 @@ function Checkout({
   onClose,
 }: {
   gross: number
+  /** Promociones "2×1" a medias: qué le falta agregar para aprovecharlas. */
+  hints: { id: string; text: string }[]
   promos: { promotionId: string; name: string; amount: number }[]
   coupons: boolean
   slug: string
@@ -378,6 +395,14 @@ function Checkout({
               </span>
             </li>
           </ul>
+          {hints.length ? (
+            <div className="space-y-0.5 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-500/10 dark:text-rose-200">
+              {hints.map((h) => (
+                <p key={h.id}>🎁 {h.text}</p>
+              ))}
+              <p className="text-xs opacity-80">Cierra esta ventana y súmalo al carro para aprovechar la promoción.</p>
+            </div>
+          ) : null}
           {changed ? (
             <div className="space-y-1.5 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-500/10 dark:text-amber-100" role="alert">
               <p className="font-semibold">⚠️ Las promociones cambiaron mientras mirabas</p>

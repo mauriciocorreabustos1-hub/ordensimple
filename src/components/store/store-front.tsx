@@ -267,6 +267,8 @@ function Checkout({
   const [coupon, setCoupon] = React.useState<{ code: string; percent: number | null; amount: number | null; minTotal: number } | null>(null)
   const [couponMsg, setCouponMsg] = React.useState<string | null>(null)
   const [checking, setChecking] = React.useState(false)
+  // Si las promociones cambiaron mientras miraba: lo que vale ahora (lo calcula el servidor).
+  const [changed, setChanged] = React.useState<{ promos: { name: string; amount: number }[]; coupon: { code: string; amount: number } | null; total: number } | null>(null)
   const couponOff = coupon && total >= coupon.minTotal ? Math.min(total, coupon.percent ? Math.round((total * coupon.percent) / 100) : (coupon.amount ?? 0)) : 0
   const final = total - couponOff
 
@@ -297,9 +299,15 @@ function Checkout({
         note: note || undefined,
         items: lines.map((l) => ({ productId: l.id, quantity: l.quantity })),
         couponCode: coupon && couponOff ? coupon.code : undefined,
+        // Lo que el cliente ve en pantalla (o el total nuevo, si ya se lo mostramos y lo aceptó).
+        expectedTotal: changed ? changed.total : final,
         website: website || undefined,
       })
       if (!r.ok || !r.data) return setError(r.message ?? "No se pudo enviar el pedido.")
+      if ("changed" in r.data) {
+        setChanged({ promos: r.data.promos, coupon: r.data.coupon, total: r.data.total })
+        return
+      }
       const text = orderWhatsappText({
         businessName,
         customerName: name.trim(),
@@ -349,26 +357,51 @@ function Checkout({
                 <span className="tabular shrink-0">{money(l.quantity * l.price)}</span>
               </li>
             ))}
-            {promos.map((p) => (
-              <li key={p.promotionId} className="flex justify-between gap-3 font-medium text-emerald-700 dark:text-emerald-400">
+            {/* Si las promociones cambiaron, se muestran las que valen ahora (las calculó el servidor). */}
+            {(changed ? changed.promos : promos).map((p) => (
+              <li key={p.name} className="flex justify-between gap-3 font-medium text-emerald-700 dark:text-emerald-400">
                 <span>🏷️ {p.name}</span>
                 <span className="tabular shrink-0">−{money(p.amount)}</span>
               </li>
             ))}
-            {couponOff ? (
+            {(changed ? changed.coupon?.amount : couponOff) ? (
               <li className="flex justify-between gap-3 font-medium text-emerald-700 dark:text-emerald-400">
-                <span>🎟️ Cupón {coupon?.code}</span>
-                <span className="tabular shrink-0">−{money(couponOff)}</span>
+                <span>🎟️ Cupón {changed ? changed.coupon?.code : coupon?.code}</span>
+                <span className="tabular shrink-0">−{money(changed ? (changed.coupon?.amount ?? 0) : couponOff)}</span>
               </li>
             ) : null}
             <li className="flex justify-between border-t pt-2 text-base font-semibold">
               <span>Total</span>
               <span className="tabular">
-                {money(final)}
-                {final < gross ? <span className="ml-2 text-xs font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
+                {money(changed ? changed.total : final)}
+                {(changed ? changed.total : final) < gross ? <span className="ml-2 text-xs font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
               </span>
             </li>
           </ul>
+          {changed ? (
+            <div className="space-y-1.5 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-500/10 dark:text-amber-100" role="alert">
+              <p className="font-semibold">⚠️ Las promociones cambiaron mientras mirabas</p>
+              {promos
+                .filter((p) => !changed.promos.some((c) => c.name === p.name))
+                .map((p) => (
+                  <p key={p.name}>
+                    ❌ <span className="line-through">{p.name}</span> ya no está vigente.
+                  </p>
+                ))}
+              {changed.promos
+                .filter((c) => !promos.some((p) => p.name === c.name))
+                .map((c) => (
+                  <p key={c.name}>
+                    ✅ Se aplicó {c.name}: −{money(c.amount)}
+                  </p>
+                ))}
+              <p className="text-base">
+                Tu total ahora es <strong className="tabular">{money(changed.total)}</strong>
+                {changed.total !== final ? <span className="ml-1.5 text-xs line-through opacity-70">{money(final)}</span> : null}
+              </p>
+              <p className="text-xs">Si te parece bien, toca de nuevo «Enviar pedido por WhatsApp».</p>
+            </div>
+          ) : null}
           {coupons ? (
             <div className="space-y-1">
               <div className="flex gap-2">

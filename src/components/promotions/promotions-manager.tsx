@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Clock, Loader2, Pencil, Plus, Tag, Ticket, Trash2 } from "lucide-react"
+import { Clock, Loader2, Pencil, Plus, Share2, Tag, Ticket, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { AppModal } from "@/components/app/app-modal"
 import { MoneyInput } from "@/components/app/money-input"
@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { formatMoney } from "@/lib/currency"
 import { promoActive, promoBadge, WEEKDAYS, type PromoRule } from "@/lib/promotions"
 import { cn } from "@/lib/utils"
+import { whatsappLink } from "@/lib/whatsapp"
 import { deleteCoupon, deletePromotion, saveCoupon, savePromotion, setPromotionActive } from "@/server/actions/promotions"
 
 type Option = { id: string; name: string }
@@ -77,7 +78,12 @@ export function PromotionsManager({
   now: nowIso,
   timezone,
   storeEnabled,
+  businessName,
+  storeUrl,
 }: {
+  businessName: string
+  /** Dirección de la tienda online (si está publicada), para el mensaje de la promoción. */
+  storeUrl: string | null
   promotions: PromotionRow[]
   coupons: CouponRow[]
   products: Option[]
@@ -120,6 +126,26 @@ export function PromotionsManager({
     ]
       .filter(Boolean)
       .join(" · ") || "Siempre"
+
+  /** Mensaje para anunciar la promoción a los clientes por WhatsApp (con emojis y el enlace a la tienda). */
+  const shareText = (p: PromotionRow) => {
+    const days = p.weekdays.length && p.weekdays.length < 7 ? p.weekdays.map((d) => WEEKDAYS[d]).join(", ") : null
+    const hours = p.fromTime && p.toTime ? `de ${p.fromTime} a ${p.toTime}` : null
+    return [
+      `🔥 *¡${p.name}!*`,
+      `en *${businessName}*`,
+      "",
+      p.scope === "ALL" ? "🛍️ En todos los productos" : `🛍️ ${scopeText(p)}`,
+      days || hours ? `🕕 ${[days, hours].filter(Boolean).join(" · ")}` : null,
+      p.endsAt ? `⏳ Hasta el ${dayLabel(p.endsAt)}` : null,
+      "",
+      p.online && storeUrl ? `👉 Pide aquí: ${storeUrl}` : "📍 Te esperamos en el local",
+      "",
+      "¡No te la pierdas! 🙌",
+    ]
+      .filter((l) => l !== null)
+      .join("\n")
+  }
 
   return (
     <div className="space-y-5">
@@ -191,6 +217,12 @@ export function PromotionsManager({
                     </span>
                   </div>
                   <div className="flex gap-2 border-t pt-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={whatsappLink(null, shareText(p))} target="_blank" rel="noopener noreferrer">
+                        <Share2 />
+                        Compartir
+                      </a>
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => setEditing(p)}>
                       <Pencil />
                       Editar

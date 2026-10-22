@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
 import { PromotionsManager } from "@/components/promotions/promotions-manager"
 import { db } from "@/lib/db"
+import { getAppUrl } from "@/lib/app-url"
 import { addDays, toDateKey } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
 import { requireBusiness, requirePermission } from "@/server/session"
@@ -47,6 +48,8 @@ export default async function PromotionsPage() {
         products={products}
         categories={categories}
         storeEnabled={Boolean(ctx.business.storeEnabled && ctx.business.storeSlug)}
+        businessName={ctx.business.name}
+        storeUrl={ctx.business.storeEnabled && ctx.business.storeSlug ? `${getAppUrl()}/tienda/${ctx.business.storeSlug}` : null}
         promotions={promotions.map((p) => ({
           id: p.id,
           name: p.name,

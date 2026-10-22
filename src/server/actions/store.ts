@@ -69,10 +69,19 @@ export type WebOrderResult = {
   items: { name: string; quantity: number; unitPrice: number }[]
 }
 
-export async function createWebOrder(input: WebOrderInput): Promise<ActionResult<WebOrderResult>> {
+/** Lo que cambió entre lo que veía el cliente y lo que vale ahora (promociones que terminaron o empezaron). */
+export type WebOrderQuote = {
+  changed: true
+  subtotal: number
+  promos: { name: string; amount: number }[]
+  coupon: { code: string; amount: number } | null
+  total: number
+}
+
+export async function createWebOrder(input: WebOrderInput): Promise<ActionResult<WebOrderResult | WebOrderQuote>> {
   const parsed = webOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { slug, customerName, customerPhone, delivery, note, items, website, couponCode } = parsed.data
+  const { slug, customerName, customerPhone, delivery, note, items, website, couponCode, expectedTotal } = parsed.data
   // Los robots llenan el campo oculto: no se guarda nada.
   if (website) return { ok: false, message: "No se pudo enviar el pedido." }
   try {
@@ -115,6 +124,14 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
       coupon = { id: found.coupon.id, code: found.coupon.code, amount: couponAmount(found.coupon, base), maxUses: found.coupon.maxUses }
     }
     const total = subtotal - promo.discount - (coupon?.amount ?? 0)
+    // Si una promoción terminó (o empezó) mientras el cliente miraba, no se crea el pedido: se le muestra
+    // el total real y él decide si lo envía igual.
+    if (expectedTotal !== undefined && expectedTotal !== total) {
+      return {
+        ok: true,
+        data: { changed: true, subtotal, promos: promo.applied.map((a) => ({ name: a.name, amount: a.amount })), coupon: coupon ? { code: coupon.code, amount: coupon.amount } : null, total },
+      }
+    }
     const order = await db.$transaction(async (tx) => {
       // El cupón se cuenta como usado solo si quedan usos (si dos lo usan a la vez, no se pasa del límite).
       if (coupon) {

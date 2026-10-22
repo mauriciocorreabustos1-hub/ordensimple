@@ -12,6 +12,7 @@ import { ComandasPreview } from "@/components/landing/comandas-preview"
 import { StorePreview } from "@/components/landing/store-preview"
 import { AgendaPreview } from "@/components/landing/agenda-preview"
 import { LabelsPreview } from "@/components/landing/labels-preview"
+import { PromosPreview } from "@/components/landing/promos-preview"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -262,6 +263,37 @@ export default async function LandingPage() {
             </div>
           </div>
           <LabelsPreview className="lg:order-1" />
+        </div>
+      </Section>
+
+      {/* Promociones y cupones que se aplican solos. */}
+      <Section className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              eyebrow="Promociones"
+              title="¿Haces ofertas? Crea un 2×1 y se aplica solo"
+              description="2×1, descuentos por categoría, happy hour y cupones. Se aplican solos al vender, en las comandas y en tu tienda online: tu equipo no tiene que acordarse de nada."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["2×1, 3×2 o % de descuento en los productos o categorías que elijas","Happy hour: solo ciertos días y horas","Cupones para tu tienda online, con límite de usos y vencimiento","Compártela por WhatsApp con un toque y mira en Reportes cuánto te rindió"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/promociones" loggedInLabel="Crear mi promoción">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#promociones">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <PromosPreview />
         </div>
       </Section>
 

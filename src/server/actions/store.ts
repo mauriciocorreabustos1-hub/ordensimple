@@ -281,7 +281,13 @@ export async function cancelWebOrder(id: string): Promise<ActionResult> {
     assertCan(ctx, "sales:create")
     const order = await loadOrder(ctx.businessId, id)
     if (!order) return { ok: false, message: HANDLED }
-    await claim(db, id, ctx.user.id, { status: "CANCELLED" })
+    await db.$transaction(async (tx) => {
+      await claim(tx, id, ctx.user.id, { status: "CANCELLED" })
+      // El pedido no se concretó: el cupón vuelve a quedar disponible (así nadie lo agota con pedidos falsos).
+      if (order.couponCode && order.couponDiscount) {
+        await tx.storeCoupon.updateMany({ where: { businessId: ctx.businessId, code: order.couponCode, uses: { gt: 0 } }, data: { uses: { decrement: 1 } } })
+      }
+    })
   } catch (error) {
     if (error instanceof Error && error.message === "ORDER_HANDLED") return { ok: false, message: HANDLED }
     return toActionError(error)

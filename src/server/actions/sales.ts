@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
+import { canApproveDiscounts } from "@/lib/roles"
 import { dateKeyToInstant, toDateKey } from "@/lib/dates"
 import {
   idSchema,
@@ -155,8 +156,10 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
     const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
     if (subtotal > MAX_TOTAL) return { ok: false, message: "El total de la venta es demasiado alto." }
     const when = saleDate(date, ctx, soldAt)
-    // Promociones automáticas (2×1, %, happy hour) según el momento de la venta; el descuento manual va sobre lo que queda.
-    const promo = await promotionsFor(ctx, lines, "store", when)
+    // Promociones automáticas (2×1, %, happy hour); el descuento manual va sobre lo que queda.
+    // Para un empleado, el horario de la promoción se revisa con la hora real (no puede poner una hora pasada
+    // para caer en el happy hour); el dueño o un administrador sí puede registrar ventas de otro momento.
+    const promo = await promotionsFor(ctx, lines, "store", canApproveDiscounts(ctx.role) ? when : new Date())
     const disc = await checkDiscount(ctx, parsed.data, subtotal - promo.discount, "Venta")
     if (!disc.ok) return { ok: false, message: disc.message }
 

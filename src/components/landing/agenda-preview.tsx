@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils"
 // Dibujo de la agenda del día y de una reserva hecha por internet (datos de ejemplo).
 
 const APPOINTMENTS = [
-  { time: "10:00", client: "Camila R.", service: "Corte y brushing", who: "Valentina", state: "Llegó", tone: "bg-emerald-100 text-emerald-800" },
-  { time: "11:30", client: "Jorge M.", service: "Corte de pelo", who: "Matías", state: "Confirmada", tone: "bg-sky-100 text-sky-800" },
-  { time: "12:00", client: "Fernanda S.", service: "Manicure", who: "Valentina", state: "Online", tone: "bg-violet-100 text-violet-800" },
+  { time: "10:00", client: "Camila R.", service: "Corte y brushing", who: "Valentina", state: "Llegó", tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300" },
+  { time: "11:30", client: "Jorge M.", service: "Corte de pelo", who: "Matías", state: "Confirmada", tone: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300" },
+  { time: "12:00", client: "Fernanda S.", service: "Manicure", who: "Valentina", state: "Online", tone: "bg-violet-100 text-violet-800 dark:bg-violet-500/15 dark:text-violet-300" },
   { time: "15:30", client: "Andrea P.", service: "Tintura", who: "Valentina", state: "Agendada", tone: "bg-muted text-muted-foreground" },
 ]
 

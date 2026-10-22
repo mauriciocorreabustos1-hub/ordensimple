@@ -22,7 +22,7 @@ export function ComandasPreview({ className }: { className?: string }) {
       <div className="relative z-10 w-[92%] -rotate-1 rounded-2xl border bg-card p-4 shadow-xl sm:w-[86%] sm:p-5">
         <div className="flex items-baseline justify-between">
           <p className="font-display text-xl font-semibold">Mesa 4</p>
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">En cocina</span>
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">En cocina</span>
         </div>
         <ul className="mt-3 divide-y rounded-xl border text-sm">
           {ORDER.map((i) => (
@@ -30,11 +30,11 @@ export function ComandasPreview({ className }: { className?: string }) {
               <span className="tabular w-5 text-center font-semibold">{i.qty}</span>
               <span className="min-w-0 flex-1 leading-tight">
                 {i.name}
-                {i.note ? <span className="block text-xs text-amber-700">{i.note}</span> : null}
+                {i.note ? <span className="block text-xs text-amber-700 dark:text-amber-400">{i.note}</span> : null}
                 {i.state === "nuevo" ? <span className="block text-[11px] text-muted-foreground">Sin enviar a cocina</span> : null}
               </span>
               {i.state === "cocina" ? (
-                <span className="flex size-5 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <span className="flex size-5 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
                   <ChefHat className="size-3" />
                 </span>
               ) : null}
@@ -54,9 +54,9 @@ export function ComandasPreview({ className }: { className?: string }) {
 
       {/* Ticket en la pantalla de la cocina */}
       <div className="relative z-20 -mt-3 ml-auto w-[78%] rotate-1 overflow-hidden rounded-2xl border-2 border-amber-400 bg-card shadow-2xl sm:-mt-5 sm:w-[60%]">
-        <div className="flex items-baseline justify-between bg-amber-50 px-3.5 py-2">
+        <div className="flex items-baseline justify-between bg-amber-50 px-3.5 py-2 dark:bg-amber-500/15">
           <p className="font-display text-lg font-semibold">Mesa 7</p>
-          <span className="tabular text-xs font-medium text-amber-700">16 min</span>
+          <span className="tabular text-xs font-medium text-amber-700 dark:text-amber-300">16 min</span>
         </div>
         <ul className="divide-y text-sm">
           {TICKET.map((i) => (
@@ -64,7 +64,7 @@ export function ComandasPreview({ className }: { className?: string }) {
               <span className="tabular font-bold">{i.qty}×</span>
               <span className="min-w-0 flex-1 leading-tight font-medium">
                 {i.name}
-                {i.note ? <span className="block text-xs font-semibold text-amber-700">{i.note}</span> : null}
+                {i.note ? <span className="block text-xs font-semibold text-amber-700 dark:text-amber-400">{i.note}</span> : null}
               </span>
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full border text-muted-foreground">
                 <Check className="size-3" />

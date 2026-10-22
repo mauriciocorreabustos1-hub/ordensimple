@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils"
 // Dibujo de la tienda online y del pedido que llega por WhatsApp (datos de ejemplo).
 
 const PRODUCTS = [
-  { name: "Pan amasado (kg)", price: "$2.400", qty: 2, photo: "🍞", tone: "bg-amber-100" },
-  { name: "Queso gauda 250g", price: "$3.290", qty: 1, photo: "🧀", tone: "bg-yellow-100" },
-  { name: "Huevos (docena)", price: "$3.990", qty: 0, photo: "🥚", tone: "bg-orange-50" },
-  { name: "Café de grano 250g", price: "$5.990", qty: 0, photo: "☕", tone: "bg-stone-200" },
+  { name: "Pan amasado (kg)", price: "$2.400", qty: 2, photo: "🍞", tone: "bg-amber-100 dark:bg-amber-500/20" },
+  { name: "Queso gauda 250g", price: "$3.290", qty: 1, photo: "🧀", tone: "bg-yellow-100 dark:bg-yellow-500/20" },
+  { name: "Huevos (docena)", price: "$3.990", qty: 0, photo: "🥚", tone: "bg-orange-50 dark:bg-orange-500/15" },
+  { name: "Café de grano 250g", price: "$5.990", qty: 0, photo: "☕", tone: "bg-stone-200 dark:bg-stone-500/25" },
 ]
 
 export function StorePreview({ className }: { className?: string }) {

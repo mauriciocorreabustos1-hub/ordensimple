@@ -11,7 +11,9 @@ import { StatCard } from "@/components/app/stat-card"
 import { MovementDialog } from "@/components/inventory/movement-dialog"
 import { ProductLookup, type LookupProduct } from "@/components/inventory/product-lookup"
 import { formatMoney, formatNumber } from "@/lib/currency"
-import { formatDate, formatDateTime } from "@/lib/dates"
+import { formatDate, formatDateTime, toDateKey } from "@/lib/dates"
+import { MaterialsCard } from "@/components/inventory/materials-card"
+import { db } from "@/lib/db"
 import { daysUntil } from "@/lib/vat"
 import { canUseFeature } from "@/lib/plans"
 import { can } from "@/lib/roles"
@@ -60,8 +62,32 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
   }
   const params = await searchParams
   const filter = FILTERS.some((f) => f.value === params.filtro) ? (params.filtro as (typeof FILTERS)[number]["value"]) : "todos"
-  const inv = await getInventory(ctx.businessId, ctx.timezone)
+  const [inv, materials] = await Promise.all([
+    getInventory(ctx.businessId, ctx.timezone),
+    // Materiales de las recetas: también son stock del negocio (los que vencen antes, primero).
+    db.recipeMaterial.findMany({
+      where: { businessId: ctx.businessId },
+      select: { id: true, name: true, unit: true, packQty: true, packPrice: true, stock: true, expiresAt: true },
+      orderBy: [{ expiresAt: { sort: "asc", nulls: "last" } }, { name: "asc" }],
+    }),
+  ])
   const money = (n: number) => formatMoney(n, ctx.currency)
+  const materialsCard = materials.length ? (
+    <MaterialsCard
+      today={toDateKey(new Date(), ctx.timezone)}
+      money={money}
+      showCosts={can(ctx.role, "finances:view")}
+      canEdit={can(ctx.role, "products:manage")}
+      materials={materials.map((m) => ({
+        id: m.id,
+        name: m.name,
+        unit: m.unit,
+        stock: m.stock,
+        value: m.stock && m.packQty > 0 ? (m.stock * m.packPrice) / m.packQty : 0,
+        expiresAt: m.expiresAt ? toDateKey(m.expiresAt, ctx.timezone) : null,
+      }))}
+    />
+  ) : null
   const canManage = can(ctx.role, "inventory:manage")
   // Los empleados manejan el stock, pero no ven cuánto costó.
   const showCosts = can(ctx.role, "finances:view")
@@ -372,6 +398,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
           </Card>
         </>
       )}
+
+      {materialsCard}
     </div>
   )
 }

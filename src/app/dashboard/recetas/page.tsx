@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { PageHeader } from "@/components/app/page-header"
 import { RecipesBoard } from "@/components/recipes/recipes-board"
 import { db } from "@/lib/db"
+import { toDateKey } from "@/lib/dates"
 import { requireBusiness, requirePermission } from "@/server/session"
 
 export const metadata: Metadata = { title: "Recetas" }
@@ -13,7 +14,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
   const [materials, recipes, products] = await Promise.all([
     db.recipeMaterial.findMany({
       where: { businessId: ctx.businessId },
-      select: { id: true, name: true, unit: true, packQty: true, packPrice: true, stock: true },
+      select: { id: true, name: true, unit: true, packQty: true, packPrice: true, stock: true, expiresAt: true },
       orderBy: { name: "asc" },
     }),
     db.recipe.findMany({
@@ -38,7 +39,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
       <RecipesBoard
         currency={ctx.currency}
         initialTab={params.pestana === "materiales" ? "materiales" : "recetas"}
-        materials={materials}
+        today={toDateKey(new Date(), ctx.timezone)}
+        materials={materials.map((m) => ({ ...m, expiresAt: m.expiresAt ? toDateKey(m.expiresAt, ctx.timezone) : null }))}
         recipes={recipes.map((r) => ({
           id: r.id,
           name: r.name,

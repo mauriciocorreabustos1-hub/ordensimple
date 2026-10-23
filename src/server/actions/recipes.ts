@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
+import { zonedTimeToUtc } from "@/lib/dates"
 import { PLANS, productLimit } from "@/lib/plans"
 import { recipeTotals } from "@/lib/recipes"
 import { idSchema, recipeMaterialSchema, recipeSchema, type RecipeInput, type RecipeMaterialInput } from "@/lib/validations"
@@ -25,13 +26,17 @@ export async function saveRecipeMaterial(id: string | null, input: RecipeMateria
   const parsed = recipeMaterialSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   if (id && !idSchema.safeParse(id).success) return { ok: false, message: "Material no encontrado." }
-  const data = { ...parsed.data, stock: parsed.data.stock ?? null }
+  const { expiresAt, ...rest } = parsed.data
+  // El vencimiento se guarda al mediodía del día elegido (en la zona del negocio), igual que en los productos.
+  const [y, m, d] = (expiresAt ?? "").split("-").map(Number)
+  const data = { ...rest, stock: rest.stock ?? null, expiresAt: expiresAt ? zonedTimeToUtc(y, m, d, ctx.timezone, 12) : null }
   try {
     assertCan(ctx, "products:manage")
     if (id) {
       const { count } = await db.recipeMaterial.updateMany({ where: { id, businessId: ctx.businessId }, data })
       if (!count) return { ok: false, message: "Material no encontrado." }
       revalidate()
+      revalidatePath("/dashboard/inventario")
       return { ok: true, message: "Material guardado", data: { id } }
     }
     if ((await db.recipeMaterial.count({ where: { businessId: ctx.businessId } })) >= MAX_MATERIALS) {
@@ -39,6 +44,7 @@ export async function saveRecipeMaterial(id: string | null, input: RecipeMateria
     }
     const created = await db.recipeMaterial.create({ data: { ...data, businessId: ctx.businessId }, select: { id: true } })
     revalidate()
+    revalidatePath("/dashboard/inventario")
     return { ok: true, message: "Material agregado", data: { id: created.id } }
   } catch (error) {
     if (isDuplicate(error)) return { ok: false, message: "Ya tienes un material con ese nombre." }

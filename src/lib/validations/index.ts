@@ -512,6 +512,8 @@ export const recipeMaterialSchema = z.object({
   packPrice: positiveMoney,
   /** Cuánto tienes ahora (en la misma medida). Vacío: no se lleva la cuenta. */
   stock: z.number().min(0, "No puede ser negativo").max(100_000_000).nullable().optional(),
+  /** Fecha de vencimiento ("AAAA-MM-DD"); vacío si no vence o no se anota. */
+  expiresAt: z.union([dateKey, z.literal("")]).optional(),
 })
 export type RecipeMaterialInput = z.input<typeof recipeMaterialSchema>
 

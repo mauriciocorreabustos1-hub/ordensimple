@@ -12,6 +12,12 @@ import { productStats } from "@/server/queries/reports"
 import { sendPush, type PushMessage } from "@/server/push"
 import { isServiceBusiness } from "@/lib/business-kind"
 
+/** "1 producto vence", "3 materiales vencen", "2 cosas vencen". */
+function expiryNoun(n: number, kind: "product" | "material" | "mix") {
+  const [one, many] = kind === "material" ? ["material", "materiales"] : kind === "mix" ? ["cosa", "cosas"] : ["producto", "productos"]
+  return n === 1 ? `1 ${one} vence` : `${n} ${many} vencen`
+}
+
 const DAY = 86_400_000
 /** Días sin ventas antes de recordar, y cada cuánto se puede repetir el recordatorio. */
 const NO_SALES_DAYS = 3
@@ -178,15 +184,36 @@ export async function sendBusinessAlerts(now = new Date()) {
       }
     }
 
-    // ─── Productos por vencer (Merma y vencidos, plan Pro) ───────────────────
-    if (s.expiryAlerts && canUseFeature(effectivePlan(b), "waste")) {
-      const soon = await db.product.findMany({
-        where: { businessId: b.id, active: true, expiresAt: { not: null, lt: addDays(today, EXPIRY_DAYS + 1, tz) } },
-        select: { id: true, name: true, stock: true, trackStock: true, price: true, expiresAt: true },
-        orderBy: { expiresAt: "asc" },
-      })
-      // Solo lo que todavía se puede vender (con stock, o sin control de stock).
-      const items = soon.filter((x) => !x.trackStock || x.stock > 0)
+    // ─── Por vencer: productos (Merma y vencidos, plan Pro) y materiales de recetas (todos los planes) ──
+    if (s.expiryAlerts) {
+      const until = addDays(today, EXPIRY_DAYS + 1, tz)
+      const [soon, materials] = await Promise.all([
+        canUseFeature(effectivePlan(b), "waste")
+          ? db.product.findMany({
+              where: { businessId: b.id, active: true, expiresAt: { not: null, lt: until } },
+              select: { id: true, name: true, stock: true, trackStock: true, price: true, expiresAt: true },
+              orderBy: { expiresAt: "asc" },
+            })
+          : Promise.resolve([]),
+        db.recipeMaterial.findMany({
+          where: { businessId: b.id, expiresAt: { not: null, lt: until }, OR: [{ stock: null }, { stock: { gt: 0 } }] },
+          select: { id: true, name: true, stock: true, packQty: true, packPrice: true, expiresAt: true },
+        }),
+      ])
+      // Solo lo que todavía se puede vender o usar (con stock, o sin control de stock).
+      const items = [
+        ...soon.filter((x) => !x.trackStock || x.stock > 0).map((x) => ({ ...x, value: x.trackStock ? Math.max(0, x.stock) * x.price : 0 })),
+        // Los materiales se cuentan por su valor (lo que tienes × el precio del paquete), no por unidades.
+        ...materials.map((m) => ({
+          id: `material-${m.id}`,
+          name: m.name,
+          trackStock: false,
+          stock: 0,
+          price: 0,
+          value: m.stock && m.packQty > 0 ? Math.round((m.stock * m.packPrice) / m.packQty) : 0,
+          expiresAt: m.expiresAt,
+        })),
+      ].sort((x, y) => x.expiresAt!.getTime() - y.expiresAt!.getTime())
       const key = items.length ? items.map((x) => `${x.id}:${x.expiresAt!.toISOString().slice(0, 10)}`).sort().join(",") : null
       const stale = !s.lastExpiryAlertAt || now.getTime() - s.lastExpiryAlertAt.getTime() >= EXPIRY_REPEAT_DAYS * DAY
       if (key && (key !== s.expiryAlertKey || stale)) {
@@ -194,7 +221,7 @@ export async function sendBusinessAlerts(now = new Date()) {
         const shown = items.slice(0, EXPIRY_MAX_ITEMS).map((x) => ({
           name: x.name,
           units: x.trackStock ? x.stock : null,
-          value: x.trackStock ? Math.max(0, x.stock) * x.price : 0,
+          value: x.value,
           days: Math.round((startOfDay(x.expiresAt!, tz).getTime() - today.getTime()) / DAY),
         }))
         for (const r of recipients) {
@@ -202,7 +229,8 @@ export async function sendBusinessAlerts(now = new Date()) {
         }
         const when = (d: number) => (d < 0 ? "vencido" : d === 0 ? "hoy" : d === 1 ? "mañana" : `en ${d} días`)
         push({
-          title: `⏰ ${items.length === 1 ? "1 producto vence" : `${items.length} productos vencen`} pronto`,
+          // "1 producto vence", "3 materiales vencen" o "4 cosas vencen" si hay de los dos.
+          title: `⏰ ${expiryNoun(items.length, materials.length && soon.length ? "mix" : materials.length ? "material" : "product")} pronto`,
           body: shortList(shown.map((x) => `${x.name} (${when(x.days)})`)),
           url: "/dashboard/inventario",
           tag: `vence-${b.id}`,

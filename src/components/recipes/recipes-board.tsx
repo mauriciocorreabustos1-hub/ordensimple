@@ -25,7 +25,8 @@ import {
 import { cn } from "@/lib/utils"
 import { applyRecipeToProduct, deleteRecipe, deleteRecipeMaterial, saveRecipe, saveRecipeMaterial } from "@/server/actions/recipes"
 
-export type MaterialRow = { id: string; name: string; unit: string; packQty: number; packPrice: number; stock: number | null }
+/** expiresAt: día de vencimiento "AAAA-MM-DD" (en la zona del negocio). */
+export type MaterialRow = { id: string; name: string; unit: string; packQty: number; packPrice: number; stock: number | null; expiresAt: string | null }
 export type RecipeRow = {
   id: string
   name: string
@@ -41,6 +42,30 @@ export type ProductOption = { id: string; name: string; price: number }
 const unitLabel = (u: string) => (isRecipeUnit(u) ? UNIT_LABEL[u] : u)
 const fieldClass = "h-10 w-full rounded-md border bg-background px-3 text-sm"
 
+/** Días entre dos fechas "AAAA-MM-DD" (negativo si ya pasó). */
+const daysBetween = (from: string, to: string) => {
+  const ms = (k: string) => Date.UTC(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, Number(k.slice(8, 10)))
+  return Math.round((ms(to) - ms(from)) / 86_400_000)
+}
+
+/** Aviso de vencimiento de un material: vencido, vence hoy, mañana o en pocos días. */
+export function ExpiryBadge({ expiresAt, today }: { expiresAt: string | null; today: string }) {
+  if (!expiresAt) return null
+  const days = daysBetween(today, expiresAt)
+  const date = `${Number(expiresAt.slice(8, 10))}/${Number(expiresAt.slice(5, 7))}`
+  const text = days < 0 ? "Vencido" : days === 0 ? "Vence hoy" : days === 1 ? "Vence mañana" : days <= 7 ? `Vence en ${days} días` : `Vence el ${date}`
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
+        days <= 0 ? "bg-danger/15 text-danger" : days <= 7 ? "bg-warning/15 text-foreground" : "bg-muted text-muted-foreground",
+      )}
+    >
+      {text}
+    </span>
+  )
+}
+
 /** Los ingredientes de una receta con su material (para calcular). */
 function withMaterials(items: RecipeRow["items"], materials: Map<string, MaterialRow>) {
   return items.flatMap((i) => {
@@ -55,8 +80,11 @@ export function RecipesBoard({
   recipes,
   products,
   initialTab,
+  today,
 }: {
   currency: string
+  /** Hoy, "AAAA-MM-DD" en la zona del negocio (para los vencimientos). */
+  today: string
   materials: MaterialRow[]
   recipes: RecipeRow[]
   products: ProductOption[]
@@ -164,8 +192,9 @@ export function RecipesBoard({
                 <button type="button" onClick={() => setEditingMaterial(m)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent/40">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{m.name}</span>
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       {formatQuantity(m.packQty)} {unitLabel(m.unit)} a {money(m.packPrice)}
+                      <ExpiryBadge expiresAt={m.expiresAt} today={today} />
                     </span>
                   </span>
                   <span className={cn("shrink-0 text-right text-xs", m.stock === null ? "text-muted-foreground" : m.stock === 0 ? "font-medium text-danger" : "font-medium")}>
@@ -231,6 +260,7 @@ function MaterialDialog({
   const [packQty, setPackQty] = React.useState(material ? formatQuantity(material.packQty) : "")
   const [packPrice, setPackPrice] = React.useState(material?.packPrice ?? 0)
   const [stock, setStock] = React.useState(material?.stock === null || material?.stock === undefined ? "" : formatQuantity(material.stock))
+  const [expiresAt, setExpiresAt] = React.useState(material?.expiresAt ?? "")
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [pending, startTransition] = React.useTransition()
 
@@ -243,7 +273,7 @@ function MaterialDialog({
     if (packPrice <= 0) return void toast.error("¿Cuánto pagas por el paquete?")
     if (stock.trim() && (st === null || st < 0)) return void toast.error("Revisa cuánto tienes en stock")
     startTransition(async () => {
-      const r = await saveRecipeMaterial(material?.id ?? null, { name, unit, packQty: qty, packPrice, stock: st })
+      const r = await saveRecipeMaterial(material?.id ?? null, { name, unit, packQty: qty, packPrice, stock: st, expiresAt })
       if (!r.ok) return void toast.error(r.message)
       toast.success(r.message)
       router.refresh()
@@ -295,6 +325,13 @@ function MaterialDialog({
             <span className="shrink-0 text-sm text-muted-foreground">{UNIT_LABEL[unit]}</span>
           </div>
           <span className="block text-xs text-muted-foreground">Con esto te decimos cuántas veces alcanzas a hacer cada receta.</span>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">
+            ¿Cuándo vence? <span className="font-normal text-muted-foreground">(opcional)</span>
+          </span>
+          <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className="h-10" aria-label="Fecha de vencimiento" />
+          <span className="block text-xs text-muted-foreground">Te avisamos antes de que venza, y lo ves también en Inventario.</span>
         </label>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button type="submit" className="h-11 flex-1" disabled={pending}>

@@ -260,6 +260,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Entradas, salidas y ajustes por conteo",
       "Productos más vendidos del mes",
       "Dinero inmovilizado en productos que no se venden",
+      "Los materiales de tus recetas, con su stock y su vencimiento",
     ],
   },
   {
@@ -523,7 +524,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "¿Es realmente gratis?",
-        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador, y llevas tus clientes y el fiado con cobro por WhatsApp. El inventario, el cierre de caja, los proveedores y el equipo son del plan Pro.",
+        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador, y llevas tu inventario con alertas de stock, tus recetas con su costo y precio, y tus clientes y el fiado con cobro por WhatsApp. El cierre de caja, los proveedores y el equipo son del plan Pro.",
       },
       BILLING_ENABLED
         ? {
@@ -532,7 +533,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
           }
         : {
             q: "¿Puedo usar las funciones Pro ahora?",
-            a: "Sí, gratis. Durante el lanzamiento, inventario, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro.",
+            a: "Sí, gratis. Durante el lanzamiento, proveedores, reportes, consejos y tu equipo están disponibles para todos. Te avisaremos con 5 días de anticipación antes de empezar a cobrar el plan Pro.",
           },
       ...(BILLING_ENABLED
         ? [
@@ -614,7 +615,8 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Promociones automáticas (2×1, %, happy hour) y cupones", values: [false, true, true] },
   { label: "Fotos de productos", values: [true, true, true] },
   { label: "Etiquetas con código de barras para imprimir", values: [true, true, true] },
-  { label: "Inventario, escaneo y alertas de stock", values: [false, true, true] },
+  { label: "Inventario y alertas de stock", values: [true, true, true] },
+  { label: "Recetas: costo y precio de venta", values: [true, true, true] },
   { label: "Resumen por correo cada lunes", values: [true, true, true] },
   { label: "Calculadoras con tus números", values: [true, true, true] },
   { label: "Reportes", values: ["Este mes y el anterior", "Todo el historial", "Todo el historial"] },

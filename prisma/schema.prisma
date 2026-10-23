@@ -1363,6 +1363,8 @@ model RecipeMaterial {
   packPrice  Int
   /// Cuánto tienes ahora, en `unit`. Null: no se lleva la cuenta.
   stock      Float?
+  /// Cuándo vence lo que tienes (para avisar antes y mostrarlo en Inventario).
+  expiresAt  DateTime?
   items      RecipeItem[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt

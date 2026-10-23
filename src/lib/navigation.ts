@@ -59,7 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
   // Gratis; en el menú de los negocios de comida (para los demás está en Herramientas).
   { href: "/dashboard/recetas", label: "Recetas", icon: BookOpen, permission: "products:manage", food: true },
-  { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true, stock: true },
+  { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, stock: true },
   { href: "/dashboard/promociones", label: "Promociones", icon: BadgePercent, pro: true, permission: "products:manage" },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, pro: true, permission: "suppliers:manage" },

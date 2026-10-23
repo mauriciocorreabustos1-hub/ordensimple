@@ -640,28 +640,28 @@ export function expiringEmail(d: {
   const html = layout({
     preview: d.items.slice(0, 3).map((i) => `${i.name}: ${when(i.days).toLowerCase()}`).join(" · "),
     body: [
-      h1("Tienes productos por vencer"),
-      p(`Hola ${escapeHtml(first)}, en ${escapeHtml(d.businessName)} estos productos vencen pronto. Aún estás a tiempo de venderlos:`),
+      h1("Tienes artículos por vencer"),
+      p(`Hola ${escapeHtml(first)}, en ${escapeHtml(d.businessName)} estos artículos vencen pronto. Aún estás a tiempo de venderlos o usarlos:`),
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;">${rows}</table>`,
-      d.more > 0 ? p(`Y ${d.more} producto${d.more === 1 ? "" : "s"} más.`) : "",
+      d.more > 0 ? p(`Y ${d.more} artículo${d.more === 1 ? "" : "s"} más.`) : "",
       total > 0
         ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 14px;background:#fff6e8;border-radius:12px;"><tr><td style="padding:14px 16px;font-size:15px;color:#7a4a0c;">Valor en riesgo</td><td align="right" style="padding:14px 16px;font-size:18px;font-weight:700;color:#7a4a0c;">${money(total)}</td></tr></table>`
         : "",
       `<p style="margin:0 0 12px;font-size:14px;line-height:21px;color:${MUTED};background:#f3f6f5;border-radius:12px;padding:12px 14px;"><strong style="color:${INK};">Consejo:</strong> ponlos al frente del mostrador o en oferta. Si alguno se vence, regístralo como merma para que tus números cuadren.</p>`,
-      button(`${appUrl}/dashboard/inventario`, "Ver productos por vencer"),
+      button(`${appUrl}/dashboard/inventario`, "Ver lo que vence"),
     ].join(""),
     footer: alertFooter(),
   })
   const text = [
-    `Hola ${first}, en ${d.businessName} estos productos vencen pronto:`,
+    `Hola ${first}, en ${d.businessName} estos artículos vencen pronto:`,
     d.items.map((i) => `${i.name}: ${when(i.days).toLowerCase()}${i.units !== null ? ` (${i.units} unidades)` : ""}`).join("\n"),
     d.more > 0 ? `Y ${d.more} más.` : "",
     total > 0 ? `Valor en riesgo: ${money(total)}` : "",
-    `Ver productos por vencer: ${appUrl}/dashboard/inventario`,
+    `Ver lo que vence: ${appUrl}/dashboard/inventario`,
   ]
     .filter(Boolean)
     .join("\n\n")
-  return { subject: count === 1 ? `Por vencer: ${d.items[0]?.name}` : `${count} productos vencen esta semana en ${d.businessName}`, html, text }
+  return { subject: count === 1 ? `Por vencer: ${d.items[0]?.name}` : `${count} artículos vencen esta semana en ${d.businessName}`, html, text }
 }
 
 export function noSalesEmail(d: { name: string; businessName: string; days: number }) {

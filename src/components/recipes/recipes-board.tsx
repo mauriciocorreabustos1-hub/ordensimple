@@ -112,6 +112,8 @@ export function RecipesBoard({
   const [editingMaterial, setEditingMaterial] = React.useState<MaterialRow | "new" | null>(null)
   const [editingRecipe, setEditingRecipe] = React.useState<RecipeRow | "new" | null>(null)
   const [buying, setBuying] = React.useState<MaterialRow | null>(null)
+  /** Se abrió el formulario de material al querer crear una receta sin tener materiales. */
+  const [firstMaterial, setFirstMaterial] = React.useState(false)
   const money = (n: number) => formatMoney(Math.round(n), currency)
   const byId = React.useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials])
   const q = query.trim().toLowerCase()
@@ -147,7 +149,15 @@ export function RecipesBoard({
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tab === "recetas" ? "Buscar receta" : "Buscar material"} className="h-10 pl-9" aria-label="Buscar" />
         </div>
         {tab === "recetas" ? (
-          <Button onClick={() => (materials.length ? setEditingRecipe("new") : (setTab("materiales"), toast.info("Primero agrega los materiales que usas: harina, levadura, aceite…")))}>
+          <Button
+            onClick={() => {
+              if (materials.length) return setEditingRecipe("new")
+              // Sin materiales no se puede armar la receta: se abre directo el formulario del primero.
+              setTab("materiales")
+              setFirstMaterial(true)
+              setEditingMaterial("new")
+            }}
+          >
             <Plus />
             Agregar receta
           </Button>
@@ -238,7 +248,11 @@ export function RecipesBoard({
           currency={currency}
           material={editingMaterial === "new" ? null : editingMaterial}
           usedIn={editingMaterial === "new" ? 0 : recipes.filter((r) => r.items.some((i) => i.materialId === editingMaterial.id)).length}
-          onClose={() => setEditingMaterial(null)}
+          intro={firstMaterial && editingMaterial === "new" ? "Para armar una receta, primero agrega los materiales que usas (harina, levadura, aceite…) con lo que trae el paquete y su precio." : undefined}
+          onClose={() => {
+            setEditingMaterial(null)
+            setFirstMaterial(false)
+          }}
         />
       ) : null}
       {editingRecipe ? (
@@ -271,12 +285,15 @@ function MaterialDialog({
   currency,
   material,
   usedIn,
+  intro,
   onClose,
   onSaved,
 }: {
   currency: string
   material: MaterialRow | null
   usedIn: number
+  /** Explicación arriba del formulario (por ejemplo, la primera vez). */
+  intro?: string
   onClose: () => void
   onSaved?: (id: string, unit: RecipeUnit) => void
 }) {
@@ -321,6 +338,7 @@ function MaterialDialog({
   return (
     <AppModal open onOpenChange={(o) => (o ? null : onClose())} title={material ? "Editar material" : "Agregar material"} noAutoFocus>
       <form onSubmit={save} className="space-y-4">
+        {intro ? <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">{intro}</p> : null}
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">Nombre</span>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej.: Harina, Levadura, Aceite" maxLength={60} className="h-10" />

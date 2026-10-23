@@ -47,7 +47,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
       />
       <RecipesBoard
         currency={ctx.currency}
-        initialTab={params.pestana === "materiales" ? "materiales" : "recetas"}
+        // Sin materiales todavía, se parte por ahí: sin ellos no se puede armar una receta.
+        initialTab={params.pestana === "materiales" || (!materials.length && !recipes.length) ? "materiales" : "recetas"}
         today={toDateKey(new Date(), ctx.timezone)}
         chargesVat={ctx.settings.chargesVat}
         canExpense={can(ctx.role, "expenses:create")}

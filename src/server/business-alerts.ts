@@ -184,17 +184,15 @@ export async function sendBusinessAlerts(now = new Date()) {
       }
     }
 
-    // ─── Por vencer: productos (Merma y vencidos, plan Pro) y materiales de recetas (todos los planes) ──
+    // ─── Por vencer: productos y materiales de recetas (todos los planes) ──
     if (s.expiryAlerts) {
       const until = addDays(today, EXPIRY_DAYS + 1, tz)
       const [soon, materials] = await Promise.all([
-        canUseFeature(effectivePlan(b), "waste")
-          ? db.product.findMany({
-              where: { businessId: b.id, active: true, expiresAt: { not: null, lt: until } },
-              select: { id: true, name: true, stock: true, trackStock: true, price: true, expiresAt: true },
-              orderBy: { expiresAt: "asc" },
-            })
-          : Promise.resolve([]),
+        db.product.findMany({
+          where: { businessId: b.id, active: true, expiresAt: { not: null, lt: until } },
+          select: { id: true, name: true, stock: true, trackStock: true, price: true, expiresAt: true },
+          orderBy: { expiresAt: "asc" },
+        }),
         db.recipeMaterial.findMany({
           where: { businessId: b.id, expiresAt: { not: null, lt: until }, OR: [{ stock: null }, { stock: { gt: 0 } }] },
           select: { id: true, name: true, stock: true, packQty: true, packPrice: true, expiresAt: true },

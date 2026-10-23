@@ -146,21 +146,23 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
               tone={inv.out.length ? "loss" : "default"} hint="Productos sin unidades disponibles." />
           </div>
 
-          {wasteOn ? (
-            <Card className={inv.expiring.some((p) => daysUntil(p.expiresAt, new Date(), ctx.timezone) < 0) ? "border-danger/40" : undefined}>
+          {/* Lo que vence se ve en todos los planes; registrar merma es Pro. */}
+          <Card className={inv.expiring.some((p) => daysUntil(p.expiresAt, new Date(), ctx.timezone) < 0) ? "border-danger/40" : undefined}>
               <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1.5">
                   <CardTitle className="flex items-center gap-2">
                     <CalendarClock className="size-4 text-warning" />
-                    Merma y vencidos
+                    {wasteOn ? "Merma y vencidos" : "Por vencer"}
                   </CardTitle>
                   <CardDescription>
-                    {inv.waste.units
+                    {!wasteOn
+                      ? "Productos que vencen en los próximos 7 días. Te avisamos al celular y por correo."
+                      : inv.waste.units
                       ? `Este mes perdiste ${formatNumber(inv.waste.units)} ${inv.waste.units === 1 ? "unidad" : "unidades"}${showCosts ? ` (${money(inv.waste.cost)} a costo)` : ""}.`
                       : "Este mes no has registrado merma."}
                   </CardDescription>
                 </div>
-                {canManage ? <MovementDialog products={inv.productOptions} defaultType="WASTE" compact label="Registrar merma" /> : null}
+                {wasteOn && canManage ? <MovementDialog products={inv.productOptions} defaultType="WASTE" compact label="Registrar merma" /> : null}
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -190,6 +192,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                     <p className="text-sm text-muted-foreground">Nada por vencer. Agrega la fecha de vencimiento al editar cada producto.</p>
                   )}
                 </div>
+                {wasteOn ? (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Merma del mes por motivo</p>
                   {inv.waste.byReason.length ? (
@@ -204,17 +207,14 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Cuando algo se venza o se dañe, regístralo como merma para saber cuánta plata se pierde.</p>
+                    <p className="text-sm text-muted-foreground">Cuando algo se venza o se dañe, regístralo como merma para saber cuánto dinero se pierde.</p>
                   )}
                 </div>
+                ) : (
+                  <ProUpsell title="Merma (Pro)" text="Registra lo que se vence, se daña o se pierde y mira cuánto dinero pierdes al mes." />
+                )}
               </CardContent>
             </Card>
-          ) : (
-            <ProUpsell
-              title="Merma y vencidos (Pro)"
-              text="Registra lo que se vence, se daña o se pierde, mira cuánta plata pierdes al mes y recibe aviso antes de que un producto venza."
-            />
-          )}
 
           {alerts.length ? (
             <Card className="border-warning/40">

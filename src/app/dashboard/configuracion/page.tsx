@@ -310,7 +310,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 <PreferenceSwitch
                   name="expiryAlerts"
                   label="Productos por vencer"
-                  description="Lo que vence en los próximos 7 días y todavía tiene stock, con cuánta plata está en riesgo (plan Pro)."
+                  description="Productos y materiales de recetas que vencen en los próximos 7 días y todavía tienen stock, con cuánto dinero está en riesgo."
                   checked={ctx.settings.expiryAlerts}
                   disabled={!canManage}
                 />

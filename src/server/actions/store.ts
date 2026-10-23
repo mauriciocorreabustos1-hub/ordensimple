@@ -313,6 +313,39 @@ export async function cancelWebOrder(id: string): Promise<ActionResult> {
   return { ok: true, message: "Pedido descartado" }
 }
 
+/**
+ * Elimina pedidos web que no se concretaron: nuevos (de prueba o de alguien que solo estaba mirando) o ya descartados.
+ * Los que se vendieron o se pasaron a comanda no se pueden eliminar. Si un pedido nuevo usaba un cupón, el uso se devuelve.
+ */
+export async function deleteWebOrders(ids: string[]): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  if (!Array.isArray(ids) || !ids.length || ids.length > 200 || !ids.every((id) => idSchema.safeParse(id).success)) {
+    return { ok: false, message: "Pedido no encontrado." }
+  }
+  try {
+    assertCan(ctx, "sales:create")
+    const count = await db.$transaction(async (tx) => {
+      const orders = await tx.webOrder.findMany({
+        where: { id: { in: ids }, businessId: ctx.businessId, status: { in: ["NEW", "CANCELLED"] } },
+        select: { id: true, status: true, couponCode: true, couponDiscount: true },
+      })
+      for (const o of orders) {
+        // Un pedido descartado ya devolvió su cupón; uno nuevo lo devuelve ahora.
+        if (o.status === "NEW" && o.couponCode && o.couponDiscount) {
+          await tx.storeCoupon.updateMany({ where: { businessId: ctx.businessId, code: o.couponCode, uses: { gt: 0 } }, data: { uses: { decrement: 1 } } })
+        }
+      }
+      const { count } = await tx.webOrder.deleteMany({ where: { id: { in: orders.map((o) => o.id) }, status: { in: ["NEW", "CANCELLED"] } } })
+      return count
+    })
+    if (!count) return { ok: false, message: "Ese pedido ya se atendió o se eliminó. Recarga la página." }
+    revalidatePath("/dashboard", "layout")
+    return { ok: true, message: count === 1 ? "Pedido eliminado" : `${count} pedidos eliminados` }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
 /** Revisa un cupón en la tienda pública (para mostrar el descuento antes de enviar; al enviar se vuelve a revisar). */
 export async function previewCoupon(slug: string, code: string): Promise<ActionResult<{ code: string; percent: number | null; amount: number | null; minTotal: number }>> {
   if (typeof slug !== "string" || typeof code !== "string" || slug.length > 40 || code.length > 30) return { ok: false, message: "Cupón no válido." }

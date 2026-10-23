@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Check, ClipboardList, Loader2, MessageCircle, Truck, X } from "lucide-react"
+import { Check, ClipboardList, Loader2, MessageCircle, Trash2, Truck, X } from "lucide-react"
 import { toast } from "sonner"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { AppModal } from "@/components/app/app-modal"
@@ -13,7 +13,8 @@ import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { orderReplyText } from "@/lib/store"
 import { whatsappLink } from "@/lib/whatsapp"
-import { acceptWebOrderAsComanda, acceptWebOrderAsSale, cancelWebOrder } from "@/server/actions/store"
+import { ConfirmDelete } from "@/components/app/confirm-delete"
+import { acceptWebOrderAsComanda, acceptWebOrderAsSale, cancelWebOrder, deleteWebOrders } from "@/server/actions/store"
 
 export type WebOrderRow = {
   id: string
@@ -73,6 +74,7 @@ export function WebOrdersList({
 
   const fresh = orders.filter((o) => o.status === "NEW")
   const past = orders.filter((o) => o.status !== "NEW")
+  const discarded = past.filter((o) => o.status === "CANCELLED")
 
   return (
     <div className="space-y-6">
@@ -152,6 +154,12 @@ export function WebOrdersList({
                 >
                   {busy === o.id ? <Loader2 className="animate-spin" /> : <X />}
                 </Button>
+                <ConfirmDelete
+                  label="Eliminar pedido"
+                  title={`¿Eliminar el pedido de ${o.customerName}?`}
+                  description="Se borra para siempre, sin registrar venta. Úsalo para pedidos de prueba o de alguien que solo estaba mirando."
+                  onConfirm={() => deleteWebOrders([o.id])}
+                />
               </div>
             </li>
           ))}
@@ -160,7 +168,23 @@ export function WebOrdersList({
 
       {past.length ? (
         <div className="space-y-2">
-          <p className="text-sm font-medium">Atendidos en los últimos 7 días</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium">Atendidos en los últimos 7 días</p>
+            {discarded.length > 1 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={() => {
+                  if (window.confirm(`¿Eliminar los ${discarded.length} pedidos descartados? Se borran para siempre.`)) void run("descartados", () => deleteWebOrders(discarded.map((o) => o.id)))
+                }}
+                disabled={busy === "descartados"}
+              >
+                {busy === "descartados" ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                Eliminar descartados
+              </Button>
+            ) : null}
+          </div>
           <ul className="divide-y rounded-xl border bg-card">
             {past.map((o) => (
               <li key={o.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm">
@@ -177,6 +201,14 @@ export function WebOrdersList({
                   >
                     {o.status === "DONE" ? (o.asComanda ? "Comanda" : "Vendido") : "Descartado"}
                   </span>
+                  {o.status === "CANCELLED" ? (
+                    <ConfirmDelete
+                      label="Eliminar pedido"
+                      title={`¿Eliminar el pedido de ${o.customerName}?`}
+                      description="Se borra para siempre de la lista."
+                      onConfirm={() => deleteWebOrders([o.id])}
+                    />
+                  ) : null}
                 </span>
               </li>
             ))}

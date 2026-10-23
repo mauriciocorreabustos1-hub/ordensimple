@@ -1,11 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { createPortal } from "react-dom"
 import { Minus, Plus, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
+import { RollPaper, RollWidthSelect } from "@/components/print/roll-print"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import type { ComandaData, ComandaLine } from "@/components/comandas/comandas-board"
 
@@ -192,23 +192,20 @@ export function BillStep({
           Imprimir cuenta
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">Sirve para impresoras normales y de boletas (térmicas).</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>Para impresoras de boletas (rollo). Elige el ancho de tu papel:</span>
+        <RollWidthSelect />
+      </div>
 
-      {/* Este paso solo se abre al tocar un botón (nunca en el servidor). */}
-      {typeof document !== "undefined"
-        ? createPortal(
-            <BillPaper
-              businessName={businessName}
-              label={comanda.label}
-              sections={sections}
-              money={money}
-              tipOf={tipOf}
-              equal={byPerson ? 1 : equal}
-              separate={separate && byPerson && sections.length > 1}
-            />,
-            document.body,
-          )
-        : null}
+      <BillPaper
+        businessName={businessName}
+        label={comanda.label}
+        sections={sections}
+        money={money}
+        tipOf={tipOf}
+        equal={byPerson ? 1 : equal}
+        separate={separate && byPerson && sections.length > 1}
+      />
     </div>
   )
 }
@@ -237,7 +234,7 @@ function BillPaper({
   const rule = <div style={{ borderTop: "1px dashed #000", margin: "2mm 0" }} />
   const header = (
     <>
-      <div style={{ textAlign: "center", fontWeight: 700, fontSize: "13pt" }}>{businessName}</div>
+      <div style={{ textAlign: "center", fontWeight: 700, fontSize: "1.2em" }}>{businessName}</div>
       <div style={{ textAlign: "center" }}>Detalle de consumo</div>
       <div style={{ textAlign: "center" }}>
         {label} · {when}
@@ -255,7 +252,7 @@ function BillPaper({
     const tip = tipOf(s.total)
     return (
       <>
-        {s.title ? <div style={{ fontWeight: 700, marginTop: "2mm", fontSize: own ? "12pt" : "11pt", textAlign: own ? "center" : "left" }}>{s.title}</div> : null}
+        {s.title ? <div style={{ fontWeight: 700, marginTop: "2mm", fontSize: own ? "1.1em" : "1em", textAlign: own ? "center" : "left" }}>{s.title}</div> : null}
         {own ? rule : null}
         {s.lines.map((l, i) => (
           <div key={i}>
@@ -275,7 +272,7 @@ function BillPaper({
           </div>
         ))}
         {own ? rule : null}
-        <div style={{ ...row, fontWeight: 700, fontSize: own ? "12pt" : "11pt" }}>
+        <div style={{ ...row, fontWeight: 700, fontSize: own ? "1.1em" : "1em" }}>
           <span>{own || !s.title ? "Total" : `Paga ${s.title}`}</span>
           <span>{money(s.total)}</span>
         </div>
@@ -297,28 +294,13 @@ function BillPaper({
   const grand = sections.reduce((s, x) => s + x.total + tipOf(x.total), 0)
 
   return (
-    <div id="bill-print">
-      <style>{`
-@media screen { #bill-print { display: none } }
-@media print {
-  @page { margin: 4mm }
-  body > *:not(#bill-print) { display: none !important }
-  html, body { background: #fff !important; margin: 0 !important; padding: 0 !important }
-  #bill-print { display: block; color: #000; font: 11pt/1.35 ui-monospace, "Courier New", monospace; width: 100%; max-width: 72mm }
-  #bill-print .ticket { break-after: page; page-break-after: always }
-  #bill-print .ticket:last-child { break-after: auto; page-break-after: auto }
-  #bill-print .ticket:last-child .cut { display: none }
-}`}</style>
+    <RollPaper id="bill-print">
       {separate ? (
         sections.map((s) => (
           <div key={s.key} className="ticket">
             {header}
             {body(s, true)}
             {footer}
-            {/* En impresoras de rollo que no cortan solas, aquí se corta. */}
-            <div className="cut" style={{ textAlign: "center", margin: "6mm 0 4mm", borderTop: "1px dashed #000", lineHeight: 0 }}>
-              <span style={{ background: "#fff", padding: "0 2mm" }}>✂</span>
-            </div>
           </div>
         ))
       ) : sections.length > 1 ? (
@@ -339,7 +321,7 @@ function BillPaper({
               <span>{money(s.total + tipOf(s.total))}</span>
             </div>
           ))}
-          <div style={{ ...row, fontWeight: 700, fontSize: "12pt", marginTop: "1mm" }}>
+          <div style={{ ...row, fontWeight: 700, fontSize: "1.1em", marginTop: "1mm" }}>
             <span>Total mesa</span>
             <span>{money(grand)}</span>
           </div>
@@ -362,6 +344,6 @@ function BillPaper({
           {footer}
         </div>
       )}
-    </div>
+    </RollPaper>
   )
 }

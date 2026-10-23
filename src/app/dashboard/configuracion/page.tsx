@@ -235,7 +235,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                       slotMin={ctx.settings.bookingSlotMin}
                       noticeMin={ctx.settings.bookingMinNoticeMin}
                       maxDays={ctx.settings.bookingMaxDays}
-                      storeReady={Boolean(ctx.business.storeEnabled && ctx.business.storeSlug)}
+                      storeReady={Boolean(ctx.business.storeEnabled && ctx.business.storeSlug && ctx.business.storeWhatsapp)}
                       servicesWithDuration={await db.product.count({ where: { businessId: ctx.businessId, active: true, isService: true, durationMin: { not: null }, price: { gt: 0 } } })}
                       disabled={!canManage}
                     />

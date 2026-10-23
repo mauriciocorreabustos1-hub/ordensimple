@@ -195,7 +195,7 @@ export function MovementDialog({
             >
               {result < 0
                 ? `No alcanza: solo tienes ${formatNumber(product.stock)} unidades.`
-                : `Stock de ${product.name}: ${formatNumber(product.trackStock ? product.stock : 0)} → ${formatNumber(result)} unidades`}
+                : `Stock de ${product.name}: pasa de ${formatNumber(product.trackStock ? product.stock : 0)} a ${formatNumber(result)} unidades`}
             </p>
           ) : null}
           {product && !product.trackStock ? (

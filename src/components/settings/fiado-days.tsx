@@ -24,7 +24,7 @@ export function FiadoDays({ value, disabled }: { value: number; disabled?: boole
     <div className="space-y-2 py-3">
       <p className="text-sm font-medium">¿En cuántos días te deben pagar el fiado?</p>
       <ChoiceChips options={[7, 15, 30, 60].map((d) => ({ value: d, label: `${d} días` }))} value={days} onChange={change} />
-      <p className="text-xs text-muted-foreground">Pasado ese plazo, el cliente aparece en «Por cobrar» en Clientes.</p>
+      <p className="text-xs text-muted-foreground">Pasado ese plazo, el cliente aparece en “Por cobrar” en Clientes.</p>
     </div>
   )
 }

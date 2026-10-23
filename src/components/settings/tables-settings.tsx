@@ -35,7 +35,7 @@ export function TablesSettings({ count: initialCount, extras: initialExtras, dis
   function addExtra() {
     const name = draft.trim().slice(0, 30)
     if (!name) return
-    if (extras.some((e) => e.toLowerCase() === name.toLowerCase())) return toast.info(`«${name}» ya está en la lista.`)
+    if (extras.some((e) => e.toLowerCase() === name.toLowerCase())) return toast.info(`“${name}” ya está en la lista.`)
     if (extras.length >= 30) return toast.error("Máximo 30 lugares con nombre.")
     const next = [...extras, name]
     setExtras(next)

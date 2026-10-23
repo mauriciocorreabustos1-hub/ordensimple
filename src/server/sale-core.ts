@@ -107,13 +107,13 @@ export function productsOnly(ctx: BusinessContext) {
   return !canApproveDiscounts(ctx.role) && ctx.settings.employeesProductsOnly
 }
 
-export const QUICK_SALE_BLOCKED = "En este negocio, los empleados registran las ventas con los productos guardados. Usa «Con detalle»."
+export const QUICK_SALE_BLOCKED = "En este negocio, los empleados registran las ventas con los productos guardados. Usa “Con detalle”."
 
 /** Un empleado restringido no puede agregar productos escritos a mano (con precio libre). */
 export function customItemsBlocked(ctx: BusinessContext, items: { productId?: string | null; description: string }[]) {
   if (!productsOnly(ctx)) return null
   const custom = items.find((i) => !i.productId)
-  return custom ? `Solo puedes vender productos guardados. Pide al encargado que agregue «${custom.description}» en Productos.` : null
+  return custom ? `Solo puedes vender productos guardados. Pide al encargado que agregue “${custom.description}” en Productos.` : null
 }
 
 /** Un descuento aprobado sirve por un rato: si pasan más de 3 horas, hay que pedirlo de nuevo. */
@@ -126,7 +126,7 @@ export const DISCOUNT_VALID_MS = 3 * 60 * 60 * 1000
 export function priceBelowList(ctx: BusinessContext, lines: Line[]) {
   if (canApproveDiscounts(ctx.role)) return null
   const low = lines.find((l) => l.listPrice !== null && l.unitPrice < l.listPrice)
-  return low ? `No puedes cobrar «${low.description}» por debajo de su precio. Si corresponde, pide un descuento al encargado.` : null
+  return low ? `No puedes cobrar “${low.description}” por debajo de su precio. Si corresponde, pide un descuento al encargado.` : null
 }
 
 type DiscountInput = { discount?: number; discountReason?: string; discountRequestId?: string }

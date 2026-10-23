@@ -29,7 +29,7 @@ export default async function ComandasPage() {
         <EmptyState
           icon={ClipboardList}
           title="Las comandas son para restaurantes, cafés y negocios de comida"
-          description="Si tu negocio es de comida, márcalo en Configuración (rubro «Restaurante, café o comida») y aparecerán aquí."
+          description="Si tu negocio es de comida, márcalo en Configuración (rubro “Restaurante, café o comida”) y aparecerán aquí."
           action={
             <Button asChild variant="outline">
               <Link href="/dashboard/configuracion">Ir a Configuración</Link>

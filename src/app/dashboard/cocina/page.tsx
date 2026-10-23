@@ -25,7 +25,7 @@ export default async function KitchenPage() {
         <EmptyState
           icon={ChefHat}
           title="La cocina es para restaurantes, cafés y negocios de comida"
-          description="Si tu negocio es de comida, márcalo en Configuración (rubro «Restaurante, café o comida») y aparecerá aquí."
+          description="Si tu negocio es de comida, márcalo en Configuración (rubro “Restaurante, café o comida”) y aparecerá aquí."
           action={
             <Button asChild variant="outline">
               <Link href="/dashboard/configuracion">Ir a Configuración</Link>

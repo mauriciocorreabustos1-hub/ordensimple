@@ -96,7 +96,7 @@ export function ScanButton({
         open={open}
         onOpenChange={setOpen}
         title="Escanear código de barras"
-        description={continuous ? "Pasa los productos uno por uno frente a la cámara. Toca «Listo» al terminar." : "Apunta la cámara al código del producto."}
+        description={continuous ? "Pasa los productos uno por uno frente a la cámara. Toca “Listo” al terminar." : "Apunta la cámara al código del producto."}
       >
         {open ? (
           continuous ? (

@@ -394,7 +394,7 @@ export function LoanDialog({ currency, loan }: { currency: string; loan?: LoanRo
           {loan ? null : (
             <Field
               label="¿Te acaban de pasar esta plata?"
-              hint="Si es un préstamo nuevo, la plata entra a tu caja o banco. Si es una deuda antigua, déjalo en «No»."
+              hint="Si es un préstamo nuevo, el dinero entra a tu caja o banco. Si es una deuda antigua, déjalo en “No”."
             >
               <div className="flex gap-2" role="radiogroup" aria-label="Dónde entró la plata del préstamo">
                 {(

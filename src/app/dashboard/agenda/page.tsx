@@ -101,7 +101,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/dashboard
       {rows.length === 0 && Object.keys(weekCounts).length === 0 ? (
         <p className="flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
           <CalendarDays className="size-4" />
-          Toca «Nueva cita» o una hora libre para agendar.
+          Toca “Nueva cita” o una hora libre para agendar.
         </p>
       ) : null}
     </div>

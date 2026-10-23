@@ -247,7 +247,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           )}
           <p className="text-xs text-muted-foreground">
             Para que cada anuncio aparezca aquí, usa enlaces como <code className="rounded bg-muted px-1">ordensimple.cl/?utm_source=instagram&amp;utm_campaign=escanear</code>.
-            Sin enlace propio, se usa la página de donde vino (Instagram, Facebook, Google…) o queda como «Directo».
+            Sin enlace propio, se usa la página de donde vino (Instagram, Facebook, Google…) o queda como “Directo”.
           </p>
         </CardContent>
       </Card>
@@ -525,7 +525,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             Códigos de descuento
           </h2>
           <p className="text-sm text-muted-foreground">
-            Los clientes los canjean en Configuración → Tu plan. Los de días gratis activan el plan al tiro; los de porcentaje
+            Los clientes los canjean en Configuración, sección Tu plan. Los de días gratis activan el plan de inmediato; los de porcentaje
             quedan guardados para cuando empieces a cobrar.
           </p>
         </div>
@@ -539,7 +539,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             Invita a un amigo
           </h2>
           <p className="text-sm text-muted-foreground">
-            Cada negocio tiene su enlace en «Invita y gana». Los días se dan solos: al invitado cuando crea su negocio, y a quien
+            Cada negocio tiene su enlace en “Invita y gana”. Los días se dan solos: al invitado cuando crea su negocio, y a quien
             invitó según la regla que elijas (se revisa una vez al día).
           </p>
         </div>
@@ -769,7 +769,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <BarChart3 className="size-3.5" />
-        Las visitas a la página (personas, países, dispositivos) se ven en Vercel → tu proyecto → Analytics.
+        Las visitas a la página (personas, países, dispositivos) se ven en Vercel, en tu proyecto, sección Analytics.
       </p>
     </div>
   )

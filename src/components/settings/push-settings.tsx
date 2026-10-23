@@ -105,7 +105,7 @@ export function PushSettings({ publicKey }: { publicKey: string }) {
 
   const hint =
     state === "ios-install"
-      ? "En iPhone primero agrega OrdenSimple a tu pantalla de inicio (Compartir → «Agregar a inicio») y ábrelo desde ahí."
+      ? "En iPhone primero agrega OrdenSimple a tu pantalla de inicio (toca Compartir y luego “Agregar a inicio”) y ábrelo desde ahí."
       : state === "unsupported"
         ? "Este navegador no permite avisos. Prueba con Chrome, Edge o Safari actualizados."
         : state === "denied"

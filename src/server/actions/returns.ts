@@ -113,7 +113,7 @@ async function assertAvailable(tx: Tx, saleId: string, items: ReturnItem[], excl
     const it = byId.get(i.saleItemId)
     if (!it || it.unitPrice !== i.unitPrice) throw new ReturnConflict("La venta cambió desde que se pidió la devolución. Pídela de nuevo.")
     asked.set(i.saleItemId, (asked.get(i.saleItemId) ?? 0) + i.quantity)
-    if (asked.get(i.saleItemId)! > it.quantity - (taken.get(i.saleItemId) ?? 0)) throw new ReturnConflict(`De «${i.description}» ya no se pueden devolver tantas unidades.`)
+    if (asked.get(i.saleItemId)! > it.quantity - (taken.get(i.saleItemId) ?? 0)) throw new ReturnConflict(`De “${i.description}” ya no se pueden devolver tantas unidades.`)
   }
 }
 
@@ -192,7 +192,7 @@ export async function requestReturn(input: ReturnRequestInput): Promise<ActionRe
     for (const r of parsed.data.items) {
       const it = byId.get(r.saleItemId)
       if (!it) return { ok: false, message: "Uno de los productos no es de esta venta. Recarga la página." }
-      if (r.quantity > it.quantity - (taken.get(it.id) ?? 0)) return { ok: false, message: `De «${it.description}» no se pueden devolver tantas unidades.` }
+      if (r.quantity > it.quantity - (taken.get(it.id) ?? 0)) return { ok: false, message: `De “${it.description}” no se pueden devolver tantas unidades.` }
       items.push({ saleItemId: it.id, productId: it.productId, description: it.description, quantity: r.quantity, unitPrice: it.unitPrice })
     }
     const amount = Math.round(items.reduce((s, i) => s + i.quantity * i.unitPrice, 0) * ratio)

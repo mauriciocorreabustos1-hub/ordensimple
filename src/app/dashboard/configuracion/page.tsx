@@ -199,7 +199,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 <CardTitle>Tienda online</CardTitle>
                 <CardDescription>
                   Una página con tus productos y precios para compartir por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido
-                  por WhatsApp; te queda en «Pedidos web» para registrarlo con un toque.
+                  por WhatsApp; te queda en “Pedidos web” para registrarlo con un toque.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -404,7 +404,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                   <Crown className="size-4 text-warning" />
                   Tu plan: {PLANS[ctx.business.plan].name}
                 </span>
-                <span className="text-sm text-primary">Ver o cambiar plan →</span>
+                <span className="text-sm text-primary">Ver o cambiar plan</span>
               </Link>
             ) : null}
 

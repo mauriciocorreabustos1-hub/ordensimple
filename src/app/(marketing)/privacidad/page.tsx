@@ -68,7 +68,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Cómo nos conociste:</strong> al crear tu cuenta guardamos de qué anuncio o página llegaste y, si fue así,
-            quién te invitó. Lo usamos solo para saber qué medios nos funcionan y entregar los premios de «Invita y gana» (ver{" "}
+            quién te invitó. Lo usamos solo para saber qué medios nos funcionan y entregar los premios del programa “Invita y gana” (ver{" "}
             <a href="#cookies" className="text-primary underline-offset-4 hover:underline">
               Cookies
             </a>
@@ -121,7 +121,7 @@ export default function PrivacyPage() {
 
       <LegalSection n={5} title="Cuánto tiempo guardamos los datos">
         <p>
-          Guardamos tus datos mientras tengas una cuenta activa. Puedes eliminar tu cuenta tú mismo en Configuración → Tu
+          Guardamos tus datos mientras tengas una cuenta activa. Puedes eliminar tu cuenta tú mismo en Configuración, sección Tu
           cuenta: se borra al instante junto con tus negocios. Si prefieres pedírnoslo por correo, la borraremos dentro de
           30 días, salvo la información que debamos conservar por obligación legal o para resolver disputas.
         </p>
@@ -137,14 +137,14 @@ export default function PrivacyPage() {
             <strong>Rectificación:</strong> corregir datos inexactos o incompletos.
           </li>
           <li>
-            <strong>Supresión:</strong> pedir que los eliminemos, o hacerlo tú mismo desde Configuración → Tu cuenta.
+            <strong>Supresión:</strong> pedir que los eliminemos, o hacerlo tú mismo desde Configuración, sección Tu cuenta.
           </li>
           <li>
             <strong>Oposición:</strong> oponerte a ciertos usos, como recibir ofertas.
           </li>
           <li>
             <strong>Portabilidad:</strong> recibir tus datos en un formato que puedas usar en otro servicio. Puedes descargarlos
-            cuando quieras en Configuración → Tu cuenta → Descargar mis datos.
+            cuando quieras en Configuración, sección Tu cuenta, opción Descargar mis datos.
           </li>
           <li>
             <strong>Bloqueo:</strong> pedir que suspendamos temporalmente su uso mientras se revisa una solicitud.
@@ -184,7 +184,7 @@ export default function PrivacyPage() {
             funcionan. Dura 60 días.
           </li>
           <li>
-            <strong>Invitación de un amigo (os_amigo):</strong> si entras por un enlace de «Invita y gana», guarda el código
+            <strong>Invitación de un amigo (os_amigo):</strong> si entras por un enlace de “Invita y gana”, guarda el código
             de quien te invitó para darle su premio cuando te registres. Dura 60 días.
           </li>
         </ul>

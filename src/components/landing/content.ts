@@ -151,9 +151,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Abre una comanda por mesa o pedido: Mesa 4, Barra, Para llevar, Delivery",
       "Tus mesas, las que quieras: hasta 200, más barra, terraza o lo que uses",
       "Ves al tiro qué mesas están ocupadas y cuánto lleva cada una",
-      "Notas por plato: «sin mayo», «bien cocido», «para llevar»",
+      "Notas por plato: “sin mayo”, “bien cocido”, “para llevar”",
       "Enviar a cocina: el pedido aparece en la pantalla de la cocina, sin papel",
-      "La cocina marca cada plato listo y el garzón ve «Listo para servir»",
+      "La cocina marca cada plato listo y el garzón ve “Listo para servir”",
       "Si piden algo más, a la cocina le llega solo lo nuevo",
       "Al cobrar queda como venta: descuenta stock y suma a la caja y a tus reportes",
       "Cuenta dividida: cobra todo junto o lo de cada persona por separado",
@@ -198,7 +198,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     title: "Promociones y cupones",
     description: "Descuentos que se aplican solos, sin que tu equipo tenga que acordarse (plan Pro).",
     points: [
-      "2×1, 3×2 o «lleva X, paga Y» en los productos que elijas",
+      "2×1, 3×2 o “lleva X, paga Y” en los productos que elijas",
       "% de descuento en un producto, una categoría o todo",
       "Happy hour: solo ciertos días y horas (ej.: lunes a jueves de 18:00 a 20:00)",
       "Con fecha de inicio y término, o para siempre",
@@ -311,10 +311,10 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "En el celular, aunque tengas la app cerrada: pedidos web, reservas y solicitudes de tu equipo",
       "Stock bajo o agotado y productos por vencer",
       "Fiado atrasado y pagos a proveedores que vencen",
-      "Restaurantes: al garzón le llega «Listo para servir» cuando la cocina termina",
+      "Restaurantes: al garzón le llega “Listo para servir” cuando la cocina termina",
       "Resumen semanal cada lunes: cuánto vendiste, gastaste y te quedó",
       "Días sin ventas: un recordatorio si pasan 3 días sin anotar",
-      "Eliges qué avisos quieres en Configuración → Avisos",
+      "Eliges qué avisos quieres en Configuración, sección Avisos",
     ],
   },
   {
@@ -482,7 +482,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "¿Sirve para un restaurante o un café?",
-        a: "Sí. Si marcas el rubro «Restaurante, café o comida», con el plan Pro tienes comandas por mesa y una pantalla para la cocina: el garzón anota y envía el pedido, la cocina lo marca listo y al cobrar queda como venta. Eliges cuántas mesas tienes en Configuración.",
+        a: "Sí. Si marcas el rubro “Restaurante, café o comida”, con el plan Pro tienes comandas por mesa y una pantalla para la cocina: el garzón anota y envía el pedido, la cocina lo marca listo y al cobrar queda como venta. Eliges cuántas mesas tienes en Configuración.",
       },
       {
         q: "¿Sirve si vendo servicios o trabajo con horas, como una peluquería o una consulta?",
@@ -490,7 +490,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "¿Puedo recibir pedidos por internet?",
-        a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en «Pedidos web» lo registras como venta con un toque. Sin comisiones.",
+        a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en “Pedidos web” lo registras como venta con un toque. Sin comisiones.",
       },
       {
         q: "¿Puedo hacer promociones como 2×1 o happy hour?",
@@ -498,11 +498,11 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "¿Puedo imprimir etiquetas con código de barras?",
-        a: "Sí, en todos los planes. En Productos → Etiquetas eliges los productos y cuántas etiquetas quieres, con nombre, precio y código. Sirven hojas de stickers A4 en una impresora normal o una impresora de etiquetas. Si un producto no trae código, te creamos uno para que lo vendas escaneando.",
+        a: "Sí, en todos los planes. En Productos, sección Etiquetas, eliges los productos y cuántas etiquetas quieres, con nombre, precio y código. Sirven hojas de stickers A4 en una impresora normal o una impresora de etiquetas. Si un producto no trae código, te creamos uno para que lo vendas escaneando.",
       },
       {
         q: "¿Me llegan avisos al celular?",
-        a: "Sí. En Configuración → Avisos activas «Avisos en este celular o computador» y te llegan aunque tengas la app cerrada: pedidos web, reservas, solicitudes de descuento o devolución de tu equipo, stock bajo, productos por vencer, fiado atrasado y pagos a proveedores. En iPhone, primero agrega OrdenSimple a tu pantalla de inicio.",
+        a: "Sí. En Configuración, sección Avisos, activas “Avisos en este celular o computador” y te llegan aunque tengas la app cerrada: pedidos web, reservas, solicitudes de descuento o devolución de tu equipo, stock bajo, productos por vencer, fiado atrasado y pagos a proveedores. En iPhone, primero agrega OrdenSimple a tu pantalla de inicio.",
       },
       {
         q: "¿Puedo descargar mis reportes?",

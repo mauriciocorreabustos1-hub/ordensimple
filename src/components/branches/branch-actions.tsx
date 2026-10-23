@@ -139,7 +139,7 @@ export function DeleteBranchButton({ businessId, name }: { businessId: string; n
           }}
         >
           <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
-            ¿Quieres guardar sus datos? Antes descárgalos en Configuración → Tu cuenta → Descargar mis datos (estando en esta sucursal).
+            ¿Quieres guardar sus datos? Antes descárgalos en Configuración, sección Tu cuenta, opción Descargar mis datos (estando en esta sucursal).
           </p>
           <Field label={`Para confirmar, escribe: ${name}`} htmlFor="del-branch">
             <Input id="del-branch" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="h-10" autoComplete="off" />

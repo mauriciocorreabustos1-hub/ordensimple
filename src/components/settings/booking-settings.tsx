@@ -65,7 +65,7 @@ export function BookingSettings({
           <span className="block text-sm font-medium">Tus clientes reservan hora en tu página</span>
           <span className="block text-xs text-muted-foreground">
             {!storeReady
-              ? "Primero publica tu página arriba (dirección y WhatsApp): ahí aparece «Reserva tu hora»."
+              ? "Primero publica tu página arriba (dirección y WhatsApp): ahí aparece “Reserva tu hora”."
               : servicesWithDuration === 0
                 ? "Agrega la duración a tus servicios (en Servicios) para que se puedan reservar."
                 : `Se pueden reservar ${servicesWithDuration} servicio${servicesWithDuration === 1 ? "" : "s"}. Te llega un aviso al celular con cada reserva.`}

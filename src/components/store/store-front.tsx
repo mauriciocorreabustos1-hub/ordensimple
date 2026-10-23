@@ -158,7 +158,7 @@ export function StoreFront({
       </div>
 
       {shown.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">No encontramos «{query}».</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">No encontramos “{query}”.</p>
       ) : (
         withPhotos ? (
           // Con fotos: tarjetas, como una vitrina.
@@ -424,7 +424,7 @@ function Checkout({
                 Tu total ahora es <strong className="tabular">{money(changed.total)}</strong>
                 {changed.total !== final ? <span className="ml-1.5 text-xs line-through opacity-70">{money(final)}</span> : null}
               </p>
-              <p className="text-xs">Si te parece bien, toca de nuevo «Enviar pedido por WhatsApp».</p>
+              <p className="text-xs">Si te parece bien, toca de nuevo “Enviar pedido por WhatsApp”.</p>
             </div>
           ) : null}
           {coupons ? (

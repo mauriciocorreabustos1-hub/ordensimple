@@ -19,12 +19,12 @@ const STEPS = [
   {
     icon: ClipboardList,
     title: "El garzón anota",
-    text: "Abre la comanda de la mesa y toca los platos. Con notas como «sin mayo» o «bien cocido».",
+    text: "Abre la comanda de la mesa y toca los platos. Con notas como “sin mayo” o “bien cocido”.",
   },
   {
     icon: ChefHat,
     title: "La cocina lo ve al tiro",
-    text: "Toca «Enviar a cocina» y el pedido aparece en la pantalla de la cocina. Sin papel ni gritos.",
+    text: "Toca “Enviar a cocina” y el pedido aparece en la pantalla de la cocina. Sin papeles ni confusiones.",
   },
   {
     icon: Wallet,
@@ -51,7 +51,7 @@ const FAQ = [
   },
   {
     q: "¿Cómo activo las comandas?",
-    a: "En Configuración marca el rubro «Restaurante, café o comida» (o escribe el tuyo, como sanguchería o pizzería). Con el plan Pro aparecen Comandas y Cocina en el menú, y ahí mismo eliges cuántas mesas tienes.",
+    a: "En Configuración marca el rubro “Restaurante, café o comida” (o escribe el tuyo, como sanguchería o pizzería). Con el plan Pro aparecen Comandas y Cocina en el menú, y ahí mismo eliges cuántas mesas tienes.",
   },
   {
     q: "¿Los garzones ven cuánto gano?",

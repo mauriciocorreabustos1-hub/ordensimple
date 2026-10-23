@@ -254,7 +254,7 @@ export function ComandasBoard({
         })}
       </div>
       {comandas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay comandas abiertas. Toca «Nueva comanda» cuando llegue una mesa o un pedido.</p>
+        <p className="text-sm text-muted-foreground">No hay comandas abiertas. Toca “Nueva comanda” cuando llegue una mesa o un pedido.</p>
       ) : null}
 
       <NewComandaModal

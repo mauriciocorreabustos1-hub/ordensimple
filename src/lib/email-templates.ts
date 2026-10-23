@@ -252,7 +252,7 @@ export function promoEmail({
   <tr><td align="center" style="border:2px dashed ${GREEN};border-radius:12px;padding:16px;">
     <div style="font-size:13px;color:${MUTED};margin-bottom:4px;">Tu código</div>
     <div style="font-size:24px;font-weight:700;letter-spacing:2px;color:${GREEN};font-family:Consolas,Menlo,monospace;">${escapeHtml(couponCode)}</div>
-    <div style="font-size:12px;color:${MUTED};margin-top:6px;">Canjéalo en Configuración → Tu plan</div>
+    <div style="font-size:12px;color:${MUTED};margin-top:6px;">Canjéalo en Configuración, sección Tu plan</div>
   </td></tr>
 </table>`
     : ""
@@ -269,7 +269,7 @@ export function promoEmail({
 
   const text = [
     ...paragraphs,
-    couponCode ? `Tu código: ${couponCode} (canjéalo en Configuración → Tu plan)` : "",
+    couponCode ? `Tu código: ${couponCode} (canjéalo en Configuración, sección Tu plan)` : "",
     buttonLabel && buttonUrl ? `${buttonLabel}: ${buttonUrl}` : "",
     `---\nPara dejar de recibir ofertas: ${unsubscribeUrl}`,
   ]

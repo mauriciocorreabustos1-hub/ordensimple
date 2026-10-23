@@ -300,7 +300,7 @@ export default async function BalancePage() {
               </ul>
             ) : (
               <p className="text-muted-foreground">
-                Este mes no has anotado retiros. Usa «Anotar retiro» cuando saques plata o productos para ti, y «Poner plata» cuando metas
+                Este mes no has anotado retiros. Usa “Anotar retiro” cuando saques plata o productos para ti, y “Poner plata” cuando metas
                 plata al negocio.
               </p>
             )}
@@ -370,7 +370,7 @@ export default async function BalancePage() {
                             }}
                           />
                           <ConfirmDelete
-                            title={`¿Borrar «${l.lender}»?`}
+                            title={`¿Borrar “${l.lender}”?`}
                             description="Se quita del balance."
                             onConfirm={deleteLoan.bind(null, l.id)}
                           />
@@ -386,7 +386,7 @@ export default async function BalancePage() {
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              «Pagué la cuota» descuenta la cuota completa de lo que debes. Si parte era interés, corrige el saldo con el lápiz.
+              “Pagué la cuota” descuenta la cuota completa de lo que debes. Si parte era interés, corrige el saldo con el lápiz.
             </p>
           </CardContent>
         </Card>

@@ -433,7 +433,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           </div>
         </CardHeader>
         <CardContent>
-          <p className="mb-2 text-xs text-muted-foreground md:hidden">Desliza para ver todas las columnas →</p>
+          <p className="mb-2 text-xs text-muted-foreground md:hidden">Desliza hacia la derecha para ver todas las columnas.</p>
           <div className="-mx-2 overflow-x-auto px-2 pb-1">
             <table className="w-full min-w-[600px] text-sm">
               <thead>

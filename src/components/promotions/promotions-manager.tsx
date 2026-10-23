@@ -241,7 +241,7 @@ export function PromotionsManager({
         <>
           {!storeEnabled ? (
             <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
-              Los cupones se usan en tu tienda online, y todavía no está publicada. Actívala en Configuración → Tienda online.
+              Los cupones se usan en tu tienda online, y todavía no está publicada. Actívala en Configuración, sección Tienda online.
             </p>
           ) : null}
           {coupons.length === 0 ? (

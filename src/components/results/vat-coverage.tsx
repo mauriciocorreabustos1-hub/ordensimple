@@ -4,7 +4,7 @@ import { AlertTriangle, Check, X } from "lucide-react"
 export function VatCoverage({ label: L, chile, ppm }: { label: string; chile: boolean; ppm: string | null }) {
   const included = [
     { title: `${L} de tus ventas`, text: "Todas: efectivo, débito, crédito, transferencia y fiado (en el mes en que vendes, aunque te paguen después)." },
-    { title: `${L} de tus gastos con factura`, text: "Solo los que marcaste «con factura», en el mes de la factura. Lo comprado con boleta no descuenta." },
+    { title: `${L} de tus gastos con factura`, text: "Solo los que marcaste “con factura”, en el mes de la factura. Lo comprado con boleta no descuenta." },
     { title: "Gastos que nunca descuentan", text: "Sueldos, honorarios, impuestos, contribuciones, patentes, multas e intereses quedan fuera solos." },
     { title: `${L} a favor`, text: "Si un mes compraste más de lo que vendiste, se descuenta del mes siguiente." },
     ...(ppm ? [{ title: "PPM", text: `${ppm} de tus ventas sin ${L}. Lo cambias en Configuración.` }] : []),

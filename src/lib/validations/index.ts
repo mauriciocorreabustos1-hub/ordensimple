@@ -406,7 +406,7 @@ export const promotionSchema = z
   })
   .refine((d) => d.kind !== "PERCENT" || d.percent !== null, { message: "Escribe el porcentaje de descuento", path: ["percent"] })
   .refine((d) => d.kind !== "BUY_X_PAY_Y" || (d.buyQty !== null && d.payQty !== null && d.payQty < d.buyQty), {
-    message: "En «lleva X, paga Y», Y tiene que ser menor que X (ej.: lleva 2, paga 1)",
+    message: "En “lleva X, paga Y”, Y tiene que ser menor que X (ej.: lleva 2, paga 1)",
     path: ["payQty"],
   })
   .refine((d) => d.scope !== "PRODUCTS" || d.productIds.length > 0, { message: "Elige al menos un producto", path: ["productIds"] })

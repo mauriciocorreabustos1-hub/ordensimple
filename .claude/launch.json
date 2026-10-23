@@ -34,6 +34,19 @@
         "BILLING_ENABLED": "true"
       },
       "port": 3000
+    },
+    {
+      "name": "ordensimple-con-planes",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "env": {
+        "RESEND_API_KEY": "",
+        "ENFORCE_PLANS": "true"
+      },
+      "port": 3000
     }
   ]
 }

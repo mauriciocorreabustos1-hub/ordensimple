@@ -209,6 +209,8 @@ model Business {
   payables          Payable[]
   productBarcodes   ProductBarcode[]
   comandas          Comanda[]
+  recipeMaterials   RecipeMaterial[]
+  recipes           Recipe[]
   discountRequests  DiscountRequest[]
   saleReturns       SaleReturn[]
   featureUsage      FeatureUsage[]
@@ -343,6 +345,8 @@ model Product {
   barcodes  ProductBarcode[]
 
   comandaItems ComandaItem[]
+  /// Recetas que fijan el precio y el costo de este producto.
+  recipes      Recipe[]
   appointments Appointment[]
   @@unique([businessId, sku])
   @@index([businessId, active])
@@ -1341,4 +1345,67 @@ model SaleReturn {
   @@index([businessId, status])
   @@index([saleId])
   @@map("sale_return")
+}
+
+// ─── Recetas ────────────────────────────────────────────────────────────────
+
+/// Material o insumo de las recetas (harina, levadura, aceite…): lo que trae el paquete que compras, su precio y cuánto tienes.
+model RecipeMaterial {
+  id         String       @id @default(cuid())
+  businessId String
+  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  /// Medida: g, kg, ml, l o u (unidades).
+  unit       String
+  /// Cuánto trae el paquete que compras, en `unit`.
+  packQty    Float
+  /// Lo que pagas por ese paquete.
+  packPrice  Int
+  /// Cuánto tienes ahora, en `unit`. Null: no se lleva la cuenta.
+  stock      Float?
+  items      RecipeItem[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([businessId, name])
+  @@map("recipe_material")
+}
+
+/// Receta: sus ingredientes, cuánto rinde y con qué márgenes se calcula el precio de venta por unidad.
+model Recipe {
+  id          String       @id @default(cuid())
+  businessId  String
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  /// Cuántas unidades salen de la receta.
+  yieldUnits  Int          @default(1)
+  /// Porcentaje adicional sobre el costo (mano de obra, gas, luz…).
+  overheadPct Float        @default(0)
+  /// Porcentaje de ganancia sobre el costo total.
+  profitPct   Float        @default(0)
+  /// Producto del catálogo al que se le pasó el precio y el costo.
+  productId   String?
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  items       RecipeItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([businessId, name])
+  @@map("recipe")
+}
+
+model RecipeItem {
+  id         String         @id @default(cuid())
+  recipeId   String
+  recipe     Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  materialId String
+  /// Si se borra el material, se quita de las recetas.
+  material   RecipeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  quantity   Float
+  /// Medida en que se anotó (compatible con la del material: g/kg, ml/l o u).
+  unit       String
+
+  @@index([recipeId])
+  @@index([materialId])
+  @@map("recipe_item")
 }

@@ -499,3 +499,30 @@ export const returnRequestSchema = z.object({
   restock: z.boolean(),
 })
 export type ReturnRequestInput = z.input<typeof returnRequestSchema>
+
+// ─── Recetas ────────────────────────────────────────────────────────────────
+
+const recipeUnit = z.enum(["g", "kg", "ml", "l", "u"], { error: "Elige la medida" })
+const quantity = z.number({ error: "Ingresa la cantidad" }).positive("Ingresa una cantidad mayor a 0").max(10_000_000, "Cantidad demasiado alta")
+
+export const recipeMaterialSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre").max(60, "Máximo 60 caracteres"),
+  unit: recipeUnit,
+  packQty: quantity,
+  packPrice: positiveMoney,
+  /** Cuánto tienes ahora (en la misma medida). Vacío: no se lleva la cuenta. */
+  stock: z.number().min(0, "No puede ser negativo").max(100_000_000).nullable().optional(),
+})
+export type RecipeMaterialInput = z.input<typeof recipeMaterialSchema>
+
+export const recipeSchema = z.object({
+  name: z.string().trim().min(2, "Escribe el nombre").max(80, "Máximo 80 caracteres"),
+  yieldUnits: z.number().int("Debe ser un número entero").min(1, "Rinde al menos 1 unidad").max(100_000),
+  overheadPct: z.number().min(0, "No puede ser negativo").max(1000),
+  profitPct: z.number().min(0, "No puede ser negativo").max(10_000),
+  items: z
+    .array(z.object({ materialId: z.string().min(1).max(40), quantity, unit: recipeUnit }))
+    .min(1, "Agrega al menos un ingrediente")
+    .max(40, "Máximo 40 ingredientes"),
+})
+export type RecipeInput = z.input<typeof recipeSchema>

@@ -23,6 +23,7 @@ import {
   Users,
   Vault,
   type LucideIcon,
+  BookOpen,
 } from "lucide-react"
 import type { Role } from "@/generated/prisma/enums"
 import { can, type Permission } from "@/lib/roles"
@@ -56,6 +57,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/balance", label: "Balance y retiros", icon: Scale, pro: true, permission: "finances:view" },
   { href: "/dashboard/servicios", label: "Servicios", icon: Scissors, permission: "products:manage", services: true },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
+  // Gratis; en el menú de los negocios de comida (para los demás está en Herramientas).
+  { href: "/dashboard/recetas", label: "Recetas", icon: BookOpen, permission: "products:manage", food: true },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, pro: true, stock: true },
   { href: "/dashboard/promociones", label: "Promociones", icon: BadgePercent, pro: true, permission: "products:manage" },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },

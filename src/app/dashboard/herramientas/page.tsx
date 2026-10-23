@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, FlaskConical, Scale, Tag, Target } from "lucide-react"
+import { ArrowRight, BookOpen, FlaskConical, Scale, Tag, Target } from "lucide-react"
 import { PageHeader } from "@/components/app/page-header"
 
 export const metadata: Metadata = { title: "Herramientas" }
@@ -11,6 +11,12 @@ const TOOLS = [
     title: "¿A cuánto debería vender?",
     description: "Calcula el precio justo para ganar lo que quieres en cada venta.",
     icon: Tag,
+  },
+  {
+    href: "/dashboard/recetas",
+    title: "Recetas y costos",
+    description: "Anota tus ingredientes con su precio y calcula el costo y el precio de venta de cada receta.",
+    icon: BookOpen,
   },
   {
     href: "/dashboard/herramientas/punto-equilibrio",
@@ -35,7 +41,7 @@ const TOOLS = [
 export default function ToolsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Herramientas" description="Calculadoras simples para tomar mejores decisiones. No modifican tus datos." />
+      <PageHeader title="Herramientas" description="Calculadoras simples para tomar mejores decisiones. Las calculadoras no modifican tus datos; tus recetas sí se guardan." />
       <div className="grid gap-3 sm:grid-cols-2">
         {TOOLS.map((t) => (
           <Link

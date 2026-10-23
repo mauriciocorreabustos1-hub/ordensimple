@@ -528,3 +528,18 @@ export const recipeSchema = z.object({
     .max(40, "Máximo 40 ingredientes"),
 })
 export type RecipeInput = z.input<typeof recipeSchema>
+
+export const materialPurchaseSchema = z.object({
+  /** Cuánto se compró, en `unit` (compatible con la medida del material). */
+  quantity: z.number({ error: "Ingresa la cantidad" }).positive("Ingresa una cantidad mayor a 0").max(10_000_000),
+  unit: z.enum(["g", "kg", "ml", "l", "u"]),
+  /** Lo que se pagó en total. */
+  total: positiveMoney,
+  /** Recalcular el precio del paquete con lo que se pagó. */
+  updatePrice: z.boolean(),
+  /** Anotar la compra como gasto. */
+  addExpense: z.boolean(),
+  hasInvoice: z.boolean().optional(),
+  date: dateKey,
+})
+export type MaterialPurchaseInput = z.input<typeof materialPurchaseSchema>

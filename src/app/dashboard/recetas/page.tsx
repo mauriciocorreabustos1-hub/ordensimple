@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { RecipesBoard } from "@/components/recipes/recipes-board"
 import { db } from "@/lib/db"
 import { addDays, toDateKey } from "@/lib/dates"
+import { can } from "@/lib/roles"
 import { requireBusiness, requirePermission } from "@/server/session"
 
 export const metadata: Metadata = { title: "Recetas" }
@@ -48,6 +49,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
         currency={ctx.currency}
         initialTab={params.pestana === "materiales" ? "materiales" : "recetas"}
         today={toDateKey(new Date(), ctx.timezone)}
+        chargesVat={ctx.settings.chargesVat}
+        canExpense={can(ctx.role, "expenses:create")}
         materials={materials.map((m) => ({ ...m, expiresAt: m.expiresAt ? toDateKey(m.expiresAt, ctx.timezone) : null, used30: Math.max(0, usedBy.get(m.id) ?? 0) }))}
         recipes={recipes.map((r) => ({
           id: r.id,

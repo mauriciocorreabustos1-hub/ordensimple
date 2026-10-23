@@ -5,8 +5,18 @@ import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { zonedTimeToUtc } from "@/lib/dates"
 import { PLANS, productLimit } from "@/lib/plans"
-import { recipeTotals } from "@/lib/recipes"
-import { idSchema, recipeMaterialSchema, recipeSchema, type RecipeInput, type RecipeMaterialInput } from "@/lib/validations"
+import { convert, formatQuantity, isRecipeUnit, recipeTotals, UNIT_LABEL } from "@/lib/recipes"
+import { isPurchaseCategory } from "@/lib/income-statement"
+import { dateKeyToInstant } from "@/lib/dates"
+import {
+  idSchema,
+  materialPurchaseSchema,
+  recipeMaterialSchema,
+  recipeSchema,
+  type MaterialPurchaseInput,
+  type RecipeInput,
+  type RecipeMaterialInput,
+} from "@/lib/validations"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -168,4 +178,59 @@ export async function applyRecipeToProduct(recipeId: string, target: { productId
   } catch (error) {
     return toActionError(error)
   }
+}
+
+/**
+ * Compra de un material: suma el stock, puede recalcular el precio del paquete con lo que se pagó y anota el gasto
+ * (en la categoría de compras a proveedores, que va al costo de lo vendido), todo junto.
+ */
+export async function registerMaterialPurchase(materialId: string, input: MaterialPurchaseInput): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  const parsed = materialPurchaseSchema.safeParse(input)
+  if (!parsed.success) return validationError(parsed.error)
+  if (!idSchema.safeParse(materialId).success) return { ok: false, message: "Material no encontrado." }
+  const d = parsed.data
+  try {
+    assertCan(ctx, "products:manage")
+    if (d.addExpense) assertCan(ctx, "expenses:create")
+    const material = await db.recipeMaterial.findFirst({ where: { id: materialId, businessId: ctx.businessId } })
+    if (!material || !isRecipeUnit(material.unit)) return { ok: false, message: "Material no encontrado." }
+    const qty = convert(d.quantity, d.unit, material.unit)
+    if (qty === null || qty <= 0) return { ok: false, message: "Esa medida no corresponde a la del material." }
+    const unitLabel = UNIT_LABEL[d.unit]
+
+    await db.$transaction(async (tx) => {
+      await tx.recipeMaterial.update({
+        where: { id: material.id },
+        data: {
+          // Si no llevaba la cuenta del stock, empieza con lo comprado.
+          stock: material.stock === null ? qty : { increment: qty },
+          // Precio del paquete según lo pagado: (total ÷ lo comprado) × lo que trae el paquete.
+          ...(d.updatePrice ? { packPrice: Math.max(1, Math.round((d.total / qty) * material.packQty)) } : {}),
+        },
+      })
+      await tx.recipeMaterialMovement.create({
+        data: { businessId: ctx.businessId, materialId: material.id, quantity: qty, reason: `Compra (${formatQuantity(d.quantity)} ${unitLabel})` },
+      })
+      if (d.addExpense) {
+        const categories = await tx.expenseCategory.findMany({ where: { businessId: ctx.businessId }, select: { id: true, name: true } })
+        const category = categories.find((c) => isPurchaseCategory(c.name))
+        await tx.expense.create({
+          data: {
+            businessId: ctx.businessId,
+            description: `Compra de ${material.name} (${formatQuantity(d.quantity)} ${unitLabel})`.slice(0, 120),
+            amount: d.total,
+            hasInvoice: Boolean(d.hasInvoice) && ctx.settings.chargesVat,
+            date: dateKeyToInstant(d.date, ctx.timezone),
+            categoryId: category?.id ?? null,
+            createdById: ctx.user.id,
+          },
+        })
+      }
+    })
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidatePath("/dashboard", "layout")
+  return { ok: true, message: d.addExpense ? "Compra registrada y gasto anotado" : "Compra registrada" }
 }

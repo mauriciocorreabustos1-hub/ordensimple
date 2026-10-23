@@ -166,7 +166,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Por vencer (7 días)</p>
+                  {wasteOn ? <p className="text-sm font-medium">Por vencer (7 días)</p> : null}
                   {inv.expiring.length ? (
                     <ul className="space-y-1.5">
                       {inv.expiring.slice(0, 8).map((p) => {

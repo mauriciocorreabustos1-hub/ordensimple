@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { BookOpen, Loader2, Package, PackagePlus, Pencil, Plus, Search, Trash2, X } from "lucide-react"
+import { BookOpen, Loader2, Package, PackagePlus, Pencil, Plus, Search, ShoppingCart, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { AppModal } from "@/components/app/app-modal"
 import { MoneyInput } from "@/components/app/money-input"
@@ -12,6 +12,7 @@ import { formatMoney } from "@/lib/currency"
 import {
   batchesFromStock,
   compatibleUnits,
+  convert,
   formatQuantity,
   isRecipeUnit,
   itemCost,
@@ -23,7 +24,7 @@ import {
   type RecipeUnit,
 } from "@/lib/recipes"
 import { cn } from "@/lib/utils"
-import { applyRecipeToProduct, deleteRecipe, deleteRecipeMaterial, saveRecipe, saveRecipeMaterial } from "@/server/actions/recipes"
+import { applyRecipeToProduct, deleteRecipe, deleteRecipeMaterial, registerMaterialPurchase, saveRecipe, saveRecipeMaterial } from "@/server/actions/recipes"
 
 /** expiresAt: día de vencimiento "AAAA-MM-DD" (en la zona del negocio). */
 export type MaterialRow = {
@@ -91,7 +92,13 @@ export function RecipesBoard({
   products,
   initialTab,
   today,
+  chargesVat = false,
+  canExpense = false,
 }: {
+  /** El negocio cobra IVA: al registrar una compra se pregunta si tiene factura. */
+  chargesVat?: boolean
+  /** Puede anotar gastos (la compra se anota como gasto). */
+  canExpense?: boolean
   currency: string
   /** Hoy, "AAAA-MM-DD" en la zona del negocio (para los vencimientos). */
   today: string
@@ -104,6 +111,7 @@ export function RecipesBoard({
   const [query, setQuery] = React.useState("")
   const [editingMaterial, setEditingMaterial] = React.useState<MaterialRow | "new" | null>(null)
   const [editingRecipe, setEditingRecipe] = React.useState<RecipeRow | "new" | null>(null)
+  const [buying, setBuying] = React.useState<MaterialRow | null>(null)
   const money = (n: number) => formatMoney(Math.round(n), currency)
   const byId = React.useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials])
   const q = query.trim().toLowerCase()
@@ -198,8 +206,8 @@ export function RecipesBoard({
           {materials
             .filter((m) => !q || m.name.toLowerCase().includes(q))
             .map((m) => (
-              <li key={m.id}>
-                <button type="button" onClick={() => setEditingMaterial(m)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent/40">
+              <li key={m.id} className="flex items-center gap-1 pr-2">
+                <button type="button" onClick={() => setEditingMaterial(m)} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left hover:bg-accent/40">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{m.name}</span>
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -215,11 +223,16 @@ export function RecipesBoard({
                   </span>
                   <Pencil className="size-4 shrink-0 text-muted-foreground" />
                 </button>
+                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setBuying(m)} aria-label={`Registrar compra de ${m.name}`}>
+                  <ShoppingCart />
+                  <span className="max-sm:hidden">Compra</span>
+                </Button>
               </li>
             ))}
         </ul>
       )}
 
+      {buying ? <PurchaseDialog currency={currency} material={buying} today={today} chargesVat={chargesVat} canExpense={canExpense} onClose={() => setBuying(null)} /> : null}
       {editingMaterial ? (
         <MaterialDialog
           currency={currency}
@@ -364,6 +377,123 @@ function MaterialDialog({
             )
           ) : null}
         </div>
+      </form>
+    </AppModal>
+  )
+}
+
+/** Registrar una compra de un material: suma el stock, puede actualizar su precio y anota el gasto. */
+function PurchaseDialog({
+  currency,
+  material,
+  today,
+  chargesVat,
+  canExpense,
+  onClose,
+}: {
+  currency: string
+  material: MaterialRow
+  today: string
+  chargesVat: boolean
+  canExpense: boolean
+  onClose: () => void
+}) {
+  const router = useRouter()
+  const money = (n: number) => formatMoney(Math.round(n), currency)
+  const base: RecipeUnit = isRecipeUnit(material.unit) ? material.unit : "u"
+  const [quantity, setQuantity] = React.useState("")
+  const [unit, setUnit] = React.useState<RecipeUnit>(base)
+  const [total, setTotal] = React.useState(0)
+  const [date, setDate] = React.useState(today)
+  const [updatePrice, setUpdatePrice] = React.useState(true)
+  const [addExpense, setAddExpense] = React.useState(canExpense)
+  const [hasInvoice, setHasInvoice] = React.useState(false)
+  const [pending, startTransition] = React.useTransition()
+
+  const qty = parseQuantity(quantity)
+  const inBase = qty && qty > 0 ? convert(qty, unit, base) : null
+  // Cómo quedaría el precio del paquete con lo que se pagó en esta compra.
+  const newPackPrice = inBase && total > 0 ? Math.round((total / inBase) * material.packQty) : null
+
+  function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!qty || qty <= 0) return void toast.error("¿Cuánto compraste?")
+    if (total <= 0) return void toast.error("¿Cuánto pagaste en total?")
+    startTransition(async () => {
+      const r = await registerMaterialPurchase(material.id, { quantity: qty, unit, total, updatePrice, addExpense, hasInvoice: chargesVat && addExpense && hasInvoice, date })
+      if (!r.ok) return void toast.error(r.message)
+      toast.success(r.message)
+      router.refresh()
+      onClose()
+    })
+  }
+
+  return (
+    <AppModal open onOpenChange={(o) => (o ? null : onClose())} title={`Compra de ${material.name}`} noAutoFocus>
+      <form onSubmit={save} className="space-y-4">
+        <div className="space-y-1.5">
+          <span className="block text-sm font-medium">¿Cuánto compraste?</span>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <Input value={quantity} onChange={(e) => setQuantity(e.target.value)} inputMode="decimal" placeholder="Ej.: 10" className="h-10" aria-label="Cantidad comprada" />
+            <select value={unit} onChange={(e) => setUnit(e.target.value as RecipeUnit)} className={cn(fieldClass, "w-28")} aria-label="Medida de la compra">
+              {compatibleUnits(base).map((u) => (
+                <option key={u} value={u}>
+                  {UNIT_LABEL[u]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">¿Cuánto pagaste en total?</span>
+          <MoneyInput value={total} onValueChange={setTotal} currency={currency} aria-label="Total pagado" />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">Fecha</span>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" aria-label="Fecha de la compra" />
+        </label>
+        <div className="space-y-2 rounded-xl border p-3 text-sm">
+          <label className="flex items-start gap-2">
+            <input type="checkbox" checked={updatePrice} onChange={(e) => setUpdatePrice(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+            <span>
+              Actualizar el precio del material
+              <span className="block text-xs text-muted-foreground">
+                {newPackPrice !== null
+                  ? `El paquete de ${formatQuantity(material.packQty)} ${unitLabel(material.unit)} pasa de ${money(material.packPrice)} a ${money(newPackPrice)}, y tus recetas se recalculan.`
+                  : `Hoy: ${formatQuantity(material.packQty)} ${unitLabel(material.unit)} a ${money(material.packPrice)}.`}
+              </span>
+            </span>
+          </label>
+          {canExpense ? (
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={addExpense} onChange={(e) => setAddExpense(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+              <span>
+                Anotarlo como gasto
+                <span className="block text-xs text-muted-foreground">Queda en Gastos, como compra a proveedores.</span>
+              </span>
+            </label>
+          ) : null}
+          {chargesVat && canExpense && addExpense ? (
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={hasInvoice} onChange={(e) => setHasInvoice(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+              <span>
+                Tiene factura con IVA a nombre del negocio
+                <span className="block text-xs text-muted-foreground">Su IVA se descuenta del IVA que tienes que pagar.</span>
+              </span>
+            </label>
+          ) : null}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {material.stock === null
+            ? `Empiezas a llevar el stock de ${material.name} con lo que compraste.`
+            : inBase
+              ? `Tendrás ${formatQuantity(material.stock + inBase)} ${unitLabel(material.unit)} de ${material.name}.`
+              : `Hoy tienes ${formatQuantity(material.stock)} ${unitLabel(material.unit)}.`}
+        </p>
+        <Button type="submit" className="h-11 w-full" disabled={pending}>
+          {pending ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
+          Registrar compra
+        </Button>
       </form>
     </AppModal>
   )

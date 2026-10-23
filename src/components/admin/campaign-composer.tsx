@@ -1,27 +1,50 @@
 "use client"
 
 import * as React from "react"
-import { FlaskConical, Loader2, Send } from "lucide-react"
+import { Check, FlaskConical, Loader2, Send } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field } from "@/components/app/field"
 import { ChoiceChips } from "@/components/admin/choice-chips"
-import { sendCampaign, sendTestCampaign, type CampaignInput } from "@/server/actions/admin"
+import { cn } from "@/lib/utils"
+import { previewCampaignAudience, sendCampaign, sendTestCampaign, type CampaignInput } from "@/server/actions/admin"
 
 type Audience = CampaignInput["audience"]
 
 export function CampaignComposer({
   audiences,
+  rubros: rubroOptions,
   coupons,
   appUrl,
 }: {
   audiences: { value: Audience; label: string; count: number }[]
+  /** Rubros para filtrar, con cuántas personas (que aceptan ofertas) hay en cada uno. */
+  rubros: { value: string; count: number }[]
   coupons: { code: string; summary: string }[]
   appUrl: string
 }) {
   const [audience, setAudience] = React.useState<Audience>("ALL")
+  const [rubros, setRubros] = React.useState<string[]>([])
+  // Con rubros elegidos, el total se pide al servidor (se cruza con el plan).
+  const [filteredCount, setFilteredCount] = React.useState<number | null>(null)
+  React.useEffect(() => {
+    if (!rubros.length) return
+    let cancelled = false
+    const t = setTimeout(async () => {
+      const r = await previewCampaignAudience({ audience, rubros })
+      if (!cancelled && r.ok && r.data) setFilteredCount(r.data.count)
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [audience, rubros])
+  const toggleRubro = (r: string) => {
+    setFilteredCount(null)
+    setRubros((list) => (list.includes(r) ? list.filter((x) => x !== r) : [...list, r]))
+  }
   const [subject, setSubject] = React.useState("")
   const [body, setBody] = React.useState("")
   const [couponCode, setCouponCode] = React.useState<string>("")
@@ -30,9 +53,11 @@ export function CampaignComposer({
   const [errors, setErrors] = React.useState<Record<string, string[] | undefined>>({})
   const [pending, setPending] = React.useState<"test" | "send" | null>(null)
 
-  const count = audiences.find((a) => a.value === audience)?.count ?? 0
+  const count = rubros.length ? (filteredCount ?? 0) : (audiences.find((a) => a.value === audience)?.count ?? 0)
+  const counting = rubros.length > 0 && filteredCount === null
   const input = (): CampaignInput => ({
     audience,
+    rubros,
     subject,
     body,
     couponCode: couponCode || undefined,
@@ -43,7 +68,7 @@ export function CampaignComposer({
   async function run(kind: "test" | "send") {
     if (kind === "send") {
       const ok = window.confirm(
-        `¿Enviar "${subject}" a ${count} persona${count === 1 ? "" : "s"}? Esto no se puede deshacer.`,
+        `¿Enviar "${subject}" a ${count} persona${count === 1 ? "" : "s"}${rubros.length ? ` (rubros: ${rubros.join(", ")})` : ""}? Esto no se puede deshacer.`,
       )
       if (!ok) return
     }
@@ -79,8 +104,45 @@ export function CampaignComposer({
         <ChoiceChips
           options={audiences.map((a) => ({ value: a.value, label: `${a.label} (${a.count})` }))}
           value={audience}
-          onChange={setAudience}
+          onChange={(a) => {
+            setFilteredCount(null)
+            setAudience(a)
+          }}
         />
+      </Field>
+
+      <Field label="¿De qué rubro?" optional hint="Puedes marcar varios. Sin marcar ninguno, se envía a todos los rubros.">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Rubros">
+          <button
+            type="button"
+            aria-pressed={rubros.length === 0}
+            onClick={() => {
+              setFilteredCount(null)
+              setRubros([])
+            }}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-sm transition-colors",
+              rubros.length === 0 ? "border-primary bg-primary/10 font-medium text-primary" : "hover:bg-muted",
+            )}
+          >
+            Todos los rubros
+          </button>
+          {rubroOptions.map((r) => {
+            const on = rubros.includes(r.value)
+            return (
+              <button
+                key={r.value}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggleRubro(r.value)}
+                className={cn("inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors", on ? "border-primary bg-primary/10 font-medium text-primary" : "hover:bg-muted")}
+              >
+                {on ? <Check className="size-3.5" /> : null}
+                {r.value === "Otro" ? "Otro (escrito a mano)" : r.value} ({r.count})
+              </button>
+            )
+          })}
+        </div>
       </Field>
 
       <Field label="Asunto" htmlFor="cm-subject" error={errors.subject?.[0]} hint="Corto y claro. Ej.: {nombre}, este mes Pro te sale gratis 🎁">
@@ -129,9 +191,9 @@ export function CampaignComposer({
           {pending === "test" ? <Loader2 className="animate-spin" /> : <FlaskConical />}
           Enviarme una prueba
         </Button>
-        <Button type="submit" size="lg" className="h-10" disabled={pending !== null || count === 0}>
-          {pending === "send" ? <Loader2 className="animate-spin" /> : <Send />}
-          Enviar a {count} persona{count === 1 ? "" : "s"}
+        <Button type="submit" size="lg" className="h-10" disabled={pending !== null || counting || count === 0}>
+          {pending === "send" || counting ? <Loader2 className="animate-spin" /> : <Send />}
+          {counting ? "Contando…" : `Enviar a ${count} persona${count === 1 ? "" : "s"}`}
         </Button>
       </div>
     </form>

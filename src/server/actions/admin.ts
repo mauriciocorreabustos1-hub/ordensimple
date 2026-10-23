@@ -11,7 +11,7 @@ import { unsubscribeUrl } from "@/lib/unsubscribe"
 import { PLANS } from "@/lib/plans"
 import { isAdmin, isAdminEmail, requireAdmin, requireOwnerAdmin } from "@/server/admin"
 import { cancelSubscriptionsOf } from "@/server/billing"
-import { audienceWhere } from "@/server/queries/campaigns"
+import { audienceWhere, CAMPAIGN_RUBROS, countAudience } from "@/server/queries/campaigns"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 /** Borra el registro de errores (después de revisarlos). Solo administradores. */
@@ -166,6 +166,11 @@ const campaignSchema = z.object({
     .optional(),
   couponCode: z.string().trim().toUpperCase().max(30).optional(),
   audience: z.enum(["ALL", "FREE", "PAID"]),
+  /** Rubros a los que se envía (vacío: todos). */
+  rubros: z
+    .array(z.string().refine((r) => (CAMPAIGN_RUBROS as readonly string[]).includes(r), "Rubro desconocido"))
+    .max(20)
+    .optional(),
 })
 
 export type CampaignInput = z.input<typeof campaignSchema>
@@ -222,10 +227,10 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
 
   try {
     const users = await db.user.findMany({
-      where: audienceWhere(d.audience),
+      where: await audienceWhere(d.audience, d.rubros ?? []),
       select: { id: true, name: true, email: true },
     })
-    if (users.length === 0) return { ok: false, message: "No hay personas que hayan aceptado recibir ofertas en ese grupo." }
+    if (users.length === 0) return { ok: false, message: "No hay personas que hayan aceptado recibir ofertas en ese grupo y esos rubros." }
 
     const campaign = await db.emailCampaign.create({
       data: {
@@ -235,6 +240,7 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
         buttonUrl: d.buttonUrl || null,
         couponCode: d.couponCode || null,
         audience: d.audience,
+        rubros: d.rubros ?? [],
         recipients: users.length,
         createdBy: admin.email,
       },
@@ -252,6 +258,18 @@ export async function sendCampaign(input: CampaignInput): Promise<ActionResult> 
       ok: true,
       message: failed ? `Se enviaron ${sent} correos; ${failed} fallaron` : `¡Listo! Se enviaron ${sent} correo${sent === 1 ? "" : "s"}`,
     }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+/** Cuántas personas recibirían el envío con ese plan y esos rubros (para mostrarlo antes de enviar). */
+export async function previewCampaignAudience(input: Pick<CampaignInput, "audience" | "rubros">): Promise<ActionResult<{ count: number }>> {
+  await requireAdmin()
+  const parsed = campaignSchema.pick({ audience: true, rubros: true }).safeParse(input)
+  if (!parsed.success) return validationError(parsed.error)
+  try {
+    return { ok: true, data: { count: await countAudience(parsed.data.audience, parsed.data.rubros ?? []) } }
   } catch (error) {
     return toActionError(error)
   }

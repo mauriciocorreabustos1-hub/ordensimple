@@ -894,6 +894,8 @@ model EmailCampaign {
   couponCode  String?
   /// ALL, FREE, PAID o DIRECT (personas específicas).
   audience    String    @default("ALL")
+  /// Rubros a los que se envió (vacío: todos los rubros).
+  rubros      String[]  @default([])
   recipients  Int       @default(0)
   /// En los envíos a personas específicas: sus correos, separados por coma.
   toEmails    String?

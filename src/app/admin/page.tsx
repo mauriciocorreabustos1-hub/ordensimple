@@ -689,6 +689,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         </div>
         <CampaignComposer
           appUrl={getAppUrl()}
+          rubros={audience.rubros}
           audiences={(Object.keys(AUDIENCES) as Audience[]).map((key) => ({
             value: key,
             label: AUDIENCES[key],
@@ -715,6 +716,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                     <p className="truncate font-medium">{cm.subject}</p>
                     <p className="text-xs text-muted-foreground">
                       {cm.audience === "DIRECT" ? `Para: ${shortList(cm.toEmails, cm.recipients)}` : (AUDIENCES[cm.audience as Audience] ?? cm.audience)}
+                      {cm.rubros.length ? ` · rubros: ${cm.rubros.join(", ")}` : ""}
                       {cm.couponCode ? ` · código ${cm.couponCode}` : ""}
                     </p>
                   </div>

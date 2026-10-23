@@ -440,6 +440,11 @@ model Expense {
   amount      Int
   /// Tiene factura a nombre del negocio: su IVA se descuenta del IVA a pagar.
   hasInvoice  Boolean          @default(false)
+  /// Impuestos específicos que trae la factura aparte del IVA (ILA de bebidas, impuesto a los combustibles…).
+  /// No son IVA: no se descuentan del IVA a pagar y quedan como parte del costo.
+  specificTax Int              @default(0)
+  /// Retención de la boleta de honorarios que paga el negocio en el F29 (calculada con la tasa del año del gasto).
+  withholding Int              @default(0)
   date        DateTime         @default(now())
   categoryId  String?
   category    ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)

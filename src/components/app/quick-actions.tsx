@@ -57,6 +57,7 @@ export function QuickActionsProvider({
   products,
   categories,
   chargesVat,
+  chile = false,
   customers,
   suppliers = [],
   continuousScan = true,
@@ -75,6 +76,8 @@ export function QuickActionsProvider({
   products: ProductOption[]
   categories: ExpenseCategoryOption[]
   chargesVat: boolean
+  /** Negocio en Chile: boletas de honorarios con retención. */
+  chile?: boolean
   customers: string[]
   /** Proveedores registrados, los más usados primero. */
   suppliers?: string[]
@@ -152,6 +155,7 @@ export function QuickActionsProvider({
           timezone={timezone}
           categories={categories}
           chargesVat={chargesVat}
+          chile={chile}
           supplierPreset={preset?.supplierName}
           onDone={close}
         />

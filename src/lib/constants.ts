@@ -21,6 +21,7 @@ export const DEFAULT_EXPENSE_CATEGORIES: { name: string; icon: string; isVariabl
   { name: "Agua", icon: "droplet" },
   { name: "Internet", icon: "wifi" },
   { name: "Sueldos", icon: "users" },
+  { name: "Honorarios", icon: "briefcase" },
   { name: "Publicidad", icon: "megaphone" },
   { name: "Transporte", icon: "truck" },
   { name: "Proveedores", icon: "package", isVariable: true },

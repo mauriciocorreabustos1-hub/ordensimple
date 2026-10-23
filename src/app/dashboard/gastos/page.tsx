@@ -58,6 +58,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
         timezone={ctx.timezone}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}
+        chile={ctx.business.country === "CL"}
         expense={{
           id: e.id,
           amount: e.amount,
@@ -66,6 +67,8 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
           date: toDateKey(e.date, ctx.timezone),
           supplierName: e.supplier?.name ?? "",
           hasInvoice: e.hasInvoice,
+          specificTax: e.specificTax,
+          withholds: e.withholding > 0,
         }}
       />
     ) : null

@@ -77,6 +77,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}
+        chile={ctx.business.country === "CL"}
         customers={customers.map((c) => c.name)}
         suppliers={suppliers.map((s) => s.name)}
       >

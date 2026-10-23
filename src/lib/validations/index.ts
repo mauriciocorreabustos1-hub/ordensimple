@@ -172,6 +172,10 @@ export const expenseSchema = z.object({
   date: dateKey,
   supplierName: optionalText(80),
   hasInvoice: z.boolean().optional(),
+  /** Impuestos específicos de la factura (ILA, combustibles…), aparte del IVA. */
+  specificTax: money.optional(),
+  /** Boleta de honorarios: el negocio retiene el impuesto y lo paga en el F29. */
+  withholds: z.boolean().optional(),
 })
 export type ExpenseInput = z.input<typeof expenseSchema>
 

@@ -12,7 +12,8 @@ import { GUIDE_EXPENSE_SAVED } from "@/components/app/guided-tour"
 import { MoneyInput } from "@/components/app/money-input"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
-import { withoutVatCredit } from "@/lib/income-statement"
+import { isHonorarium, withoutVatCredit } from "@/lib/income-statement"
+import { honorariumRetentionRate, percentText } from "@/lib/vat"
 import { cn } from "@/lib/utils"
 import { createExpense, updateExpense } from "@/server/actions/expenses"
 
@@ -26,6 +27,10 @@ export type ExpenseEdit = {
   date: string
   supplierName: string
   hasInvoice?: boolean
+  /** Impuestos específicos de la factura (ILA, combustibles…). */
+  specificTax?: number
+  /** Se retuvo el impuesto de la boleta de honorarios. */
+  withholds?: boolean
 }
 
 export function ExpenseForm({
@@ -33,6 +38,7 @@ export function ExpenseForm({
   timezone,
   categories,
   chargesVat = false,
+  chile = false,
   editing,
   supplierPreset,
   onDone,
@@ -42,6 +48,8 @@ export function ExpenseForm({
   categories: ExpenseCategoryOption[]
   /** El negocio cobra IVA: se pregunta si el gasto tiene factura (su IVA se descuenta). */
   chargesVat?: boolean
+  /** Negocio en Chile: boletas de honorarios con retención. */
+  chile?: boolean
   /** Si viene, el formulario edita ese gasto en vez de crear uno nuevo. */
   editing?: ExpenseEdit
   /** Abrir como compra a este proveedor (categoría de proveedores ya elegida). */
@@ -56,6 +64,8 @@ export function ExpenseForm({
   const [date, setDate] = React.useState(() => editing?.date ?? toDateKey(new Date(), timezone))
   const [supplierName, setSupplierName] = React.useState(editing?.supplierName ?? supplierPreset ?? "")
   const [hasInvoice, setHasInvoice] = React.useState(editing?.hasInvoice ?? false)
+  const [specificTax, setSpecificTax] = React.useState(editing?.specificTax ?? 0)
+  const [withholds, setWithholds] = React.useState(editing?.withholds ?? true)
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
   const categoryName = categories.find((c) => c.id === categoryId)?.name ?? ""
@@ -73,6 +83,10 @@ export function ExpenseForm({
   }
   // Sueldos, impuestos, honorarios…: nunca traen IVA que se pueda descontar.
   const noVat = withoutVatCredit(categoryName)
+  // Boleta de honorarios: el negocio retiene el impuesto (lo paga en el F29) y le paga a la persona el resto.
+  const honorarium = chile && isHonorarium(categoryName)
+  const retentionRate = honorariumRetentionRate(Number(date.slice(0, 4)) || new Date().getFullYear())
+  const retention = honorarium && withholds ? Math.round(amount * retentionRate) : 0
 
   function pickCategory(cat: ExpenseCategoryOption) {
     setCategoryId(cat.id === categoryId ? undefined : cat.id)
@@ -85,10 +99,20 @@ export function ExpenseForm({
     const errs: Record<string, string> = {}
     if (amount <= 0) errs.amount = "Ingresa el monto del gasto"
     if (description.trim().length < 2) errs.description = "Describe el gasto"
+    if (chargesVat && hasInvoice && !noVat && specificTax > amount) errs.specificTax = "No puede ser más que el total de la factura"
     setErrors(errs)
     if (Object.keys(errs).length) return
     startTransition(async () => {
-      const input = { amount, description, categoryId, date, supplierName, ...(chargesVat ? { hasInvoice: hasInvoice && !noVat } : {}) }
+      const invoiced = hasInvoice && !noVat
+      const input = {
+        amount,
+        description,
+        categoryId,
+        date,
+        supplierName,
+        ...(chargesVat ? { hasInvoice: invoiced, specificTax: invoiced ? specificTax : 0 } : {}),
+        withholds: honorarium && withholds,
+      }
       const result = editing ? await updateExpense(editing.id, input) : await createExpense(input)
       if (!result.ok) {
         toast.error(result.message)
@@ -111,13 +135,15 @@ export function ExpenseForm({
       setCategoryId(undefined)
       setSupplierName("")
       setHasInvoice(false)
+      setSpecificTax(0)
+      setWithholds(true)
       onDone?.()
     })
   }
 
   return (
     <form onSubmit={submit} className="grid gap-5">
-      <Field label="¿Cuánto gastaste?" error={errors.amount}>
+      <Field label={honorarium ? "Monto bruto de la boleta" : "¿Cuánto gastaste?"} error={errors.amount}>
         <MoneyInput value={amount} onValueChange={setAmount} currency={currency} size="lg" autoFocus aria-label="Monto" />
       </Field>
       <Field label="¿En qué?">
@@ -206,6 +232,19 @@ export function ExpenseForm({
           </Field>
         )}
       </div>
+      {honorarium ? (
+        <label htmlFor="e-withholds" className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">
+          <Checkbox id="e-withholds" checked={withholds} onCheckedChange={(v) => setWithholds(v === true)} className="mt-0.5" />
+          <span className="space-y-0.5">
+            <span className="block font-medium">Yo retengo el impuesto ({percentText(retentionRate)})</span>
+            <span className="block text-xs text-muted-foreground">
+              {withholds && amount > 0
+                ? `Le pagas ${formatMoney(amount - retention, currency)} a la persona y ${formatMoney(retention, currency)} van al SII en tu F29.`
+                : "Si tu negocio es empresa o tiene contabilidad, normalmente retienes tú. Si no, la persona paga su impuesto."}
+            </span>
+          </span>
+        </label>
+      ) : null}
       {chargesVat && !noVat ? (
         <label htmlFor="e-invoice" className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">
           <Checkbox id="e-invoice" checked={hasInvoice} onCheckedChange={(v) => setHasInvoice(v === true)} className="mt-0.5" />
@@ -218,6 +257,15 @@ export function ExpenseForm({
             </span>
           </span>
         </label>
+      ) : null}
+      {chargesVat && !noVat && hasInvoice ? (
+        <Field label="Impuestos específicos de la factura" error={errors.specificTax} optional>
+          <MoneyInput value={specificTax} onValueChange={setSpecificTax} currency={currency} aria-label="Impuestos específicos de la factura" />
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            El ILA de bebidas alcohólicas o azucaradas, o el impuesto a los combustibles, viene aparte del IVA en la factura. Anótalo aquí para
+            calcular bien tu IVA: no se descuenta y queda como parte del costo.
+          </p>
+        </Field>
       ) : null}
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}

@@ -12,12 +12,14 @@ export function EditExpenseButton({
   timezone,
   categories,
   chargesVat,
+  chile,
 }: {
   expense: ExpenseEdit
   currency: string
   timezone: string
   categories: ExpenseCategoryOption[]
   chargesVat?: boolean
+  chile?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   return (
@@ -32,6 +34,7 @@ export function EditExpenseButton({
             timezone={timezone}
             categories={categories}
             chargesVat={chargesVat}
+            chile={chile}
             editing={expense}
             onDone={() => setOpen(false)}
           />

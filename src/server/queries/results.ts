@@ -4,20 +4,32 @@ import { startOfMonth, zonedTimeToUtc } from "@/lib/dates"
 import { buildStatement, EMPTY_PERIOD, vatWithCarry, withoutVatCredit, type RawPeriod } from "@/lib/income-statement"
 import { vatFromGross } from "@/lib/vat"
 
-type ExpenseRow = { categoryId: string | null; name: string | null; isVariable: boolean | null; hasInvoice: boolean; total: bigint | number | null }
+type ExpenseRow = {
+  categoryId: string | null
+  name: string | null
+  isVariable: boolean | null
+  hasInvoice: boolean
+  total: bigint | number | null
+  /** Impuestos específicos de esas facturas (ILA, combustibles): no son IVA, no se descuentan. */
+  specific: bigint | number | null
+  withholding: bigint | number | null
+}
 
 /** ¿Este gasto descuenta IVA? Solo con factura y si es un gasto que puede traer IVA. */
 const creditsVat = (row: { name: string | null; hasInvoice: boolean }) => row.hasInvoice && !withoutVatCredit(row.name)
 
-function addExpense(raw: RawPeriod, row: { name: string | null; isVariable: boolean | null; hasInvoice: boolean; total: number }) {
-  row = { ...row, hasInvoice: creditsVat(row) }
+function addExpense(raw: RawPeriod, row: { name: string | null; isVariable: boolean | null; hasInvoice: boolean; total: number; specific: number; withholding: number }) {
+  const credits = creditsVat(row)
+  // El IVA de la factura se calcula sin sus impuestos específicos (el ILA no es IVA); el total igual es costo.
+  const invoiced = credits ? row.total - row.specific : 0
   if (row.isVariable) {
     raw.purchases += row.total
-    if (row.hasInvoice) raw.purchasesInvoiced += row.total
+    raw.purchasesInvoiced += invoiced
   } else {
     raw.otherExpenses += row.total
-    if (row.hasInvoice) raw.otherInvoiced += row.total
+    raw.otherInvoiced += invoiced
   }
+  raw.withholding += row.withholding
 }
 
 /** Estado de resultados de un período, con el detalle de gastos por categoría. */
@@ -29,7 +41,8 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
       FROM "sale_item" i JOIN "sale" s ON s."id" = i."saleId"
       WHERE s."businessId" = ${businessId} AND s."date" >= ${from} AND s."date" < ${to} AND i."unitCost" > 0`,
     db.$queryRaw<ExpenseRow[]>`
-      SELECT e."categoryId", c."name", c."isVariable", e."hasInvoice", SUM(e."amount") AS total
+      SELECT e."categoryId", c."name", c."isVariable", e."hasInvoice", SUM(e."amount") AS total,
+             SUM(e."specificTax") AS specific, SUM(e."withholding") AS withholding
       FROM "expense" e LEFT JOIN "expense_category" c ON c."id" = e."categoryId"
       WHERE e."businessId" = ${businessId} AND e."date" >= ${from} AND e."date" < ${to}
       GROUP BY e."categoryId", c."name", c."isVariable", e."hasInvoice"`,
@@ -49,11 +62,12 @@ export async function getIncomeStatement(businessId: string, from: Date, to: Dat
   const byCategory = new Map<string, { name: string; isVariable: boolean; total: number }>()
   for (const row of expenses) {
     const total = Number(row.total ?? 0)
-    addExpense(raw, { name: row.name, isVariable: row.isVariable, hasInvoice: row.hasInvoice, total })
+    const specific = Number(row.specific ?? 0)
+    addExpense(raw, { name: row.name, isVariable: row.isVariable, hasInvoice: row.hasInvoice, total, specific, withholding: Number(row.withholding ?? 0) })
     const key = row.categoryId ?? "none"
     const cat = byCategory.get(key) ?? { name: row.name ?? "Sin categoría", isVariable: Boolean(row.isVariable), total: 0 }
     // Sin IVA cuando el gasto tiene factura (ese IVA se recupera).
-    cat.total += rate && creditsVat(row) ? total - vatFromGross(total, rate) : total
+    cat.total += rate && creditsVat(row) ? total - vatFromGross(total - specific, rate) : total
     byCategory.set(key, cat)
   }
 
@@ -82,7 +96,8 @@ async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone:
       GROUP BY bucket`,
     db.$queryRaw<(Bucket & ExpenseRow)[]>`
       SELECT to_char((e."date" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}, 'YYYY-MM') AS bucket,
-             c."name", c."isVariable", e."hasInvoice", SUM(e."amount") AS total
+             c."name", c."isVariable", e."hasInvoice", SUM(e."amount") AS total,
+             SUM(e."specificTax") AS specific, SUM(e."withholding") AS withholding
       FROM "expense" e LEFT JOIN "expense_category" c ON c."id" = e."categoryId"
       WHERE e."businessId" = ${businessId} AND e."date" >= ${from} AND e."date" < ${to}
       GROUP BY bucket, c."name", c."isVariable", e."hasInvoice"`,
@@ -104,7 +119,15 @@ async function getMonthlyRaw(businessId: string, from: Date, to: Date, timezone:
     get(r.bucket).knownRevenue = Number(r.revenue ?? 0)
     get(r.bucket).knownCost = Number(r.cost ?? 0)
   }
-  for (const r of expenses) addExpense(get(r.bucket), { name: r.name, isVariable: r.isVariable, hasInvoice: r.hasInvoice, total: Number(r.total ?? 0) })
+  for (const r of expenses)
+    addExpense(get(r.bucket), {
+      name: r.name,
+      isVariable: r.isVariable,
+      hasInvoice: r.hasInvoice,
+      total: Number(r.total ?? 0),
+      specific: Number(r.specific ?? 0),
+      withholding: Number(r.withholding ?? 0),
+    })
   for (const r of waste) get(r.bucket).waste = Number(r.cost ?? 0)
   return (key: string) => months.get(key) ?? EMPTY_PERIOD
 }
@@ -141,6 +164,7 @@ export async function getYearSummary(businessId: string, year: number, lastMonth
     operatingExpenses: sum((r) => r.s.operatingExpenses + r.s.waste),
     profit: sum((r) => r.s.profit),
     vatToPay: sum((r) => r.vatToPay),
+    withholding: sum((r) => r.s.withholding),
   }
   return { rows, totals }
 }

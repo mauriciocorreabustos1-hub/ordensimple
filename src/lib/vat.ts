@@ -95,10 +95,15 @@ export function vatDueDate(year: number, month: number, dueDay: number, timeZone
   return dateKeyToUtc(key(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()), timeZone)
 }
 
-/** Opciones de tasa de PPM (Chile) para elegir en Configuración. */
+/**
+ * Opciones de tasa de PPM (Chile) para elegir en Configuración. Pro Pyme General: 0,125% o 0,25% según si las
+ * ventas del año anterior pasaron las 50.000 UF (tasas rebajadas por la Ley 21.755 hasta 2027).
+ */
 export const PPM_OPTIONS = [
-  { value: 0.00125, label: "0,125%", hint: "Pro Pyme General" },
-  { value: 0.002, label: "0,2%", hint: "Pro Pyme Transparente" },
+  { value: 0.00125, label: "0,125%", hint: "Pro Pyme General, hasta 50.000 UF" },
+  { value: 0.0025, label: "0,25%", hint: "Pro Pyme General, sobre 50.000 UF" },
+  { value: 0.002, label: "0,2%", hint: "Pro Pyme Transparente, hasta 50.000 UF" },
+  { value: 0.005, label: "0,5%", hint: "Pro Pyme Transparente, sobre 50.000 UF" },
   { value: 0.01, label: "1%", hint: "Régimen general" },
   { value: 0, label: "No mostrar", hint: "" },
 ] as const
@@ -106,6 +111,37 @@ export const PPM_OPTIONS = [
 /** Pago provisional mensual: un porcentaje de las ventas sin IVA del mes. */
 export function ppmAmount(netSales: number, rate: number) {
   return rate > 0 && netSales > 0 ? Math.round(netSales * rate) : 0
+}
+
+/** Retención de las boletas de honorarios en Chile según el año (Ley 21.133: sube hasta 17% en 2028). */
+export function honorariumRetentionRate(year: number) {
+  const byYear: Record<number, number> = { 2019: 0.1, 2020: 0.1075, 2021: 0.115, 2022: 0.1225, 2023: 0.13, 2024: 0.1375, 2025: 0.145, 2026: 0.1525, 2027: 0.16 }
+  return year >= 2028 ? 0.17 : (byYear[year] ?? 0.1)
+}
+
+/** "15,25%" */
+export const percentText = (rate: number) => `${(rate * 100).toLocaleString("es-CL", { maximumFractionDigits: 3 })}%`
+
+export type TaxRegime = "propyme" | "transparente" | "general"
+
+/** Régimen tributario según el PPM que eligió (cada régimen tiene sus tasas). Null si no se sabe. */
+export function regimeFromPpm(ppmRate: number): TaxRegime | null {
+  if (ppmRate === 0.00125 || ppmRate === 0.0025) return "propyme"
+  if (ppmRate === 0.002 || ppmRate === 0.005) return "transparente"
+  if (ppmRate === 0.01) return "general"
+  return null
+}
+
+/**
+ * Tasa del impuesto de primera categoría de un año comercial. Pro Pyme General: 12,5% de 2025 a 2027 (Ley 21.755),
+ * 10% de 2020 a 2022 y 25% en los demás años. Régimen general: 27%. Pro Pyme Transparente: la empresa no lo paga.
+ */
+export function incomeTaxRate(regime: TaxRegime, year: number) {
+  if (regime === "transparente") return 0
+  if (regime === "general") return 0.27
+  if (year >= 2025 && year <= 2027) return 0.125
+  if (year >= 2020 && year <= 2022) return 0.1
+  return 0.25
 }
 
 /** Días que faltan (en el calendario del negocio) para una fecha. Negativo si ya pasó. */

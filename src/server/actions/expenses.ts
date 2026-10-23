@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { dateKeyToInstant, toDateKey } from "@/lib/dates"
+import { dateKeyToInstant, toDateKey, zonedParts } from "@/lib/dates"
+import { isHonorarium } from "@/lib/income-statement"
+import { honorariumRetentionRate } from "@/lib/vat"
 import { expenseSchema, idSchema, type ExpenseInput } from "@/lib/validations"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -21,7 +23,7 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
   const ctx = await requireBusiness()
   const parsed = expenseSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { description, categoryId, amount, date, supplierName, hasInvoice } = parsed.data
+  const { description, categoryId, amount, date, supplierName, hasInvoice, specificTax = 0, withholds } = parsed.data
 
   let createdSupplier: string | null = null
   try {
@@ -29,10 +31,9 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
     const current = id ? await db.expense.findFirst({ where: { id, businessId: ctx.businessId } }) : null
     if (id && !current) return { ok: false, message: "Gasto no encontrado." }
 
-    if (categoryId) {
-      const category = await db.expenseCategory.findFirst({ where: { id: categoryId, businessId: ctx.businessId } })
-      if (!category) return { ok: false, message: "Esa categoría ya no existe. Recarga la página." }
-    }
+    const category = categoryId ? await db.expenseCategory.findFirst({ where: { id: categoryId, businessId: ctx.businessId } }) : null
+    if (categoryId && !category) return { ok: false, message: "Esa categoría ya no existe. Recarga la página." }
+    if (specificTax > amount) return { ok: false, message: "Los impuestos específicos no pueden ser más que el total de la factura." }
 
     await db.$transaction(async (tx) => {
       let supplierId: string | null = null
@@ -47,14 +48,19 @@ async function saveExpense(id: string | null, input: ExpenseInput): Promise<Acti
         }
       }
 
+      const when = current && toDateKey(current.date, ctx.timezone) === date ? current.date : dateKeyToInstant(date, ctx.timezone)
+      // Impuestos específicos: solo en facturas. Si el negocio no cobra IVA (no se envía la factura), se conserva lo que tenía.
+      const invoiced = hasInvoice ?? current?.hasInvoice ?? false
+      const specific = !invoiced ? 0 : hasInvoice === undefined ? (current?.specificTax ?? 0) : specificTax
+      // Boleta de honorarios: la retención se calcula con la tasa del año del gasto.
+      const withholding = isHonorarium(category?.name) && withholds ? Math.round(amount * honorariumRetentionRate(zonedParts(when, ctx.timezone).year)) : 0
       const data = {
         description,
         amount,
         // Al editar sin cambiar el día se conserva la hora original.
-        date:
-          current && toDateKey(current.date, ctx.timezone) === date
-            ? current.date
-            : dateKeyToInstant(date, ctx.timezone),
+        date: when,
+        specificTax: specific,
+        withholding,
         categoryId: categoryId ?? null,
         supplierId,
         // Solo se envía si el negocio cobra IVA; si no, al editar se conserva lo que tenía.

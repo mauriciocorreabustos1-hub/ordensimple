@@ -32,9 +32,10 @@ export function PpmRate({ value, disabled }: { value: number; disabled?: boolean
       <p className="text-sm font-medium">PPM (pago provisional mensual)</p>
       <ChoiceChips options={options} value={rate} onChange={change} />
       <p className="text-xs text-muted-foreground">
-        Se paga en el mismo F29, sobre tus ventas sin IVA. La mayoría de las pymes está en el régimen Pro Pyme General:
-        0,125% en 2025, 2026 y 2027 (si vendiste menos de 50.000 UF el año pasado). Tu tasa exacta aparece en tu F29 anterior
-        o te la dice tu contador.
+        Se paga en el mismo F29, sobre tus ventas sin IVA. La mayoría de las pymes está en el régimen Pro Pyme General: 0,125%
+        si el año pasado vendiste hasta 50.000 UF, o 0,25% si vendiste más (tasas rebajadas hasta 2027). Con tu PPM también
+        sabemos tu régimen, para estimar tu impuesto a la renta en Resultados. Tu tasa exacta aparece en tu F29 anterior o te la
+        dice tu contador.
       </p>
     </div>
   )

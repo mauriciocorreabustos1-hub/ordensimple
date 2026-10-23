@@ -14,6 +14,8 @@ export type RawPeriod = {
   otherInvoiced: number
   /** Merma (vencidos, dañados, perdidos) valorizada al costo, con IVA si el costo lo incluye. */
   waste: number
+  /** Retención de boletas de honorarios que el negocio paga en el F29. */
+  withholding: number
 }
 
 export const EMPTY_PERIOD: RawPeriod = {
@@ -25,6 +27,7 @@ export const EMPTY_PERIOD: RawPeriod = {
   otherExpenses: 0,
   otherInvoiced: 0,
   waste: 0,
+  withholding: 0,
 }
 
 export type CostMethod = "products" | "purchases" | "none"
@@ -34,6 +37,11 @@ export type Statement = ReturnType<typeof buildStatement>
 /** Categorías de gasto que son compras de mercadería (su costo se cuenta en el costo de venta, no como gasto). */
 export function isPurchaseCategory(name: string) {
   return /mercader|mercanc|proveedor|insumo|materia prima/i.test(name)
+}
+
+/** Boletas de honorarios: el negocio puede tener que retener el impuesto y pagarlo en el F29. */
+export function isHonorarium(name: string | null | undefined) {
+  return Boolean(name && /honorario/i.test(name))
 }
 
 /**
@@ -111,6 +119,7 @@ export function buildStatement(raw: RawPeriod, vatRate: number | null) {
     profit,
     margin: netSales > 0 ? profit / netSales : null,
     vat: { debit: salesVat, credit: vatCredit },
+    withholding: raw.withholding,
   }
 }
 

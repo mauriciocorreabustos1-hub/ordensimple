@@ -149,9 +149,10 @@ export default async function DashboardPage() {
   const overduePayables = payables.filter((p) => p.dueDate < startOfDay(now, ctx.timezone)).length
   const thisMonth = year?.rows[today.month - 1] ?? null
   const vatDue = vatDueDate(today.year, today.month, ctx.settings.vatDueDay, ctx.timezone, ctx.business.country)
-  // En Chile el F29 junta el IVA y el PPM.
+  // En Chile el F29 junta el IVA, el PPM y la retención de las boletas de honorarios.
   const ppm = thisMonth && ctx.business.country === "CL" ? ppmAmount(thisMonth.s.netSales, ctx.settings.ppmRate) : 0
-  const f29 = (thisMonth?.vatToPay ?? 0) + ppm
+  const withholding = thisMonth?.s.withholding ?? 0
+  const f29 = (thisMonth?.vatToPay ?? 0) + ppm + withholding
   const vatDaysLeft = daysUntil(vatDue, now, ctx.timezone)
   const money = (n: number) => formatMoney(n, ctx.currency)
   const easy = ctx.settings.easyMode
@@ -389,12 +390,12 @@ export default async function DashboardPage() {
               <LinkCard
                 href="/dashboard/resultados"
                 icon={Landmark}
-                label={ppm > 0 ? "F29 a pagar (aprox.)" : `${vat!.label} a pagar (aprox.)`}
+                label={ppm > 0 || withholding > 0 ? "F29 a pagar (aprox.)" : `${vat!.label} a pagar (aprox.)`}
                 value={money(f29)}
                 tone="text-primary"
                 hint={
                   f29 > 0
-                    ? `${ppm > 0 ? `${vat!.label} ${money(thisMonth.vatToPay)} + PPM ${money(ppm)} · ` : ""}Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
+                    ? `${ppm > 0 || withholding > 0 ? `${vat!.label} ${money(thisMonth.vatToPay)}${ppm > 0 ? ` + PPM ${money(ppm)}` : ""}${withholding > 0 ? ` + retención ${money(withholding)}` : ""} · ` : ""}Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
                     : thisMonth.carryOut > 0
                       ? `Por ahora no te toca pagar: tienes ${money(thisMonth.carryOut)} a favor`
                       : "Este mes, por ahora, no te toca pagar"

@@ -55,7 +55,8 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
 
   const row = year.rows[today.month - 1]
   const ppm = chargesVat && ctx.business.country === "CL" ? ppmAmount(row.s.netSales, s.ppmRate) : 0
-  const taxesDue = chargesVat ? row.vatToPay + ppm : 0
+  // La retención de honorarios se paga en el F29 aunque el negocio no cobre IVA.
+  const taxesDue = (chargesVat ? row.vatToPay + ppm : 0) + row.s.withholding
   const vatInFavor = chargesVat ? row.carryOut : 0
 
   const assets = [

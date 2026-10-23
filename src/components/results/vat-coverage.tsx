@@ -1,17 +1,22 @@
 import { AlertTriangle, Check, X } from "lucide-react"
 
 /** Qué incluye y qué no el cálculo del IVA, en simple, para que el dueño sepa qué está mirando. */
-export function VatCoverage({ label: L, chile, ppm }: { label: string; chile: boolean; ppm: string | null }) {
+export function VatCoverage({ label: L, chile, ppm, retention }: { label: string; chile: boolean; ppm: string | null; retention?: string }) {
   const included = [
     { title: `${L} de tus ventas`, text: "Todas: efectivo, débito, crédito, transferencia y fiado (en el mes en que vendes, aunque te paguen después)." },
     { title: `${L} de tus gastos con factura`, text: "Solo los que marcaste “con factura”, en el mes de la factura. Lo comprado con boleta no descuenta." },
     { title: "Gastos que nunca descuentan", text: "Sueldos, honorarios, impuestos, contribuciones, patentes, multas e intereses quedan fuera solos." },
     { title: `${L} a favor`, text: "Si un mes compraste más de lo que vendiste, se descuenta del mes siguiente." },
     ...(ppm ? [{ title: "PPM", text: `${ppm} de tus ventas sin ${L}. Lo cambias en Configuración.` }] : []),
+    ...(chile
+      ? [
+          { title: "Retención de honorarios", text: `${retention ?? ""} del monto bruto de las boletas de honorarios en que marcaste “Yo retengo el impuesto”.` },
+          { title: "Impuestos específicos", text: `El ILA o el impuesto a los combustibles que anotas en tus facturas no se descuentan como ${L}: quedan como costo.` },
+        ]
+      : []),
   ]
   const missing = chile
     ? [
-        { title: "Retención de boletas de honorarios", text: "15,25% en 2026, si le pagas a alguien con boleta de honorarios." },
         { title: "Consumo propio", text: `Lo que sacas del local para tu casa también paga ${L}.` },
         { title: "Notas de crédito", text: "Devoluciones o descuentos hechos con documento." },
         { title: `${L} postergado`, text: "La opción de las Pro Pyme de pagarlo hasta 2 meses después." },

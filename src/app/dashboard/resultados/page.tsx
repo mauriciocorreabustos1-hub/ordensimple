@@ -8,13 +8,14 @@ import { PageHeader } from "@/components/app/page-header"
 import { ProGate } from "@/components/app/pro-gate"
 import { StatCard, STAT_GROUP } from "@/components/app/stat-card"
 import { VatCoverage } from "@/components/results/vat-coverage"
+import { IncomeTaxCard } from "@/components/results/income-tax-card"
 import { formatMoney, formatPercent } from "@/lib/currency"
 import { formatDate, startOfMonth, zonedParts, zonedTimeToUtc } from "@/lib/dates"
 import { canUseFeature } from "@/lib/plans"
 import { db } from "@/lib/db"
 import { can } from "@/lib/roles"
 import { cn } from "@/lib/utils"
-import { daysUntil, formatDueDate, ppmAmount, vatDueDate, vatInfo } from "@/lib/vat"
+import { daysUntil, formatDueDate, honorariumRetentionRate, percentText, ppmAmount, regimeFromPpm, vatDueDate, vatInfo } from "@/lib/vat"
 import { getIncomeStatement, getYearSummary } from "@/server/queries/results"
 import { trackFeature } from "@/server/feature-usage"
 import { requireBusiness, requirePermission } from "@/server/session"
@@ -123,7 +124,11 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
   // PPM: va en el mismo F29 que el IVA (solo Chile), sobre las ventas sin IVA.
   const ppmRate = chargesVat && ctx.business.country === "CL" ? ctx.settings.ppmRate : 0
   const ppm = ppmAmount(st.netSales, ppmRate)
-  const f29 = current.vatToPay + ppm
+  // Retención de las boletas de honorarios del mes: también va en el F29.
+  const withholding = st.withholding
+  const retentionLabel = `Retención de honorarios (${percentText(honorariumRetentionRate(year))})`
+  const f29 = current.vatToPay + ppm + withholding
+  const extraF29 = ppm > 0 || withholding > 0
   const ppmLabel = `PPM (${(ppmRate * 100).toLocaleString("es-CL", { maximumFractionDigits: 3 })}% de tus ventas sin ${L})`
   const left = daysUntil(due, now, ctx.timezone)
 
@@ -226,7 +231,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
               <div>
                 <p className="text-sm text-muted-foreground">
                   {f29 > 0
-                    ? ppm > 0
+                    ? extraF29
                       ? "Total a pagar en el F29 (aprox.)"
                       : `${L} a pagar (aprox.)`
                     : `${L} a favor para el mes siguiente`}
@@ -256,9 +261,12 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
                   label={current.vatToPay > 0 || current.carryOut === 0 ? `${L} a pagar` : `${L} a favor`}
                   value={current.vatToPay > 0 || current.carryOut === 0 ? current.vatToPay : current.carryOut}
                 />
-                {ppm > 0 ? (
+                {extraF29 ? (
                   <>
-                    <Line money={money} label={ppmLabel} hint="Pago provisional del impuesto a la renta" value={ppm} />
+                    {ppm > 0 ? <Line money={money} label={ppmLabel} hint="Pago provisional del impuesto a la renta" value={ppm} /> : null}
+                    {withholding > 0 ? (
+                      <Line money={money} label={retentionLabel} hint="De las boletas de honorarios que pagaste este mes" value={withholding} />
+                    ) : null}
                     <Line money={money} kind="subtotal" label="Total F29" value={f29} />
                   </>
                 ) : null}
@@ -268,10 +276,24 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
               label={L}
               chile={ctx.business.country === "CL"}
               ppm={ppmRate > 0 ? `${(ppmRate * 100).toLocaleString("es-CL", { maximumFractionDigits: 3 })}%` : null}
+              retention={percentText(honorariumRetentionRate(year))}
             />
           </CardContent>
         </Card>
-      ) : vat && can(ctx.role, "settings:manage") ? (
+      ) : null}
+
+      {/* Sin IVA igual se paga en el F29 la retención de las boletas de honorarios. */}
+      {!chargesVat && withholding > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-card px-4 py-3 text-sm">
+          <span className="flex items-center gap-2">
+            <Landmark className="size-4 text-primary" />
+            {retentionLabel} a pagar en el F29: <strong>{money(withholding)}</strong>
+          </span>
+          <span className="text-muted-foreground">Vence el {formatDueDate(due, ctx.timezone)}</span>
+        </div>
+      ) : null}
+
+      {!chargesVat && vat && can(ctx.role, "settings:manage") ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-sm">
           <span className="flex items-center gap-2">
             <Landmark className="size-4 text-primary" />
@@ -484,6 +506,18 @@ export default async function ResultsPage({ searchParams }: PageProps<"/dashboar
           </div>
         </CardContent>
       </Card>
+
+      {ctx.business.country === "CL" ? (
+        <IncomeTaxCard
+          year={year}
+          isCurrentYear={year === today.year}
+          profit={totals.profit}
+          ppmPaid={rows.reduce((acc, r) => acc + ppmAmount(r.s.netSales, ppmRate), 0)}
+          regime={regimeFromPpm(ctx.settings.ppmRate)}
+          canManage={can(ctx.role, "settings:manage")}
+          money={money}
+        />
+      ) : null}
     </div>
   )
 }

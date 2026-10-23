@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { PageHeader } from "@/components/app/page-header"
 import { RecipesBoard } from "@/components/recipes/recipes-board"
 import { db } from "@/lib/db"
-import { toDateKey } from "@/lib/dates"
+import { addDays, toDateKey } from "@/lib/dates"
 import { requireBusiness, requirePermission } from "@/server/session"
 
 export const metadata: Metadata = { title: "Recetas" }
@@ -11,7 +11,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
   const ctx = await requireBusiness()
   requirePermission(ctx, "products:manage")
   const params = await searchParams
-  const [materials, recipes, products] = await Promise.all([
+  const since = addDays(new Date(), -30, ctx.timezone)
+  const [materials, recipes, products, used] = await Promise.all([
     db.recipeMaterial.findMany({
       where: { businessId: ctx.businessId },
       select: { id: true, name: true, unit: true, packQty: true, packPrice: true, stock: true, expiresAt: true },
@@ -28,7 +29,14 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
       orderBy: { name: "asc" },
       take: 1000,
     }),
+    // Lo que se descontó de cada material en ventas del último mes.
+    db.recipeMaterialMovement.groupBy({
+      by: ["materialId"],
+      where: { businessId: ctx.businessId, saleId: { not: null }, createdAt: { gte: since } },
+      _sum: { quantity: true },
+    }),
   ])
+  const usedBy = new Map(used.map((u) => [u.materialId, -(u._sum.quantity ?? 0)]))
 
   return (
     <div className="space-y-6">
@@ -40,7 +48,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/dashboar
         currency={ctx.currency}
         initialTab={params.pestana === "materiales" ? "materiales" : "recetas"}
         today={toDateKey(new Date(), ctx.timezone)}
-        materials={materials.map((m) => ({ ...m, expiresAt: m.expiresAt ? toDateKey(m.expiresAt, ctx.timezone) : null }))}
+        materials={materials.map((m) => ({ ...m, expiresAt: m.expiresAt ? toDateKey(m.expiresAt, ctx.timezone) : null, used30: Math.max(0, usedBy.get(m.id) ?? 0) }))}
         recipes={recipes.map((r) => ({
           id: r.id,
           name: r.name,

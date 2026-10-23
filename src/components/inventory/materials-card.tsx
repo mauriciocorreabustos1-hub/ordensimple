@@ -55,7 +55,7 @@ export function MaterialsCard({
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                   {m.stock === null ? (
                     "Sin stock anotado"
-                  ) : m.stock === 0 ? (
+                  ) : m.stock <= 0 ? (
                     <span className="font-medium text-danger">Agotado</span>
                   ) : (
                     `Tienes ${formatQuantity(m.stock)} ${isRecipeUnit(m.unit) ? UNIT_LABEL[m.unit] : m.unit}`

@@ -27,6 +27,7 @@ import {
   productsOnly,
   QUICK_SALE_BLOCKED,
   resolveCustomer,
+  revertMaterials,
   revertStock,
   linkPromotions,
   promotionsFor,
@@ -273,6 +274,8 @@ export async function deleteSale(id: string): Promise<ActionResult> {
     await db.$transaction(async (tx) => {
       // Si es una devolución, su solicitud se borra con ella (así se puede volver a devolver).
       if (sale.returnOfId) await tx.saleReturn.deleteMany({ where: { returnSaleId: sale.id } })
+      // Los materiales de las recetas vuelven a como estaban.
+      await revertMaterials(tx, sale.id)
       // Devuelve al stock lo que se había descontado, dejando registro.
       for (const m of sale.movements) {
         await tx.product.update({ where: { id: m.productId }, data: { stock: { increment: -m.quantity } } })

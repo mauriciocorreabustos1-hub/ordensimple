@@ -210,6 +210,7 @@ model Business {
   productBarcodes   ProductBarcode[]
   comandas          Comanda[]
   recipeMaterials   RecipeMaterial[]
+  materialMovements RecipeMaterialMovement[]
   recipes           Recipe[]
   discountRequests  DiscountRequest[]
   saleReturns       SaleReturn[]
@@ -376,6 +377,8 @@ model Sale {
 
   items     SaleItem[]
   movements InventoryMovement[]
+  /// Materiales de recetas que se descontaron con esta venta.
+  materialMovements RecipeMaterialMovement[]
   comanda   Comanda?
   /// Descuento sobre el total de los productos (el total ya lo tiene restado). Quién lo pidió y aprobó: discountRequest.
   discount  Int       @default(0)
@@ -1368,6 +1371,7 @@ model RecipeMaterial {
   /// Cuándo vence lo que tienes (para avisar antes y mostrarlo en Inventario).
   expiresAt  DateTime?
   items      RecipeItem[]
+  movements  RecipeMaterialMovement[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
@@ -1412,4 +1416,24 @@ model RecipeItem {
   @@index([recipeId])
   @@index([materialId])
   @@map("recipe_item")
+}
+
+/// Lo que se descontó (o devolvió) del stock de un material por una venta de un producto hecho con receta.
+model RecipeMaterialMovement {
+  id         String         @id @default(cuid())
+  businessId String
+  business   Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  materialId String
+  material   RecipeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  /// En la medida del material: negativo si se descontó.
+  quantity   Float
+  reason     String
+  /// Venta que lo descontó (para devolverlo si la venta se edita o se elimina).
+  saleId     String?
+  sale       Sale?          @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdAt  DateTime       @default(now())
+
+  @@index([saleId])
+  @@index([materialId, createdAt])
+  @@map("recipe_material_movement")
 }

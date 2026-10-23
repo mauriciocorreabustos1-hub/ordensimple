@@ -6,6 +6,7 @@ import { canApproveDiscounts } from "@/lib/roles"
 import type { SaleInput } from "@/lib/validations"
 import type { BusinessContext } from "@/server/session"
 import { applyPromotions, type AppliedPromo, type PromoRule } from "@/lib/promotions"
+import { convert, isRecipeUnit } from "@/lib/recipes"
 
 // Piezas comunes para guardar una venta: las usan las ventas y el cobro de comandas.
 
@@ -57,8 +58,48 @@ export async function buildLines(ctx: BusinessContext, items: SaleInput["items"]
   })
 }
 
-/** Descuenta stock de las líneas con control de stock y registra el movimiento. */
+/**
+ * Descuenta los materiales de las recetas de los productos vendidos: lo que lleva la receta ÷ lo que rinde × lo vendido.
+ * Solo los materiales con stock anotado. Cada descuento queda registrado con la venta, para devolverlo exacto si cambia.
+ */
+async function consumeMaterials(tx: Tx, ctx: BusinessContext, saleId: string, lines: Line[], reason: string) {
+  const sold = new Map<string, number>()
+  for (const l of lines) if (l.productId && l.quantity) sold.set(l.productId, (sold.get(l.productId) ?? 0) + l.quantity)
+  if (!sold.size) return
+  const recipes = await tx.recipe.findMany({
+    where: { businessId: ctx.businessId, productId: { in: [...sold.keys()] } },
+    include: { items: { include: { material: { select: { id: true, unit: true, stock: true } } } } },
+    // Si un producto tiene más de una receta, vale la última que se guardó.
+    orderBy: { updatedAt: "desc" },
+  })
+  const used = new Map<string, number>()
+  const done = new Set<string>()
+  for (const r of recipes) {
+    if (!r.productId || done.has(r.productId)) continue
+    done.add(r.productId)
+    const units = sold.get(r.productId)! / Math.max(1, r.yieldUnits)
+    for (const i of r.items) {
+      if (i.material.stock === null || !isRecipeUnit(i.unit) || !isRecipeUnit(i.material.unit)) continue
+      const qty = convert(i.quantity, i.unit, i.material.unit)
+      if (qty) used.set(i.material.id, (used.get(i.material.id) ?? 0) + qty * units)
+    }
+  }
+  for (const [materialId, qty] of used) {
+    await tx.recipeMaterial.update({ where: { id: materialId }, data: { stock: { decrement: qty } } })
+    await tx.recipeMaterialMovement.create({ data: { businessId: ctx.businessId, materialId, quantity: -qty, reason, saleId } })
+  }
+}
+
+/** Devuelve a los materiales lo que una venta había descontado y borra esos registros. */
+export async function revertMaterials(tx: Tx, saleId: string) {
+  const movements = await tx.recipeMaterialMovement.findMany({ where: { saleId } })
+  for (const m of movements) await tx.recipeMaterial.update({ where: { id: m.materialId }, data: { stock: { increment: -m.quantity } } })
+  await tx.recipeMaterialMovement.deleteMany({ where: { saleId } })
+}
+
+/** Descuenta stock de las líneas con control de stock y registra el movimiento (y los materiales de sus recetas). */
 export async function applyStock(tx: Tx, ctx: BusinessContext, saleId: string, lines: Line[], reason: string) {
+  await consumeMaterials(tx, ctx, saleId, lines, reason)
   for (const line of lines) {
     if (!line.productId || !line.trackStock) continue
     await tx.product.update({ where: { id: line.productId }, data: { stock: { decrement: line.quantity } } })
@@ -78,6 +119,7 @@ export async function applyStock(tx: Tx, ctx: BusinessContext, saleId: string, l
 
 /** Devuelve al stock lo que la venta había descontado y borra esos movimientos. */
 export async function revertStock(tx: Tx, saleId: string) {
+  await revertMaterials(tx, saleId)
   const movements = await tx.inventoryMovement.findMany({ where: { saleId } })
   for (const m of movements) {
     await tx.product.update({ where: { id: m.productId }, data: { stock: { increment: -m.quantity } } })

@@ -26,7 +26,17 @@ import { cn } from "@/lib/utils"
 import { applyRecipeToProduct, deleteRecipe, deleteRecipeMaterial, saveRecipe, saveRecipeMaterial } from "@/server/actions/recipes"
 
 /** expiresAt: día de vencimiento "AAAA-MM-DD" (en la zona del negocio). */
-export type MaterialRow = { id: string; name: string; unit: string; packQty: number; packPrice: number; stock: number | null; expiresAt: string | null }
+export type MaterialRow = {
+  id: string
+  name: string
+  unit: string
+  packQty: number
+  packPrice: number
+  stock: number | null
+  expiresAt: string | null
+  /** Lo que se descontó en ventas los últimos 30 días (en su medida). */
+  used30?: number
+}
 export type RecipeRow = {
   id: string
   name: string
@@ -197,8 +207,11 @@ export function RecipesBoard({
                       <ExpiryBadge expiresAt={m.expiresAt} today={today} />
                     </span>
                   </span>
-                  <span className={cn("shrink-0 text-right text-xs", m.stock === null ? "text-muted-foreground" : m.stock === 0 ? "font-medium text-danger" : "font-medium")}>
-                    {m.stock === null ? "Sin stock anotado" : `Tienes ${formatQuantity(m.stock)} ${unitLabel(m.unit)}`}
+                  <span className="shrink-0 text-right text-xs">
+                    <span className={cn("block", m.stock === null ? "text-muted-foreground" : m.stock <= 0 ? "font-medium text-danger" : "font-medium")}>
+                      {m.stock === null ? "Sin stock anotado" : m.stock <= 0 ? "Agotado" : `Tienes ${formatQuantity(m.stock)} ${unitLabel(m.unit)}`}
+                    </span>
+                    {m.used30 ? <span className="block text-muted-foreground">Usaste {formatQuantity(m.used30)} {unitLabel(m.unit)} en 30 días</span> : null}
                   </span>
                   <Pencil className="size-4 shrink-0 text-muted-foreground" />
                 </button>
@@ -635,7 +648,15 @@ function RecipeDialog({
             <PackagePlus className="size-4 text-primary" />
             Usar este precio en un producto
           </p>
-          <p className="text-xs text-muted-foreground">Le ponemos {money(t.unitPrice)} de precio y {money(t.unitCost)} de costo, para que tus ventas muestren la ganancia real.</p>
+          <p className="text-xs text-muted-foreground">
+            Le ponemos {money(t.unitPrice)} de precio y {money(t.unitCost)} de costo, para que tus ventas muestren la ganancia real. Además, cada vez que lo vendas
+            se descuentan solos los materiales de esta receta (los que tienen stock anotado).
+          </p>
+          {recipe?.productName ? (
+            <p className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">
+              Al vender “{recipe.productName}” se descuentan los materiales de esta receta.
+            </p>
+          ) : null}
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
             <select value={productTarget} onChange={(e) => setProductTarget(e.target.value)} className={fieldClass} aria-label="Producto">
               <option value="">Elige un producto</option>

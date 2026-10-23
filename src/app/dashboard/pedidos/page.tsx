@@ -92,6 +92,7 @@ export default async function WebOrdersPage() {
         </p>
       ) : null}
       <WebOrdersList
+        canDelete={can(ctx.role, "sales:delete")}
         orders={rows}
         currency={ctx.currency}
         timezone={ctx.timezone}

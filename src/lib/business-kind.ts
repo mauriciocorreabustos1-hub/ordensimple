@@ -29,6 +29,15 @@ export function isServiceBusiness(type: string | null | undefined) {
   return SERVICE_TYPES.some((t) => type.includes(t)) || SERVICE_WORDS.test(type)
 }
 
+// Rubros escritos a mano que elaboran sus productos con receta (además de los de comida).
+const RECIPE_WORDS = /jab[oó]n|\bvelas?\b|cosm[eé]tic|crema|perfum|aromat|artesan|manualidad|resina|bisuter|reposter|chocolat|bomb[oó]n|mermelad|conserva|encurt|licor|destiler|kombucha|sales de ba[ñn]o/i
+
+/** Elabora sus productos con receta (comida, jabones, velas, cosmética, artesanía…): a ellos se les muestra Recetas en el menú. */
+export function makesRecipes(type: string | null | undefined) {
+  if (!type) return false
+  return isFoodBusiness(type) || RECIPE_WORDS.test(type)
+}
+
 /**
  * Cómo se adapta la app al rubro: qué se muestra en el menú y cómo se llama lo que vende.
  * Con varios rubros se suman las funciones de todos (un café que también hace eventos ve comandas y agenda).
@@ -38,7 +47,7 @@ export function businessProfile(type: string | null | undefined) {
   const services = isServiceBusiness(type)
   // Solo servicios (sin rubros de venta de productos): no se muestra el inventario.
   const servicesOnly = services && !PRODUCT_TYPES.some((t) => (type ?? "").includes(t))
-  return { food, services, servicesOnly }
+  return { food, services, servicesOnly, recipes: makesRecipes(type) }
 }
 
 export type BusinessProfile = ReturnType<typeof businessProfile>

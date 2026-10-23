@@ -42,7 +42,10 @@ export function WebOrdersList({
   canComanda,
   defaultPayment,
   businessName,
+  canDelete = false,
 }: {
+  /** Puede eliminar pedidos (permiso de eliminar ventas). */
+  canDelete?: boolean
   orders: WebOrderRow[]
   currency: string
   timezone: string
@@ -154,12 +157,14 @@ export function WebOrdersList({
                 >
                   {busy === o.id ? <Loader2 className="animate-spin" /> : <X />}
                 </Button>
-                <ConfirmDelete
-                  label="Eliminar pedido"
-                  title={`¿Eliminar el pedido de ${o.customerName}?`}
-                  description="Se borra para siempre, sin registrar venta. Úsalo para pedidos de prueba o de alguien que solo estaba mirando."
-                  onConfirm={() => deleteWebOrders([o.id])}
-                />
+                {canDelete ? (
+                  <ConfirmDelete
+                    label="Eliminar pedido"
+                    title={`¿Eliminar el pedido de ${o.customerName}?`}
+                    description="Se borra para siempre, sin registrar venta. Úsalo para pedidos de prueba o de alguien que solo estaba mirando."
+                    onConfirm={() => deleteWebOrders([o.id])}
+                  />
+                ) : null}
               </div>
             </li>
           ))}
@@ -170,7 +175,7 @@ export function WebOrdersList({
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium">Atendidos en los últimos 7 días</p>
-            {discarded.length > 1 ? (
+            {canDelete && discarded.length > 1 ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -201,7 +206,7 @@ export function WebOrdersList({
                   >
                     {o.status === "DONE" ? (o.asComanda ? "Comanda" : "Vendido") : "Descartado"}
                   </span>
-                  {o.status === "CANCELLED" ? (
+                  {canDelete && o.status === "CANCELLED" ? (
                     <ConfirmDelete
                       label="Eliminar pedido"
                       title={`¿Eliminar el pedido de ${o.customerName}?`}

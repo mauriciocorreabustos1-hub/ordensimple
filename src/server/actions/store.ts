@@ -323,20 +323,25 @@ export async function deleteWebOrders(ids: string[]): Promise<ActionResult> {
     return { ok: false, message: "Pedido no encontrado." }
   }
   try {
-    assertCan(ctx, "sales:create")
+    // Borrar es más que descartar: solo quien puede eliminar ventas (dueño y administradores).
+    assertCan(ctx, "sales:delete")
     const count = await db.$transaction(async (tx) => {
       const orders = await tx.webOrder.findMany({
         where: { id: { in: ids }, businessId: ctx.businessId, status: { in: ["NEW", "CANCELLED"] } },
         select: { id: true, status: true, couponCode: true, couponDiscount: true },
       })
+      let deleted = 0
       for (const o of orders) {
-        // Un pedido descartado ya devolvió su cupón; uno nuevo lo devuelve ahora.
+        // Se borra solo si sigue igual que al leerlo; el cupón se devuelve solo si de verdad se borró un pedido nuevo
+        // (un descartado ya lo había devuelto). Así, dos personas borrando a la vez no lo devuelven dos veces.
+        const { count } = await tx.webOrder.deleteMany({ where: { id: o.id, businessId: ctx.businessId, status: o.status } })
+        if (!count) continue
+        deleted++
         if (o.status === "NEW" && o.couponCode && o.couponDiscount) {
           await tx.storeCoupon.updateMany({ where: { businessId: ctx.businessId, code: o.couponCode, uses: { gt: 0 } }, data: { uses: { decrement: 1 } } })
         }
       }
-      const { count } = await tx.webOrder.deleteMany({ where: { id: { in: orders.map((o) => o.id) }, status: { in: ["NEW", "CANCELLED"] } } })
-      return count
+      return deleted
     })
     if (!count) return { ok: false, message: "Ese pedido ya se atendió o se eliminó. Recarga la página." }
     revalidatePath("/dashboard", "layout")

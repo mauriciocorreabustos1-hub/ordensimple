@@ -38,6 +38,8 @@ export type NavItem = {
   food?: boolean
   /** Solo para negocios de servicios (peluquerías, consultas, talleres…). */
   services?: boolean
+  /** Solo para negocios que elaboran con receta (comida, jabones, velas, cosmética…). */
+  recipes?: boolean
   /** Se oculta en negocios que solo venden servicios (no manejan stock). */
   stock?: boolean
   /** Si se indica, solo se muestra a quien tenga este permiso. */
@@ -57,8 +59,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/balance", label: "Balance y retiros", icon: Scale, pro: true, permission: "finances:view" },
   { href: "/dashboard/servicios", label: "Servicios", icon: Scissors, permission: "products:manage", services: true },
   { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products:manage" },
-  // Gratis; en el menú de los negocios de comida (para los demás está en Herramientas).
-  { href: "/dashboard/recetas", label: "Recetas", icon: BookOpen, permission: "products:manage", food: true },
+  // Gratis; en el menú de los negocios que elaboran con receta (para los demás está en Herramientas).
+  { href: "/dashboard/recetas", label: "Recetas", icon: BookOpen, permission: "products:manage", recipes: true },
   { href: "/dashboard/inventario", label: "Inventario", icon: Boxes, stock: true },
   { href: "/dashboard/promociones", label: "Promociones", icon: BadgePercent, pro: true, permission: "products:manage" },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
@@ -72,13 +74,13 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ]
 
-export type NavProfile = { food?: boolean; services?: boolean; servicesOnly?: boolean }
+export type NavProfile = { food?: boolean; services?: boolean; servicesOnly?: boolean; recipes?: boolean }
 
 /** Menú según el rol (a los empleados no se les muestra lo que no pueden usar) y el rubro del negocio. */
-export function navItemsFor(role: Role, { food = false, services = false, servicesOnly = false }: NavProfile = {}) {
+export function navItemsFor(role: Role, { food = false, services = false, servicesOnly = false, recipes = false }: NavProfile = {}) {
   return NAV_ITEMS.filter(
     (item) =>
-      (!item.permission || can(role, item.permission)) && (!item.food || food) && (!item.services || services) && (!item.stock || !servicesOnly),
+      (!item.permission || can(role, item.permission)) && (!item.food || food) && (!item.services || services) && (!item.recipes || recipes) && (!item.stock || !servicesOnly),
   )
 }
 

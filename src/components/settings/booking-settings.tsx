@@ -11,6 +11,9 @@ import { Switch } from "@/components/ui/switch"
 import { WEEKDAYS, type BookingHours } from "@/lib/booking"
 import { updatePreferences } from "@/server/actions/settings"
 
+/** "10 min", "1 hora", "1 h 30 min", "2 horas" */
+const slotLabel = (m: number) => (m < 60 ? `${m} min` : m === 60 ? "1 hora" : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} horas`)
+
 /** Reserva tu hora: horario de atención por día y reglas para que los clientes reserven solos. */
 export function BookingSettings({
   enabled: initialEnabled,
@@ -49,7 +52,7 @@ export function BookingSettings({
       const r = await updatePreferences({
         bookingEnabled: nextEnabled,
         bookingHours: hours,
-        bookingSlotMin: slotMin as 10 | 15 | 20 | 30 | 45 | 60,
+        bookingSlotMin: slotMin as 10 | 15 | 20 | 30 | 45 | 60 | 90 | 120,
         bookingMinNoticeMin: noticeMin,
         bookingMaxDays: maxDays,
       })
@@ -126,7 +129,7 @@ export function BookingSettings({
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <p className="text-sm font-medium">Horas cada</p>
-          <ChoiceChips options={[15, 30, 60].map((m) => ({ value: m, label: m === 60 ? "1 hora" : `${m} min` }))} value={slotMin} onChange={setSlotMin} />
+          <ChoiceChips options={[10, 15, 20, 30, 45, 60, 90, 120].map((m) => ({ value: m, label: slotLabel(m) }))} value={slotMin} onChange={setSlotMin} />
         </div>
         <div className="space-y-2">
           <p className="text-sm font-medium">Reservar con al menos</p>

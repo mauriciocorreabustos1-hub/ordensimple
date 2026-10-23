@@ -99,7 +99,7 @@ export const preferencesSchema = z.object({
     )
     .length(7)
     .optional(),
-  bookingSlotMin: z.union([z.literal(10), z.literal(15), z.literal(20), z.literal(30), z.literal(45), z.literal(60)]).optional(),
+  bookingSlotMin: z.union([z.literal(10), z.literal(15), z.literal(20), z.literal(30), z.literal(45), z.literal(60), z.literal(90), z.literal(120)]).optional(),
   bookingMinNoticeMin: z.number().int().min(0).max(2880).optional(),
   bookingMaxDays: z.number().int().min(1).max(90).optional(),
   fiadoDays: z.number().int().min(1).max(120).optional(),

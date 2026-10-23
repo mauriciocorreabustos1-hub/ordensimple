@@ -73,7 +73,7 @@ export async function createComanda(input: ComandaInput): Promise<ActionResult<{
         businessId: ctx.businessId,
         label,
         createdById: ctx.user.id,
-        items: { create: items.map((i) => ({ id: i.id, productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })) },
+        items: { create: items.map((i) => ({ id: i.id, productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note, person: i.person ?? null })) },
       },
       select: { id: true },
     })
@@ -117,7 +117,7 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
       ...items
         .filter((i) => {
           const old = existing.get(i.id)
-          return old && (old.quantity !== i.quantity || old.note !== (i.note ?? null) || old.unitPrice !== i.unitPrice || old.description !== i.description)
+          return old && (old.quantity !== i.quantity || old.note !== (i.note ?? null) || old.unitPrice !== i.unitPrice || old.description !== i.description || old.person !== (i.person ?? null))
         })
         .map((i) =>
           // Solo si nadie cobró parte entretanto (el cobro revisa lo mismo al revés).
@@ -129,6 +129,7 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
               note: i.note ?? null,
               unitPrice: i.unitPrice,
               description: i.description,
+              person: i.person ?? null,
               sentQty: Math.min(existing.get(i.id)!.sentQty, i.quantity),
               readyQty: Math.min(existing.get(i.id)!.readyQty, i.quantity),
             },
@@ -138,7 +139,7 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
         where: { id },
         data: {
           label,
-          items: { create: fresh.map((i) => ({ id: i.id, productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })) },
+          items: { create: fresh.map((i) => ({ id: i.id, productId: i.productId || null, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note, person: i.person ?? null })) },
         },
       }),
     ])

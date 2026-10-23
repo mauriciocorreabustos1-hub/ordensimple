@@ -50,7 +50,7 @@ export default async function KitchenPage() {
     .map((c) => {
       const items = c.items
         .filter((i) => i.sentQty > i.readyQty)
-        .map((i) => ({ id: i.id, description: i.description, quantity: i.sentQty - i.readyQty, note: i.note ?? "", since: (i.sentAt ?? i.updatedAt).toISOString() }))
+        .map((i) => ({ id: i.id, description: i.description, quantity: i.sentQty - i.readyQty, note: i.note ?? "", person: i.person, since: (i.sentAt ?? i.updatedAt).toISOString() }))
       const since = items.reduce((min, i) => (i.since < min ? i.since : min), items[0]?.since ?? c.createdAt.toISOString())
       return { id: c.id, label: c.label, since, items }
     })

@@ -92,6 +92,7 @@ export default async function ComandasPage() {
             quantity: i.quantity,
             unitPrice: i.unitPrice,
             note: i.note ?? "",
+            person: i.person,
           })),
         }))}
         products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null, categoryId: p.categoryId, imageUrl: p.imageUrl }))}

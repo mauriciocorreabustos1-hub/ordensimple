@@ -1252,6 +1252,8 @@ model ComandaItem {
   readyQty    Int      @default(0)
   /// Cuántas ya se pagaron (cuando cada uno paga lo suyo). Lo que falta cobrar es quantity - paidQty.
   paidQty     Int      @default(0)
+  /// De quién es (Persona 1, 2, 3…), para separar la cuenta. Null: sin persona o para compartir.
+  person      Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 

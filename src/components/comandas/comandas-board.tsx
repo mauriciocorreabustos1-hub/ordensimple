@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Check, ChefHat, Loader2, Minus, PencilLine, Plus, Printer, Search, X } from "lucide-react"
+import { Check, ChefHat, Loader2, Minus, PencilLine, Plus, Printer, Search, UserPlus, X } from "lucide-react"
 import { toast } from "sonner"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { AppModal } from "@/components/app/app-modal"
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 import { ProductImage } from "@/components/products/product-image"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
-import { BillStep, clearBill, forgetBillPerson } from "@/components/comandas/bill-split"
+import { BillStep, personGroups } from "@/components/comandas/bill-split"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
@@ -30,6 +30,8 @@ export type ComandaLine = {
   sentQty: number
   readyQty: number
   paidQty: number
+  /** De quién es (Persona 1, 2, 3…). Null: sin persona o para compartir. */
+  person: number | null
 }
 export type ComandaData = { id: string; label: string; createdAt: string; items: ComandaLine[] }
 export type ComandaProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; imageUrl?: string | null }
@@ -141,7 +143,7 @@ export function ComandasBoard({
     setSaving(true)
     const p = saveComanda(c.id, {
       label: c.label,
-      items: c.items.map((i) => ({ id: i.id, productId: i.productId ?? undefined, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note })),
+      items: c.items.map((i) => ({ id: i.id, productId: i.productId ?? undefined, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, note: i.note, person: i.person })),
     }).then((r) => {
       if (!r.ok) toast.error(r.message)
       return r
@@ -436,8 +438,17 @@ function ComandaEditor({
   const [noteFor, setNoteFor] = React.useState<number | null>(null)
   const [custom, setCustom] = React.useState<{ description: string; price: number } | null>(null)
   const [step, setStep] = React.useState<"edit" | "charge" | "cancel" | "bill">("edit")
-  /** Persona de la cuenta impresa a la que se le está cobrando (para sacarla de la lista al terminar). */
-  const [chargingPerson, setChargingPerson] = React.useState<string | null>(null)
+  /** Si el cobro se abrió desde la cuenta impresa (al terminar, vuelve a ella). */
+  const [fromBill, setFromBill] = React.useState(false)
+  // Para quién se anotan los productos que se tocan (Persona 1, 2, 3…; null: sin persona).
+  const [seat, setSeat] = React.useState<number | null>(null)
+  const [extraSeats, setExtraSeats] = React.useState(0)
+  const seats = Math.max(extraSeats, ...comanda.items.map((i) => i.person ?? 0))
+  const addSeat = () => {
+    if (seats >= 30) return
+    setExtraSeats(seats + 1)
+    setSeat(seats + 1)
+  }
   const [payment, setPayment] = React.useState<PaymentMethod>(defaultPayment === "FIADO" ? "CASH" : defaultPayment)
   const [customer, setCustomer] = React.useState("")
   const [pending, startTransition] = React.useTransition()
@@ -472,17 +483,18 @@ function ComandaEditor({
 
   const setItems = (change: (items: ComandaLine[]) => ComandaLine[]) => onChange((c) => ({ ...c, items: change(c.items) }))
 
-  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "sentQty" | "readyQty" | "paidQty">) {
+  function add(line: Omit<ComandaLine, "id" | "quantity" | "note" | "sentQty" | "readyQty" | "paidQty" | "person">) {
     const id = crypto.randomUUID()
+    const person = seat
     setItems((items) => {
-      // Si ya está (sin nota), suma uno; si no, agrega la línea al final.
-      const i = items.findIndex((x) => x.productId === line.productId && x.description === line.description && !x.note)
+      // Si ya está (sin nota y para la misma persona), suma uno; si no, agrega la línea al final.
+      const i = items.findIndex((x) => x.productId === line.productId && x.description === line.description && !x.note && x.person === person)
       if (i >= 0) return items.map((x, k) => (k === i ? { ...x, quantity: x.quantity + 1 } : x))
       if (items.length >= 50) {
         toast.error("Máximo 50 productos distintos por comanda.")
         return items
       }
-      return [...items, { ...line, id, quantity: 1, note: "", sentQty: 0, readyQty: 0, paidQty: 0 }]
+      return [...items, { ...line, id, quantity: 1, note: "", sentQty: 0, readyQty: 0, paidQty: 0, person }]
     })
   }
   const setQty = (index: number, quantity: number) => {
@@ -491,6 +503,35 @@ function ComandaEditor({
     setItems((items) => (quantity <= 0 ? items.filter((_, k) => k !== index) : items.map((x, k) => (k === index ? { ...x, quantity } : x))))
   }
   const setNote = (index: number, note: string) => setItems((items) => items.map((x, k) => (k === index ? { ...x, note } : x)))
+  const setPerson = (index: number, person: number | null) => setItems((items) => items.map((x, k) => (k === index ? { ...x, person } : x)))
+  // El pedido agrupado por persona (la persona elegida siempre se ve, aunque todavía no tenga nada).
+  const rows = comanda.items.map((item, i) => ({ item, i }))
+  const listGroups = seats
+    ? [...Array.from({ length: seats }, (_, k) => k + 1), null]
+        .map((person) => ({ person, rows: rows.filter((r) => r.item.person === person) }))
+        .filter((g) => g.rows.length || g.person === seat)
+    : [{ person: null, rows }]
+
+  // Lo que falta pagar, separado por persona (solo si se anotó de quién es cada plato).
+  const groups = personGroups(comanda.items)
+  const promoTotal = (counts: Record<string, number>) => {
+    const lines = comanda.items.filter((i) => counts[i.id])
+    const sub = lines.reduce((s, i) => s + counts[i.id] * i.unitPrice, 0)
+    const p = applyPromotions(
+      lines.map((i) => ({ key: i.id, productId: i.productId, categoryId: i.productId ? (categoryOf.get(i.productId) ?? null) : null, quantity: counts[i.id], unitPrice: i.unitPrice })),
+      promotions,
+      { now: new Date(), timezone, channel: "store" },
+    )
+    return sub - p.discount
+  }
+  function chargePerson(counts: Record<string, number>, bill: boolean) {
+    setSplit(counts)
+    setFromBill(bill)
+    setRound((n) => n + 1)
+    setDisc({ value: null, blocked: null })
+    setTipMode("none")
+    setStep("charge")
+  }
 
   function charge() {
     if (disc.blocked) return toast.error(disc.blocked)
@@ -509,15 +550,13 @@ function ComandaEditor({
       }
       const paidAll = !split || comanda.items.every((i) => leftOf(i) === (split[i.id] ?? 0))
       const tipText = tip ? ` + propina ${money(tip)}` : ""
-      const fromBill = chargingPerson
-      if (paidAll) clearBill(comanda.id)
-      else if (fromBill) forgetBillPerson(comanda.id, fromBill)
-      setChargingPerson(null)
+
       if (!paidAll) {
         // Queda abierta con lo que falta: se marca lo pagado y se sigue cobrando al siguiente.
         onChange((c) => ({ ...c, items: c.items.map((i) => ({ ...i, paidQty: i.paidQty + (split?.[i.id] ?? 0) })) }))
         toast.success(`${comanda.label}: parte cobrada (${money(total)}${tipText}). Falta ${money(totalOf(comanda.items) - subtotal)}.`)
-        setSplit({})
+        // Si la cuenta está separada por persona, vuelve a la lista de lo que paga cada uno.
+        setSplit(groups.length ? null : {})
         setTipMode("none")
         setDisc({ value: null, blocked: null })
         setRound((n) => n + 1)
@@ -579,13 +618,7 @@ function ComandaEditor({
           timezone={timezone}
           categoryOf={categoryOf}
           onBack={() => setStep("edit")}
-          onCharge={(counts, personId) => {
-            setSplit(counts)
-            setChargingPerson(personId)
-            setRound((n) => n + 1)
-            setDisc({ value: null, blocked: null })
-            setStep("charge")
-          }}
+          onCharge={(counts) => chargePerson(counts, true)}
         />
       ) : step === "charge" ? (
         <div className="space-y-5">
@@ -603,7 +636,7 @@ function ComandaEditor({
                   aria-selected={active}
                   onClick={() => {
                     setSplit(t.key === "split" ? {} : null)
-                    setChargingPerson(null)
+                    setFromBill(false)
                     setRound((n) => n + 1)
                     setDisc({ value: null, blocked: null })
                   }}
@@ -614,6 +647,32 @@ function ComandaEditor({
               )
             })}
           </div>
+
+          {!split && groups.length ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Lo que paga cada uno</p>
+                <Button variant="ghost" size="sm" className="h-8 text-primary" onClick={() => setStep("bill")}>
+                  <Printer />
+                  Imprimir cuenta
+                </Button>
+              </div>
+              <ul className="divide-y rounded-xl border">
+                {groups.map((g) => (
+                  <li key={g.key} className="flex items-center gap-3 p-2.5">
+                    <span className="min-w-0 flex-1 text-sm leading-tight">
+                      <span className="font-medium">{g.title}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{g.summary}</span>
+                    </span>
+                    <span className="tabular font-semibold">{money(promoTotal(g.counts))}</span>
+                    <Button size="sm" variant="outline" className="h-9" onClick={() => chargePerson(g.counts, false)}>
+                      Cobrar
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {split ? (
             <div className="space-y-2">
@@ -747,7 +806,12 @@ function ComandaEditor({
             </div>
           ) : null}
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="outline" size="lg" className="h-12" onClick={() => setStep(chargingPerson ? "bill" : "edit")} disabled={pending}>
+            <Button variant="outline" size="lg" className="h-12" onClick={() => {
+                if (fromBill) return setStep("bill")
+                // Cobrando a una persona de la cuenta separada: vuelve a la lista de todos.
+                if (split && groups.length) return setSplit(null)
+                setStep("edit")
+              }} disabled={pending}>
               Volver
             </Button>
             <Button size="lg" className="h-12" onClick={charge} disabled={pending || subtotal <= 0 || (payment === "FIADO" && !customer.trim())}>
@@ -776,6 +840,50 @@ function ComandaEditor({
           <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_320px]">
             {/* Productos para agregar */}
             <div className="min-w-0 space-y-3">
+              {/* Para quién se anota lo que se toque: así la cuenta sale separada por persona. */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Para quién es lo que agregas">
+                <span className="shrink-0 pr-1 text-xs font-medium text-muted-foreground">Para:</span>
+                {seats ? (
+                  <>
+                    {Array.from({ length: seats }, (_, k) => k + 1).map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-pressed={seat === n}
+                        onClick={() => setSeat(n)}
+                        className={cn(
+                          "h-9 shrink-0 rounded-full border px-3.5 text-xs font-semibold sm:h-8",
+                          seat === n ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/50",
+                        )}
+                      >
+                        Persona {n}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      aria-pressed={seat === null}
+                      onClick={() => setSeat(null)}
+                      className={cn(
+                        "h-9 shrink-0 rounded-full border px-3.5 text-xs font-medium sm:h-8",
+                        seat === null ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/50",
+                      )}
+                    >
+                      Para compartir
+                    </button>
+                  </>
+                ) : (
+                  <span className="shrink-0 rounded-full border bg-card px-3.5 py-1.5 text-xs font-medium">Toda la mesa</span>
+                )}
+                <button
+                  type="button"
+                  onClick={addSeat}
+                  disabled={seats >= 30}
+                  className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-dashed px-3 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground disabled:opacity-40 sm:h-8"
+                >
+                  <UserPlus className="size-3.5" />
+                  {seats ? "Otra persona" : "Separar por persona"}
+                </button>
+              </div>
               <div className="relative">
                 <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar producto" className="h-11 pl-9" aria-label="Buscar producto" />
@@ -874,11 +982,27 @@ function ComandaEditor({
                   className="w-32 rounded-md border border-transparent bg-transparent px-2 py-1 text-right text-xs text-muted-foreground hover:border-input focus:border-ring focus:outline-none"
                 />
               </div>
-              {comanda.items.length === 0 ? (
+              {comanda.items.length === 0 && !seats ? (
                 <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">Toca los productos para agregarlos.</p>
               ) : (
+                <div className="space-y-3">
+                  {listGroups.map((g) => (
+                    <div key={g.person ?? "mesa"} className="space-y-1.5">
+                      {seats ? (
+                        <button
+                          type="button"
+                          onClick={() => setSeat(g.person)}
+                          className={cn("flex w-full items-baseline justify-between gap-2 text-xs font-semibold", seat === g.person ? "text-primary" : "text-muted-foreground")}
+                        >
+                          <span>{g.person ? `Persona ${g.person}` : "Para compartir"}</span>
+                          <span className="tabular">{money(g.rows.reduce((sum, r) => sum + r.item.quantity * r.item.unitPrice, 0))}</span>
+                        </button>
+                      ) : null}
+                      {g.rows.length === 0 ? (
+                        <p className="rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">Toca los productos para agregárselos.</p>
+                      ) : (
                 <ul className="divide-y rounded-xl border">
-                  {comanda.items.map((item, i) => (
+                  {g.rows.map(({ item, i }) => (
                     <li key={item.id} className="space-y-1.5 p-2.5">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center rounded-lg border">
@@ -893,6 +1017,21 @@ function ComandaEditor({
                         <span className="min-w-0 flex-1 text-sm leading-tight">
                           {item.description}
                           {item.note && noteFor !== i ? <span className="block text-xs text-amber-700 dark:text-amber-400">{item.note}</span> : null}
+                          {seats ? (
+                            <select
+                              value={item.person ?? ""}
+                              onChange={(e) => setPerson(i, e.target.value ? Number(e.target.value) : null)}
+                              aria-label={`De quién es ${item.description}`}
+                              className="mt-1 block w-28 max-w-full rounded-md border bg-background px-1 py-0.5 text-[11px] font-medium text-muted-foreground"
+                            >
+                              {Array.from({ length: seats }, (_, k) => k + 1).map((n) => (
+                                <option key={n} value={n}>
+                                  Persona {n}
+                                </option>
+                              ))}
+                              <option value="">Para compartir</option>
+                            </select>
+                          ) : null}
                           {item.paidQty ? (
                             <span className="mt-0.5 block text-[11px] font-medium text-primary">
                               {item.paidQty >= item.quantity ? "Pagado" : `${item.paidQty} pagado${item.paidQty === 1 ? "" : "s"}`}
@@ -937,6 +1076,10 @@ function ComandaEditor({
                     </li>
                   ))}
                 </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -967,7 +1110,8 @@ function ComandaEditor({
             <Button
               variant={unsent ? "outline" : "default"}
               onClick={() => {
-                setChargingPerson(null)
+                setFromBill(false)
+                setSplit(null)
                 setStep("charge")
               }}
               disabled={!comanda.items.length}

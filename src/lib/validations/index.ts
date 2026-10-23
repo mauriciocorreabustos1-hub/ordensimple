@@ -331,7 +331,12 @@ export type CloseShiftInput = z.input<typeof closeShiftSchema>
 // ─── Comandas ───────────────────────────────────────────────────────────────
 
 /** El id lo pone el celular: así cada plato conserva lo que la cocina ya marcó como listo. */
-export const comandaItemSchema = saleItemSchema.extend({ id: z.string().regex(/^[\w-]{8,40}$/), note: optionalText(80) })
+export const comandaItemSchema = saleItemSchema.extend({
+  id: z.string().regex(/^[\w-]{8,40}$/),
+  note: optionalText(80),
+  /** De quién es (Persona 1, 2, 3…) para separar la cuenta. */
+  person: z.number().int().min(1).max(30).nullable().optional(),
+})
 
 export const comandaSchema = z.object({
   label: z.string().trim().min(1, "Ponle un nombre: mesa, cliente o pedido").max(40, "Máximo 40 caracteres"),

@@ -23,7 +23,7 @@ export type KitchenTicket = {
   label: string
   /** Desde cuándo espera lo más antiguo que falta. */
   since: string
-  items: { id: string; description: string; quantity: number; note: string; since: string }[]
+  items: { id: string; description: string; quantity: number; note: string; since: string; person?: number | null }[]
 }
 
 const REFRESH_MS = 8_000
@@ -209,7 +209,10 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
                       >
                         <span className="tabular w-8 shrink-0 text-xl font-bold">{i.quantity}×</span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-lg leading-snug font-medium">{i.description}</span>
+                          <span className="block text-lg leading-snug font-medium">
+                            {i.description}
+                            {i.person ? <span className="ml-2 rounded-md bg-muted px-1.5 py-0.5 align-middle text-xs font-semibold text-muted-foreground">Persona {i.person}</span> : null}
+                          </span>
                           {i.note ? <span className="mt-0.5 block text-base font-semibold text-amber-700 dark:text-amber-400">{i.note}</span> : null}
                         </span>
                         {fresh.has(i.id) ? <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Nuevo</span> : null}

@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Check, ChefHat, Loader2, Minus, PencilLine, Plus, Search, X } from "lucide-react"
+import { Check, ChefHat, Loader2, Minus, PencilLine, Plus, Printer, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { AppModal } from "@/components/app/app-modal"
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 import { ProductImage } from "@/components/products/product-image"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
+import { BillStep, clearBill, forgetBillPerson } from "@/components/comandas/bill-split"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
@@ -75,7 +76,10 @@ export function ComandasBoard({
   productsOnly = false,
   promotions = [],
   timezone = "America/Santiago",
+  businessName = "",
 }: {
+  /** Nombre del negocio (sale arriba en la cuenta impresa). */
+  businessName?: string
   /** Promociones vigentes en el local (se ven al cobrar; el servidor las vuelve a calcular). */
   promotions?: PromoRule[]
   /** Zona horaria del negocio (para el horario de las promociones). */
@@ -280,6 +284,7 @@ export function ComandasBoard({
           productsOnly={productsOnly}
           promotions={promotions}
           timezone={timezone}
+          businessName={businessName}
           saving={saving}
           onChange={(change) => update(current.id, change)}
           onClose={closeEditor}
@@ -402,6 +407,7 @@ function ComandaEditor({
   productsOnly,
   promotions,
   timezone,
+  businessName,
   saving,
   onChange,
   onClose,
@@ -410,6 +416,7 @@ function ComandaEditor({
 }: {
   promotions: PromoRule[]
   timezone: string
+  businessName: string
   comanda: ComandaData
   products: ComandaProduct[]
   customers: string[]
@@ -428,7 +435,9 @@ function ComandaEditor({
   const [category, setCategory] = React.useState<string | null>(null)
   const [noteFor, setNoteFor] = React.useState<number | null>(null)
   const [custom, setCustom] = React.useState<{ description: string; price: number } | null>(null)
-  const [step, setStep] = React.useState<"edit" | "charge" | "cancel">("edit")
+  const [step, setStep] = React.useState<"edit" | "charge" | "cancel" | "bill">("edit")
+  /** Persona de la cuenta impresa a la que se le está cobrando (para sacarla de la lista al terminar). */
+  const [chargingPerson, setChargingPerson] = React.useState<string | null>(null)
   const [payment, setPayment] = React.useState<PaymentMethod>(defaultPayment === "FIADO" ? "CASH" : defaultPayment)
   const [customer, setCustomer] = React.useState("")
   const [pending, startTransition] = React.useTransition()
@@ -500,6 +509,10 @@ function ComandaEditor({
       }
       const paidAll = !split || comanda.items.every((i) => leftOf(i) === (split[i.id] ?? 0))
       const tipText = tip ? ` + propina ${money(tip)}` : ""
+      const fromBill = chargingPerson
+      if (paidAll) clearBill(comanda.id)
+      else if (fromBill) forgetBillPerson(comanda.id, fromBill)
+      setChargingPerson(null)
       if (!paidAll) {
         // Queda abierta con lo que falta: se marca lo pagado y se sigue cobrando al siguiente.
         onChange((c) => ({ ...c, items: c.items.map((i) => ({ ...i, paidQty: i.paidQty + (split?.[i.id] ?? 0) })) }))
@@ -508,6 +521,8 @@ function ComandaEditor({
         setTipMode("none")
         setDisc({ value: null, blocked: null })
         setRound((n) => n + 1)
+        // Si venía de la cuenta por persona, vuelve a ella para cobrarle al siguiente.
+        if (fromBill) setStep("bill")
         return
       }
       toast.success(`${comanda.label}: ${r.message?.toLowerCase() ?? "cobrada"} (${money(total)}${tipText})`)
@@ -550,12 +565,29 @@ function ComandaEditor({
     <AppModal
       open
       onOpenChange={(o) => (o ? null : onClose())}
-      title={step === "charge" ? `Cobrar ${comanda.label}` : step === "cancel" ? `¿Anular ${comanda.label}?` : comanda.label}
+      title={step === "charge" ? `Cobrar ${comanda.label}` : step === "cancel" ? `¿Anular ${comanda.label}?` : step === "bill" ? `Cuenta de ${comanda.label}` : comanda.label}
       description={step === "edit" ? (saving ? "Guardando…" : "Los cambios se guardan solos.") : undefined}
       className="sm:max-w-4xl"
       noAutoFocus
     >
-      {step === "charge" ? (
+      {step === "bill" ? (
+        <BillStep
+          comanda={comanda}
+          currency={currency}
+          businessName={businessName}
+          promotions={promotions}
+          timezone={timezone}
+          categoryOf={categoryOf}
+          onBack={() => setStep("edit")}
+          onCharge={(counts, personId) => {
+            setSplit(counts)
+            setChargingPerson(personId)
+            setRound((n) => n + 1)
+            setDisc({ value: null, blocked: null })
+            setStep("charge")
+          }}
+        />
+      ) : step === "charge" ? (
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Cómo se paga la cuenta">
             {[
@@ -571,6 +603,7 @@ function ComandaEditor({
                   aria-selected={active}
                   onClick={() => {
                     setSplit(t.key === "split" ? {} : null)
+                    setChargingPerson(null)
                     setRound((n) => n + 1)
                     setDisc({ value: null, blocked: null })
                   }}
@@ -714,7 +747,7 @@ function ComandaEditor({
             </div>
           ) : null}
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="outline" size="lg" className="h-12" onClick={() => setStep("edit")} disabled={pending}>
+            <Button variant="outline" size="lg" className="h-12" onClick={() => setStep(chargingPerson ? "bill" : "edit")} disabled={pending}>
               Volver
             </Button>
             <Button size="lg" className="h-12" onClick={charge} disabled={pending || subtotal <= 0 || (payment === "FIADO" && !customer.trim())}>
@@ -927,7 +960,18 @@ function ComandaEditor({
               {pending ? <Loader2 className="animate-spin" /> : <ChefHat />}
               {unsent ? `Enviar a cocina (${unsent})` : "Enviado a cocina"}
             </Button>
-            <Button variant={unsent ? "outline" : "default"} onClick={() => setStep("charge")} disabled={!comanda.items.length}>
+            <Button variant="outline" onClick={() => setStep("bill")} disabled={!countOf(comanda.items)}>
+              <Printer />
+              Cuenta
+            </Button>
+            <Button
+              variant={unsent ? "outline" : "default"}
+              onClick={() => {
+                setChargingPerson(null)
+                setStep("charge")
+              }}
+              disabled={!comanda.items.length}
+            >
               Cobrar
             </Button>
           </div>

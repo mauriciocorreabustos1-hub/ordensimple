@@ -97,6 +97,7 @@ export default async function ComandasPage() {
         products={products.map((p) => ({ id: p.id, name: p.name, price: p.price, category: p.category?.name ?? null, categoryId: p.categoryId, imageUrl: p.imageUrl }))}
         promotions={await activePromotions(ctx.businessId, ctx.business.plan)}
         timezone={ctx.timezone}
+        businessName={ctx.business.name}
         customers={customers.map((c) => c.name)}
         tables={tableLabels(ctx.settings.tableCount, ctx.settings.tableExtras)}
         canEditTables={can(ctx.role, "settings:manage")}

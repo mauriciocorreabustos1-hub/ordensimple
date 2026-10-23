@@ -18,13 +18,13 @@ export default function ProfitGuidePage() {
     <GuidePage
       href={HREF}
       title="Cómo calcular la ganancia de tu negocio"
-      description="Muchos negocios venden harto y aun así no les alcanza. La diferencia está entre lo que vendes y lo que te queda. Así se calcula."
+      description="Muchos negocios venden mucho y aun así no les alcanza. La diferencia está entre lo que vendes y lo que te queda. Así se calcula."
       updated="4 de octubre de 2026"
       readingMinutes={5}
     >
       <GuideSection title="Vender no es lo mismo que ganar">
         <p>
-          Lo que vendes es la plata que entra. La <strong>ganancia</strong> es lo que te queda después de pagar todo: la
+          Lo que vendes es el dinero que entra. La <strong>ganancia</strong> es lo que te queda después de pagar todo: la
           mercadería, el arriendo, la luz, los sueldos y todos los demás gastos.
         </p>
         <Formula>Ganancia = Ventas − Lo que pagaste por la mercadería − Gastos del negocio</Formula>
@@ -51,7 +51,7 @@ export default function ProfitGuidePage() {
             cuentas, crees que ganas más de lo que realmente ganas.
           </li>
           <li>
-            <strong>Mezclar la plata de la casa con la del negocio.</strong> Si sacas de la caja sin anotarlo, los números
+            <strong>Mezclar el dinero de la casa con el del negocio.</strong> Si sacas de la caja sin anotarlo, los números
             nunca van a cuadrar.
           </li>
           <li>

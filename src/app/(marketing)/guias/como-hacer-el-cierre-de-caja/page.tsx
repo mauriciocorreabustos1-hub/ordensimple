@@ -8,7 +8,7 @@ const HREF = "/guias/como-hacer-el-cierre-de-caja"
 export const metadata: Metadata = {
   title: "Cómo hacer el cierre de caja paso a paso",
   description:
-    "Aprende a cuadrar la caja al final del día: la fórmula, un ejemplo con números y qué hacer si falta o sobra plata.",
+    "Aprende a cuadrar la caja al final del día: la fórmula, un ejemplo con números y qué hacer si falta o sobra dinero.",
   alternates: { canonical: HREF },
 }
 
@@ -17,7 +17,7 @@ export default function CashGuidePage() {
     <GuidePage
       href={HREF}
       title="Cómo hacer el cierre de caja paso a paso"
-      description="Cuadrar la caja te toma un par de minutos y te dice algo muy importante: si la plata que hay es la que debería haber."
+      description="Cuadrar la caja te toma un par de minutos y te dice algo muy importante: si el dinero que hay es el que debería haber."
       updated="4 de octubre de 2026"
       readingMinutes={4}
     >
@@ -39,7 +39,7 @@ export default function CashGuidePage() {
           <li><strong>Efectivo inicial:</strong> el sencillo con que abriste (el “fondo de caja”).</li>
           <li><strong>Ventas en efectivo:</strong> solo las que te pagaron en billetes y monedas.</li>
           <li><strong>Abonos en efectivo:</strong> lo que te pagaron clientes que te debían (fiado).</li>
-          <li><strong>Gastos pagados con la caja:</strong> por ejemplo, si le pagaste al panadero con plata de la caja.</li>
+          <li><strong>Gastos pagados con la caja:</strong> por ejemplo, si le pagaste al panadero con dinero de la caja.</li>
         </ul>
       </GuideSection>
 
@@ -48,7 +48,7 @@ export default function CashGuidePage() {
           <li>Abriste con $20.000 de sencillo.</li>
           <li>Vendiste $63.390 en efectivo.</li>
           <li>Un cliente te abonó $5.000 del fiado, en efectivo.</li>
-          <li>Le pagaste $10.000 al proveedor del pan con plata de la caja.</li>
+          <li>Le pagaste $10.000 al proveedor del pan con dinero de la caja.</li>
         </ul>
         <Formula>$20.000 + $63.390 + $5.000 − $10.000 = $78.390</Formula>
         <p>
@@ -57,14 +57,14 @@ export default function CashGuidePage() {
         </p>
       </GuideSection>
 
-      <GuideSection title="Si falta o sobra plata">
+      <GuideSection title="Si falta o sobra dinero">
         <p>Antes de preocuparte, revisa lo más común:</p>
         <ul>
           <li>Una venta que se pagó con tarjeta o transferencia y se anotó como efectivo (o al revés).</li>
           <li>Un vuelto mal entregado.</li>
           <li>Un gasto pagado con la caja que no se anotó.</li>
-          <li>Plata que se sacó para la casa sin anotarla.</li>
-          <li>Una venta que no se registró (en ese caso, sobra plata).</li>
+          <li>Dinero que se sacó para la casa sin anotarlo.</li>
+          <li>Una venta que no se registró (en ese caso, sobra dinero).</li>
         </ul>
         <p>Si las diferencias se repiten, haz el cierre todos los días a la misma hora: así es más fácil encontrar el error.</p>
       </GuideSection>

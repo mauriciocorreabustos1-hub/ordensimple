@@ -15,7 +15,7 @@ export default function CalculatorsPage() {
       <PageHero
         eyebrow="Gratis, sin crear cuenta"
         title="Calculadoras para tu negocio"
-        description="Pon tus números y obtén la respuesta al tiro, explicada en palabras simples."
+        description="Pon tus números y obtén la respuesta de inmediato, explicada en palabras simples."
       />
       <Container className="max-w-5xl pb-16">
         <OtherCalculators />

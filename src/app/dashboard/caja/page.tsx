@@ -25,7 +25,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 export default async function CashPage({ searchParams }: PageProps<"/dashboard/caja">) {
   const ctx = await requireBusiness()
   if (!canUseFeature(ctx.business.plan, "cashClose")) {
-    return <ProGate title="Cierre de caja" description="Cuenta la plata al final del día y mira si cuadra con lo que vendiste." />
+    return <ProGate title="Cierre de caja" description="Cuenta el dinero al final del día y mira si cuadra con lo que vendiste." />
   }
   trackFeature(ctx.businessId, ctx.timezone, "caja")
   const params = await searchParams
@@ -144,7 +144,7 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
                     {r.label}
                     {r.count ? <span className="text-muted-foreground"> · {r.count}</span> : null}
                     {r.value === "FIADO" && r.total ? (
-                      <span className="block text-xs text-muted-foreground">No entra plata hoy: queda como deuda del cliente.</span>
+                      <span className="block text-xs text-muted-foreground">No entra dinero hoy: queda como deuda del cliente.</span>
                     ) : null}
                   </span>
                   <span className={cn("tabular font-medium", !r.total && "text-muted-foreground")}>{money(r.total)}</span>

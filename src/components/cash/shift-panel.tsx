@@ -69,7 +69,7 @@ export function ShiftPanel({
           <Clock className="size-5 text-primary" />
           Turnos de caja
         </CardTitle>
-        <CardDescription>Si trabajan por turnos, cada persona abre con el sencillo y al salir cuenta la plata. Así sabes en qué turno faltó o sobró.</CardDescription>
+        <CardDescription>Si trabajan por turnos, cada persona abre con el sencillo y al salir cuenta el dinero. Así sabes en qué turno faltó o sobró.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         {isToday ? open ? <CloseForm shift={open} money={money} time={time} currency={currency} /> : <OpenForm lastCounted={lastCounted} currency={currency} /> : null}
@@ -192,7 +192,7 @@ function CloseForm({
         {line("+ Ventas en efectivo", shift.cashSales)}
         {shift.tipsCash ? line("+ Propinas en efectivo", shift.tipsCash) : null}
         {shift.cashPayments ? line("+ Abonos de fiado en efectivo", shift.cashPayments) : null}
-        {shift.depositsCash ? line("+ Plata que puso el dueño", shift.depositsCash) : null}
+        {shift.depositsCash ? line("+ Aporte del dueño", shift.depositsCash) : null}
         {cashOut ? line("− Gastos pagados con la caja", cashOut) : null}
         {shift.withdrawalsCash ? line("− Retiros del dueño", shift.withdrawalsCash) : null}
         <div className="flex justify-between border-t pt-2 text-base font-semibold">

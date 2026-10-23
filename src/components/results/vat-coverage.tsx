@@ -68,7 +68,7 @@ export function VatCoverage({ label: L, chile, ppm, retention }: { label: string
           </ul>
         </div>
         <p className="text-xs text-muted-foreground">
-          Es un cálculo aproximado para que no te pille el pago. La cifra oficial es la que confirma tu contador o el SII.
+          Es un cálculo aproximado para que el pago no te tome por sorpresa. La cifra oficial es la que confirma tu contador o el SII.
         </p>
       </div>
     </div>

@@ -28,7 +28,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
   const ctx = await requireBusiness()
   if (!can(ctx.role, "finances:view")) redirect("/dashboard")
   if (!canUseFeature(ctx.business.plan, "cashflow")) {
-    return <ProGate title="Flujo de caja" description="Cuánta plata entra y sale cada mes, y lo que viene." />
+    return <ProGate title="Flujo de caja" description="Cuánto dinero entra y sale cada mes, y lo que viene." />
   }
   trackFeature(ctx.businessId, ctx.timezone, "flujo-caja")
   const params = await searchParams
@@ -59,7 +59,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
     <div className="space-y-6">
       <PageHeader
         title="Flujo de caja"
-        description="La plata que de verdad entra y sale de tu negocio. Lo fiado cuenta cuando te lo pagan."
+        description="El dinero que de verdad entra y sale de tu negocio. Lo fiado cuenta cuando te lo pagan."
         actions={
           <div className="flex items-center gap-2 max-sm:w-full max-sm:justify-between">
             <Button variant="outline" size="icon" asChild>
@@ -97,7 +97,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
           value={money(flow.inflow)}
           icon={ArrowDownLeft}
           tone="sales"
-          hint="Ventas cobradas, abonos de fiado y plata que pusiste."
+          hint="Ventas cobradas, abonos de fiado y aportes del dueño."
         />
         <StatCard
           compactOnMobile
@@ -126,7 +126,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
           <SalesExpensesChart
             data={flow.days}
             currency={ctx.currency}
-            caption={`Entradas y salidas de plata por día en ${monthText}`}
+            caption={`Entradas y salidas de dinero por día en ${monthText}`}
             labels={{ sales: "Entró", expenses: "Salió", gain: "Quedó", loss: "Faltó" }}
           />
           {flow.days.length ? (
@@ -134,7 +134,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
               Saldo acumulado del mes:{" "}
               <strong className={cn("tabular", flow.net < 0 ? "text-danger" : "text-foreground")}>{money(flow.net)}</strong>
               {flow.worstDay && flow.worstDay.sales - flow.worstDay.expenses < 0
-                ? ` · El día que más plata salió fue el ${flow.worstDay.fullLabel} (${money(flow.worstDay.expenses - flow.worstDay.sales)} más de lo que entró).`
+                ? ` · El día que más dinero salió fue el ${flow.worstDay.fullLabel} (${money(flow.worstDay.expenses - flow.worstDay.sales)} más de lo que entró).`
                 : ""}
             </p>
           ) : null}
@@ -164,7 +164,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
               {flow.deposits ? (
                 <li className="flex justify-between gap-3 py-2.5">
                   <span>
-                    Plata que pusiste <span className="text-xs text-muted-foreground">(no es venta)</span>
+                    Aportes del dueño <span className="text-xs text-muted-foreground">(no es venta)</span>
                   </span>
                   <span className="tabular font-medium">{money(flow.deposits)}</span>
                 </li>
@@ -176,7 +176,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
             </ul>
             {flow.fiadoSold ? (
               <p className="mt-3 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                Además vendiste {money(flow.fiadoSold)} fiado: es venta, pero la plata entra cuando te la paguen.
+                Además vendiste {money(flow.fiadoSold)} fiado: es venta, pero el dinero entra cuando te lo paguen.
               </p>
             ) : null}
           </CardContent>
@@ -226,7 +226,7 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
                 <CalendarClock className="size-5 text-primary" />
                 Lo que viene (próximos 30 días)
               </CardTitle>
-              <CardDescription>Plata que debería entrar y salir pronto, para que no te pille.</CardDescription>
+              <CardDescription>Dinero que debería entrar y salir pronto, para que no te tome por sorpresa.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
@@ -305,8 +305,8 @@ export default async function CashFlowPage({ searchParams }: PageProps<"/dashboa
       ) : null}
 
       <Explainer title="¿En qué se diferencia de la utilidad?">
-        El flujo de caja es la plata que de verdad entró y salió. La utilidad (en Resultados) es lo que ganaste: puede que hayas ganado
-        plata pero tengas poca en caja, por ejemplo si vendiste mucho fiado o compraste mercadería que todavía no vendes.
+        El flujo de caja es el dinero que de verdad entró y salió. La utilidad (en Resultados) es lo que ganaste: puede que hayas ganado
+        dinero pero tengas poco en caja, por ejemplo si vendiste mucho fiado o compraste mercadería que todavía no vendes.
       </Explainer>
     </div>
   )

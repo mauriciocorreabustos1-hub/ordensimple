@@ -403,7 +403,7 @@ export function nudgeEmail({
       preview: "Con anotar tus ventas y gastos, OrdenSimple te lo dice solo.",
       title: "¿Cuánto ganaste esta semana?",
       paragraphs: [
-        `Hola ${first}, muchos negocios venden harto pero no saben cuánto les queda. Con OrdenSimple lo ves al tiro, solo anotando ventas y gastos.`,
+        `Hola ${first}, muchos negocios venden mucho pero no saben cuánto les queda. Con OrdenSimple lo ves de inmediato, solo anotando ventas y gastos.`,
         "Además puedes llevar el <strong>fiado</strong> de tus clientes, hacer el <strong>cierre de caja</strong> al final del día y calcular <strong>a cuánto vender</strong> cada producto.",
         "Si algo no te queda claro, <strong>responde este correo</strong> y te ayudamos personalmente.",
       ],

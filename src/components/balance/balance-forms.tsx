@@ -86,15 +86,15 @@ export function WithdrawalDialog({
     <>
       <Button variant={deposit ? "outline" : "default"} onClick={() => setOpen(true)}>
         <Plus />
-        {deposit ? "Poner plata" : "Anotar retiro"}
+        {deposit ? "Aportar dinero" : "Anotar retiro"}
       </Button>
       <AppModal
         open={open}
         onOpenChange={setOpen}
-        title={deposit ? "Poner plata en el negocio" : "Retiro del dueño"}
+        title={deposit ? "Aportar dinero al negocio" : "Retiro del dueño"}
         description={
           deposit
-            ? "Plata de tus ahorros, de un préstamo o sencillo para la caja. No es una venta: no sube la ganancia."
+            ? "Dinero de tus ahorros, de un préstamo o sencillo para la caja. No es una venta: no sube la ganancia."
             : "Lo que sacas del negocio para ti. No es un gasto: no baja la ganancia del negocio."
         }
       >
@@ -109,7 +109,7 @@ export function WithdrawalDialog({
                 onClick={() => setKind("MONEY")}
               >
                 <Wallet className="size-4" />
-                Plata
+                Dinero
               </button>
               <button
                 type="button"
@@ -355,7 +355,7 @@ export function LoanDialog({ currency, loan }: { currency: string; loan?: LoanRo
         open={open}
         onOpenChange={setOpen}
         title={loan ? "Editar préstamo" : "Préstamo o deuda"}
-        description="Créditos del banco, tarjeta del negocio, plata que te prestaron."
+        description="Créditos del banco, tarjeta del negocio, dinero que te prestaron."
       >
         <form onSubmit={submit} className="grid gap-4">
           <Field label="¿A quién le debes?" htmlFor="l-lender">
@@ -393,10 +393,10 @@ export function LoanDialog({ currency, loan }: { currency: string; loan?: LoanRo
           </Field>
           {loan ? null : (
             <Field
-              label="¿Te acaban de pasar esta plata?"
+              label="¿Te acaban de entregar este dinero?"
               hint="Si es un préstamo nuevo, el dinero entra a tu caja o banco. Si es una deuda antigua, déjalo en “No”."
             >
-              <div className="flex gap-2" role="radiogroup" aria-label="Dónde entró la plata del préstamo">
+              <div className="flex gap-2" role="radiogroup" aria-label="Dónde entró el dinero del préstamo">
                 {(
                   [
                     ["", "No"],

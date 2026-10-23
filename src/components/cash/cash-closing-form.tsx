@@ -80,7 +80,7 @@ export function CashClosingForm({
     tipsCash ? `Propinas en efectivo: ${money(tipsCash)}` : null,
     expensesFromCash && expensesTotal ? `Gastos pagados con caja: ${money(expensesTotal)}` : null,
     withdrawalsCash ? `Retiros del dueño: ${money(withdrawalsCash)}` : null,
-    depositsCash ? `Plata que puso el dueño: ${money(depositsCash)}` : null,
+    depositsCash ? `Aporte del dueño: ${money(depositsCash)}` : null,
     "",
     `Efectivo esperado: ${money(expected)}`,
     hasCounted ? `Efectivo contado: ${money(counted)}` : null,
@@ -103,7 +103,7 @@ export function CashClosingForm({
 
         <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
           <div>
-            <p className="text-sm font-medium">¿Pagaste los gastos de hoy con plata de la caja?</p>
+            <p className="text-sm font-medium">¿Pagaste los gastos de hoy con dinero de la caja?</p>
             <p className="text-xs text-muted-foreground">
               {expensesTotal
                 ? expensesFromCash
@@ -125,7 +125,7 @@ export function CashClosingForm({
             <div className="flex justify-between"><span className="text-muted-foreground">+ Abonos de fiado en efectivo</span><span className="tabular">{money(cashPayments)}</span></div>
           ) : null}
           {depositsCash ? (
-            <div className="flex justify-between"><span className="text-muted-foreground">+ Plata que pusiste</span><span className="tabular">{money(depositsCash)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">+ Aportes del dueño</span><span className="tabular">{money(depositsCash)}</span></div>
           ) : null}
           {cashOut ? (
             <div className="flex justify-between"><span className="text-muted-foreground">− Gastos pagados con la caja</span><span className="tabular">{money(cashOut)}</span></div>
@@ -179,8 +179,8 @@ export function CashClosingForm({
                 {status === "ok"
                   ? "El efectivo contado es exactamente lo que debería haber."
                   : status === "over"
-                    ? "Hay más plata de la esperada. ¿Quedó alguna venta sin registrar?"
-                    : "Hay menos plata de la esperada. Revisa si falta registrar algún gasto o si diste vuelto de más."}
+                    ? "Hay más dinero del esperado. ¿Quedó alguna venta sin registrar?"
+                    : "Hay menos dinero del esperado. Revisa si falta registrar algún gasto o si diste vuelto de más."}
               </p>
             </div>
           </div>

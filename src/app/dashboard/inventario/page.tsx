@@ -351,7 +351,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/dashbo
                       {showCosts ? (
                         <Explainer title="Dinero inmovilizado">
                           Tienes {money(inv.idleValue)} en productos que no se están vendiendo. Considera una oferta para
-                          convertirlos en plata.
+                          convertirlos en dinero.
                         </Explainer>
                       ) : null}
                     </>

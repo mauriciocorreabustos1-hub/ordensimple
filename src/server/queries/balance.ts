@@ -60,7 +60,7 @@ export async function getBalance(ctx: BusinessContext, now = new Date()) {
   const vatInFavor = chargesVat ? row.carryOut : 0
 
   const assets = [
-    { key: "cash", label: "Plata en caja y banco", value: cash ?? 0, missing: cash === null, href: null as string | null },
+    { key: "cash", label: "Dinero en caja y banco", value: cash ?? 0, missing: cash === null, href: null as string | null },
     { key: "stock", label: "Mercadería en bodega (al costo)", value: inventory.value, href: "/dashboard/inventario" },
     { key: "fiado", label: "Fiado por cobrar", value: debtors.total, href: "/dashboard/clientes?segmento=deben" },
     ...(vatInFavor ? [{ key: "vat", label: `${vat!.label} a favor`, value: vatInFavor, href: "/dashboard/resultados" }] : []),

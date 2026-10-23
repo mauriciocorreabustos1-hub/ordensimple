@@ -42,13 +42,13 @@ export const HIGHLIGHTS: Feature[] = [
   {
     icon: NotebookPen,
     title: "Fiado sin cuaderno",
-    text: "Anota lo que fías, registra los abonos y sabe al tiro cuánto te debe cada cliente.",
+    text: "Anota lo que fías, registra los abonos y sabe de inmediato cuánto te debe cada cliente.",
   },
-  { icon: Vault, title: "Cierre de caja", text: "Al final del día cuentas el efectivo y te decimos si falta o sobra plata." },
+  { icon: Vault, title: "Cierre de caja", text: "Al final del día cuentas el efectivo y te decimos si falta o sobra dinero." },
   {
     icon: Receipt,
     title: "Gastos ordenados",
-    text: "Arriendo, luz, proveedores, sueldos… todo en categorías para saber en qué se va tu plata.",
+    text: "Arriendo, luz, proveedores, sueldos… todo en categorías para saber en qué se va tu dinero.",
   },
   {
     icon: LayoutDashboard,
@@ -58,7 +58,7 @@ export const HIGHLIGHTS: Feature[] = [
   {
     icon: BellRing,
     title: "Avisos al celular y al correo",
-    text: "Un pedido nuevo, un descuento por aprobar, algo que se agota o un fiado atrasado: te avisamos al tiro.",
+    text: "Un pedido nuevo, un descuento por aprobar, algo que se agota o un fiado atrasado: te avisamos de inmediato.",
   },
   {
     icon: Package,
@@ -102,7 +102,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     id: "gastos",
     icon: Receipt,
     title: "Gastos",
-    description: "Sabe exactamente en qué se va tu plata cada mes.",
+    description: "Sabe exactamente en qué se va tu dinero cada mes.",
     points: [
       "Categorías listas: arriendo, luz, agua, internet, sueldos, publicidad y más",
       "Crea tus propias categorías",
@@ -135,7 +135,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     points: [
       "Cuánto vendiste con cada medio de pago: efectivo, débito, transferencia…",
       "Incluye los abonos de fiado que te pagaron en efectivo",
-      "Escribe cuánto contaste y te decimos si falta o sobra plata",
+      "Escribe cuánto contaste y te decimos si falta o sobra dinero",
       "Historial de cierres de los últimos días",
       "Comparte el cierre del día por WhatsApp",
       "Turnos de caja: cada persona abre con el sencillo y cuenta al salir; sabes en qué turno faltó o sobró",
@@ -150,7 +150,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     points: [
       "Abre una comanda por mesa o pedido: Mesa 4, Barra, Para llevar, Delivery",
       "Tus mesas, las que quieras: hasta 200, más barra, terraza o lo que uses",
-      "Ves al tiro qué mesas están ocupadas y cuánto lleva cada una",
+      "Ves de inmediato qué mesas están ocupadas y cuánto lleva cada una",
       "Notas por plato: “sin mayo”, “bien cocido”, “para llevar”",
       "Enviar a cocina: el pedido aparece en la pantalla de la cocina, sin papel",
       "La cocina marca cada plato listo y el garzón ve “Listo para servir”",
@@ -404,9 +404,9 @@ export const BEFORE_AFTER: { before: string; after: string }[] = [
   },
   {
     before: "El fiado en hojas sueltas, y nadie tiene claro cuánto debe.",
-    after: "Sabes al tiro cuánto te debe cada cliente y le cobras por WhatsApp.",
+    after: "Sabes de inmediato cuánto te debe cada cliente y le cobras por WhatsApp.",
   },
-  { before: "Cierras, cuentas la plata y no cuadra.", after: "El cierre de caja te dice si falta o sobra plata, y cuánto." },
+  { before: "Cierras, cuentas el dinero y no cuadra.", after: "El cierre de caja te dice si falta o sobra dinero, y cuánto." },
   { before: "Te enteras de que se acabó algo cuando un cliente lo pide.", after: "Te avisa cuando un producto se está acabando." },
   { before: "A fin de mes no sabes si ganaste o perdiste.", after: "Ves tu ganancia del día y del mes, en palabras simples." },
   { before: "El Excel que empezaste y nunca terminaste.", after: "Todo en el celular o el computador, sin planillas." },
@@ -419,7 +419,7 @@ export const RECEIPT_STEPS: { what: string; note: string; time: string }[] = [
   { what: "Crea tu cuenta", note: "Nombre, correo y contraseña. Sin tarjeta.", time: "30 seg" },
   { what: "Tu negocio", note: "Nombre, rubro y moneda. Salta lo que no sepas.", time: "1 min" },
   { what: "Primera venta", note: "Con el botón verde o escaneando el código.", time: "20 seg" },
-  { what: "Mira cómo vas", note: "Tu ganancia, en palabras simples.", time: "al tiro" },
+  { what: "Mira cómo vas", note: "Tu ganancia, en palabras simples.", time: "en segundos" },
 ]
 
 export const STEPS: Step[] = [

@@ -138,7 +138,7 @@ export function ReturnButton({ saleId, currency, timezone, canApprove }: { saleI
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">¿Cómo se devuelve la plata?</p>
+              <p className="text-sm font-medium">¿Cómo se devuelve el dinero?</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {(data.paymentMethod === "FIADO" ? [{ value: "FIADO" as PaymentMethod, label: "Rebajar del fiado" }, ...REFUNDS] : REFUNDS).map((m) => (
                   <button

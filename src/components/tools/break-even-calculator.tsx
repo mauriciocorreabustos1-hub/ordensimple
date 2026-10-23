@@ -67,7 +67,7 @@ export function BreakEvenCalculator({
           <div className="rounded-2xl border border-danger/30 bg-danger/10 p-5 text-sm">
             <p className="font-medium">Con este precio nunca llegarás al equilibrio</p>
             <p className="mt-1 text-foreground/80">
-              El producto te cuesta lo mismo o más de lo que lo vendes. Cada venta te hace perder plata. Sube el precio o
+              El producto te cuesta lo mismo o más de lo que lo vendes. Cada venta te hace perder dinero. Sube el precio o
               busca un proveedor más barato.
             </p>
           </div>
@@ -77,7 +77,7 @@ export function BreakEvenCalculator({
           </div>
         )}
         <Explainer title="¿Qué es el punto de equilibrio?">
-          Es la cantidad que tienes que vender para no ganar ni perder. Por debajo de ese número estás perdiendo plata;
+          Es la cantidad que tienes que vender para no ganar ni perder. Por debajo de ese número estás perdiendo dinero;
           por encima, empiezas a ganar.
         </Explainer>
       </div>

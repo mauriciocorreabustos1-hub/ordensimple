@@ -8,20 +8,20 @@ import { SignupLink } from "@/components/landing/signup-link"
 export const GUIDES = [
   {
     href: "/guias/como-llevar-el-fiado",
-    title: "Cómo llevar el fiado sin perder plata",
+    title: "Cómo llevar el fiado sin perder dinero",
     description: "Reglas simples para fiar, anotar y cobrar sin discusiones.",
     icon: NotebookPen,
   },
   {
     href: "/guias/como-hacer-el-cierre-de-caja",
     title: "Cómo hacer el cierre de caja paso a paso",
-    description: "La cuenta para saber si falta o sobra plata al final del día.",
+    description: "La cuenta para saber si falta o sobra dinero al final del día.",
     icon: Vault,
   },
   {
     href: "/guias/como-calcular-la-ganancia-de-tu-negocio",
     title: "Cómo calcular la ganancia de tu negocio",
-    description: "Vender harto no es lo mismo que ganar harto: aprende a sacar la cuenta.",
+    description: "Vender mucho no es lo mismo que ganar mucho: aprende a sacar la cuenta.",
     icon: PiggyBank,
   },
 ] as const

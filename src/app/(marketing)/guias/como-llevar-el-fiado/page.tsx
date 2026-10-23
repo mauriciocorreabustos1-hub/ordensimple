@@ -6,9 +6,9 @@ import { SignupLink } from "@/components/landing/signup-link"
 const HREF = "/guias/como-llevar-el-fiado"
 
 export const metadata: Metadata = {
-  title: "Cómo llevar el fiado de tu almacén sin perder plata",
+  title: "Cómo llevar el fiado de tu almacén sin perder dinero",
   description:
-    "Guía práctica para fiar con orden: qué anotar, reglas para no perder plata, cómo cobrar sin discusiones y cómo dejar el cuaderno atrás.",
+    "Guía práctica para fiar con orden: qué anotar, reglas para no perder dinero, cómo cobrar sin discusiones y cómo dejar el cuaderno atrás.",
   alternates: { canonical: HREF },
 }
 
@@ -16,13 +16,13 @@ export default function FiadoGuidePage() {
   return (
     <GuidePage
       href={HREF}
-      title="Cómo llevar el fiado de tu almacén sin perder plata"
+      title="Cómo llevar el fiado de tu almacén sin perder dinero"
       description="Fiar es parte del negocio de barrio. El problema no es fiar: es no saber cuánto te deben. Aquí tienes reglas simples para hacerlo con orden."
       updated="4 de octubre de 2026"
       readingMinutes={5}
     >
-      <GuideSection title="¿Por qué se pierde plata con el fiado?">
-        <p>Casi nunca es porque el cliente no quiera pagar. La plata se pierde por desorden:</p>
+      <GuideSection title="¿Por qué se pierde dinero con el fiado?">
+        <p>Casi nunca es porque el cliente no quiera pagar. El dinero se pierde por desorden:</p>
         <ul>
           <li>Se anota tarde, “cuando haya un rato”, y algunas ventas se olvidan.</li>
           <li>El cuaderno se moja, se pierde una hoja o nadie entiende la letra.</li>
@@ -53,7 +53,7 @@ export default function FiadoGuidePage() {
           <li><strong>Pon un límite por cliente.</strong> Por ejemplo, $30.000. Si llega al límite, primero un abono y después más fiado.</li>
           <li><strong>Cobra en un día fijo.</strong> Por ejemplo, el viernes o el día de pago. Tus clientes se acostumbran y tú no persigues a nadie.</li>
           <li><strong>Anota cada abono.</strong> Aunque sea poco. Así siempre saben los dos cuánto queda.</li>
-          <li><strong>Revisa el total una vez por semana.</strong> Lo que te deben es plata tuya que no está en la caja: no debería crecer sin control.</li>
+          <li><strong>Revisa el total una vez por semana.</strong> Lo que te deben es dinero tuyo que no está en la caja: no debería crecer sin control.</li>
         </ul>
       </GuideSection>
 

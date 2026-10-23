@@ -145,7 +145,7 @@ export function TwoFactorSettings({ enabled, method, isAdmin }: { enabled: boole
         title={step.kind === "password" && step.action === "disable" ? "Desactivar la verificación en dos pasos" : "Confirma tu contraseña"}
         description={
           step.kind === "password" && step.action === "disable" && isAdmin
-            ? "Ojo: sin la verificación en dos pasos no podrás entrar al panel de administración."
+            ? "Importante: sin la verificación en dos pasos no podrás entrar al panel de administración."
             : "Por seguridad, escribe la contraseña con la que entras a OrdenSimple."
         }
       >

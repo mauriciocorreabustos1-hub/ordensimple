@@ -32,6 +32,6 @@ export function parseReferralCookie(cookieHeader: string | null | undefined) {
 /** Mensaje para compartir por WhatsApp. */
 export function referralShareText(url: string, invitedDays: number, planName: string) {
   return invitedDays > 0
-    ? `Uso OrdenSimple para llevar las ventas, gastos y el inventario de mi negocio, y me ha servido harto. Si te registras con mi enlace te regalan ${invitedDays} días del plan ${planName}: ${url}`
-    : `Uso OrdenSimple para llevar las ventas, gastos y el inventario de mi negocio, y me ha servido harto. Pruébalo gratis con mi enlace: ${url}`
+    ? `Uso OrdenSimple para llevar las ventas, gastos y el inventario de mi negocio, y me ha servido mucho. Si te registras con mi enlace te regalan ${invitedDays} días del plan ${planName}: ${url}`
+    : `Uso OrdenSimple para llevar las ventas, gastos y el inventario de mi negocio, y me ha servido mucho. Pruébalo gratis con mi enlace: ${url}`
 }

@@ -54,7 +54,7 @@ export async function createWithdrawal(input: WithdrawalInput): Promise<ActionRe
           createdById: ctx.user.id,
         },
       })
-      return done(v.kind === "DEPOSIT" ? "Anotado: pusiste plata en el negocio" : "Retiro anotado")
+      return done(v.kind === "DEPOSIT" ? "Aporte de dinero anotado" : "Retiro anotado")
     }
 
     const product = await db.product.findFirst({ where: { id: v.productId!, businessId: ctx.businessId } })

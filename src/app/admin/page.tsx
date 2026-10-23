@@ -623,7 +623,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             <p className="text-xs text-muted-foreground">Cuenta conectada</p>
             {mpAccount.ok ? (
               mpAccount.test ? (
-                <p className="font-medium text-danger">⚠ Es una cuenta de PRUEBA: no cobra plata real</p>
+                <p className="font-medium text-danger">⚠ Es una cuenta de PRUEBA: no cobra dinero real</p>
               ) : (
                 <p className="font-medium text-success">✓ Cuenta real{mpAccount.site === "MLC" ? " de Chile" : ` (${mpAccount.site})`}</p>
               )

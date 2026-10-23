@@ -15,13 +15,13 @@ export const CALCULATORS = [
   {
     href: "/calculadoras/punto-de-equilibrio",
     title: "Punto de equilibrio",
-    description: "¿Cuánto tienes que vender al mes y al día para no perder plata?",
+    description: "¿Cuánto tienes que vender al mes y al día para no perder dinero?",
     icon: Scale,
   },
   {
     href: "/calculadoras/meta-de-ganancia",
     title: "Meta de ganancia",
-    description: "Si quieres ganar cierta plata al mes, ¿cuánto tienes que vender?",
+    description: "Si quieres ganar cierto monto al mes, ¿cuánto tienes que vender?",
     icon: Target,
   },
 ] as const

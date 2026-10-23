@@ -263,7 +263,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/dashboar
         <Card>
           <CardHeader>
             <CardTitle>Gastos por categoría</CardTitle>
-            <CardDescription>En qué se fue la plata en este período.</CardDescription>
+            <CardDescription>En qué se fue el dinero en este período.</CardDescription>
           </CardHeader>
           <CardContent>
             {report.categories.length === 0 ? (

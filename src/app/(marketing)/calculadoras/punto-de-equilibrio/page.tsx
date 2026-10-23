@@ -5,7 +5,7 @@ import { CalculatorPage, Formula, GuideSection } from "@/components/landing/calc
 export const metadata: Metadata = {
   title: "Calculadora de punto de equilibrio",
   description:
-    "Calcula gratis cuánto tienes que vender al mes y al día para no perder plata. Fórmula del punto de equilibrio explicada con ejemplos.",
+    "Calcula gratis cuánto tienes que vender al mes y al día para no perder dinero. Fórmula del punto de equilibrio explicada con ejemplos.",
   alternates: { canonical: "/calculadoras/punto-de-equilibrio" },
 }
 

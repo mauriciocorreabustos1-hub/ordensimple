@@ -202,7 +202,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/dashboa
 
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle>¿En qué se va tu plata?</CardTitle>
+            <CardTitle>¿En qué se va tu dinero?</CardTitle>
             <CardDescription>Gastos de este mes por categoría.</CardDescription>
           </CardHeader>
           <CardContent>

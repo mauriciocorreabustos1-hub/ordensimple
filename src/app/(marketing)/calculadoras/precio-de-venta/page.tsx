@@ -37,7 +37,7 @@ export default function PriceCalculatorPage() {
         </p>
         <p>
           La diferencia se nota a fin de mes: si haces tus cuentas pensando que ganas el 30% y en realidad ganas el 23%,
-          te va a faltar plata para cubrir el arriendo, la luz y tu sueldo.
+          te va a faltar dinero para cubrir el arriendo, la luz y tu sueldo.
         </p>
       </GuideSection>
 

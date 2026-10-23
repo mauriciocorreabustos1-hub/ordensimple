@@ -29,7 +29,7 @@ export default async function BalancePage() {
     return (
       <ProGate
         title="Balance y retiros"
-        description="Cuánto vale tu negocio (lo que tienes menos lo que debes), la plata que sacas para ti y tus préstamos."
+        description="Cuánto vale tu negocio (lo que tienes menos lo que debes), el dinero que sacas para ti y tus préstamos."
       />
     )
   }
@@ -58,7 +58,7 @@ export default async function BalancePage() {
     <div className="space-y-6">
       <PageHeader
         title="Balance y retiros"
-        description="Cuánto vale tu negocio hoy, cuánta plata sacas para ti y lo que debes."
+        description="Cuánto vale tu negocio hoy, cuánto dinero sacas para ti y lo que debes."
         actions={
           <>
             <WithdrawalDialog
@@ -137,7 +137,7 @@ export default async function BalancePage() {
           </div>
 
           <div className="space-y-2 rounded-xl bg-muted/50 p-4">
-            <p className="text-sm font-medium">{b.cashSince ? "Plata en caja y banco" : "¿Cuánta plata tienes hoy en caja y banco?"}</p>
+            <p className="text-sm font-medium">{b.cashSince ? "Dinero en caja y banco" : "¿Cuánto dinero tienes hoy en caja y banco?"}</p>
             <p className="text-xs text-muted-foreground">
               {b.cashSince
                 ? `Partiste con lo que anotaste el ${formatDate(b.cashSince, ctx.timezone, { day: "numeric", month: "long" })} y desde ahí sumamos lo que anotas que entra (ventas cobradas y abonos) y restamos lo que sale (gastos y retiros). Si no calza con lo que tienes, corrígelo aquí.`
@@ -148,7 +148,7 @@ export default async function BalancePage() {
                 field="openingCash"
                 value={b.cashSince ? b.assets.find((a) => a.key === "cash")!.value : null}
                 currency={ctx.currency}
-                label="Plata en caja y banco hoy"
+                label="Dinero en caja y banco hoy"
                 button={b.cashSince ? "Corregir" : "Guardar"}
               />
             </div>
@@ -192,7 +192,7 @@ export default async function BalancePage() {
               Retiros del dueño este mes
             </CardTitle>
             <CardDescription>
-              La plata o productos que sacas para ti (no es gasto) y la que pones en el negocio (no es venta).
+              El dinero o los productos que sacas para ti (no es gasto) y el dinero que aportas al negocio (no es venta).
               {w.deposited ? ` Este mes pusiste ${money(w.deposited)}.` : ""}
             </CardDescription>
           </CardHeader>
@@ -219,7 +219,7 @@ export default async function BalancePage() {
               <p className="flex gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" />
                 <span>
-                  Este mes sacaste <strong>{money(-w.leftInBusiness)}</strong> más de lo que ganó el negocio: esa plata sale del capital
+                  Este mes sacaste <strong>{money(-w.leftInBusiness)}</strong> más de lo que ganó el negocio: ese dinero sale del capital
                   (mercadería, caja). Si pasa varios meses seguidos, el negocio se va achicando.
                 </span>
               </p>
@@ -262,7 +262,7 @@ export default async function BalancePage() {
                         <span className="truncate">
                           {r.kind === "GOODS"
                             ? `${r.quantity} × ${r.note ?? "productos"}`
-                            : (r.note ?? (r.kind === "DEPOSIT" ? "Pusiste plata" : "Retiro"))}
+                            : (r.note ?? (r.kind === "DEPOSIT" ? "Aporte de dinero" : "Retiro"))}
                         </span>
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -288,7 +288,7 @@ export default async function BalancePage() {
                         {money(r.amount)}
                       </span>
                       <ConfirmDelete
-                        title={r.kind === "DEPOSIT" ? "¿Borrar esta plata que pusiste?" : "¿Borrar este retiro?"}
+                        title={r.kind === "DEPOSIT" ? "¿Borrar este aporte?" : "¿Borrar este retiro?"}
                         description={
                           r.kind === "GOODS" ? "Las unidades vuelven al stock." : "Se quita del cierre de caja y del flujo de caja."
                         }
@@ -300,8 +300,8 @@ export default async function BalancePage() {
               </ul>
             ) : (
               <p className="text-muted-foreground">
-                Este mes no has anotado retiros. Usa “Anotar retiro” cuando saques plata o productos para ti, y “Poner plata” cuando metas
-                plata al negocio.
+                Este mes no has anotado retiros. Usa “Anotar retiro” cuando saques dinero o productos para ti, y “Aportar dinero” cuando pongas
+                dinero en el negocio.
               </p>
             )}
 
@@ -328,7 +328,7 @@ export default async function BalancePage() {
                 <Landmark className="size-5 text-primary" />
                 Préstamos y deudas
               </CardTitle>
-              <CardDescription>Lo que el negocio debe: créditos, tarjetas, plata que te prestaron.</CardDescription>
+              <CardDescription>Lo que el negocio debe: créditos, tarjetas, dinero que te prestaron.</CardDescription>
             </div>
             <LoanDialog currency={ctx.currency} />
           </CardHeader>
@@ -382,7 +382,7 @@ export default async function BalancePage() {
               </ul>
             ) : (
               <p className="text-muted-foreground">
-                No tienes préstamos anotados. Si el negocio debe plata, agrégala para que el balance sea real.
+                No tienes préstamos anotados. Si el negocio debe dinero, agrégalo para que el balance sea real.
               </p>
             )}
             <p className="text-xs text-muted-foreground">
@@ -394,7 +394,7 @@ export default async function BalancePage() {
 
       <Explainer title="¿Para qué me sirve el balance?">
         Te dice si tu negocio está creciendo de verdad: si cada mes vale más, vas bien aunque algún mes vendas menos. También te muestra si
-        tienes mucha plata parada en mercadería o en fiado, y es lo primero que te pide el banco si quieres un crédito. La utilidad (en
+        tienes mucho dinero inmovilizado en mercadería o en fiado, y es lo primero que te pide el banco si quieres un crédito. La utilidad (en
         Resultados) es lo que ganaste en el mes; el balance es lo que tienes acumulado.
       </Explainer>
 

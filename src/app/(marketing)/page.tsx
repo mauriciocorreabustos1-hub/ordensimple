@@ -38,7 +38,7 @@ export const revalidate = 600
 const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 5)
 
 const DAY = [
-  { time: "08:30", text: "Abres y ves al tiro cómo va tu negocio." },
+  { time: "08:30", text: "Abres y ves de inmediato cómo va tu negocio." },
   { time: "13:00", text: "Vendes escaneando los productos con el celular." },
   { time: "21:00", text: "Cierras la caja en 1 minuto y sabes cuánto ganaste." },
 ]
@@ -158,7 +158,7 @@ export default async function LandingPage() {
               description="Anota las comandas por mesa desde el celular, mándalas a la pantalla de la cocina y cobra al final. Todo queda como venta."
             />
             <ul className="space-y-2 text-[15px]">
-              {["Tus mesas, las que quieras, y ves cuáles están ocupadas", "La cocina marca cada plato listo y el garzón lo ve al tiro", "Sin comprar nada: celular, tablet o computador"].map((t) => (
+              {["Tus mesas, las que quieras, y ves cuáles están ocupadas", "La cocina marca cada plato listo y el garzón lo ve de inmediato", "Sin comprar nada: celular, tablet o computador"].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {t}

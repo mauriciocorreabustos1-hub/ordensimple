@@ -173,7 +173,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
               <Card id="mesas" className="scroll-mt-20">
                 <CardHeader>
                   <CardTitle>Mesas</CardTitle>
-                  <CardDescription>Las mesas y lugares de tu local. Aparecen al abrir una comanda, y ves al tiro cuáles están ocupadas.</CardDescription>
+                  <CardDescription>Las mesas y lugares de tu local. Aparecen al abrir una comanda, y ves de inmediato cuáles están ocupadas.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <TablesSettings count={ctx.settings.tableCount} extras={ctx.settings.tableExtras} disabled={!canManage} />
@@ -281,7 +281,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             <Card>
               <CardHeader>
                 <CardTitle>Categorías de gastos</CardTitle>
-                <CardDescription>Así agrupamos tus gastos para mostrarte en qué se va tu plata.</CardDescription>
+                <CardDescription>Así agrupamos tus gastos para mostrarte en qué se va tu dinero.</CardDescription>
               </CardHeader>
               <CardContent>
                 <ExpenseCategories categories={categories} disabled={!canManage} />

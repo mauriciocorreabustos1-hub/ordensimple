@@ -84,7 +84,7 @@ export function IncomeTaxCard({
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Es una estimación con tus ventas y gastos registrados, para que no te pille por sorpresa. La declaración real la hace tu contador: considera gastos que
+          Es una estimación con tus ventas y gastos registrados, para que no te tome por sorpresa. La declaración real la hace tu contador: considera gastos que
           el SII no acepta, depreciación, pérdidas de años anteriores, créditos y otros ajustes.
         </p>
       </CardContent>

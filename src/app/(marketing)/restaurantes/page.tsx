@@ -23,7 +23,7 @@ const STEPS = [
   },
   {
     icon: ChefHat,
-    title: "La cocina lo ve al tiro",
+    title: "La cocina lo ve de inmediato",
     text: "Toca “Enviar a cocina” y el pedido aparece en la pantalla de la cocina. Sin papeles ni confusiones.",
   },
   {

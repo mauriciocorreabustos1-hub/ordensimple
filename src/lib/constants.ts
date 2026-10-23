@@ -37,6 +37,7 @@ export const BUSINESS_TYPES = [
   "Tienda online",
   "Ferretería o construcción",
   "Taller o reparaciones",
+  "Eventos y celebraciones",
   "Otro",
 ]
 

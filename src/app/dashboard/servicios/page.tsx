@@ -46,7 +46,7 @@ export default async function ServicesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Servicios"
-        description="Lo que haces con tus manos o tu tiempo: cortes, consultas, clases, arreglos… Cada uno con su precio y cuánto dura, para agendarlo y cobrarlo."
+        description="Lo que haces con tus manos o tu tiempo: cortes, consultas, clases, arreglos, eventos… Cada uno con su precio y cuánto dura, para agendarlo y cobrarlo."
         actions={canManage ? <ServiceDialog currency={ctx.currency} /> : null}
       />
 

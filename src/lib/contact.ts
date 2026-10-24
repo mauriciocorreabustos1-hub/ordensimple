@@ -2,11 +2,13 @@
 
 export const CONTACT_EMAIL = "contacto@ordensimple.cl"
 
+const WHATSAPP_PHONE = "+56956743643"
+
 export const WHATSAPP = {
-  /** Como se muestra: +56 9 5459 1736 */
-  display: "+56 9 5459 1736",
+  /** Como se muestra: +56 9 5674 3643 */
+  display: "+56 9 5674 3643",
   /** Para el enlace y los datos estructurados (formato internacional). */
-  phone: "+56954591736",
+  phone: WHATSAPP_PHONE,
   /** Enlace para abrir el chat, con un primer mensaje ya escrito. */
-  link: (text = "Hola, quiero saber más de OrdenSimple") => `https://api.whatsapp.com/send?phone=56954591736&text=${encodeURIComponent(text)}`,
+  link: (text = "Hola, quiero saber más de OrdenSimple") => `https://api.whatsapp.com/send?phone=${WHATSAPP_PHONE.slice(1)}&text=${encodeURIComponent(text)}`,
 }

@@ -27,6 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
+import { CONTACT_EMAIL, WHATSAPP } from "@/lib/contact"
 
 // Textos de las páginas públicas. Solo se describe lo que el producto hace hoy;
 // lo que viene se marca como "Próximamente".
@@ -511,7 +512,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "¿Cómo los contacto?",
-        a: "Por WhatsApp al +56 9 5459 1736 o por correo a contacto@ordensimple.cl. Te respondemos lo antes posible.",
+        a: `Por WhatsApp al ${WHATSAPP.display} o por correo a ${CONTACT_EMAIL}. Te respondemos lo antes posible.`,
       },
       {
         q: "¿Funciona en otros países?",

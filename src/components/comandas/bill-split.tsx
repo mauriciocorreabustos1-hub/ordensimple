@@ -7,7 +7,8 @@ import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { RollPaper, RollWidthSelect } from "@/components/print/roll-print"
 import { BluetoothPrintButton } from "@/components/print/bluetooth-print-button"
-import { EscPos } from "@/lib/escpos"
+import { PdfTicketButton } from "@/components/print/pdf-ticket-button"
+import { Ticket, ticketToEscPos } from "@/lib/ticket"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import type { ComandaData, ComandaLine } from "@/components/comandas/comandas-board"
 
@@ -104,6 +105,17 @@ export function BillStep({
   const tipOf = (n: number) => (withTip ? Math.round(n * TIP_RATE) : 0)
   const grand = sections.reduce((s, x) => s + x.total, 0)
   const grandTip = sections.reduce((s, x) => s + tipOf(x.total), 0)
+  // La boleta tal como sale por Bluetooth o en PDF (la misma que en papel).
+  const ticket = () =>
+    billTicket({
+      businessName,
+      label: comanda.label,
+      sections,
+      money,
+      tipOf,
+      equal: byPerson ? 1 : equal,
+      separate: separate && byPerson && sections.length > 1,
+    })
 
   return (
     <div className="space-y-5">
@@ -198,21 +210,11 @@ export function BillStep({
         <span>Para impresoras de boletas (rollo). Elige el ancho de tu papel:</span>
         <RollWidthSelect />
       </div>
-      <BluetoothPrintButton
-        disabled={!grand}
-        build={(chars) =>
-          billEscPos({
-            chars,
-            businessName,
-            label: comanda.label,
-            sections,
-            money,
-            tipOf,
-            equal: byPerson ? 1 : equal,
-            separate: separate && byPerson && sections.length > 1,
-          })
-        }
-      />
+      <BluetoothPrintButton disabled={!grand} build={(chars) => ticketToEscPos(ticket(), chars)} />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <PdfTicketButton disabled={!grand} build={ticket} fileName={`Cuenta ${comanda.label}`} />
+        <span className="text-xs text-muted-foreground">Del tamaño de la boleta: para la app de tu impresora, AirPrint o WhatsApp.</span>
+      </div>
 
       <BillPaper
         businessName={businessName}
@@ -227,9 +229,8 @@ export function BillStep({
   )
 }
 
-/** La misma boleta, en comandos para impresoras Bluetooth (ESC/POS). */
-function billEscPos(d: {
-  chars: number
+/** La misma boleta, armada una vez para la impresora Bluetooth y para el PDF. */
+function billTicket(d: {
   businessName: string
   label: string
   sections: Section[]
@@ -238,54 +239,49 @@ function billEscPos(d: {
   equal: number
   separate: boolean
 }) {
-  const p = new EscPos(d.chars)
+  const t = new Ticket()
   const when = new Date().toLocaleString("es", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-  const header = () => {
-    p.center().bold().line(d.businessName).bold(false).line("Detalle de consumo").line(`${d.label} - ${when}`).center(false)
-  }
-  const footer = () => p.feed(1).center().line("No valido como boleta").line("Gracias por tu visita!").center(false)
+  const header = () => t.line(d.businessName, { center: true, bold: true }).line("Detalle de consumo", { center: true }).line(`${d.label} · ${when}`, { center: true })
+  const footer = () => t.feed(1).line("No válido como boleta", { center: true }).line("¡Gracias por tu visita!", { center: true })
   const body = (s: Section, own: boolean) => {
     const tip = d.tipOf(s.total)
-    if (s.title) {
-      if (own) p.center().bold().line(s.title).bold(false).center(false)
-      else p.bold().line(s.title).bold(false)
-    }
-    if (own) p.rule()
+    if (s.title) t.line(s.title, { bold: true, center: own })
+    if (own) t.rule()
     for (const l of s.lines) {
-      p.row(`${l.quantity} x ${l.description}`, d.money(l.quantity * l.unitPrice))
-      if (l.quantity > 1) p.line(`  (${d.money(l.unitPrice)} c/u)`)
+      t.row(`${l.quantity} × ${l.description}`, d.money(l.quantity * l.unitPrice))
+      if (l.quantity > 1) t.line(`  (${d.money(l.unitPrice)} c/u)`)
     }
-    for (const promo of s.promos) p.row(promo.name, `-${d.money(promo.amount)}`)
-    if (own) p.rule()
-    p.bold().row(own || !s.title ? "Total" : `Paga ${s.title}`, d.money(s.total)).bold(false)
-    if (tip) p.row("Propina sugerida 10 %", d.money(tip)).bold().row("Con propina", d.money(s.total + tip)).bold(false)
+    for (const promo of s.promos) t.row(promo.name, `−${d.money(promo.amount)}`)
+    if (own) t.rule()
+    t.row(own || !s.title ? "Total" : `Paga ${s.title}`, d.money(s.total), { bold: true })
+    if (tip) t.row("Propina sugerida 10 %", d.money(tip)).row("Con propina", d.money(s.total + tip), { bold: true })
   }
   if (d.separate) {
     d.sections.forEach((s) => {
       header()
       body(s, true)
       footer()
-      p.cut()
+      t.cut()
     })
-    return p.build()
+    return t
   }
   header()
   if (d.sections.length > 1) {
     for (const s of d.sections) {
-      p.rule()
+      t.rule()
       body(s, false)
     }
-    p.rule("=").center().bold().line("Lo que paga cada uno").bold(false).center(false)
-    for (const s of d.sections) p.row(s.title, d.money(s.total + d.tipOf(s.total)))
-    p.bold().row("Total mesa", d.money(d.sections.reduce((t, s) => t + s.total + d.tipOf(s.total), 0))).bold(false)
+    t.rule("=").line("Lo que paga cada uno", { center: true, bold: true })
+    for (const s of d.sections) t.row(s.title, d.money(s.total + d.tipOf(s.total)))
+    t.row("Total mesa", d.money(d.sections.reduce((sum, s) => sum + s.total + d.tipOf(s.total), 0)), { bold: true })
   } else {
     for (const s of d.sections) {
       body(s, true)
-      if (d.equal > 1) p.row(`Entre ${d.equal} personas`, `${d.money(Math.ceil((s.total + d.tipOf(s.total)) / d.equal))} c/u`)
+      if (d.equal > 1) t.row(`Entre ${d.equal} personas`, `${d.money(Math.ceil((s.total + d.tipOf(s.total)) / d.equal))} c/u`)
     }
   }
   footer()
-  return p.cut().build()
+  return t.cut()
 }
 
 /** Lo que sale en papel: solo se ve al imprimir. Angosto para que sirva en rollos de 58 y 80 mm, y también en hoja carta o A4. */

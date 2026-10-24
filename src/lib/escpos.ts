@@ -13,6 +13,7 @@ export function plainText(text: string) {
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[×]/g, "x")
+    .replace(/·/g, "-")
     .replace(/[−–—]/g, "-")
     .replace(/[“”«»]/g, '"')
     .replace(/[‘’]/g, "'")

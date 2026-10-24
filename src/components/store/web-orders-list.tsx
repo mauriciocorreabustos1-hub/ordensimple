@@ -22,6 +22,8 @@ export type WebOrderRow = {
   customerName: string
   customerPhone: string | null
   delivery: boolean
+  /** Mesa desde la que pidieron con la carta QR. */
+  table: string | null
   note: string | null
   items: { productId: string; name: string; quantity: number; unitPrice: number }[]
   total: number
@@ -96,8 +98,10 @@ export function WebOrdersList({
                     N.º {o.code} · {when(o.createdAt)}
                   </p>
                 </div>
-                <Badge variant="outline" className="shrink-0">
-                  {o.delivery ? (
+                <Badge variant="outline" className={cn("shrink-0", o.table && "border-primary/40 bg-primary/10 text-primary")}>
+                  {o.table ? (
+                    <>🍽️ {o.table}</>
+                  ) : o.delivery ? (
                     <>
                       <Truck className="size-3" /> Despacho
                     </>

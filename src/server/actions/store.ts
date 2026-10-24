@@ -16,6 +16,7 @@ import { allowAttempt } from "@/server/rate-limit"
 import { applyStock, buildLines, lineData, linkPromotions, MAX_TOTAL, promotionsFor } from "@/server/sale-core"
 import { couponAmount, findCoupon } from "@/server/coupons"
 import { webCustomer } from "@/server/web-customer"
+import { storeTables } from "@/server/store-tables"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -66,6 +67,8 @@ export type WebOrderResult = {
   promos: { name: string; amount: number }[]
   coupon: { code: string; amount: number } | null
   total: number
+  /** Mesa reconocida (pedido desde la carta QR), o null. */
+  table: string | null
   items: { name: string; quantity: number; unitPrice: number }[]
 }
 
@@ -81,7 +84,7 @@ export type WebOrderQuote = {
 export async function createWebOrder(input: WebOrderInput): Promise<ActionResult<WebOrderResult | WebOrderQuote>> {
   const parsed = webOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { slug, customerName, customerPhone, delivery, note, items, website, couponCode, expectedTotal } = parsed.data
+  const { slug, customerName, customerPhone, note, items, website, couponCode, expectedTotal } = parsed.data
   // Los robots llenan el campo oculto: no se guarda nada.
   if (website) return { ok: false, message: "No se pudo enviar el pedido." }
   try {
@@ -96,6 +99,9 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
     if (!business || !business.storeEnabled || !business.storeWhatsapp || !canUseFeature(effectivePlan(business), "store")) {
       return { ok: false, message: "Esta tienda no está recibiendo pedidos." }
     }
+    // Pedido desde la carta QR de una mesa: solo si es una mesa del local; se sirve en la mesa (sin despacho).
+    const table = parsed.data.table && (await storeTables(business.id)).includes(parsed.data.table) ? parsed.data.table : null
+    const delivery = table ? false : parsed.data.delivery
     const ids = [...new Set(items.map((i) => i.productId))]
     if (ids.length !== items.length) return { ok: false, message: "Hay productos repetidos en el pedido." }
     const products = await db.product.findMany({
@@ -147,6 +153,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
           customerName,
           customerPhone: customerPhone ?? null,
           delivery,
+          table,
           note: note ?? null,
           items: orderItems,
           total,
@@ -161,7 +168,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
     const count = orderItems.reduce((s, i) => s + i.quantity, 0)
     after(async () =>
       sendPush(await businessManagers(business.id), {
-        title: "🛒 Nuevo pedido web",
+        title: table ? `🍽️ Pedido desde ${table}` : "🛒 Nuevo pedido web",
         body: `${customerName}: ${count} ${count === 1 ? "producto" : "productos"} · ${formatMoney(total, business.currency)}${delivery ? " · despacho" : ""}`,
         url: "/dashboard/pedidos",
         tag: `pedido-${order.id}`,
@@ -177,6 +184,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
         promos: promo.applied.map((a) => ({ name: a.name, amount: a.amount })),
         coupon: coupon ? { code: coupon.code, amount: coupon.amount } : null,
         total,
+        table,
         items: orderItems.map(({ name, quantity, unitPrice }) => ({ name, quantity, unitPrice })),
       },
     }
@@ -262,25 +270,27 @@ export async function acceptWebOrderAsComanda(id: string): Promise<ActionResult>
     }
     const order = await loadOrder(ctx.businessId, id)
     if (!order) return { ok: false, message: HANDLED }
+    const note = order.table ? "Pedido desde la carta" : order.delivery ? "Despacho" : "Para retirar"
+    const lines = order.items.map((i) => ({
+      id: randomUUID(),
+      productId: i.productId,
+      description: i.name,
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      note,
+    }))
     await db.$transaction(async (tx) => {
-      const comanda = await tx.comanda.create({
-        data: {
-          businessId: ctx.businessId,
-          label: `Web: ${order.customerName}`.slice(0, 40),
-          createdById: ctx.user.id,
-          items: {
-            create: order.items.map((i) => ({
-              id: randomUUID(),
-              productId: i.productId,
-              description: i.name,
-              quantity: i.quantity,
-              unitPrice: i.unitPrice,
-              note: order.delivery ? "Despacho" : "Para retirar",
-            })),
-          },
-        },
-        select: { id: true },
-      })
+      // Desde la carta de una mesa: se suma a la comanda abierta de esa mesa, o se abre una con su nombre.
+      const open = order.table
+        ? await tx.comanda.findFirst({ where: { businessId: ctx.businessId, status: "OPEN", label: order.table }, select: { id: true } })
+        : null
+      const comanda =
+        open ??
+        (await tx.comanda.create({
+          data: { businessId: ctx.businessId, label: (order.table ?? `Web: ${order.customerName}`).slice(0, 40), createdById: ctx.user.id },
+          select: { id: true },
+        }))
+      await tx.comandaItem.createMany({ data: lines.map((l) => ({ ...l, comandaId: comanda.id })) })
       await claim(tx, id, ctx.user.id, { comandaId: comanda.id, status: "DONE" })
     })
   } catch (error) {

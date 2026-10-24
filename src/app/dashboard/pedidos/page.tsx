@@ -56,6 +56,7 @@ export default async function WebOrdersPage() {
     customerName: o.customerName,
     customerPhone: o.customerPhone,
     delivery: o.delivery,
+    table: o.table,
     note: o.note,
     items: o.items as WebOrderRow["items"],
     total: o.total,

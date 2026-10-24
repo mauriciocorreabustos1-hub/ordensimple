@@ -12,6 +12,7 @@ import { toDateKey } from "@/lib/dates"
 import { BookingFlow } from "@/components/store/booking-flow"
 import { StoreTabs } from "@/components/store/store-tabs"
 import { bookableDays, bookableServices, bookableStaff, getBookableBusiness } from "@/server/booking"
+import { storeTables } from "@/server/store-tables"
 
 /** Tienda publicada y con plan vigente; si no, la página no existe. */
 const getStore = cache(async (slug: string) => {
@@ -48,8 +49,9 @@ export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">):
   }
 }
 
-export default async function StorePage({ params }: PageProps<"/tienda/[slug]">) {
+export default async function StorePage({ params, searchParams }: PageProps<"/tienda/[slug]">) {
   const { slug } = await params
+  const { mesa } = await searchParams
   const store = await getStore(slug)
   if (!store) {
     // Si el negocio cambió la dirección de su tienda, los enlaces viejos llevan a la nueva.
@@ -94,8 +96,11 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
       today={toDateKey(new Date(), booking!.timezone)}
     />
   ) : null
+  // Abierta desde el QR de una mesa: solo si es una mesa del local.
+  const table = typeof mesa === "string" && (await storeTables(store.id)).includes(mesa) ? mesa : null
   const storeFront = (
     <StoreFront
+      table={table}
       promotions={promotions.filter((p) => p.online)}
       timezone={store.timezone}
       coupons={hasCoupons}
@@ -122,7 +127,7 @@ export default async function StorePage({ params }: PageProps<"/tienda/[slug]">)
           <div className="min-w-0">
             <h1 className="truncate text-xl font-semibold tracking-tight">{store.name}</h1>
             <p className="text-sm text-muted-foreground">
-              {store.storeMessage || (booking ? "Reserva tu hora en un minuto." : "Elige tus productos y envía tu pedido por WhatsApp.")}
+              {store.storeMessage || (canBook ? "Reserva tu hora en un minuto." : "Elige tus productos y envía tu pedido por WhatsApp.")}
             </p>
           </div>
         </div>

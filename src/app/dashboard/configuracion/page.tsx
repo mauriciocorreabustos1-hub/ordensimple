@@ -175,8 +175,15 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                   <CardTitle>Mesas</CardTitle>
                   <CardDescription>Las mesas y lugares de tu local. Aparecen al abrir una comanda, y ves de inmediato cuáles están ocupadas.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <TablesSettings count={ctx.settings.tableCount} extras={ctx.settings.tableExtras} disabled={!canManage} />
+                  <p className="text-xs text-muted-foreground">
+                    ¿Quieres que te pidan desde la mesa?{" "}
+                    <Link href="/dashboard/comandas/carta-qr" className="font-medium text-primary hover:underline">
+                      Imprime un código QR para cada mesa
+                    </Link>
+                    .
+                  </p>
                 </CardContent>
               </Card>
             ) : null}

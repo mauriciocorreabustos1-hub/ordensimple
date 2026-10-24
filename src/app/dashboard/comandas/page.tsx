@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ClipboardList } from "lucide-react"
+import { ClipboardList, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageHeader } from "@/components/app/page-header"
@@ -73,6 +73,14 @@ export default async function ComandasPage() {
           paidToday.length
             ? `Hoy cobraste ${paidToday.length} comanda${paidToday.length === 1 ? "" : "s"} por ${formatMoney(paidTotal, ctx.currency)}.`
             : DESCRIPTION
+        }
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/comandas/carta-qr">
+              <QrCode />
+              Carta con QR
+            </Link>
+          </Button>
         }
       />
       <ComandasBoard

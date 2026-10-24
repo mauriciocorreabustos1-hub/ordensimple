@@ -467,6 +467,8 @@ export const webOrderSchema = z.object({
     .max(30, "Máximo 30 productos por pedido"),
   /** Cupón de descuento del negocio (opcional). */
   couponCode: optionalText(30),
+  /** Mesa desde la que se pide con la carta QR (se revisa que sea una mesa del local). */
+  table: optionalText(40),
   /** El total que veía el cliente: si las promociones cambiaron, se le avisa antes de crear el pedido. */
   expectedTotal: z.number().int().min(0).max(100_000_000_000).optional(),
   /** Campo trampa para robots: las personas no lo ven ni lo llenan. */

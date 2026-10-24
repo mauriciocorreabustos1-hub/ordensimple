@@ -32,6 +32,8 @@ export function orderWhatsappText(d: {
   /** Promociones y cupón aplicados (montos a descontar). */
   promos?: { name: string; amount: number }[]
   coupon?: { code: string; amount: number } | null
+  /** Mesa desde la que se pidió con la carta QR. */
+  table?: string | null
 }) {
   const count = d.items.reduce((s, i) => s + i.quantity, 0)
   return [
@@ -43,7 +45,7 @@ export function orderWhatsappText(d: {
     d.coupon ? `🎟️ Cupón ${d.coupon.code}: −${d.money(d.coupon.amount)}` : null,
     "",
     `💰 *Total: ${d.total}* (${count} ${count === 1 ? "producto" : "productos"})`,
-    d.delivery ? "🛵 *Entrega:* despacho a domicilio" : "🏪 *Entrega:* retiro en el local",
+    d.table ? `🍽️ *Mesa:* ${d.table}` : d.delivery ? "🛵 *Entrega:* despacho a domicilio" : "🏪 *Entrega:* retiro en el local",
     d.note ? `${d.delivery ? "📍 *Dirección:*" : "📝 *Nota:*"} ${d.note}` : null,
     "",
     `👤 *A nombre de:* ${d.customerName}`,

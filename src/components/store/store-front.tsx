@@ -28,7 +28,10 @@ export function StoreFront({
   promotions = [],
   timezone = "America/Santiago",
   coupons = false,
+  table = null,
 }: {
+  /** Mesa desde la que abrieron la carta con el QR (el pedido se sirve en la mesa). */
+  table?: string | null
   slug: string
   businessName: string
   currency: string
@@ -132,6 +135,9 @@ export function StoreFront({
 
   return (
     <>
+      {table ? (
+        <p className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary">🍽️ Estás en {table}. Elige lo que quieras y envía tu pedido: te lo llevamos a la mesa.</p>
+      ) : null}
       <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-muted/30 px-4 pt-1 pb-3 backdrop-blur">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -221,6 +227,7 @@ export function StoreFront({
 
       {checkout ? (
         <Checkout
+          table={table}
           slug={slug}
           businessName={businessName}
           money={money}
@@ -246,6 +253,7 @@ export function StoreFront({
 }
 
 function Checkout({
+  table,
   slug,
   businessName,
   money,
@@ -259,6 +267,7 @@ function Checkout({
   onDone,
   onClose,
 }: {
+  table: string | null
   gross: number
   /** Promociones "2×1" a medias: qué le falta agregar para aprovecharlas. */
   hints: { id: string; text: string }[]
@@ -312,7 +321,8 @@ function Checkout({
         slug,
         customerName: name,
         customerPhone: phone || undefined,
-        delivery,
+        delivery: table ? false : delivery,
+        table: table ?? undefined,
         note: note || undefined,
         items: lines.map((l) => ({ productId: l.id, quantity: l.quantity })),
         couponCode: coupon && couponOff ? coupon.code : undefined,
@@ -337,6 +347,7 @@ function Checkout({
         code: r.data.code,
         promos: r.data.promos,
         coupon: r.data.coupon,
+        table: r.data.table,
       })
       const link = whatsappLink(r.data.whatsapp, text)
       onDone({ link, code: r.data.code })
@@ -457,6 +468,9 @@ function Checkout({
             </label>
             <Input id="store-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} inputMode="tel" autoComplete="tel" className="h-11" />
           </div>
+          {table ? (
+            <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary">🍽️ Tu pedido es para {table}: te lo llevamos a la mesa.</p>
+          ) : (
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Entrega">
             {[
               { v: false, label: "Retiro en el local" },
@@ -474,6 +488,7 @@ function Checkout({
               </button>
             ))}
           </div>
+          )}
           <div className="space-y-1.5">
             <label htmlFor="store-note" className="text-sm font-medium">
               {delivery ? "Dirección y comentarios" : "Comentarios"} {delivery ? null : <span className="font-normal text-muted-foreground">(opcional)</span>}
@@ -484,7 +499,7 @@ function Checkout({
               onChange={(e) => setNote(e.target.value)}
               maxLength={300}
               rows={2}
-              placeholder={delivery ? "Calle, número, depto, comuna" : "Ej.: paso a las 18:00"}
+              placeholder={delivery ? "Calle, número, depto, comuna" : table ? "Ej.: sin cebolla, la bebida bien fría" : "Ej.: paso a las 18:00"}
             />
           </div>
           {/* Campo trampa para robots (las personas no lo ven). */}

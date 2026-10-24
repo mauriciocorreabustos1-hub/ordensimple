@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { RollPaper, RollWidthSelect } from "@/components/print/roll-print"
+import { BluetoothPrintButton } from "@/components/print/bluetooth-print-button"
+import { EscPos } from "@/lib/escpos"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import type { ComandaData, ComandaLine } from "@/components/comandas/comandas-board"
 
@@ -196,6 +198,21 @@ export function BillStep({
         <span>Para impresoras de boletas (rollo). Elige el ancho de tu papel:</span>
         <RollWidthSelect />
       </div>
+      <BluetoothPrintButton
+        disabled={!grand}
+        build={(chars) =>
+          billEscPos({
+            chars,
+            businessName,
+            label: comanda.label,
+            sections,
+            money,
+            tipOf,
+            equal: byPerson ? 1 : equal,
+            separate: separate && byPerson && sections.length > 1,
+          })
+        }
+      />
 
       <BillPaper
         businessName={businessName}
@@ -208,6 +225,67 @@ export function BillStep({
       />
     </div>
   )
+}
+
+/** La misma boleta, en comandos para impresoras Bluetooth (ESC/POS). */
+function billEscPos(d: {
+  chars: number
+  businessName: string
+  label: string
+  sections: Section[]
+  money: (n: number) => string
+  tipOf: (n: number) => number
+  equal: number
+  separate: boolean
+}) {
+  const p = new EscPos(d.chars)
+  const when = new Date().toLocaleString("es", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+  const header = () => {
+    p.center().bold().line(d.businessName).bold(false).line("Detalle de consumo").line(`${d.label} - ${when}`).center(false)
+  }
+  const footer = () => p.feed(1).center().line("No valido como boleta").line("Gracias por tu visita!").center(false)
+  const body = (s: Section, own: boolean) => {
+    const tip = d.tipOf(s.total)
+    if (s.title) {
+      if (own) p.center().bold().line(s.title).bold(false).center(false)
+      else p.bold().line(s.title).bold(false)
+    }
+    if (own) p.rule()
+    for (const l of s.lines) {
+      p.row(`${l.quantity} x ${l.description}`, d.money(l.quantity * l.unitPrice))
+      if (l.quantity > 1) p.line(`  (${d.money(l.unitPrice)} c/u)`)
+    }
+    for (const promo of s.promos) p.row(promo.name, `-${d.money(promo.amount)}`)
+    if (own) p.rule()
+    p.bold().row(own || !s.title ? "Total" : `Paga ${s.title}`, d.money(s.total)).bold(false)
+    if (tip) p.row("Propina sugerida 10 %", d.money(tip)).bold().row("Con propina", d.money(s.total + tip)).bold(false)
+  }
+  if (d.separate) {
+    d.sections.forEach((s) => {
+      header()
+      body(s, true)
+      footer()
+      p.cut()
+    })
+    return p.build()
+  }
+  header()
+  if (d.sections.length > 1) {
+    for (const s of d.sections) {
+      p.rule()
+      body(s, false)
+    }
+    p.rule("=").center().bold().line("Lo que paga cada uno").bold(false).center(false)
+    for (const s of d.sections) p.row(s.title, d.money(s.total + d.tipOf(s.total)))
+    p.bold().row("Total mesa", d.money(d.sections.reduce((t, s) => t + s.total + d.tipOf(s.total), 0))).bold(false)
+  } else {
+    for (const s of d.sections) {
+      body(s, true)
+      if (d.equal > 1) p.row(`Entre ${d.equal} personas`, `${d.money(Math.ceil((s.total + d.tipOf(s.total)) / d.equal))} c/u`)
+    }
+  }
+  footer()
+  return p.cut().build()
 }
 
 /** Lo que sale en papel: solo se ve al imprimir. Angosto para que sirva en rollos de 58 y 80 mm, y también en hoja carta o A4. */

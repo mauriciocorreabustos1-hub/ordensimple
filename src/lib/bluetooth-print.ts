@@ -1,0 +1,93 @@
+// Impresión por Bluetooth desde el navegador: directo (Web Bluetooth, en Chrome o Edge de Android y computador)
+// o con la app RawBT en Android, para impresoras que el navegador no ve. En iPhone el navegador no tiene Bluetooth.
+
+/* Lo mínimo de Web Bluetooth que se usa (no viene en los tipos de TypeScript). */
+type Characteristic = {
+  properties: { write: boolean; writeWithoutResponse: boolean }
+  writeValueWithoutResponse?: (data: BufferSource) => Promise<void>
+  writeValue: (data: BufferSource) => Promise<void>
+}
+type Service = { getCharacteristics: () => Promise<Characteristic[]> }
+type Device = {
+  name?: string
+  gatt?: { connected: boolean; connect: () => Promise<{ getPrimaryServices: () => Promise<Service[]> }> }
+}
+type BluetoothApi = { requestDevice: (o: { acceptAllDevices: boolean; optionalServices: string[] }) => Promise<Device> }
+
+/** Servicios que usan las impresoras térmicas Bluetooth más comunes (sin ellos el navegador no deja escribirles). */
+const PRINTER_SERVICES = [
+  "000018f0-0000-1000-8000-00805f9b34fb",
+  "0000ff00-0000-1000-8000-00805f9b34fb",
+  "0000ffe0-0000-1000-8000-00805f9b34fb",
+  "0000ae30-0000-1000-8000-00805f9b34fb",
+  "0000fee7-0000-1000-8000-00805f9b34fb",
+  "e7810a71-73ae-499d-8c15-faa9aef0c3f2",
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455",
+]
+
+const bluetooth = () => (typeof navigator === "undefined" ? undefined : (navigator as Navigator & { bluetooth?: BluetoothApi }).bluetooth)
+
+export function isIos() {
+  return typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+export function isAndroid() {
+  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)
+}
+/** El navegador puede conectarse por Bluetooth (Chrome o Edge, no iPhone). */
+export function canUseWebBluetooth() {
+  return Boolean(bluetooth())
+}
+
+// La impresora elegida se recuerda mientras la página esté abierta, para no elegirla en cada boleta.
+let saved: { device: Device; characteristic: Characteristic } | null = null
+
+export function connectedPrinterName() {
+  return saved?.device.name ?? null
+}
+
+async function findCharacteristic(device: Device) {
+  const server = await device.gatt!.connect()
+  for (const service of await server.getPrimaryServices()) {
+    for (const c of await service.getCharacteristics()) {
+      if (c.properties.writeWithoutResponse || c.properties.write) return c
+    }
+  }
+  throw new Error("NO_WRITE")
+}
+
+/** Envía los bytes a la impresora (la elige la persona la primera vez). Devuelve el nombre de la impresora. */
+export async function printViaBluetooth(data: Uint8Array) {
+  const api = bluetooth()
+  if (!api) throw new Error("NO_BLUETOOTH")
+  if (!saved || !saved.device.gatt?.connected) {
+    const device = saved?.device ?? (await api.requestDevice({ acceptAllDevices: true, optionalServices: PRINTER_SERVICES }))
+    saved = { device, characteristic: await findCharacteristic(device) }
+  }
+  const { characteristic } = saved
+  // De a pedazos chicos: muchas impresoras no reciben más de unos 100 bytes por envío.
+  for (let i = 0; i < data.length; i += 100) {
+    const chunk = data.slice(i, i + 100)
+    if (characteristic.properties.writeWithoutResponse && characteristic.writeValueWithoutResponse) await characteristic.writeValueWithoutResponse(chunk)
+    else await characteristic.writeValue(chunk)
+    await new Promise((r) => setTimeout(r, 20))
+  }
+  return saved.device.name ?? "la impresora"
+}
+
+/** Enlace que abre la app RawBT (Android) con lo que hay que imprimir. */
+export function rawbtLink(data: Uint8Array) {
+  let binary = ""
+  for (const b of data) binary += String.fromCharCode(b)
+  return `intent:base64,${btoa(binary)}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`
+}
+
+/** Mensaje claro para cada problema al imprimir por Bluetooth. */
+export function bluetoothError(error: unknown) {
+  const name = error instanceof Error ? error.name : ""
+  const msg = error instanceof Error ? error.message : ""
+  if (name === "NotFoundError") return "No elegiste ninguna impresora."
+  if (msg === "NO_BLUETOOTH") return "Este navegador no puede usar Bluetooth. Usa Chrome en Android o en el computador."
+  if (msg === "NO_WRITE") return "Esa impresora no aceptó la conexión. Si usas Android, prueba con la app RawBT."
+  if (name === "SecurityError" || name === "NotAllowedError") return "El navegador no dio permiso para usar Bluetooth. Revisa que esté encendido y vuelve a intentar."
+  return "No se pudo imprimir. Revisa que la impresora esté encendida y cerca, y vuelve a intentar."
+}

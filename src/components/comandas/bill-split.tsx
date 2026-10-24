@@ -7,7 +7,7 @@ import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { RollPaper, RollWidthSelect } from "@/components/print/roll-print"
 import { BluetoothPrintButton } from "@/components/print/bluetooth-print-button"
-import { PdfTicketButton } from "@/components/print/pdf-ticket-button"
+import { TicketFileButtons } from "@/components/print/ticket-file-buttons"
 import { Ticket, ticketToEscPos } from "@/lib/ticket"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import type { ComandaData, ComandaLine } from "@/components/comandas/comandas-board"
@@ -210,10 +210,26 @@ export function BillStep({
         <span>Para impresoras de boletas (rollo). Elige el ancho de tu papel:</span>
         <RollWidthSelect />
       </div>
+      <details className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">
+        <summary className="cursor-pointer font-medium text-foreground">¿Sale en hoja A4 o carta?</summary>
+        <div className="mt-2 space-y-1.5">
+          <p>
+            El tamaño de la hoja lo elige la impresora. En la ventana de impresión, en <strong>Tamaño del papel</strong>, elige el de rollo (80 mm, 72 mm o 58 mm) y
+            en <strong>Márgenes</strong>, Ninguno.
+          </p>
+          <p>
+            Para que quede fijo en el computador: Configuración de Windows, sección Impresoras, tu impresora, Preferencias de impresión, Tamaño de papel.
+          </p>
+          <p>
+            Lo más seguro es no pasar por esa ventana: imprime por Bluetooth o usa “Boleta en imagen” con la app de tu impresora, que la imprime del ancho
+            exacto del rollo.
+          </p>
+        </div>
+      </details>
       <BluetoothPrintButton disabled={!grand} build={(chars) => ticketToEscPos(ticket(), chars)} />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <PdfTicketButton disabled={!grand} build={ticket} fileName={`Cuenta ${comanda.label}`} />
-        <span className="text-xs text-muted-foreground">Del tamaño de la boleta: para la app de tu impresora, AirPrint o WhatsApp.</span>
+      <div className="space-y-1.5">
+        <TicketFileButtons disabled={!grand} build={ticket} fileName={`Cuenta ${comanda.label}`} />
+        <p className="text-xs text-muted-foreground">Del ancho del rollo, para la app de tu impresora, AirPrint o WhatsApp.</p>
       </div>
 
       <BillPaper

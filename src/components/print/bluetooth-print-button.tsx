@@ -19,7 +19,7 @@ export function BluetoothPrintButton({ build, disabled }: { build: (charsPerLine
   const chars = ROLL_CHARS[width]
 
   if (isIos()) {
-    return <p className="text-xs text-muted-foreground">En iPhone el navegador no puede usar Bluetooth: usa “Descargar PDF” y compártelo con la app de tu impresora.</p>
+    return <p className="text-xs text-muted-foreground">En iPhone el navegador no puede usar Bluetooth: usa “Boleta en imagen” y compártela con la app de tu impresora.</p>
   }
   const direct = canUseWebBluetooth()
   const android = isAndroid()

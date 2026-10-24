@@ -92,24 +92,10 @@ const pdfText = (text: string) =>
     .replace(/[‘’]/g, "'")
     .replace(/[^\x20-\x7e\xa0-\xff]/g, "")
 
-/**
- * PDF del tamaño de la boleta: el ancho del rollo y el largo justo de lo impreso. Cada ticket (separado por un corte)
- * va en su propia página. La letra se ajusta para que entren `chars` caracteres por línea.
- */
-export async function ticketToPdf(ticket: Ticket, widthMm: number, chars: number) {
-  const { PDFDocument, StandardFonts } = await import("pdf-lib")
-  const pdf = await PDFDocument.create()
-  const regular = await pdf.embedFont(StandardFonts.Courier)
-  const bold = await pdf.embedFont(StandardFonts.CourierBold)
-  const mm = 72 / 25.4
-  const margin = 3 * mm
-  const width = widthMm * mm
-  // Courier: cada letra mide 0,6 del tamaño de la letra.
-  const size = (width - margin * 2) / (chars * 0.6)
-  const lineHeight = size * 1.3
+type Out = { text: string; bold: boolean; center: boolean }
 
-  // Cada ticket es una lista de líneas ya armadas (texto exacto, negrita y si va centrada).
-  type Out = { text: string; bold: boolean; center: boolean }
+/** Las líneas exactas de cada ticket (separados por un corte), con `chars` caracteres por línea. */
+function layout(ticket: Ticket, chars: number) {
   const tickets: Out[][] = [[]]
   const add = (o: Out) => tickets[tickets.length - 1].push(o)
   for (const op of ticket.ops) {
@@ -125,8 +111,30 @@ export async function ticketToPdf(ticket: Ticket, widthMm: number, chars: number
     else if (op.t === "feed") for (let i = 0; i < op.lines; i++) add({ text: "", bold: false, center: false })
     else tickets.push([])
   }
+  return tickets.filter((t) => t.some((l) => l.text.trim()))
+}
 
-  for (const lines of tickets.filter((t) => t.some((l) => l.text.trim()))) {
+/**
+ * PDF del tamaño de la boleta: el ancho del rollo y el largo justo de lo impreso. Cada ticket (separado por un corte)
+ * va en su propia página. La letra se ajusta para que entren `chars` caracteres por línea.
+ */
+export async function ticketToPdf(ticket: Ticket, widthMm: number, chars: number) {
+  const { PDFDocument, PrintScaling, StandardFonts } = await import("pdf-lib")
+  const pdf = await PDFDocument.create()
+  // Al imprimir: sin achicar ni agrandar, y en el papel del tamaño del PDF (los programas que lo respetan).
+  const prefs = pdf.catalog.getOrCreateViewerPreferences()
+  prefs.setPrintScaling(PrintScaling.None)
+  prefs.setPickTrayByPDFSize(true)
+  const regular = await pdf.embedFont(StandardFonts.Courier)
+  const bold = await pdf.embedFont(StandardFonts.CourierBold)
+  const mm = 72 / 25.4
+  const margin = 3 * mm
+  const width = widthMm * mm
+  // Courier: cada letra mide 0,6 del tamaño de la letra.
+  const size = (width - margin * 2) / (chars * 0.6)
+  const lineHeight = size * 1.3
+
+  for (const lines of layout(ticket, chars)) {
     const height = margin * 2 + lines.length * lineHeight
     const page = pdf.addPage([width, height])
     lines.forEach((l, i) => {
@@ -137,4 +145,41 @@ export async function ticketToPdf(ticket: Ticket, widthMm: number, chars: number
     })
   }
   return pdf.save()
+}
+
+/** Puntos que imprime una térmica (203 ppp): rollo de 58 mm, 384; de 80 mm, 576. */
+export const ROLL_DOTS = { 58: 384, 80: 576 } as const
+
+/**
+ * La boleta como imagen PNG del ancho exacto que imprime la impresora térmica, una por ticket. Las apps de las
+ * impresoras la imprimen tal cual, sin hoja carta ni A4 de por medio. Solo en el navegador (usa un canvas).
+ */
+export async function ticketToImages(ticket: Ticket, widthDots: number, chars: number) {
+  const family = '"Courier New", Courier, monospace'
+  const probe = document.createElement("canvas").getContext("2d")!
+  probe.font = `bold 100px ${family}`
+  // La letra justa para que entren `chars` letras en el ancho.
+  const size = Math.floor((widthDots / probe.measureText("M".repeat(chars)).width) * 100)
+  const lineHeight = Math.round(size * 1.3)
+  const pad = Math.round(size * 0.8)
+
+  const images: Blob[] = []
+  for (const lines of layout(ticket, chars)) {
+    const canvas = document.createElement("canvas")
+    canvas.width = widthDots
+    canvas.height = pad * 2 + lines.length * lineHeight
+    const ctx = canvas.getContext("2d")!
+    ctx.fillStyle = "#fff"
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = "#000"
+    ctx.textBaseline = "middle"
+    lines.forEach((l, i) => {
+      // En papel térmico la letra fina sale débil: todo un poco grueso y lo destacado, en negrita.
+      ctx.font = `${l.bold ? "bold" : "600"} ${size}px ${family}`
+      const x = l.center ? (widthDots - ctx.measureText(l.text).width) / 2 : 0
+      ctx.fillText(l.text, x, pad + i * lineHeight + lineHeight / 2)
+    })
+    images.push(await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas"))), "image/png")))
+  }
+  return images
 }

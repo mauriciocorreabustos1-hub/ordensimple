@@ -30,6 +30,7 @@ import {
   promotionsFor,
 } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
+import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 function revalidate() {
@@ -237,6 +238,7 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       if (finished) await tx.comanda.update({ where: { id }, data: { saleId: sale.id } })
       await linkPromotions(tx, sale.id, promo.applied)
       await disc.link(tx, sale.id)
+      await earnLoyalty(tx, ctx, sale.id, customerId, sale.total)
     })
   } catch (error) {
     if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }

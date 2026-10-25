@@ -16,6 +16,7 @@ import { businessManagers, sendPush } from "@/server/push"
 import { allowAttempt } from "@/server/rate-limit"
 import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, fiadoBlocked, lineData, MAX_TOTAL, priceBelowList, resolveCustomer } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
+import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 const PRO_ONLY = "Las cotizaciones son parte del plan Pro."
@@ -202,6 +203,7 @@ export async function sellQuote(id: string, paymentMethod: z.input<typeof paymen
         select: { id: true },
       })
       await applyStock(tx, ctx, sale.id, lines, label)
+      await earnLoyalty(tx, ctx, sale.id, customerId, quote.total)
       // Solo una vez, aunque dos personas la vendan al mismo tiempo.
       const r = await tx.quote.updateMany({ where: { id, status: { not: "SOLD" } }, data: { status: "SOLD", saleId: sale.id, customerId } })
       if (r.count !== 1) throw new Error("QUOTE_SOLD")

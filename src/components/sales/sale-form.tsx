@@ -21,6 +21,7 @@ import { useOfflineSales } from "@/components/app/offline-sales"
 import { useCanApproveDiscounts, usePromotions } from "@/components/app/quick-actions"
 import { applyPromotions } from "@/lib/promotions"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
+import { earnedPart } from "@/lib/loyalty"
 
 export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[]; categoryId?: string | null }
 
@@ -183,7 +184,7 @@ export function SaleForm({
       if ("offline" in result && result.offline) {
         toast.success(`Sin internet: la venta de ${formatMoney(total, currency)} quedó guardada en este equipo y se subirá sola.`)
       } else {
-        toast.success(editing ? "Venta actualizada" : `Venta de ${formatMoney(total, currency)} guardada`)
+        toast.success(editing ? "Venta actualizada" : `Venta de ${formatMoney(total, currency)} guardada${earnedPart(result.message)}`)
       }
       if (!editing) {
         window.dispatchEvent(new Event(GUIDE_SALE_SAVED))

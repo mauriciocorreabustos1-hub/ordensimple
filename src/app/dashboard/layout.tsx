@@ -79,6 +79,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         categories={categories}
         chargesVat={ctx.settings.chargesVat}
         vat={ctx.settings.chargesVat ? vatInfo(ctx.business.country) : null}
+        loyalty={canUseFeature(ctx.business.plan, "loyalty") && ctx.settings.loyaltyEnabled}
         chile={ctx.business.country === "CL"}
         customers={customers.map((c) => c.name)}
         suppliers={suppliers.map((s) => s.name)}

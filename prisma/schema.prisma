@@ -197,6 +197,7 @@ model Business {
   cashShifts        CashShift[]
   webOrders         WebOrder[]
   quotes            Quote[]
+  loyaltyCards      LoyaltyCard[]
   promotions        Promotion[]
   storeCoupons      StoreCoupon[]
   appointments      Appointment[]
@@ -304,6 +305,17 @@ model BusinessSettings {
   quoteTerms            String?
   /// Cuántos días vale una cotización nueva.
   quoteValidDays        Int           @default(15)
+  /// Tarjeta de fidelidad (plan Pro): sellos (una compra, un sello) o puntos (según lo que se compra).
+  loyaltyEnabled        Boolean       @default(false)
+  loyaltyMode           LoyaltyMode   @default(STAMPS)
+  /// Sellos o puntos que se necesitan para el premio.
+  loyaltyGoal           Int           @default(10)
+  /// El premio, en palabras del negocio ("Un café gratis", "$5.000 de descuento").
+  loyaltyReward         String?
+  /// Sellos: compra mínima para ganar un sello (0 = cualquier compra).
+  loyaltyMinPurchase    Int           @default(0)
+  /// Puntos: cuánto hay que comprar para ganar un punto.
+  loyaltyPointValue     Int           @default(1000)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
@@ -493,6 +505,7 @@ model Customer {
   payments     CustomerPayment[]
   appointments Appointment[]
   quotes       Quote[]
+  loyaltyCard  LoyaltyCard?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -826,6 +839,56 @@ model WebOrder {
 
   @@index([businessId, status, createdAt])
   @@map("web_order")
+}
+
+enum LoyaltyMode {
+  STAMPS
+  POINTS
+}
+
+enum LoyaltyMovementKind {
+  EARN
+  REDEEM
+  ADJUST
+}
+
+/// Tarjeta de fidelidad de un cliente. Se comparte con un enlace (/tarjeta/<token>) que el cliente guarda en su celular.
+model LoyaltyCard {
+  id         String            @id @default(cuid())
+  businessId String
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId String            @unique
+  customer   Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  token      String            @unique
+  /// Sellos o puntos que tiene ahora.
+  balance    Int               @default(0)
+  /// Premios que ya canjeó.
+  rewards    Int               @default(0)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  movements  LoyaltyMovement[]
+
+  @@index([businessId, updatedAt])
+  @@map("loyalty_card")
+}
+
+/// Cada sello o punto que se suma o se descuenta (por una venta, un canje o a mano).
+model LoyaltyMovement {
+  id          String              @id @default(cuid())
+  cardId      String
+  card        LoyaltyCard         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  kind        LoyaltyMovementKind
+  /// Positivo suma, negativo resta.
+  amount      Int
+  /// Venta que lo generó (si la venta se elimina, se descuenta).
+  saleId      String?
+  note        String?
+  createdById String?
+  createdAt   DateTime            @default(now())
+
+  @@index([cardId, createdAt])
+  @@index([saleId])
+  @@map("loyalty_movement")
 }
 
 enum QuoteStatus {

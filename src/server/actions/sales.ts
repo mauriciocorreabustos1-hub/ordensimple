@@ -33,6 +33,8 @@ import {
   promotionsFor,
 } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
+import { earnLoyalty, revertLoyalty } from "@/server/loyalty"
+import { earnedNote, type LoyaltyEarned } from "@/lib/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 function revalidate() {
@@ -76,9 +78,10 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
     if (productsOnly(ctx)) return { ok: false, message: QUICK_SALE_BLOCKED }
     if (fiadoBlocked(ctx, paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
+    let loyal: LoyaltyEarned | null = null
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
-      await tx.sale.create({
+      const sale = await tx.sale.create({
         data: {
           businessId: ctx.businessId,
           clientId,
@@ -91,14 +94,16 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
           createdById: ctx.user.id,
           items: { create: { description: "Venta rápida", quantity: 1, unitPrice: amount, subtotal: amount } },
         },
+        select: { id: true },
       })
+      loyal = await earnLoyalty(tx, ctx, sale.id, customerId, amount)
     })
+    revalidate()
+    return { ok: true, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
     return toActionError(error)
   }
-  revalidate()
-  return { ok: true, message: paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada" }
 }
 
 export async function updateQuickSale(id: string, input: QuickSaleInput): Promise<ActionResult> {
@@ -118,6 +123,9 @@ export async function updateQuickSale(id: string, input: QuickSaleInput): Promis
 
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
+      // La tarjeta de fidelidad se recalcula con el monto y el cliente nuevos.
+      await revertLoyalty(tx, sale.id)
+      await earnLoyalty(tx, ctx, sale.id, customerId, amount)
       await tx.saleItem.deleteMany({ where: { saleId: sale.id } })
       await tx.sale.update({
         where: { id: sale.id },
@@ -164,6 +172,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
     const disc = await checkDiscount(ctx, parsed.data, subtotal - promo.discount, "Venta")
     if (!disc.ok) return { ok: false, message: disc.message }
 
+    let loyal: LoyaltyEarned | null = null
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       const sale = await tx.sale.create({
@@ -184,14 +193,15 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
       await applyStock(tx, ctx, sale.id, lines, "Venta")
       await linkPromotions(tx, sale.id, promo.applied)
       await disc.link(tx, sale.id)
+      loyal = await earnLoyalty(tx, ctx, sale.id, customerId, sale.total)
     })
+    revalidate()
+    return { ok: true, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
     if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }
     return toActionError(error)
   }
-  revalidate()
-  return { ok: true, message: paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada" }
 }
 
 export async function updateSale(id: string, input: SaleInput): Promise<ActionResult> {
@@ -245,6 +255,9 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
       })
       await applyStock(tx, ctx, sale.id, lines, "Venta (editada)")
       await linkPromotions(tx, sale.id, promo.applied)
+      // La tarjeta de fidelidad se recalcula con el total y el cliente nuevos.
+      await revertLoyalty(tx, sale.id)
+      await earnLoyalty(tx, ctx, sale.id, customerId, total)
     })
   } catch (error) {
     return toActionError(error)
@@ -274,8 +287,9 @@ export async function deleteSale(id: string): Promise<ActionResult> {
     await db.$transaction(async (tx) => {
       // Si es una devolución, su solicitud se borra con ella (así se puede volver a devolver).
       if (sale.returnOfId) await tx.saleReturn.deleteMany({ where: { returnSaleId: sale.id } })
-      // Los materiales de las recetas vuelven a como estaban.
+      // Los materiales de las recetas vuelven a como estaban, y se descuenta lo que sumó a la tarjeta de fidelidad.
       await revertMaterials(tx, sale.id)
+      await revertLoyalty(tx, sale.id)
       // Devuelve al stock lo que se había descontado, dejando registro.
       for (const m of sale.movements) {
         await tx.product.update({ where: { id: m.productId }, data: { stock: { increment: -m.quantity } } })

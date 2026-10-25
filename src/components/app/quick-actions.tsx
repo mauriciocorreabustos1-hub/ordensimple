@@ -30,6 +30,12 @@ export function useCanApproveDiscounts() {
   return React.useContext(DiscountRoleContext)
 }
 
+/** Si la tarjeta de fidelidad está activa (al vender conviene indicar el cliente para sumarle). */
+const LoyaltyActiveContext = React.createContext(false)
+export function useLoyaltyActive() {
+  return React.useContext(LoyaltyActiveContext)
+}
+
 /** IVA de las ventas: tasa y nombre si el negocio cobra IVA (los precios lo llevan incluido); null si no. */
 const SalesVatContext = React.createContext<{ rate: number; label: string } | null>(null)
 export function useSalesVat() {
@@ -64,6 +70,7 @@ export function QuickActionsProvider({
   categories,
   chargesVat,
   vat = null,
+  loyalty = false,
   chile = false,
   customers,
   suppliers = [],
@@ -85,6 +92,8 @@ export function QuickActionsProvider({
   chargesVat: boolean
   /** IVA de las ventas (si el negocio cobra IVA): para mostrar el neto de los precios. */
   vat?: { rate: number; label: string } | null
+  /** Tarjeta de fidelidad activa (plan y configuración). */
+  loyalty?: boolean
   /** Negocio en Chile: boletas de honorarios con retención. */
   chile?: boolean
   customers: string[]
@@ -122,6 +131,7 @@ export function QuickActionsProvider({
       <DiscountRoleContext.Provider value={canApproveDiscounts}>
       <PromotionsContext.Provider value={promotions}>
       <SalesVatContext.Provider value={vat}>
+      <LoyaltyActiveContext.Provider value={loyalty}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
         <Tabs defaultValue="detailed" className="gap-5">
@@ -170,6 +180,7 @@ export function QuickActionsProvider({
           onDone={close}
         />
       </AppModal>
+      </LoyaltyActiveContext.Provider>
       </SalesVatContext.Provider>
       </PromotionsContext.Provider>
       </DiscountRoleContext.Provider>

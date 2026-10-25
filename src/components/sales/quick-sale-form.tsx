@@ -1,5 +1,7 @@
 "use client"
 
+import { earnedPart } from "@/lib/loyalty"
+import { useLoyaltyActive } from "@/components/app/quick-actions"
 import * as React from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -49,6 +51,7 @@ export function QuickSaleForm({
   const [pending, startTransition] = React.useTransition()
   const offline = useOfflineSales()
   const fiado = paymentMethod === "FIADO"
+  const loyalty = useLoyaltyActive()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -74,8 +77,8 @@ export function QuickSaleForm({
           : editing
             ? "Venta actualizada"
             : fiado
-              ? `Fiado de ${formatMoney(amount, currency)} anotado a ${customerName}`
-              : `Venta de ${formatMoney(amount, currency)} guardada`,
+              ? `Fiado de ${formatMoney(amount, currency)} anotado a ${customerName}${earnedPart(result.message)}`
+              : `Venta de ${formatMoney(amount, currency)} guardada${earnedPart(result.message)}`,
       )
       if (!editing) {
         window.dispatchEvent(new Event(GUIDE_SALE_SAVED))
@@ -95,12 +98,13 @@ export function QuickSaleForm({
       <Field label="¿Cómo te pagaron?">
         <PaymentChips value={paymentMethod} onChange={setPaymentMethod} />
       </Field>
-      {fiado ? (
+      {fiado || loyalty ? (
         <Field
-          label="¿A quién le fiaste?"
+          label={fiado ? "¿A quién le fiaste?" : "Cliente"}
           htmlFor="qs-customer"
           error={errors.customerName}
-          hint="Quedará anotado lo que te debe en Clientes."
+          optional={!fiado}
+          hint={fiado ? "Quedará anotado lo que te debe en Clientes." : "Si tiene tarjeta de fidelidad, se le suma sola."}
         >
           <Input
             id="qs-customer"

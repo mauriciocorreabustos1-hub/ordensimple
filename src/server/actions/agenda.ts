@@ -13,6 +13,7 @@ import { appointmentSchema, idSchema, paymentMethod as paymentMethodSchema, type
 import { sendPush } from "@/server/push"
 import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, priceBelowList, fiadoBlocked, lineData, resolveCustomer, type Tx } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
+import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 const PRO_ONLY = "La Agenda es parte del plan Pro."
@@ -278,6 +279,7 @@ export async function chargeAppointment(id: string, payment: z.input<typeof paym
         },
       })
       await applyStock(tx, ctx, sale.id, lines, `Cita (${a.customerName})`.slice(0, 120))
+      await earnLoyalty(tx, ctx, sale.id, a.customerId, a.price)
       // Solo si nadie la cobró entretanto.
       const done = await tx.appointment.updateMany({ where: { id, saleId: null }, data: { saleId: sale.id, status: "DONE" } })
       if (done.count !== 1) throw new Error("APPOINTMENT_CHARGED")

@@ -3,7 +3,7 @@ import { getAppUrl } from "@/lib/app-url"
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/dashboard", "/onboarding", "/admin", "/api/", "/pedido/", "/cotizacion/"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/dashboard", "/onboarding", "/admin", "/api/", "/pedido/", "/cotizacion/", "/tarjeta/"] },
     sitemap: `${getAppUrl()}/sitemap.xml`,
   }
 }

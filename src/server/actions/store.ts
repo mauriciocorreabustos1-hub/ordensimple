@@ -18,6 +18,7 @@ import { couponAmount, findCoupon } from "@/server/coupons"
 import { webCustomer } from "@/server/web-customer"
 import { storeTables } from "@/server/store-tables"
 import { assertCan, requireBusiness } from "@/server/session"
+import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 const PRO_ONLY = "La tienda online es parte del plan Pro."
@@ -274,6 +275,7 @@ export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<ty
         },
       })
       await applyStock(tx, ctx, sale.id, lines, "Pedido web")
+      await earnLoyalty(tx, ctx, sale.id, customerId, order.total)
       // Qué promociones y cupón tuvo el pedido, para los reportes.
       const promos = Array.isArray(order.promos) ? (order.promos as { promotionId: string; name: string; amount: number }[]) : []
       await linkPromotions(tx, sale.id, [

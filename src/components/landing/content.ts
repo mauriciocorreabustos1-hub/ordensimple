@@ -3,6 +3,7 @@ import {
   BellRing,
   BookOpen,
   FileText,
+  Stamp,
   CalendarClock,
   ChefHat,
   Globe,
@@ -229,6 +230,21 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Sabes si ya la abrió y te llega un aviso al celular cuando responde",
       "La vendes con un toque y con los precios cotizados: se descuenta el stock",
       "Estados: pendiente, aceptada, rechazada, vencida y vendida",
+    ],
+  },
+  {
+    id: "fidelidad",
+    icon: Stamp,
+    title: "Tarjeta de fidelidad",
+    description: "Tus clientes juntan sellos o puntos en su celular y vuelven por su premio (plan Pro).",
+    points: [
+      "Tú eliges: sellos (ej.: 10 cafés y el siguiente gratis) o puntos según lo que compran",
+      "El premio y la meta los decides tú, con compra mínima por sello si quieres",
+      "Le envías la tarjeta por WhatsApp y el cliente la guarda en su pantalla de inicio, como una app",
+      "Se suma sola al venderle: en ventas, comandas, citas, pedidos web y cotizaciones",
+      "Escaneas el código de su tarjeta para encontrarla al tiro",
+      "Canjeas el premio con un toque y queda el historial de cada cliente",
+      "Si eliminas una venta, se descuenta lo que había sumado",
     ],
   },
   {
@@ -554,6 +570,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí, gratis. En Recetas anotas tus materiales con su precio (harina, levadura, aceites, cera…) y cada receta con lo que rinde. Te decimos el costo por unidad y el precio sugerido, llevas el stock y el vencimiento de tus materiales, y al vender se descuentan solos.",
       },
       {
+        q: "¿Puedo dar tarjetas de fidelidad a mis clientes?",
+        a: "Sí, con el plan Pro. Eliges si das sellos (por ejemplo, 10 compras y un premio) o puntos según lo que compran, y cuál es el premio. Le envías la tarjeta al cliente por WhatsApp, la guarda en la pantalla de inicio de su celular y se le suma sola cada vez que le vendes.",
+      },
+      {
         q: "¿Puedo imprimir en una impresora de boletas?",
         a: "Sí. La cuenta de las comandas se imprime en impresoras de rollo de 58 u 80 mm: directo por Bluetooth desde Chrome o Edge (Android y computador), o como PDF o imagen del ancho del rollo para la app de tu impresora, ideal en iPhone.",
       },
@@ -669,6 +689,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Seguimiento del pedido para tu cliente", values: [false, true, true] },
   { label: "Cotizaciones con enlace para aceptarlas", values: [false, true, true] },
   { label: "Carta con QR por mesa", values: [false, true, true] },
+  { label: "Tarjeta de fidelidad con sellos o puntos", values: [false, true, true] },
   { label: "Agenda de citas y reservas online (peluquerías, consultas, talleres)", values: [false, true, true] },
   { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
   { label: "Promociones automáticas (2×1, %, happy hour) y cupones", values: [false, true, true] },

@@ -35,6 +35,8 @@ export type PlanFeature =
   | "agenda"
   /** Cotizaciones con enlace para que el cliente las acepte. */
   | "quotes"
+  /** Tarjetas de fidelidad con sellos o puntos. */
+  | "loyalty"
   | "multiUser"
   | "branches"
 
@@ -102,7 +104,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "loyalty"],
     highlights: [
       "Todo lo de Gratis, y además:",
       "Tienda online con fotos y pedidos por WhatsApp, sin comisiones",
@@ -110,6 +112,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Comandas por mesa, carta con QR y cuenta separada por persona",
       "Promociones (2×1, descuentos, happy hour) y cupones",
       "Cotizaciones con enlace: tu cliente las revisa y acepta",
+      "Tarjeta de fidelidad con sellos o puntos en el celular del cliente",
       "Resultados e IVA: tu utilidad real y tu F29 (IVA + PPM)",
       "Productos ilimitados",
       "Tú + 20 trabajadores y hasta 3 sucursales",
@@ -134,7 +137,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // en la práctica, sin límite
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "loyalty", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Trabajadores sin límite",

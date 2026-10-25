@@ -84,6 +84,7 @@ export async function requireBusiness() {
     tableCount: 6,
     tableExtras: ["Para llevar", "Delivery"],
     employeesProductsOnly: true,
+    loyaltyEnabled: false,
     ownerSalary: null,
     openingCash: null,
     openingCashAt: null,

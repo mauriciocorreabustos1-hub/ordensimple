@@ -13,6 +13,7 @@ import { StorePreview } from "@/components/landing/store-preview"
 import { AgendaPreview } from "@/components/landing/agenda-preview"
 import { LabelsPreview } from "@/components/landing/labels-preview"
 import { PromosPreview } from "@/components/landing/promos-preview"
+import { LoyaltyPreview } from "@/components/landing/loyalty-preview"
 import { QuotePreview } from "@/components/landing/quote-preview"
 import { RecipesPreview } from "@/components/landing/recipes-preview"
 import { TrackingPreview } from "@/components/landing/tracking-preview"
@@ -390,6 +391,37 @@ export default async function LandingPage() {
             </div>
           </div>
           <PromosPreview className="lg:order-1" />
+        </div>
+      </Section>
+
+      {/* Tarjeta de fidelidad: sellos o puntos en el celular del cliente. */}
+      <Section className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              eyebrow="Tarjeta de fidelidad"
+              title="¿Quieres que vuelvan? Dales una tarjeta de sellos en su celular"
+              description="Como la tarjeta de cartón de la cafetería, pero en el celular de tu cliente: no se pierde, no se olvida en la casa y se llena sola cada vez que le vendes."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Sellos (10 compras y un premio) o puntos según lo que compran: tú eliges","Le envías la tarjeta por WhatsApp y la guarda en su celular, como una app","Se suma sola cada vez que le vendes, también en comandas y pedidos web","Escaneas su código, canjeas el premio con un toque y ves quién está por ganarlo"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/fidelidad" loggedInLabel="Crear mi tarjeta">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#fidelidad">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <LoyaltyPreview />
         </div>
       </Section>
 

@@ -33,7 +33,7 @@ import {
   promotionsFor,
 } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
-import { earnLoyalty, revertLoyalty } from "@/server/loyalty"
+import { earnLoyalty, relinkLoyalty, revertLoyalty } from "@/server/loyalty"
 import { earnedNote, type LoyaltyEarned } from "@/lib/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -124,8 +124,7 @@ export async function updateQuickSale(id: string, input: QuickSaleInput): Promis
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       // La tarjeta de fidelidad se recalcula con el monto y el cliente nuevos.
-      await revertLoyalty(tx, sale.id)
-      await earnLoyalty(tx, ctx, sale.id, customerId, amount)
+      await relinkLoyalty(tx, ctx, sale.id, customerId, amount)
       await tx.saleItem.deleteMany({ where: { saleId: sale.id } })
       await tx.sale.update({
         where: { id: sale.id },
@@ -256,8 +255,7 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
       await applyStock(tx, ctx, sale.id, lines, "Venta (editada)")
       await linkPromotions(tx, sale.id, promo.applied)
       // La tarjeta de fidelidad se recalcula con el total y el cliente nuevos.
-      await revertLoyalty(tx, sale.id)
-      await earnLoyalty(tx, ctx, sale.id, customerId, total)
+      await relinkLoyalty(tx, ctx, sale.id, customerId, total)
     })
   } catch (error) {
     return toActionError(error)

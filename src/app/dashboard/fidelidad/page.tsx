@@ -4,7 +4,7 @@ import { ProGate } from "@/components/app/pro-gate"
 import { LoyaltyBoard, type LoyaltyCardRow } from "@/components/loyalty/loyalty-board"
 import { db } from "@/lib/db"
 import { canUseFeature } from "@/lib/plans"
-import { can } from "@/lib/roles"
+import { can, canApproveDiscounts } from "@/lib/roles"
 import { loyaltyConfig, LOYALTY_SETTINGS } from "@/server/loyalty"
 import { requireBusiness } from "@/server/session"
 
@@ -60,6 +60,7 @@ export default async function LoyaltyPage() {
         businessName={ctx.business.name}
         canConfigure={can(ctx.role, "settings:manage")}
         canDelete={can(ctx.role, "sales:delete")}
+        canAdjust={canApproveDiscounts(ctx.role)}
       />
     </div>
   )

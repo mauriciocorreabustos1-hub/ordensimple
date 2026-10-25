@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@/lib/db"
 import { canUseFeature } from "@/lib/plans"
 import { units } from "@/lib/loyalty"
+import { canApproveDiscounts } from "@/lib/roles"
 import { idSchema, money, optionalText } from "@/lib/validations"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -103,12 +104,13 @@ async function loadCard(ctx: BusinessContext, id: string) {
   return db.loyaltyCard.findFirst({ where: { id, businessId: ctx.businessId }, select: { id: true, balance: true } })
 }
 
-/** Sumar (o restar, para corregir) sellos o puntos a mano. */
+/** Sumar (o restar, para corregir) sellos o puntos a mano. Solo el dueño o un administrador (como los descuentos). */
 export async function adjustLoyalty(id: string, amount: number, note?: string): Promise<ActionResult> {
   const ctx = await requireBusiness()
   if (!idSchema.safeParse(id).success || !Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 1_000_000) return { ok: false, message: NOT_FOUND }
   try {
     assertCan(ctx, "sales:create")
+    if (!canApproveDiscounts(ctx.role)) return { ok: false, message: "Solo el dueño o un administrador puede sumar o restar a mano." }
     if (!allowed(ctx)) return { ok: false, message: PRO_ONLY }
     const card = await loadCard(ctx, id)
     if (!card) return { ok: false, message: NOT_FOUND }

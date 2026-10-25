@@ -13,6 +13,9 @@ import { StorePreview } from "@/components/landing/store-preview"
 import { AgendaPreview } from "@/components/landing/agenda-preview"
 import { LabelsPreview } from "@/components/landing/labels-preview"
 import { PromosPreview } from "@/components/landing/promos-preview"
+import { QuotePreview } from "@/components/landing/quote-preview"
+import { RecipesPreview } from "@/components/landing/recipes-preview"
+import { TrackingPreview } from "@/components/landing/tracking-preview"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -158,7 +161,7 @@ export default async function LandingPage() {
               description="Anota las comandas por mesa desde el celular, mándalas a la pantalla de la cocina y cobra al final. Todo queda como venta."
             />
             <ul className="space-y-2 text-[15px]">
-              {["Tus mesas, las que quieras, y ves cuáles están ocupadas", "La cocina marca cada plato listo y el garzón lo ve de inmediato", "Sin comprar nada: celular, tablet o computador"].map((t) => (
+              {["Tus mesas, las que quieras, y ves cuáles están ocupadas", "La cocina marca cada plato listo y el garzón lo ve de inmediato", "Carta con QR en cada mesa: piden desde su celular", "La cuenta separada por persona, impresa en tu impresora de boletas", "Sin comprar nada: celular, tablet o computador"].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {t}
@@ -184,7 +187,7 @@ export default async function LandingPage() {
               description="Tus productos con foto, precio y stock en una página con tu nombre. Tus clientes arman el pedido y te llega por WhatsApp, ordenado y listo para despachar. Sin comisiones."
             />
             <ul className="space-y-2 text-[15px]">
-              {["Tu dirección: ordensimple.cl/tienda/tu-negocio","Retiro en el local o despacho, con la dirección del cliente","Con un toque el pedido queda como venta y se descuenta el stock","Te avisa al celular apenas entra un pedido"].map((t) => (
+              {["Tu dirección: ordensimple.cl/tienda/tu-negocio","Retiro en el local o despacho, con la dirección del cliente","Con un toque el pedido queda como venta y se descuenta el stock","Te avisa al celular apenas entra un pedido","Tu cliente ve en qué va su pedido con un enlace"].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {t}
@@ -204,10 +207,41 @@ export default async function LandingPage() {
         </div>
       </Section>
 
-      {/* Servicios: agenda por profesional y reservas por internet. */}
+      {/* Seguimiento del pedido: el cliente ve en qué va sin preguntar. */}
       <Section className="overflow-hidden">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              eyebrow="Seguimiento del pedido"
+              title="¿Te preguntan “¿y mi pedido?”? Que lo vean solos"
+              description="Cada pedido de tu tienda online trae un enlace donde tu cliente ve en qué va: recibido, en preparación, listo o en camino, y entregado. Tú lo avanzas con un toque."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["El enlace le llega en su propio mensaje de WhatsApp","La página se actualiza sola, sin descargar nada","Le avisas cada cambio por WhatsApp con el mensaje ya escrito","Incluido en el plan Pro, con tu tienda online"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/pedidos" loggedInLabel="Ver mis pedidos">Crear mi tienda</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#tienda">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <TrackingPreview />
+        </div>
+      </Section>
+
+      {/* Servicios: agenda por profesional y reservas por internet. */}
+      <Section muted className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5 lg:order-2">
             <SectionTitle
               align="left"
               eyebrow="Agenda y servicios"
@@ -231,14 +265,76 @@ export default async function LandingPage() {
               </Button>
             </div>
           </div>
-          <AgendaPreview />
+          <AgendaPreview className="lg:order-1" />
+        </div>
+      </Section>
+
+      {/* Cotizaciones con enlace para aceptarlas. */}
+      <Section className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              eyebrow="Cotizaciones"
+              title="¿Haces presupuestos? Envíalos por WhatsApp y que te digan que sí"
+              description="Arma la cotización con tus productos y precios en un minuto. Tu cliente la abre en un enlace con tu logo y tu RUT, la descarga en PDF y la acepta con un botón."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["IVA desglosado, descuento, validez y tus condiciones","Sabes si el cliente ya la abrió y te avisamos cuando la acepta","La vendes con un toque y se descuenta el stock","Para ferreterías, talleres, eventos, servicios y más (plan Pro)"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/cotizaciones" loggedInLabel="Hacer una cotización">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#cotizaciones">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <QuotePreview />
+        </div>
+      </Section>
+
+      {/* Recetas: costo real de lo que se elabora. */}
+      <Section muted className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5 lg:order-2">
+            <SectionTitle
+              align="left"
+              eyebrow="Recetas"
+              title="¿Cocinas o fabricas lo que vendes? Calcula su costo real"
+              description="Para panaderías, pastelerías, comida, jabones, velas y cosmética. Anota tus ingredientes con su precio y te decimos cuánto te cuesta cada unidad y a cuánto venderla."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Ingredientes con su precio en kilos, gramos, litros o unidades","Costo por unidad y precio sugerido según el margen que quieres","Stock de tus materiales y aviso antes de que venzan","Al vender, los materiales se descuentan solos","Gratis en todos los planes"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/recetas" loggedInLabel="Ir a mis recetas">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#recetas">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <RecipesPreview className="lg:order-1" />
         </div>
       </Section>
 
       {/* Etiquetas con código de barras para lo que no trae código. */}
-      <Section muted className="overflow-hidden">
+      <Section className="overflow-hidden">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-5 lg:order-2">
+          <div className="space-y-5">
             <SectionTitle
               align="left"
               eyebrow="Etiquetas"
@@ -262,14 +358,14 @@ export default async function LandingPage() {
               </Button>
             </div>
           </div>
-          <LabelsPreview className="lg:order-1" />
+          <LabelsPreview />
         </div>
       </Section>
 
       {/* Promociones y cupones que se aplican solos. */}
-      <Section className="overflow-hidden">
+      <Section muted className="overflow-hidden">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-5">
+          <div className="space-y-5 lg:order-2">
             <SectionTitle
               align="left"
               eyebrow="Promociones"
@@ -293,7 +389,7 @@ export default async function LandingPage() {
               </Button>
             </div>
           </div>
-          <PromosPreview />
+          <PromosPreview className="lg:order-1" />
         </div>
       </Section>
 

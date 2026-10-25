@@ -1,6 +1,8 @@
 import {
   BadgePercent,
   BellRing,
+  BookOpen,
+  FileText,
   CalendarClock,
   ChefHat,
   Globe,
@@ -159,6 +161,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Al cobrar queda como venta: descuenta stock y suma a la caja y a tus reportes",
       "Cuenta dividida: cobra todo junto o lo de cada persona por separado",
       "Propina sugerida del 10% u otro monto, guardada aparte de tus ventas",
+      "Carta con QR por mesa: el cliente pide desde su celular y el pedido llega marcado con su mesa",
+      "Al tomar el pedido eliges de quién es cada plato, y la cuenta sale separada por persona",
+      "Imprime la cuenta en tu impresora de boletas de 58 u 80 mm: por Bluetooth, en PDF o en imagen",
     ],
   },
   {
@@ -175,6 +180,8 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Pedidos web: lo registras como venta (o comanda) con un toque",
       "Aviso al celular apenas entra un pedido",
       "Compártela por WhatsApp o en tus redes con un botón",
+      "Seguimiento del pedido: tu cliente ve en un enlace si está recibido, en preparación, listo o en camino, y entregado",
+      "Le avisas cada cambio por WhatsApp con el mensaje ya escrito",
     ],
   },
   {
@@ -209,6 +216,22 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
+    id: "cotizaciones",
+    icon: FileText,
+    title: "Cotizaciones",
+    description: "Presupuestos con tus precios que el cliente acepta desde un enlace (plan Pro).",
+    points: [
+      "Con tus productos guardados o lo que escribas: cantidades, precios y descuento",
+      "Numeradas solas, con días de validez y una nota para el cliente",
+      "Tu logo, RUT, dirección, contacto y condiciones en cada una",
+      "IVA desglosado: neto, IVA y total",
+      "Se envían por WhatsApp con un enlace: el cliente la ve, la descarga en PDF y la acepta o rechaza",
+      "Sabes si ya la abrió y te llega un aviso al celular cuando responde",
+      "La vendes con un toque y con los precios cotizados: se descuenta el stock",
+      "Estados: pendiente, aceptada, rechazada, vencida y vendida",
+    ],
+  },
+  {
     id: "productos",
     icon: Package,
     title: "Productos",
@@ -222,6 +245,22 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Aviso si un producto te deja pérdida",
       "Stock actual, stock mínimo y productos agotados",
       "Valor de tu inventario: lo que pagaste y lo que vale a precio de venta",
+      "Si tu negocio cobra IVA, ves el neto y el IVA de cada precio",
+    ],
+  },
+  {
+    id: "recetas",
+    icon: BookOpen,
+    title: "Recetas",
+    description: "Para lo que cocinas o fabricas: panes, tortas, comida, jabones, velas y cosmética (gratis).",
+    points: [
+      "Tus materiales con su precio y unidad: kilos, gramos, litros o unidades",
+      "Cada receta con sus ingredientes y cuánto rinde",
+      "Costo por unidad y precio sugerido según el margen que quieres",
+      "Stock de tus materiales, con cuántas tandas te alcanzan",
+      "Fecha de vencimiento de cada material y aviso antes de que venza",
+      "Registra tus compras de materiales: se suman al stock y, si quieres, actualizan el precio",
+      "Al vender, los materiales se descuentan solos",
     ],
   },
   {
@@ -503,6 +542,22 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí, en todos los planes. En Productos, sección Etiquetas, eliges los productos y cuántas etiquetas quieres, con nombre, precio y código. Sirven hojas de stickers A4 en una impresora normal o una impresora de etiquetas. Si un producto no trae código, te creamos uno para que lo vendas escaneando.",
       },
       {
+        q: "¿Puedo hacer cotizaciones?",
+        a: "Sí, con el plan Pro. En Cotizaciones armas una con tus productos y precios, y se la envías al cliente por WhatsApp con un enlace. Ahí la ve con tu logo, RUT, IVA desglosado y tus condiciones, la descarga en PDF y la acepta con un botón. Te avisamos cuando la abre y cuando responde, y la vendes con un toque.",
+      },
+      {
+        q: "¿Mis clientes pueden ver en qué va su pedido?",
+        a: "Sí. Cada pedido de tu tienda online tiene un enlace de seguimiento que le llega al cliente en su mensaje de WhatsApp. Ahí ve si está recibido, en preparación, listo o en camino, y entregado. Tú lo avanzas desde Pedidos web y le avisas por WhatsApp con un toque.",
+      },
+      {
+        q: "¿Sirve para calcular el costo de mis recetas?",
+        a: "Sí, gratis. En Recetas anotas tus materiales con su precio (harina, levadura, aceites, cera…) y cada receta con lo que rinde. Te decimos el costo por unidad y el precio sugerido, llevas el stock y el vencimiento de tus materiales, y al vender se descuentan solos.",
+      },
+      {
+        q: "¿Puedo imprimir en una impresora de boletas?",
+        a: "Sí. La cuenta de las comandas se imprime en impresoras de rollo de 58 u 80 mm: directo por Bluetooth desde Chrome o Edge (Android y computador), o como PDF o imagen del ancho del rollo para la app de tu impresora, ideal en iPhone.",
+      },
+      {
         q: "¿Me llegan avisos al celular?",
         a: "Sí. En Configuración, sección Avisos, activas “Avisos en este celular o computador” y te llegan aunque tengas la app cerrada: pedidos web, reservas, solicitudes de descuento o devolución de tu equipo, stock bajo, productos por vencer, fiado atrasado y pagos a proveedores. En iPhone, primero agrega OrdenSimple a tu pantalla de inicio.",
       },
@@ -611,6 +666,9 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Clientes, fiado y cobro por WhatsApp", values: [true, true, true] },
   { label: "Comandas y pantalla de cocina (restaurantes y cafés)", values: [false, true, true] },
   { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
+  { label: "Seguimiento del pedido para tu cliente", values: [false, true, true] },
+  { label: "Cotizaciones con enlace para aceptarlas", values: [false, true, true] },
+  { label: "Carta con QR por mesa", values: [false, true, true] },
   { label: "Agenda de citas y reservas online (peluquerías, consultas, talleres)", values: [false, true, true] },
   { label: "Turnos de caja, metas y comisiones del equipo", values: [false, true, true] },
   { label: "Promociones automáticas (2×1, %, happy hour) y cupones", values: [false, true, true] },

@@ -14,6 +14,7 @@ import { db } from "@/lib/db"
 import { businessProfile } from "@/lib/business-kind"
 import { canUseFeature } from "@/lib/plans"
 import { canApproveDiscounts } from "@/lib/roles"
+import { vatInfo } from "@/lib/vat"
 import { isAdmin as checkAdmin } from "@/server/admin"
 import { requireBusiness } from "@/server/session"
 
@@ -77,6 +78,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         products={products.map(({ sku, barcodes, ...p }) => ({ ...p, codes: productCodes({ sku, barcodes }) }))}
         categories={categories}
         chargesVat={ctx.settings.chargesVat}
+        vat={ctx.settings.chargesVat ? vatInfo(ctx.business.country) : null}
         chile={ctx.business.country === "CL"}
         customers={customers.map((c) => c.name)}
         suppliers={suppliers.map((s) => s.name)}

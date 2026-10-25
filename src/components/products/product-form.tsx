@@ -10,6 +10,7 @@ import { Field } from "@/components/app/field"
 import { ScanButton } from "@/components/app/barcode-scanner"
 import { MoneyInput } from "@/components/app/money-input"
 import { Explainer } from "@/components/app/explainer"
+import { useSalesVat } from "@/components/app/quick-actions"
 import { marginRatio } from "@/lib/calculations"
 import { formatMoney, formatPercent, referenceAmount } from "@/lib/currency"
 import type { ProductInput } from "@/lib/validations"
@@ -79,8 +80,14 @@ export function ProductForm({
   }
   const money = (n: number) => formatMoney(n, currency)
 
-  const profit = v.price - v.cost
+  // Si el negocio cobra IVA, los precios y costos van con IVA incluido (así se calcula el F29).
+  // Lo que de verdad ganas es sin IVA: el IVA de la venta se paga al SII (descontando el de la compra).
+  const vat = useSalesVat()
+  const rate = vat?.rate ? vat.rate : 0
+  const profit = Math.round((v.price - v.cost) / (1 + rate))
   const margin = marginRatio(v.price, v.cost)
+  const net = Math.round(v.price / (1 + rate))
+  const [vatAdded, setVatAdded] = React.useState(false)
   const ref = referenceAmount(currency)
 
   function submit(e: React.FormEvent) {
@@ -171,18 +178,52 @@ export function ProductForm({
         </div>
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="¿Cuánto te cuesta?" hint="Lo que pagas al proveedor por unidad." error={errors.cost}>
+        <Field label="¿Cuánto te cuesta?" hint={rate ? `Lo que pagas al proveedor por unidad, con ${vat!.label}.` : "Lo que pagas al proveedor por unidad."} error={errors.cost}>
           <MoneyInput value={v.cost} onValueChange={(n) => set("cost", n)} currency={currency} aria-label="Costo" />
         </Field>
-        <Field label="¿A cuánto lo vendes?" error={errors.price}>
-          <MoneyInput value={v.price} onValueChange={(n) => set("price", n)} currency={currency} aria-label="Precio de venta" />
+        <Field label="¿A cuánto lo vendes?" hint={rate ? `Precio final al cliente, con ${vat!.label} incluido.` : undefined} error={errors.price}>
+          <MoneyInput
+            value={v.price}
+            onValueChange={(n) => {
+              set("price", n)
+              setVatAdded(false)
+            }}
+            currency={currency}
+            aria-label="Precio de venta"
+          />
         </Field>
       </div>
+      {rate && v.price > 0 ? (
+        <div className="space-y-1 rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+          <p>
+            Precio con {vat!.label}: <span className="tabular font-medium text-foreground">{money(v.price)}</span> · neto{" "}
+            <span className="tabular">{money(net)}</span> + {vat!.label} <span className="tabular">{money(v.price - net)}</span>
+          </p>
+          {vatAdded ? (
+            <p className="text-emerald-700 dark:text-emerald-400">Listo: le sumamos el {vat!.label} al precio.</p>
+          ) : (
+            <p>
+              ¿Escribiste el precio sin {vat!.label}?{" "}
+              <button
+                type="button"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+                onClick={() => {
+                  set("price", Math.round(v.price * (1 + rate)))
+                  setVatAdded(true)
+                }}
+              >
+                Súmale el {vat!.label} ({Math.round(rate * 100)} %)
+              </button>
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {v.price > 0 ? (
         profit > 0 ? (
           <Explainer title={`Ganas ${money(profit)} por unidad · margen ${formatPercent(margin, 0)}`}>
-            Por cada unidad vendida ganas aproximadamente {money(profit)}. El margen de {formatPercent(margin, 0)}{" "}
+            Por cada unidad vendida ganas aproximadamente {money(profit)}
+            {rate ? `, ya sin el ${vat!.label}, que se declara y paga cada mes` : ""}. El margen de {formatPercent(margin, 0)}{" "}
             significa que por cada {money(ref)} vendidos de este producto, unos {money(Math.round(ref * margin))} quedan
             antes de otros gastos.
           </Explainer>

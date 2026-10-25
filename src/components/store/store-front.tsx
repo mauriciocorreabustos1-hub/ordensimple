@@ -1,14 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, Loader2, Minus, Plus, Search, ShoppingBasket } from "lucide-react"
+import { CheckCircle2, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatMoney } from "@/lib/currency"
-import { orderWhatsappText } from "@/lib/store"
+import { orderTrackPath, orderWhatsappText } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
 import { createWebOrder, previewCoupon } from "@/server/actions/store"
@@ -18,6 +18,27 @@ import { ProductImage } from "@/components/products/product-image"
 export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null }
 
 const CART_KEY = (slug: string) => `ordensimple-carro-${slug}`
+/** Pedidos hechos desde este teléfono, para volver a ver en qué van. */
+const ORDERS_KEY = (slug: string) => `ordensimple-pedidos-${slug}`
+const ORDERS_DAYS = 14
+
+type Done = { link: string; code: string; track: string }
+type RecentOrder = { code: string; track: string; at: number }
+
+function readRecent(slug: string): RecentOrder[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(ORDERS_KEY(slug)) ?? "[]") as RecentOrder[]
+    return Array.isArray(list) ? list.filter((o) => o && typeof o.track === "string" && Date.now() - o.at < ORDERS_DAYS * 86_400_000).slice(0, 3) : []
+  } catch {
+    return []
+  }
+}
+
+function saveRecent(slug: string, order: RecentOrder) {
+  try {
+    localStorage.setItem(ORDERS_KEY(slug), JSON.stringify([order, ...readRecent(slug)].slice(0, 3)))
+  } catch {}
+}
 
 /** Catálogo público: el cliente arma su pedido y lo envía por WhatsApp (queda guardado para el negocio). */
 export function StoreFront({
@@ -47,7 +68,12 @@ export function StoreFront({
   const [category, setCategory] = React.useState<string | null>(null)
   const [cart, setCart] = React.useState<Record<string, number>>({})
   const [checkout, setCheckout] = React.useState(false)
-  const [done, setDone] = React.useState<{ link: string; code: string } | null>(null)
+  const [done, setDone] = React.useState<Done | null>(null)
+  const [recent, setRecent] = React.useState<RecentOrder[]>([])
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage solo existe en el navegador
+    setRecent(readRecent(slug))
+  }, [slug])
 
   // El carro se recuerda en este teléfono por si cierran la página sin querer.
   React.useEffect(() => {
@@ -135,6 +161,23 @@ export function StoreFront({
 
   return (
     <>
+      {recent.length ? (
+        <div className="space-y-1.5 rounded-xl border bg-background px-4 py-3 text-sm">
+          <p className="flex items-center gap-2 font-medium">
+            <PackageSearch className="size-4 text-primary" />
+            {recent.length === 1 ? "Tu pedido" : "Tus pedidos"}
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {recent.map((o) => (
+              <li key={o.track}>
+                <a href={orderTrackPath(o.track)} className="inline-flex rounded-lg bg-primary/10 px-3 py-1.5 font-medium text-primary hover:bg-primary/15">
+                  Ver en qué va el n.º {o.code}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {table ? (
         <p className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary">🍽️ Estás en {table}. Elige lo que quieras y envía tu pedido: te lo llevamos a la mesa.</p>
       ) : null}
@@ -241,6 +284,8 @@ export function StoreFront({
           onDone={(d) => {
             setDone(d)
             setCart({})
+            saveRecent(slug, { code: d.code, track: d.track, at: Date.now() })
+            setRecent(readRecent(slug))
           }}
           onClose={() => {
             setCheckout(false)
@@ -278,8 +323,8 @@ function Checkout({
   money: (n: number) => string
   lines: (StoreProduct & { quantity: number })[]
   total: number
-  done: { link: string; code: string } | null
-  onDone: (d: { link: string; code: string }) => void
+  done: Done | null
+  onDone: (d: Done) => void
   onClose: () => void
 }) {
   const [name, setName] = React.useState("")
@@ -348,9 +393,10 @@ function Checkout({
         promos: r.data.promos,
         coupon: r.data.coupon,
         table: r.data.table,
+        trackUrl: `${window.location.origin}${orderTrackPath(r.data.track)}`,
       })
       const link = whatsappLink(r.data.whatsapp, text)
-      onDone({ link, code: r.data.code })
+      onDone({ link, code: r.data.code, track: r.data.track })
       // En el celular se abre WhatsApp directo; si el navegador no lo deja, queda el botón.
       window.location.href = link
     })
@@ -370,6 +416,13 @@ function Checkout({
               Enviar por WhatsApp
             </a>
           </Button>
+          <Button asChild variant="outline" className="w-full">
+            <a href={orderTrackPath(done.track)}>
+              <PackageSearch />
+              Ver en qué va mi pedido
+            </a>
+          </Button>
+          <p className="text-xs text-muted-foreground">El enlace también va en tu mensaje de WhatsApp, para revisarlo cuando quieras.</p>
           <Button variant="ghost" onClick={onClose}>
             Seguir mirando
           </Button>

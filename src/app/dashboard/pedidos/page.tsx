@@ -66,6 +66,8 @@ export default async function WebOrdersPage() {
     promoDiscount: o.promoDiscount,
     couponCode: o.couponCode,
     couponDiscount: o.couponDiscount,
+    trackToken: o.trackToken,
+    stage: o.stage,
   }))
 
   return (

@@ -83,20 +83,20 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  twoFactors    TwoFactor[]
-  memberships   BusinessMember[]
-  pushSubscriptions PushSubscription[]
-  appointmentsAttended Appointment[] @relation("AppointmentStaff")
-  shiftsOpened  CashShift[]      @relation("ShiftOpenedBy")
-  shiftsClosed  CashShift[]      @relation("ShiftClosedBy")
-  sales         Sale[]
-  expenses      Expense[]
-  movements     InventoryMovement[]
-  notifications Notification[]
-  adminNotes    AdminNote[]
-  photo         UserPhoto?
+  sessions             Session[]
+  accounts             Account[]
+  twoFactors           TwoFactor[]
+  memberships          BusinessMember[]
+  pushSubscriptions    PushSubscription[]
+  appointmentsAttended Appointment[]       @relation("AppointmentStaff")
+  shiftsOpened         CashShift[]         @relation("ShiftOpenedBy")
+  shiftsClosed         CashShift[]         @relation("ShiftClosedBy")
+  sales                Sale[]
+  expenses             Expense[]
+  movements            InventoryMovement[]
+  notifications        Notification[]
+  adminNotes           AdminNote[]
+  photo                UserPhoto?
 
   @@map("user")
 }
@@ -196,6 +196,7 @@ model Business {
   cashClosings      CashClosing[]
   cashShifts        CashShift[]
   webOrders         WebOrder[]
+  quotes            Quote[]
   promotions        Promotion[]
   storeCoupons      StoreCoupon[]
   appointments      Appointment[]
@@ -203,8 +204,8 @@ model Business {
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
   subscriptions     Subscription[]
-  referralsMade     Referral[]          @relation("ReferralReferrer")
-  referredBy        Referral?           @relation("ReferralReferred")
+  referralsMade     Referral[]               @relation("ReferralReferrer")
+  referredBy        Referral?                @relation("ReferralReferred")
   specialLinkUses   SpecialLinkUse[]
   payables          Payable[]
   productBarcodes   ProductBarcode[]
@@ -222,23 +223,23 @@ model Business {
   /// Cuándo se cambió el logo (null = sin logo). Sirve para saber si hay y para que el navegador no muestre uno viejo.
   logoUpdatedAt     DateTime?
   /// Código para el enlace "Invita a un amigo" (se crea la primera vez que se abre esa página).
-  referralCode      String?             @unique
+  referralCode      String?                  @unique
 
   @@map("business")
 }
 
 model BusinessMember {
-  id         String   @id @default(cuid())
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role       Role     @default(EMPLOYEE)
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role     @default(EMPLOYEE)
   /// Meta de ventas del mes y comisión (% sobre lo que vende, menos devoluciones). Null = sin meta / sin comisión.
   monthlyGoal    Int?
   commissionRate Float?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([businessId, userId])
   @@index([userId])
@@ -294,6 +295,15 @@ model BusinessSettings {
   tableExtras           String[]      @default(["Para llevar", "Delivery"])
   /// Los empleados solo venden productos guardados (sin venta rápida ni productos escritos a mano): así todo descuento pasa por aprobación.
   employeesProductsOnly Boolean       @default(true)
+  /// Datos del negocio que salen en las cotizaciones (y en otros documentos para el cliente).
+  taxId                 String?
+  address               String?
+  contactPhone          String?
+  contactEmail          String?
+  /// Condiciones que van al pie de cada cotización (forma de pago, plazo de entrega…).
+  quoteTerms            String?
+  /// Cuántos días vale una cotización nueva.
+  quoteValidDays        Int           @default(15)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
@@ -316,29 +326,29 @@ model Category {
 }
 
 model Product {
-  id         String    @id @default(cuid())
-  businessId String
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name       String
-  sku        String?
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  cost       Int       @default(0)
-  price      Int       @default(0)
-  stock      Int       @default(0)
-  minStock   Int       @default(0)
-  trackStock Boolean   @default(true)
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  sku         String?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  cost        Int       @default(0)
+  price       Int       @default(0)
+  stock       Int       @default(0)
+  minStock    Int       @default(0)
+  trackStock  Boolean   @default(true)
   /// Foto del producto (Vercel Blob, ya achicada en el celular). Se muestra en la tienda online, al vender y en Productos.
-  imageUrl   String?
+  imageUrl    String?
   /// Próximo vencimiento del stock (para avisar lo que está por vencer).
-  expiresAt  DateTime?
+  expiresAt   DateTime?
   /// Servicio (corte, consulta, clase…): no lleva stock, se agenda y se reserva. Los productos son lo demás.
-  isService  Boolean   @default(false)
+  isService   Boolean   @default(false)
   /// Servicios: cuánto dura (minutos), para la Agenda.
   durationMin Int?
-  active     Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   saleItems SaleItem[]
   movements InventoryMovement[]
@@ -349,6 +359,7 @@ model Product {
   /// Recetas que fijan el precio y el costo de este producto.
   recipes      Recipe[]
   appointments Appointment[]
+
   @@unique([businessId, sku])
   @@index([businessId, active])
   @@index([categoryId])
@@ -375,25 +386,25 @@ model Sale {
   /// Id que pone el teléfono: si la venta se guardó sin internet y se reintenta, no se duplica.
   clientId      String?
 
-  items     SaleItem[]
-  movements InventoryMovement[]
+  items             SaleItem[]
+  movements         InventoryMovement[]
   /// Materiales de recetas que se descontaron con esta venta.
   materialMovements RecipeMaterialMovement[]
-  comanda   Comanda?
+  comanda           Comanda?
   /// Descuento sobre el total de los productos (el total ya lo tiene restado). Quién lo pidió y aprobó: discountRequest.
-  discount  Int       @default(0)
+  discount          Int                      @default(0)
   /// Propina (restaurantes). No es venta del negocio: va aparte del total, pero si fue en efectivo está en la caja.
-  tip       Int       @default(0)
-  discountRequest DiscountRequest?
+  tip               Int                      @default(0)
+  discountRequest   DiscountRequest?
   /// Si esta venta es una devolución (venta en negativo), la venta original.
-  returnOfId     String?
-  returnOf       Sale?        @relation("SaleReturnOf", fields: [returnOfId], references: [id], onDelete: SetNull)
-  returnedBy     Sale[]       @relation("SaleReturnOf")
-  returnRequests SaleReturn[] @relation("ReturnRequests")
-  returnRecord   SaleReturn?  @relation("ReturnSale")
+  returnOfId        String?
+  returnOf          Sale?                    @relation("SaleReturnOf", fields: [returnOfId], references: [id], onDelete: SetNull)
+  returnedBy        Sale[]                   @relation("SaleReturnOf")
+  returnRequests    SaleReturn[]             @relation("ReturnRequests")
+  returnRecord      SaleReturn?              @relation("ReturnSale")
   /// Descuento de promociones automáticas (2×1, %…) y cupones; el total ya lo tiene restado. Detalle en `promotions`.
-  promoDiscount  Int          @default(0)
-  promotions     SalePromotion[]
+  promoDiscount     Int                      @default(0)
+  promotions        SalePromotion[]
 
   @@unique([businessId, clientId])
   @@index([businessId, date])
@@ -471,18 +482,19 @@ model Expense {
 // ─── Contactos ──────────────────────────────────────────────────────────────
 
 model Customer {
-  id         String            @id @default(cuid())
-  businessId String
-  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name       String
-  phone      String?
-  email      String?
-  notes      String?
-  sales      Sale[]
-  payments   CustomerPayment[]
+  id           String            @id @default(cuid())
+  businessId   String
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String?
+  email        String?
+  notes        String?
+  sales        Sale[]
+  payments     CustomerPayment[]
   appointments Appointment[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  quotes       Quote[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([businessId])
   @@map("customer")
@@ -654,32 +666,32 @@ enum AppointmentStatus {
 
 /// Cita de la Agenda (peluquerías, consultas, talleres…). Al cobrarla se vuelve una venta.
 model Appointment {
-  id           String            @id @default(cuid())
-  businessId   String
-  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customerId   String?
-  customer     Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  customerName String
+  id            String            @id @default(cuid())
+  businessId    String
+  business      Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName  String
   customerPhone String?
-  productId    String?
-  product      Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId     String?
+  product       Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
   /// Nombre y precio del servicio al agendar (si después cambia el precio, la cita conserva el suyo).
-  serviceName  String
-  price        Int
+  serviceName   String
+  price         Int
   /// Quién atiende (alguien del equipo). Vacío = cualquiera.
-  staffId      String?
-  staff        User?             @relation("AppointmentStaff", fields: [staffId], references: [id], onDelete: SetNull)
-  startAt      DateTime
-  endAt        DateTime
-  status       AppointmentStatus @default(SCHEDULED)
-  note         String?
-  saleId       String?           @unique
-  createdById  String?
-  remindedAt   DateTime?
+  staffId       String?
+  staff         User?             @relation("AppointmentStaff", fields: [staffId], references: [id], onDelete: SetNull)
+  startAt       DateTime
+  endAt         DateTime
+  status        AppointmentStatus @default(SCHEDULED)
+  note          String?
+  saleId        String?           @unique
+  createdById   String?
+  remindedAt    DateTime?
   /// APP (la agendó el negocio) u ONLINE (la reservó el cliente en la página del negocio).
-  source       String            @default("APP")
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  source        String            @default("APP")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([businessId, startAt])
   @@index([staffId, startAt])
@@ -693,33 +705,33 @@ enum PromotionKind {
 
 /// Promoción automática: se aplica sola al vender, en las comandas y en la tienda online si se cumplen sus condiciones.
 model Promotion {
-  id          String        @id @default(cuid())
-  businessId  String
-  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name        String
-  kind        PromotionKind
+  id         String        @id @default(cuid())
+  businessId String
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  kind       PromotionKind
   /// PERCENT: cuánto % se descuenta.
-  percent     Int?
+  percent    Int?
   /// BUY_X_PAY_Y: lleva X, paga Y (2×1 = lleva 2 paga 1).
-  buyQty      Int?
-  payQty      Int?
+  buyQty     Int?
+  payQty     Int?
   /// ALL (todo), PRODUCTS (los de productIds) o CATEGORY (los de categoryId).
-  scope       String        @default("ALL")
-  productIds  String[]      @default([])
-  categoryId  String?
-  startsAt    DateTime?
-  endsAt      DateTime?
+  scope      String        @default("ALL")
+  productIds String[]      @default([])
+  categoryId String?
+  startsAt   DateTime?
+  endsAt     DateTime?
   /// Días de la semana (0 = domingo). Vacío = todos los días.
-  weekdays    Int[]         @default([])
+  weekdays   Int[]         @default([])
   /// Horario (minutos desde las 00:00, hora del negocio). Vacío = todo el día. Sirve para el happy hour.
-  fromMinute  Int?
-  toMinute    Int?
+  fromMinute Int?
+  toMinute   Int?
   /// Dónde se aplica: al vender en el local (ventas y comandas) y en la tienda online.
-  inStore     Boolean       @default(true)
-  online      Boolean       @default(true)
-  active      Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  inStore    Boolean       @default(true)
+  online     Boolean       @default(true)
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   sales SalePromotion[]
 
@@ -769,6 +781,14 @@ enum WebOrderStatus {
   CANCELLED
 }
 
+/// En qué va el pedido, para el cliente (lo ve en el enlace de seguimiento).
+enum WebOrderStage {
+  RECEIVED
+  PREPARING
+  READY
+  DELIVERED
+}
+
 /// Pedido hecho desde la tienda online. Los precios se toman del sistema al pedir; al aceptarlo se vuelve venta o comanda.
 model WebOrder {
   id            String         @id @default(cuid())
@@ -792,40 +812,88 @@ model WebOrder {
   createdAt     DateTime       @default(now())
 
   /// Promociones y cupón del pedido (el total ya los tiene restados).
-  promoDiscount Int            @default(0)
+  promoDiscount  Int     @default(0)
   /// [{ promotionId, name, amount }]
-  promos        Json?
-  couponCode    String?
-  couponDiscount Int           @default(0)
+  promos         Json?
+  couponCode     String?
+  couponDiscount Int     @default(0)
+
+  /// Enlace de seguimiento (/pedido/<trackToken>): el cliente ve en qué va su pedido sin preguntar.
+  trackToken String        @unique
+  stage      WebOrderStage @default(RECEIVED)
+  /// Cuándo pasó a cada etapa: { PREPARING: iso, READY: iso, DELIVERED: iso }.
+  stageTimes Json?
 
   @@index([businessId, status, createdAt])
   @@map("web_order")
 }
 
+enum QuoteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SOLD
+}
+
+/// Cotización para un cliente: se comparte con un enlace (/cotizacion/<token>) donde la puede aceptar o rechazar.
+/// Los precios quedan fijos al cotizar; al venderla se vuelve una venta con esos mismos precios.
+model Quote {
+  id            String      @id @default(cuid())
+  businessId    String
+  business      Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Correlativo del negocio (Cotización N.º 1, 2, 3…).
+  number        Int
+  token         String      @unique
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName  String
+  customerPhone String?
+  customerEmail String?
+  /// [{ productId, description, quantity, unitPrice }]
+  items         Json
+  subtotal      Int
+  discount      Int         @default(0)
+  total         Int
+  note          String?
+  validUntil    DateTime
+  status        QuoteStatus @default(PENDING)
+  /// Cuándo la abrió el cliente por primera vez.
+  viewedAt      DateTime?
+  respondedAt   DateTime?
+  saleId        String?
+  createdById   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([businessId, number])
+  @@index([businessId, status, createdAt])
+  @@map("quote")
+}
+
 /// Turno de caja (mañana, tarde…): quien abre deja el sencillo y al cerrar cuenta el efectivo.
 /// Cuenta lo que pasó entre openedAt y closedAt. Hay un solo turno abierto a la vez por negocio.
 model CashShift {
-  id          String    @id @default(cuid())
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  openedById  String?
-  openedBy    User?     @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
-  openedAt    DateTime  @default(now())
-  opening     Int
-  closedById  String?
-  closedBy    User?     @relation("ShiftClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
-  closedAt    DateTime?
-  salesTotal  Int       @default(0)
-  salesCount  Int       @default(0)
-  cashSales   Int       @default(0)
-  cashIn      Int       @default(0)
-  cashOut     Int       @default(0)
-  expected    Int       @default(0)
-  counted     Int?
-  difference  Int?
-  note        String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  openedById String?
+  openedBy   User?     @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
+  openedAt   DateTime  @default(now())
+  opening    Int
+  closedById String?
+  closedBy   User?     @relation("ShiftClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  closedAt   DateTime?
+  salesTotal Int       @default(0)
+  salesCount Int       @default(0)
+  cashSales  Int       @default(0)
+  cashIn     Int       @default(0)
+  cashOut    Int       @default(0)
+  expected   Int       @default(0)
+  counted    Int?
+  difference Int?
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([businessId, openedAt])
   @@map("cash_shift")
@@ -1250,28 +1318,28 @@ model Comanda {
 }
 
 model ComandaItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   comandaId   String
-  comanda     Comanda  @relation(fields: [comandaId], references: [id], onDelete: Cascade)
+  comanda     Comanda   @relation(fields: [comandaId], references: [id], onDelete: Cascade)
   productId   String?
-  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product     Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
   description String
   quantity    Int
   unitPrice   Int
   /// "sin mayo", "para llevar"…
   note        String?
   /// Cuántas se enviaron a la cocina (lo que se agrega después espera a que el garzón lo envíe).
-  sentQty     Int      @default(0)
+  sentQty     Int       @default(0)
   /// Cuándo se envió a la cocina por última vez (la cocina ordena y avisa según esto).
   sentAt      DateTime?
   /// Cuántas de estas ya marcó la cocina como listas (si agregan más, lo nuevo vuelve a la cocina).
-  readyQty    Int      @default(0)
+  readyQty    Int       @default(0)
   /// Cuántas ya se pagaron (cuando cada uno paga lo suyo). Lo que falta cobrar es quantity - paidQty.
-  paidQty     Int      @default(0)
+  paidQty     Int       @default(0)
   /// De quién es (Persona 1, 2, 3…), para separar la cuenta. Null: sin persona o para compartir.
   person      Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   @@index([comandaId])
   @@index([productId])
@@ -1358,9 +1426,9 @@ model SaleReturn {
 
 /// Material o insumo de las recetas (harina, levadura, aceite…): lo que trae el paquete que compras, su precio y cuánto tienes.
 model RecipeMaterial {
-  id         String       @id @default(cuid())
+  id         String                   @id @default(cuid())
   businessId String
-  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business   Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name       String
   /// Medida: g, kg, ml, l o u (unidades).
   unit       String
@@ -1374,8 +1442,8 @@ model RecipeMaterial {
   expiresAt  DateTime?
   items      RecipeItem[]
   movements  RecipeMaterialMovement[]
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  createdAt  DateTime                 @default(now())
+  updatedAt  DateTime                 @updatedAt
 
   @@unique([businessId, name])
   @@map("recipe_material")

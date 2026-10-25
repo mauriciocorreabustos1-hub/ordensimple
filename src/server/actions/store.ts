@@ -1,6 +1,6 @@
 "use server"
 
-import { randomUUID } from "node:crypto"
+import { randomBytes, randomUUID } from "node:crypto"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/currency"
 import { businessManagers, sendPush } from "@/server/push"
 import { isFoodBusiness } from "@/lib/business-kind"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
-import { RESERVED_SLUGS } from "@/lib/store"
+import { ORDER_STAGES, RESERVED_SLUGS, type OrderStage } from "@/lib/store"
 import { idSchema, paymentMethod as paymentMethodSchema, storeSettingsSchema, webOrderSchema, type StoreSettingsInput, type WebOrderInput } from "@/lib/validations"
 import { allowAttempt } from "@/server/rate-limit"
 import { applyStock, buildLines, lineData, linkPromotions, MAX_TOTAL, promotionsFor } from "@/server/sale-core"
@@ -70,6 +70,8 @@ export type WebOrderResult = {
   /** Mesa reconocida (pedido desde la carta QR), o null. */
   table: string | null
   items: { name: string; quantity: number; unitPrice: number }[]
+  /** Para el enlace de seguimiento (/pedido/<track>). */
+  track: string
 }
 
 /** Lo que cambió entre lo que veía el cliente y lo que vale ahora (promociones que terminaron o empezaron). */
@@ -161,8 +163,10 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
           promos: promo.applied,
           couponCode: coupon?.code ?? null,
           couponDiscount: coupon?.amount ?? 0,
+          // Enlace de seguimiento: aleatorio, para que nadie pueda ver pedidos ajenos.
+          trackToken: randomBytes(18).toString("base64url"),
         },
-        select: { id: true },
+        select: { id: true, trackToken: true },
       })
     })
     const count = orderItems.reduce((s, i) => s + i.quantity, 0)
@@ -186,6 +190,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
         total,
         table,
         items: orderItems.map(({ name, quantity, unitPrice }) => ({ name, quantity, unitPrice })),
+        track: order.trackToken,
       },
     }
   } catch (error) {
@@ -205,6 +210,32 @@ async function loadOrder(businessId: string, id: string) {
 async function claim(tx: Pick<typeof db, "webOrder">, id: string, userId: string, data: { saleId?: string; comandaId?: string; status: "DONE" | "CANCELLED" }) {
   const r = await tx.webOrder.updateMany({ where: { id, status: "NEW" }, data: { ...data, handledById: userId, handledAt: new Date() } })
   if (r.count !== 1) throw new Error("ORDER_HANDLED")
+  // Aceptado: para el cliente, el pedido pasa a "En preparación" (si todavía decía "Recibido").
+  if (data.status === "DONE") {
+    await tx.webOrder.updateMany({ where: { id, stage: "RECEIVED" }, data: { stage: "PREPARING", stageTimes: { PREPARING: new Date().toISOString() } } })
+  }
+}
+
+/**
+ * En qué va el pedido (lo ve el cliente en su enlace de seguimiento). Se puede avanzar o corregir,
+ * pero no en un pedido descartado.
+ */
+export async function setWebOrderStage(id: string, stage: OrderStage): Promise<ActionResult> {
+  const ctx = await requireBusiness()
+  if (!idSchema.safeParse(id).success || !ORDER_STAGES.includes(stage)) return { ok: false, message: "Pedido no encontrado." }
+  try {
+    assertCan(ctx, "sales:create")
+    if (!canUseFeature(ctx.business.plan, "store")) return { ok: false, message: PRO_ONLY }
+    const order = await db.webOrder.findFirst({ where: { id, businessId: ctx.businessId }, select: { status: true, stageTimes: true } })
+    if (!order) return { ok: false, message: "Pedido no encontrado." }
+    if (order.status === "CANCELLED") return { ok: false, message: "Este pedido se descartó." }
+    const times = { ...((order.stageTimes as Record<string, string> | null) ?? {}), [stage]: new Date().toISOString() }
+    await db.webOrder.update({ where: { id }, data: { stage, stageTimes: times } })
+  } catch (error) {
+    return toActionError(error)
+  }
+  revalidatePath("/dashboard/pedidos")
+  return { ok: true }
 }
 
 const HANDLED = "Este pedido ya lo atendió otra persona. Recarga la página."

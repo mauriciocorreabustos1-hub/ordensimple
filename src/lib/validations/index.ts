@@ -476,6 +476,37 @@ export const webOrderSchema = z.object({
 })
 export type WebOrderInput = z.input<typeof webOrderSchema>
 
+// ─── Cotizaciones ───────────────────────────────────────────────────────────
+
+export const quoteSchema = z
+  .object({
+    /** Cliente guardado (opcional): si viene, se toman su nombre y contacto. */
+    customerId: z.string().min(1).max(64).optional(),
+    customerName: z.string().trim().min(2, "Escribe el nombre del cliente").max(80, "Máximo 80 caracteres"),
+    customerPhone: phone,
+    customerEmail: email,
+    items: z.array(saleItemSchema).min(1, "Agrega al menos un producto o servicio").max(60, "Máximo 60 líneas"),
+    discount: money.optional(),
+    note: optionalText(600),
+    validDays: z.number().int().min(1, "Mínimo 1 día").max(365, "Máximo 365 días"),
+  })
+  .refine((d) => !d.discount || d.discount < d.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0), {
+    message: "El descuento no puede ser igual o mayor que el total.",
+    path: ["discount"],
+  })
+export type QuoteInput = z.input<typeof quoteSchema>
+
+/** Datos del negocio que salen en las cotizaciones. */
+export const quoteInfoSchema = z.object({
+  taxId: optionalText(20),
+  address: optionalText(160),
+  contactPhone: phone,
+  contactEmail: email,
+  quoteTerms: optionalText(600),
+  quoteValidDays: z.number().int().min(1, "Mínimo 1 día").max(365, "Máximo 365 días"),
+})
+export type QuoteInfoInput = z.input<typeof quoteInfoSchema>
+
 // ─── Descuentos ─────────────────────────────────────────────────────────────
 
 export const discountRequestSchema = z.object({

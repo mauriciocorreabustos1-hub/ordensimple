@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Check, ClipboardList, Loader2, MessageCircle, Trash2, Truck, X } from "lucide-react"
+import { Check, ClipboardList, Link2, Loader2, MessageCircle, Trash2, Truck, X } from "lucide-react"
 import { toast } from "sonner"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { AppModal } from "@/components/app/app-modal"
@@ -11,10 +11,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
-import { orderReplyText } from "@/lib/store"
+import { ORDER_STAGES, orderReplyText, orderStageLabel, orderStageText, orderTrackPath, type OrderStage } from "@/lib/store"
 import { whatsappLink } from "@/lib/whatsapp"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
-import { acceptWebOrderAsComanda, acceptWebOrderAsSale, cancelWebOrder, deleteWebOrders } from "@/server/actions/store"
+import { acceptWebOrderAsComanda, acceptWebOrderAsSale, cancelWebOrder, deleteWebOrders, setWebOrderStage } from "@/server/actions/store"
 
 export type WebOrderRow = {
   id: string
@@ -33,7 +33,12 @@ export type WebOrderRow = {
   promoDiscount: number
   couponCode: string | null
   couponDiscount: number
+  /** Enlace de seguimiento que ve el cliente. */
+  trackToken: string
+  stage: OrderStage
 }
+
+const trackUrl = (o: WebOrderRow) => `${window.location.origin}${orderTrackPath(o.trackToken)}`
 
 const POLL_MS = 20_000
 
@@ -78,7 +83,9 @@ export function WebOrdersList({
   }
 
   const fresh = orders.filter((o) => o.status === "NEW")
-  const past = orders.filter((o) => o.status !== "NEW")
+  // Aceptados que todavía no se entregan: el cliente los sigue en su enlace.
+  const ongoing = orders.filter((o) => o.status === "DONE" && o.stage !== "DELIVERED")
+  const past = orders.filter((o) => o.status !== "NEW" && !ongoing.includes(o))
   const discarded = past.filter((o) => o.status === "CANCELLED")
 
   return (
@@ -132,6 +139,7 @@ export function WebOrdersList({
                 <span className="text-sm text-muted-foreground">Total</span>
                 <span className="tabular text-lg font-semibold">{money(o.total)}</span>
               </div>
+              <StageControl order={o} businessName={businessName} />
               <div className="flex flex-wrap gap-2">
                 <Button className="flex-1" onClick={() => setSelling(o)} disabled={busy === o.id}>
                   <Check />
@@ -145,7 +153,13 @@ export function WebOrdersList({
                 ) : null}
                 {o.customerPhone ? (
                   <Button variant="outline" size="icon" asChild aria-label={`Escribirle a ${o.customerName} por WhatsApp`}>
-                    <a href={whatsappLink(o.customerPhone, orderReplyText(o.customerName, o.code, businessName))} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={whatsappLink(o.customerPhone, orderReplyText(o.customerName, o.code, businessName))}
+                      // Con el enlace de seguimiento (se arma al tocar, con la dirección de esta página).
+                      onClick={(e) => (e.currentTarget.href = whatsappLink(o.customerPhone, orderReplyText(o.customerName, o.code, businessName, trackUrl(o))))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <MessageCircle />
                     </a>
                   </Button>
@@ -174,6 +188,32 @@ export function WebOrdersList({
           ))}
         </ul>
       )}
+
+      {ongoing.length ? (
+        <div className="space-y-2">
+          <div>
+            <p className="text-sm font-medium">En curso</p>
+            <p className="text-xs text-muted-foreground">Ya registrados. Avanza cada pedido y tu cliente lo ve en su enlace de seguimiento.</p>
+          </div>
+          <ul className="grid gap-3 md:grid-cols-2">
+            {ongoing.map((o) => (
+              <li key={o.id} className="space-y-3 rounded-2xl border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold">{o.customerName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      N.º {o.code} · {when(o.createdAt)} · {o.asComanda ? "Comanda" : "Vendido"}
+                    </p>
+                  </div>
+                  <span className="tabular shrink-0 font-semibold">{money(o.total)}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{o.items.map((i) => `${i.quantity} × ${i.name}`).join(", ")}</p>
+                <StageControl order={o} businessName={businessName} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {past.length ? (
         <div className="space-y-2">
@@ -237,6 +277,100 @@ export function WebOrdersList({
           }}
         />
       ) : null}
+    </div>
+  )
+}
+
+/** En qué va el pedido (lo que ve el cliente), avisarle por WhatsApp y copiar su enlace de seguimiento. */
+function StageControl({ order, businessName }: { order: WebOrderRow; businessName: string }) {
+  const router = useRouter()
+  const [stage, setStage] = React.useState(order.stage)
+  const [pending, startTransition] = React.useTransition()
+  // Si otra persona lo cambió (al recargar), se muestra lo nuevo.
+  const [seen, setSeen] = React.useState(order.stage)
+  if (seen !== order.stage) {
+    setSeen(order.stage)
+    setStage(order.stage)
+  }
+
+  function choose(next: OrderStage) {
+    if (next === stage) return
+    const before = stage
+    setStage(next)
+    startTransition(async () => {
+      const r = await setWebOrderStage(order.id, next)
+      if (!r.ok) {
+        setStage(before)
+        return void toast.error(r.message)
+      }
+      const label = orderStageLabel(next, order)
+      toast.success(order.customerPhone ? `${label}. Avísale a ${order.customerName.split(" ")[0]} por WhatsApp.` : label)
+      router.refresh()
+    })
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(trackUrl(order))
+      toast.success("Enlace de seguimiento copiado")
+    } catch {
+      toast.error("No se pudo copiar el enlace.")
+    }
+  }
+
+  function notify() {
+    const text = orderStageText({
+      customerName: order.customerName,
+      code: order.code,
+      businessName,
+      stage,
+      delivery: order.delivery,
+      table: order.table,
+      trackUrl: trackUrl(order),
+    })
+    window.open(whatsappLink(order.customerPhone, text), "_blank", "noopener,noreferrer")
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl bg-muted/50 p-2.5">
+      <p className="text-xs font-medium text-muted-foreground">Lo que ve el cliente en su enlace</p>
+      <div role="radiogroup" aria-label="Etapa del pedido" className="grid grid-cols-4 gap-1">
+        {ORDER_STAGES.map((s, i) => {
+          const reached = ORDER_STAGES.indexOf(stage) >= i
+          return (
+            <button
+              key={s}
+              type="button"
+              role="radio"
+              aria-checked={stage === s}
+              onClick={() => choose(s)}
+              disabled={pending}
+              className={cn(
+                "rounded-lg border px-1 py-1.5 text-[11px] leading-tight font-medium transition-colors",
+                stage === s
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : reached
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "bg-background text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {orderStageLabel(s, order)}
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {order.customerPhone ? (
+          <Button size="sm" variant="outline" className="h-8" onClick={notify}>
+            <MessageCircle />
+            Avisar por WhatsApp
+          </Button>
+        ) : null}
+        <Button size="sm" variant="ghost" className="h-8" onClick={() => void copy()}>
+          <Link2 />
+          Copiar enlace
+        </Button>
+      </div>
     </div>
   )
 }

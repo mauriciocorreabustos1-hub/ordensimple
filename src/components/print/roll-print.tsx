@@ -75,7 +75,8 @@ export function RollPaper({ id, children }: { id: string; children: React.ReactN
     if (!el) return
     const tickets = [...el.querySelectorAll<HTMLElement>(".ticket")]
     const px = Math.max(...(tickets.length ? tickets : [el]).map((t) => t.offsetHeight))
-    const mm = Math.ceil(px / PX_PER_MM) + 8
+    // Lo justo: el largo de lo impreso, más 1 mm arriba y 2 mm abajo (cada mm de más es papel perdido).
+    const mm = Math.ceil(px / PX_PER_MM) + 3
     if (mm !== heightMm) setHeightMm(mm)
   })
 
@@ -95,7 +96,7 @@ export function RollPaper({ id, children }: { id: string; children: React.ReactN
   @page { size: ${width}mm ${heightMm}mm; margin: 0 }
   body > *:not(#${id}) { display: none !important }
   html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; width: ${width}mm !important; min-width: 0 !important }
-  #${id} { display: block; ${paperCss} margin: 0 ${SIDE_MM}mm; padding-top: 3mm }
+  #${id} { display: block; ${paperCss} margin: 0 ${SIDE_MM}mm; padding-top: 1mm }
   #${id} .ticket { break-after: page; page-break-after: always }
   #${id} .ticket:last-child { break-after: auto; page-break-after: auto }
   #${id} .cut { display: none }

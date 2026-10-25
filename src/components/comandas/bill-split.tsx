@@ -357,24 +357,24 @@ function BillPaper({
         ))}
         {s.promos.map((p, i) => (
           <div key={i} style={row}>
-            <span>{p.name}</span>
-            <span>−{money(p.amount)}</span>
+            <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{p.name}</span>
+            <span style={{ whiteSpace: "nowrap" }}>−{money(p.amount)}</span>
           </div>
         ))}
         {own ? rule : null}
         <div style={{ ...row, fontWeight: 700, fontSize: own ? "1.1em" : "1em" }}>
           <span>{own || !s.title ? "Total" : `Paga ${s.title}`}</span>
-          <span>{money(s.total)}</span>
+          <span style={{ whiteSpace: "nowrap" }}>{money(s.total)}</span>
         </div>
         {tip ? (
           <>
             <div style={row}>
               <span>Propina sugerida 10 %</span>
-              <span>{money(tip)}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{money(tip)}</span>
             </div>
             <div style={{ ...row, fontWeight: 700 }}>
               <span>Con propina</span>
-              <span>{money(s.total + tip)}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{money(s.total + tip)}</span>
             </div>
           </>
         ) : null}
@@ -408,12 +408,12 @@ function BillPaper({
           {sections.map((s) => (
             <div key={s.key} style={row}>
               <span>{s.title}</span>
-              <span>{money(s.total + tipOf(s.total))}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{money(s.total + tipOf(s.total))}</span>
             </div>
           ))}
           <div style={{ ...row, fontWeight: 700, fontSize: "1.1em", marginTop: "1mm" }}>
             <span>Total mesa</span>
-            <span>{money(grand)}</span>
+            <span style={{ whiteSpace: "nowrap" }}>{money(grand)}</span>
           </div>
           {footer}
         </div>
@@ -426,7 +426,7 @@ function BillPaper({
               {equal > 1 ? (
                 <div style={{ ...row, marginTop: "1mm" }}>
                   <span>Entre {equal} personas</span>
-                  <span>{money(Math.ceil((s.total + tipOf(s.total)) / equal))} c/u</span>
+                  <span style={{ whiteSpace: "nowrap" }}>{money(Math.ceil((s.total + tipOf(s.total)) / equal))} c/u</span>
                 </div>
               ) : null}
             </div>

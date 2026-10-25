@@ -270,6 +270,26 @@ export function LabelsBuilder({ products: initial, currency, businessName }: { p
             En la ventana de impresión elige <strong>Tamaño real / escala 100 %</strong> y <strong>sin márgenes</strong>.
             {f.kind === "roll" ? " Elige tu impresora de etiquetas y el tamaño de papel igual al de tus etiquetas." : ""}
           </p>
+          {f.kind === "roll" ? (
+            <details className="rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+              <summary className="cursor-pointer font-medium text-foreground">¿Sale chica, corrida o al centro?</summary>
+              <div className="mt-2 space-y-1.5">
+                <p>
+                  Pasa cuando tu impresora no tiene el tamaño {f.w} × {f.h} mm. Créalo una vez en Windows: Configuración, sección Impresoras, tu impresora,{" "}
+                  <strong>Preferencias de impresión</strong>, Papel o Stock, <strong>Nuevo</strong> (a veces “USER”): ancho {f.w} mm y alto {f.h} mm.
+                </p>
+                <p>
+                  Luego, en la ventana de impresión de Chrome, en <strong>Más opciones</strong>: Tamaño del papel {f.w} × {f.h} mm, Márgenes{" "}
+                  <strong>Ninguno</strong>, Escala <strong>100</strong> y sin encabezados ni pies de página.
+                </p>
+                <p>
+                  Si cada etiqueta se corre un poco, calibra la impresora para que detecte el espacio entre etiquetas (en la mayoría se mantiene apretado el botón
+                  FEED unos segundos).
+                </p>
+                <p>Las impresoras de boletas (rollo de 58 u 80 mm sin stickers) no imprimen etiquetas adhesivas: para eso usa una impresora de etiquetas o las hojas A4.</p>
+              </div>
+            </details>
+          ) : null}
         </div>
       </aside>
 

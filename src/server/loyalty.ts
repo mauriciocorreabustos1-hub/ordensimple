@@ -69,15 +69,18 @@ export async function revertLoyalty(tx: Tx, saleId: string) {
 
 /**
  * Al editar una venta: si el cliente y lo ganado no cambian, no se toca la tarjeta. Si cambian, se descuenta lo
- * anterior y se suma lo nuevo, sin regalar lo que no se pudo descontar (porque ya lo había canjeado).
+ * anterior y se suma lo nuevo. Pero si lo que ganó esta venta ya se canjeó (la tarjeta no alcanza para descontarlo),
+ * la tarjeta queda como está: así nunca se regalan sellos o puntos moviendo la venta de un cliente a otro.
  */
 export async function relinkLoyalty(tx: Tx, ctx: BusinessContext, saleId: string, customerId: string | null | undefined, total: number) {
   const before = await tx.loyaltyMovement.findMany({ where: { saleId }, select: { cardId: true, amount: true } })
   const plan = await planEarn(tx, ctx, customerId, total)
   if (plan && before.length === 1 && before[0].cardId === plan.card.id && before[0].amount === plan.earned) return
   if (!plan && !before.length) return
-  const shortfall = await revertLoyalty(tx, saleId)
-  if (!plan) return
-  const earned = plan.earned - (shortfall.get(plan.card.id) ?? 0)
-  if (earned > 0) await grant(tx, ctx, saleId, plan, earned)
+  for (const m of before) {
+    const card = await tx.loyaltyCard.findUnique({ where: { id: m.cardId }, select: { balance: true } })
+    if (card && card.balance < m.amount) return
+  }
+  await revertLoyalty(tx, saleId)
+  if (plan) await grant(tx, ctx, saleId, plan, plan.earned)
 }

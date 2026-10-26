@@ -11,9 +11,9 @@ import { allowAttempt } from "@/server/rate-limit"
 function safeFirstName(name: string) {
   const token = name.trim().split(/\s+/)[0] ?? ""
   // Algo con puntos, barras o arrobas no es un nombre (parece un enlace o un correo): se saluda sin nombre.
-  if (/[./:@]/.test(token)) return "hola"
+  if (/[./:@]/.test(token)) return ""
   const first = token.replace(/[^\p{L}'-]/gu, "").slice(0, 30)
-  return first.length >= 2 ? first : "hola"
+  return first.length >= 2 ? first : ""
 }
 
 /**

@@ -746,13 +746,15 @@ export function orderConfirmationEmail(d: {
   whatsappUrl?: string | null
 }) {
   const first = (d.customerName.split(" ")[0] || d.customerName).trim()
+  // Sin nombre (si el que escribió no parecía un nombre): "Hola, …".
+  const hello = first ? `Hola ${first}` : "Hola"
   const money = (n: number) => formatMoney(n, d.currency)
   const business = escapeHtml(d.businessName)
   const html = layout({
     preview: `Pedido n.º ${d.code} · ${money(d.total)}. Aquí puedes ver en qué va.`,
     body: [
       h1(d.paid ? "¡Recibimos tu pedido y tu pago!" : "¡Recibimos tu pedido!"),
-      p(`Hola ${escapeHtml(first)}, ${business} recibió tu pedido <strong>n.º ${escapeHtml(d.code)}</strong>.`),
+      p(`${escapeHtml(hello)}, ${business} recibió tu pedido <strong>n.º ${escapeHtml(d.code)}</strong>.`),
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 8px;">${d.items
         .map((i) => statRow(`${i.quantity} × ${escapeHtml(i.name)}`, money(i.quantity * i.unitPrice)))
         .join("")}${statRow("<strong>Total</strong>", money(d.total))}</table>`,
@@ -764,7 +766,7 @@ export function orderConfirmationEmail(d: {
     support: false,
   })
   const text = [
-    `Hola ${first}, ${d.businessName} recibió tu pedido n.º ${d.code}${d.paid ? " y tu pago" : ""}.`,
+    `${hello}, ${d.businessName} recibió tu pedido n.º ${d.code}${d.paid ? " y tu pago" : ""}.`,
     d.items.map((i) => `${i.quantity} × ${i.name}: ${money(i.quantity * i.unitPrice)}`).join("\n"),
     `Total: ${money(d.total)}`,
     d.delivery,

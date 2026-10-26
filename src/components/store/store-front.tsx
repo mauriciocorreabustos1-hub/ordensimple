@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket } from "lucide-react"
+import { CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { orderTrackPath, orderWhatsappText } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
 import { createWebOrder, previewCoupon } from "@/server/actions/store"
+import { payWebOrder } from "@/server/actions/online-payments"
 import { applyPromotions, promoActive, promoBadge, promoHint, type PromoRule } from "@/lib/promotions"
 import { ProductImage } from "@/components/products/product-image"
 
@@ -50,7 +51,10 @@ export function StoreFront({
   timezone = "America/Santiago",
   coupons = false,
   table = null,
+  onlinePay = false,
 }: {
+  /** El negocio recibe pagos online (Mercado Pago). */
+  onlinePay?: boolean
   /** Mesa desde la que abrieron la carta con el QR (el pedido se sirve en la mesa). */
   table?: string | null
   slug: string
@@ -280,6 +284,7 @@ export function StoreFront({
           hints={hints}
           total={total}
           coupons={coupons}
+          onlinePay={onlinePay && !table}
           done={done}
           onDone={(d) => {
             setDone(d)
@@ -308,10 +313,12 @@ function Checkout({
   promos,
   total,
   coupons,
+  onlinePay,
   done,
   onDone,
   onClose,
 }: {
+  onlinePay: boolean
   table: string | null
   gross: number
   /** Promociones "2×1" a medias: qué le falta agregar para aprovecharlas. */
@@ -332,6 +339,8 @@ function Checkout({
   const [delivery, setDelivery] = React.useState(false)
   const [note, setNote] = React.useState("")
   const [website, setWebsite] = React.useState("")
+  const [payNow, setPayNow] = React.useState(onlinePay)
+  const paying = onlinePay && payNow
   const [error, setError] = React.useState<string | null>(null)
   const [pending, startTransition] = React.useTransition()
   const [couponText, setCouponText] = React.useState("")
@@ -397,6 +406,16 @@ function Checkout({
       })
       const link = whatsappLink(r.data.whatsapp, text)
       onDone({ link, code: r.data.code, track: r.data.track })
+      if (paying) {
+        // Pagar ahora: a Mercado Pago. Al volver, ve su pedido pagado (y el negocio recibe el aviso).
+        const pay = await payWebOrder(r.data.track)
+        if (pay.ok && pay.data) {
+          window.location.href = pay.data.url
+          return
+        }
+        setError(pay.message ?? "No se pudo iniciar el pago. Envía el pedido por WhatsApp y paga al retirar.")
+        return
+      }
       // En el celular se abre WhatsApp directo; si el navegador no lo deja, queda el botón.
       window.location.href = link
     })
@@ -555,6 +574,32 @@ function Checkout({
               placeholder={delivery ? "Calle, número, depto, comuna" : table ? "Ej.: sin cebolla, la bebida bien fría" : "Ej.: paso a las 18:00"}
             />
           </div>
+          {onlinePay ? (
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">¿Cómo pagas?</p>
+              <div role="radiogroup" aria-label="Cómo pagas" className="grid grid-cols-2 gap-2">
+                {[
+                  { value: true, label: "Pagar ahora", hint: "Tarjeta o Mercado Pago" },
+                  { value: false, label: delivery ? "Al recibir" : "Al retirar", hint: "Como acuerdes" },
+                ].map((o) => (
+                  <button
+                    key={String(o.value)}
+                    type="button"
+                    role="radio"
+                    aria-checked={payNow === o.value}
+                    onClick={() => setPayNow(o.value)}
+                    className={cn(
+                      "rounded-xl border px-3 py-2 text-left text-sm transition-colors",
+                      payNow === o.value ? "border-primary bg-primary/10 text-primary" : "bg-background text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <span className="block font-medium">{o.label}</span>
+                    <span className="block text-xs opacity-80">{o.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {/* Campo trampa para robots (las personas no lo ven). */}
           <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
           {error ? (
@@ -562,11 +607,20 @@ function Checkout({
               {error}
             </p>
           ) : null}
-          <Button type="submit" size="lg" className="h-12 w-full bg-[#25D366] text-white hover:bg-[#1fb757]" disabled={pending}>
-            {pending ? <Loader2 className="animate-spin" /> : <WhatsAppIcon className="size-5" />}
-            Enviar pedido por WhatsApp
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">El negocio confirma el pedido, el pago y la entrega por WhatsApp.</p>
+          {paying ? (
+            <Button type="submit" size="lg" className="h-12 w-full" disabled={pending}>
+              {pending ? <Loader2 className="animate-spin" /> : <CreditCard className="size-5" />}
+              Pagar {money(changed ? changed.total : final)}
+            </Button>
+          ) : (
+            <Button type="submit" size="lg" className="h-12 w-full bg-[#25D366] text-white hover:bg-[#1fb757]" disabled={pending}>
+              {pending ? <Loader2 className="animate-spin" /> : <WhatsAppIcon className="size-5" />}
+              Enviar pedido por WhatsApp
+            </Button>
+          )}
+          <p className="text-center text-xs text-muted-foreground">
+            {paying ? "Pagas de forma segura en Mercado Pago y el negocio recibe tu pedido pagado." : "El negocio confirma el pedido, el pago y la entrega por WhatsApp."}
+          </p>
         </form>
       )}
     </AppModal>

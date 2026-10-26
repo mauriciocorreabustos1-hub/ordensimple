@@ -13,6 +13,9 @@ import { formatDateTime } from "@/lib/dates"
 import { ORDER_STAGES, orderStageLabel, storePath, type OrderStage } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
+import { PayButton, PayResult } from "@/components/payments/pay-button"
+import { mpMethodLabel } from "@/lib/online-payments"
+import { onlinePayInfo } from "@/server/mp-marketplace"
 
 // Seguimiento de un pedido de la tienda online: el cliente ve en qué va sin tener que preguntar.
 // El enlace es aleatorio (solo lo tiene quien hizo el pedido) y la página no aparece en buscadores.
@@ -43,10 +46,12 @@ const getOrder = cache(async (token: string) => {
 
 export const metadata: Metadata = { title: "Tu pedido", robots: { index: false, follow: false } }
 
-export default async function OrderTrackPage({ params }: PageProps<"/pedido/[token]">) {
+export default async function OrderTrackPage({ params, searchParams }: PageProps<"/pedido/[token]">) {
   const { token } = await params
+  const { pago } = await searchParams
   const order = await getOrder(token)
   if (!order) notFound()
+  const pay = await onlinePayInfo(order.business.id, { webOrderId: order.id })
   const b = order.business
   const code = order.id.slice(-5).toUpperCase()
   const money = (n: number) => formatMoney(n, b.currency)
@@ -71,6 +76,7 @@ export default async function OrderTrackPage({ params }: PageProps<"/pedido/[tok
       </header>
 
       <main className="mx-auto max-w-xl space-y-4 px-4 py-6">
+        <PayResult result={typeof pago === "string" ? pago : undefined} />
         <section className="space-y-5 rounded-2xl border bg-background p-5">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">
@@ -140,7 +146,10 @@ export default async function OrderTrackPage({ params }: PageProps<"/pedido/[tok
             <span>Total</span>
             <span className="tabular">{money(order.total)}</span>
           </div>
+          {pay.paid ? <p className="font-medium text-success">✅ Pagado con {mpMethodLabel(pay.paid.method)}</p> : null}
         </section>
+
+        {!pay.paid && pay.storeEnabled && !cancelled && order.stage !== "DELIVERED" ? <PayButton kind="order" token={token} label="Pagar ahora con tarjeta o Mercado Pago" /> : null}
 
         <div className="grid gap-2">
           {b.storeWhatsapp ? (

@@ -13,6 +13,7 @@ import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { ORDER_STAGES, orderReplyText, orderStageLabel, orderStageText, orderTrackPath, type OrderStage } from "@/lib/store"
 import { whatsappLink } from "@/lib/whatsapp"
+import { mpMethodLabel, saleMethodFromMp } from "@/lib/online-payments"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
 import { acceptWebOrderAsComanda, acceptWebOrderAsSale, cancelWebOrder, deleteWebOrders, setWebOrderStage } from "@/server/actions/store"
 
@@ -36,6 +37,8 @@ export type WebOrderRow = {
   /** Enlace de seguimiento que ve el cliente. */
   trackToken: string
   stage: OrderStage
+  /** Pagado online con Mercado Pago: cómo (credit_card, debit_card…). */
+  paidOnline: string | null
 }
 
 const trackUrl = (o: WebOrderRow) => `${window.location.origin}${orderTrackPath(o.trackToken)}`
@@ -127,6 +130,7 @@ export function WebOrdersList({
                   </li>
                 ))}
               </ul>
+              {o.paidOnline ? <p className="rounded-lg bg-success/10 px-3 py-2 text-sm font-medium text-success">💳 Pagado online con {mpMethodLabel(o.paidOnline)}</p> : null}
               {o.note ? <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm">{o.note}</p> : null}
               {o.promoDiscount || o.couponDiscount ? (
                 <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
@@ -388,7 +392,8 @@ function SellDialog({
   onClose: () => void
   onDone: () => void
 }) {
-  const [payment, setPayment] = React.useState<PaymentMethod>(defaultPayment === "FIADO" ? "CASH" : defaultPayment)
+  // Si lo pagó online, ya se sabe cómo.
+  const [payment, setPayment] = React.useState<PaymentMethod>(order.paidOnline ? saleMethodFromMp(order.paidOnline) : defaultPayment === "FIADO" ? "CASH" : defaultPayment)
   const [pending, startTransition] = React.useTransition()
   function confirm() {
     startTransition(async () => {

@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils"
 import { vatInfo } from "@/lib/vat"
 import { whatsappLink } from "@/lib/whatsapp"
 import { getSession } from "@/server/session"
+import { PayButton, PayResult } from "@/components/payments/pay-button"
+import { mpMethodLabel } from "@/lib/online-payments"
+import { onlinePayInfo } from "@/server/mp-marketplace"
 
 // Cotización que el negocio le envía al cliente: la revisa, la guarda en PDF y la acepta o rechaza.
 // El enlace es aleatorio (solo lo tiene a quien se le envió) y la página no aparece en buscadores.
@@ -52,8 +55,9 @@ export async function generateMetadata({ params }: PageProps<"/cotizacion/[token
   }
 }
 
-export default async function QuotePublicPage({ params }: PageProps<"/cotizacion/[token]">) {
+export default async function QuotePublicPage({ params, searchParams }: PageProps<"/cotizacion/[token]">) {
   const { token } = await params
+  const { pago } = await searchParams
   const quote = await getQuote(token)
   if (!quote) notFound()
   const b = quote.business
@@ -66,6 +70,7 @@ export default async function QuotePublicPage({ params }: PageProps<"/cotizacion
   const vat = s?.chargesVat ? vatInfo(b.country) : null
   const tax = vat ? grossBreakdown(quote.total, vat.rate) : null
   const contactPhone = s?.contactPhone || b.storeWhatsapp
+  const pay = await onlinePayInfo(b.id, { quoteId: quote.id })
 
   // La primera vez que la abre el cliente (no alguien del negocio revisándola).
   if (!quote.viewedAt) {
@@ -93,7 +98,9 @@ export default async function QuotePublicPage({ params }: PageProps<"/cotizacion
   .no-print { display: none !important }
 }`}</style>
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:py-10">
-        {banner[state] ? <p className={cn("no-print rounded-2xl border p-4 text-sm font-medium", banner[state].className)}>{banner[state].text}</p> : null}
+        <PayResult result={typeof pago === "string" ? pago : undefined} />
+        {pay.paid ? <p className="no-print rounded-2xl border border-success/30 bg-success/10 p-4 text-sm font-medium text-success">✅ Cotización pagada con {mpMethodLabel(pay.paid.method)}. ¡Gracias!</p> : null}
+        {banner[state] && !pay.paid ? <p className={cn("no-print rounded-2xl border p-4 text-sm font-medium", banner[state].className)}>{banner[state].text}</p> : null}
 
         <article id="quote-doc" className="space-y-6 rounded-2xl border bg-white p-5 text-[#111] shadow-sm sm:p-8">
           <header className="flex flex-wrap items-start justify-between gap-4 border-b border-black/10 pb-5">
@@ -197,6 +204,11 @@ export default async function QuotePublicPage({ params }: PageProps<"/cotizacion
           ) : null}
         </article>
 
+        {active && pay.connected && !pay.paid && (state === "PENDING" || state === "ACCEPTED") ? (
+          <div className="no-print">
+            <PayButton kind="quote" token={token} label={state === "PENDING" ? "Aceptar y pagar con tarjeta o Mercado Pago" : "Pagar con tarjeta o Mercado Pago"} />
+          </div>
+        ) : null}
         <QuoteActions token={token} canRespond={active && state === "PENDING"} fileName={`Cotización ${quoteNumber(quote.number)} ${b.name}`} />
         {contactPhone ? (
           <Button asChild variant="outline" className="no-print w-full">

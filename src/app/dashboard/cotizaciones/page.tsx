@@ -28,6 +28,9 @@ export default async function QuotesPage() {
     }),
   ])
 
+  const paid = new Map(
+    (await db.onlinePayment.findMany({ where: { businessId: ctx.businessId, status: "APPROVED", quoteId: { in: quotes.map((q) => q.id) } }, select: { quoteId: true, method: true } })).map((p) => [p.quoteId, p.method ?? "mercadopago"]),
+  )
   const rows: QuoteRow[] = quotes.map((q) => ({
     id: q.id,
     number: q.number,
@@ -47,6 +50,7 @@ export default async function QuotesPage() {
     viewedAt: q.viewedAt?.toISOString() ?? null,
     respondedAt: q.respondedAt?.toISOString() ?? null,
     createdAt: q.createdAt.toISOString(),
+    paidOnline: paid.get(q.id) ?? null,
   }))
 
   return (

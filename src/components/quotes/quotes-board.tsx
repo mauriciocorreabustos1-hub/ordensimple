@@ -16,6 +16,7 @@ import { formatMoney } from "@/lib/currency"
 import { QUOTE_STATE_CLASS, QUOTE_STATE_LABEL, quoteNumber, quotePath, quoteState, quoteWhatsappText, type QuoteItem, type QuoteState, type QuoteStatusValue } from "@/lib/quotes"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
+import { mpMethodLabel, saleMethodFromMp } from "@/lib/online-payments"
 import { deleteQuote, sellQuote, setQuoteStatus } from "@/server/actions/quotes"
 
 export type QuoteRow = {
@@ -36,6 +37,8 @@ export type QuoteRow = {
   viewedAt: string | null
   respondedAt: string | null
   createdAt: string
+  /** Pagada online con Mercado Pago: cómo (credit_card, debit_card…). */
+  paidOnline: string | null
 }
 
 type Filter = "all" | "open" | "ACCEPTED" | "SOLD" | "closed"
@@ -173,6 +176,7 @@ export function QuotesBoard({
                         <Eye className="size-3.5" />
                         {q.viewedAt ? `El cliente la abrió el ${day(q.viewedAt)}` : "El cliente aún no la abre"}
                       </p>
+                      {q.paidOnline ? <p className="font-medium text-success">💳 Pagada online con {mpMethodLabel(q.paidOnline)}</p> : null}
                     </div>
                     <span className="tabular text-lg font-semibold">{money(q.total)}</span>
                   </div>
@@ -342,7 +346,8 @@ function SellDialog({
   onClose: () => void
   onDone: () => void
 }) {
-  const [payment, setPayment] = React.useState<PaymentMethod>(defaultPayment)
+  // Si la pagó online, ya se sabe cómo.
+  const [payment, setPayment] = React.useState<PaymentMethod>(quote.paidOnline ? saleMethodFromMp(quote.paidOnline) : defaultPayment)
   const [pending, startTransition] = React.useTransition()
   function confirm() {
     startTransition(async () => {

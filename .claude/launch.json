@@ -47,6 +47,23 @@
         "ENFORCE_PLANS": "true"
       },
       "port": 3000
+    },
+    {
+      "name": "ordensimple-mp-simulado",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "env": {
+        "RESEND_API_KEY": "",
+        "ENFORCE_PLANS": "true",
+        "MERCADOPAGO_CLIENT_ID": "simulado",
+        "MERCADOPAGO_CLIENT_SECRET": "simulado",
+        "MERCADOPAGO_API_URL": "http://localhost:4010",
+        "MERCADOPAGO_AUTH_URL": "http://localhost:4010"
+      },
+      "port": 3000
     }
   ]
 }

@@ -50,6 +50,10 @@ export default async function WebOrdersPage() {
     orderBy: { createdAt: "desc" },
     take: 100,
   })
+  // Pedidos pagados online (Mercado Pago): cómo se pagaron.
+  const paid = new Map(
+    (await db.onlinePayment.findMany({ where: { businessId: ctx.businessId, status: "APPROVED", webOrderId: { in: orders.map((o) => o.id) } }, select: { webOrderId: true, method: true } })).map((p) => [p.webOrderId, p.method ?? "mercadopago"]),
+  )
   const rows: WebOrderRow[] = orders.map((o) => ({
     id: o.id,
     code: o.id.slice(-5).toUpperCase(),
@@ -68,6 +72,7 @@ export default async function WebOrdersPage() {
     couponDiscount: o.couponDiscount,
     trackToken: o.trackToken,
     stage: o.stage,
+    paidOnline: paid.get(o.id) ?? null,
   }))
 
   return (

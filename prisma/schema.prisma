@@ -198,6 +198,9 @@ model Business {
   webOrders         WebOrder[]
   quotes            Quote[]
   loyaltyCards      LoyaltyCard[]
+  mpAccount         MercadoPagoAccount?
+  onlinePayments    OnlinePayment[]
+  paymentLinks      PaymentLink[]
   promotions        Promotion[]
   storeCoupons      StoreCoupon[]
   appointments      Appointment[]
@@ -889,6 +892,97 @@ model LoyaltyMovement {
   @@index([cardId, createdAt])
   @@index([saleId])
   @@map("loyalty_movement")
+}
+
+/// Cuenta de Mercado Pago que el negocio conectó para cobrar online (OAuth). Las claves van cifradas.
+model MercadoPagoAccount {
+  id            String   @id @default(cuid())
+  businessId    String   @unique
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Id de la cuenta en Mercado Pago.
+  mpUserId      String
+  accessToken   String
+  refreshToken  String?
+  publicKey     String?
+  expiresAt     DateTime
+  liveMode      Boolean  @default(true)
+  /// Ofrecer pagar online en la tienda.
+  storeEnabled  Boolean  @default(true)
+  connectedById String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("mercado_pago_account")
+}
+
+enum OnlinePaymentKind {
+  WEB_ORDER
+  QUOTE
+  LINK
+}
+
+enum OnlinePaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+}
+
+/// Un cobro online: el cliente paga con Mercado Pago, el dinero va a la cuenta del negocio y OrdenSimple recibe su comisión.
+model OnlinePayment {
+  id           String              @id @default(cuid())
+  businessId   String
+  business     Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  kind         OnlinePaymentKind
+  webOrderId   String?
+  quoteId      String?
+  linkId       String?
+  description  String
+  amount       Int
+  /// Comisión de OrdenSimple.
+  fee          Int
+  status       OnlinePaymentStatus @default(PENDING)
+  preferenceId String?
+  mpPaymentId  String?             @unique
+  /// credit_card, debit_card, account_money…
+  method       String?
+  paidAt       DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([businessId, createdAt])
+  @@index([webOrderId])
+  @@index([quoteId])
+  @@index([linkId])
+  @@map("online_payment")
+}
+
+enum PaymentLinkStatus {
+  ACTIVE
+  PAID
+  CANCELLED
+}
+
+/// Enlace de pago: el negocio cobra un monto y lo envía por WhatsApp (/cobro/<token>).
+model PaymentLink {
+  id            String            @id @default(cuid())
+  businessId    String
+  business      Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  token         String            @unique
+  title         String
+  amount        Int
+  customerName  String?
+  customerPhone String?
+  status        PaymentLinkStatus @default(ACTIVE)
+  /// Venta que se registró al pagarse.
+  saleId        String?
+  createdById   String?
+  paidAt        DateTime?
+  createdAt     DateTime          @default(now())
+
+  @@index([businessId, createdAt])
+  @@map("payment_link")
 }
 
 enum QuoteStatus {

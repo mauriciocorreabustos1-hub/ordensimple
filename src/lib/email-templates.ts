@@ -19,7 +19,8 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;")
 }
 
-function layout({ preview, body, footer }: { preview: string; body: string; footer?: string }) {
+/** `support: false` para correos a los clientes de un negocio: sus dudas son para el negocio, no para OrdenSimple. */
+function layout({ preview, body, footer, support = true }: { preview: string; body: string; footer?: string; support?: boolean }) {
   const appUrl = getAppUrl()
   return `<!doctype html>
 <html lang="es">
@@ -44,9 +45,9 @@ function layout({ preview, body, footer }: { preview: string; body: string; foot
         ${body}
       </td></tr>
       <tr><td style="padding:20px 4px 0;font-size:12px;line-height:18px;color:${MUTED};">
-        ${footer ?? "Recibes este correo porque tienes una cuenta en OrdenSimple."}<br>
+        ${footer ?? "Recibes este correo porque tienes una cuenta en OrdenSimple."}${support ? `<br>
         ¿Dudas? Responde este correo, escríbenos a contacto@ordensimple.cl o por <a href="${WHATSAPP.link("Hola, tengo una consulta sobre OrdenSimple")}" style="color:${MUTED};">WhatsApp al ${WHATSAPP.display}</a>.<br>
-        Síguenos en <a href="https://www.instagram.com/ordensimple.cl/" style="color:${MUTED};">Instagram</a> y <a href="https://www.tiktok.com/@ordensimple.cl" style="color:${MUTED};">TikTok</a>: @ordensimple.cl
+        Síguenos en <a href="https://www.instagram.com/ordensimple.cl/" style="color:${MUTED};">Instagram</a> y <a href="https://www.tiktok.com/@ordensimple.cl" style="color:${MUTED};">TikTok</a>: @ordensimple.cl` : ""}
       </td></tr>
     </table>
   </td></tr>
@@ -726,4 +727,51 @@ export function fiadoOverdueEmail(d: {
     .filter(Boolean)
     .join("\n\n")
   return { subject: count === 1 ? `${d.items[0]?.name} te debe hace ${d.items[0]?.days} días` : `${count} clientes te deben fiado hace más de ${d.days} días`, html, text }
+}
+
+/** Confirmación del pedido de la tienda online para el cliente, con el enlace para ver en qué va. */
+export function orderConfirmationEmail(d: {
+  customerName: string
+  businessName: string
+  code: string
+  items: { name: string; quantity: number; unitPrice: number }[]
+  total: number
+  currency: string
+  /** "Despacho a domicilio", "Retiro en el local" o la mesa. */
+  delivery: string
+  trackUrl: string
+  /** Ya pagado online. */
+  paid: boolean
+  /** WhatsApp del negocio, para escribirle. */
+  whatsappUrl?: string | null
+}) {
+  const first = (d.customerName.split(" ")[0] || d.customerName).trim()
+  const money = (n: number) => formatMoney(n, d.currency)
+  const business = escapeHtml(d.businessName)
+  const html = layout({
+    preview: `Pedido n.º ${d.code} · ${money(d.total)}. Aquí puedes ver en qué va.`,
+    body: [
+      h1(d.paid ? "¡Recibimos tu pedido y tu pago!" : "¡Recibimos tu pedido!"),
+      p(`Hola ${escapeHtml(first)}, ${business} recibió tu pedido <strong>n.º ${escapeHtml(d.code)}</strong>.`),
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 8px;">${d.items
+        .map((i) => statRow(`${i.quantity} × ${escapeHtml(i.name)}`, money(i.quantity * i.unitPrice)))
+        .join("")}${statRow("<strong>Total</strong>", money(d.total))}</table>`,
+      p(`${escapeHtml(d.delivery)}${d.paid ? " · Pagado con Mercado Pago" : ""}`),
+      button(d.trackUrl, "Ver en qué va mi pedido"),
+      small(`En ese enlace ves si tu pedido está recibido, en preparación, listo o en camino, y entregado. Se actualiza solo.${d.whatsappUrl ? ` Si tienes dudas, <a href="${d.whatsappUrl}" style="color:${MUTED};">escríbele a ${business} por WhatsApp</a>.` : ""}`),
+    ].join(""),
+    footer: `Recibes este correo porque hiciste un pedido en la tienda de ${business}, hecha con <a href="${getAppUrl()}" style="color:${MUTED};">OrdenSimple</a>.`,
+    support: false,
+  })
+  const text = [
+    `Hola ${first}, ${d.businessName} recibió tu pedido n.º ${d.code}${d.paid ? " y tu pago" : ""}.`,
+    d.items.map((i) => `${i.quantity} × ${i.name}: ${money(i.quantity * i.unitPrice)}`).join("\n"),
+    `Total: ${money(d.total)}`,
+    d.delivery,
+    `Ve en qué va tu pedido: ${d.trackUrl}`,
+    d.whatsappUrl ? `Dudas: ${d.whatsappUrl}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+  return { subject: `Tu pedido n.º ${d.code} en ${d.businessName}`, html, text }
 }

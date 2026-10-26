@@ -1,6 +1,6 @@
 import "server-only"
 
-type EmailInput = { to: string; subject: string; text: string; html?: string; headers?: Record<string, string> }
+type EmailInput = { to: string; subject: string; text: string; html?: string; headers?: Record<string, string>; /** A quién va la respuesta (por defecto, a OrdenSimple). */ replyTo?: string }
 
 const FROM = () => process.env.EMAIL_FROM || "OrdenSimple <no-responder@ordensimple.cl>"
 const REPLY_TO = () => process.env.EMAIL_REPLY_TO || "contacto@ordensimple.cl"
@@ -9,7 +9,7 @@ const REPLY_TO = () => process.env.EMAIL_REPLY_TO || "contacto@ordensimple.cl"
  * Envía correos con Resend si RESEND_API_KEY está definido.
  * En desarrollo, sin clave, imprime el correo en la consola del servidor.
  */
-export async function sendEmail({ to, subject, text, html }: EmailInput) {
+export async function sendEmail({ to, subject, text, html, replyTo }: EmailInput) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
     if (process.env.NODE_ENV === "production") {
@@ -25,7 +25,7 @@ export async function sendEmail({ to, subject, text, html }: EmailInput) {
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: FROM(),
-      reply_to: REPLY_TO(),
+      reply_to: replyTo || REPLY_TO(),
       to,
       subject,
       text,

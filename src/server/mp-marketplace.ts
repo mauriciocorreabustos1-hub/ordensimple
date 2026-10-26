@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/currency"
 import { onlineFee, saleMethodFromMp, type OnlineStatus } from "@/lib/online-payments"
 import { quoteNumber } from "@/lib/quotes"
 import { businessManagers, sendPush } from "@/server/push"
+import { sendOrderConfirmation } from "@/server/order-email"
 
 // Cobros online como marketplace de Mercado Pago: cada negocio conecta su cuenta (OAuth), sus clientes le pagan
 // a esa cuenta y OrdenSimple recibe su comisión (marketplace_fee) en la cuenta de la aplicación.
@@ -233,6 +234,7 @@ export async function syncPayment(businessId: string, mpPaymentId: string) {
   } else if (payment.kind === "WEB_ORDER" && payment.webOrderId) {
     const o = await db.webOrder.findUnique({ where: { id: payment.webOrderId }, select: { customerName: true } })
     if (o) title = `💳 Pedido web pagado: ${money} (${o.customerName})`
+    await sendOrderConfirmation(payment.webOrderId, true).catch((e) => console.error("[pedido] correo", e))
     url = "/dashboard/pedidos"
   } else if (payment.kind === "LINK" && payment.linkId) {
     await paidLink(payment.linkId, businessId, payment.amount, saleMethodFromMp(mp.payment_type_id))

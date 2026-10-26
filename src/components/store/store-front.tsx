@@ -336,6 +336,7 @@ function Checkout({
 }) {
   const [name, setName] = React.useState("")
   const [phone, setPhone] = React.useState("")
+  const [email, setEmail] = React.useState("")
   const [delivery, setDelivery] = React.useState(false)
   const [note, setNote] = React.useState("")
   const [website, setWebsite] = React.useState("")
@@ -375,6 +376,7 @@ function Checkout({
         slug,
         customerName: name,
         customerPhone: phone || undefined,
+        customerEmail: email.trim() || undefined,
         delivery: table ? false : delivery,
         table: table ?? undefined,
         note: note || undefined,
@@ -539,6 +541,13 @@ function Checkout({
               Tu teléfono <span className="font-normal text-muted-foreground">(opcional)</span>
             </label>
             <Input id="store-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} inputMode="tel" autoComplete="tel" className="h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="store-email" className="text-sm font-medium">
+              Tu correo <span className="font-normal text-muted-foreground">(opcional)</span>
+            </label>
+            <Input id="store-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="email" inputMode="email" className="h-11" />
+            <p className="text-xs text-muted-foreground">Te enviamos la confirmación y el enlace para ver en qué va tu pedido.</p>
           </div>
           {table ? (
             <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary">🍽️ Tu pedido es para {table}: te lo llevamos a la mesa.</p>

@@ -18,6 +18,7 @@ import { couponAmount, findCoupon } from "@/server/coupons"
 import { webCustomer } from "@/server/web-customer"
 import { storeTables } from "@/server/store-tables"
 import { mustPayOnline, storePayRule } from "@/server/mp-marketplace"
+import { sendOrderConfirmation } from "@/server/order-email"
 import { assertCan, requireBusiness } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -90,7 +91,7 @@ export type WebOrderQuote = {
 export async function createWebOrder(input: WebOrderInput): Promise<ActionResult<WebOrderResult | WebOrderQuote>> {
   const parsed = webOrderSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { slug, customerName, customerPhone, note, items, website, couponCode, expectedTotal } = parsed.data
+  const { slug, customerName, customerPhone, customerEmail, note, items, website, couponCode, expectedTotal } = parsed.data
   // Los robots llenan el campo oculto: no se guarda nada.
   if (website) return { ok: false, message: "No se pudo enviar el pedido." }
   try {
@@ -160,6 +161,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
           businessId: business.id,
           customerName,
           customerPhone: customerPhone ?? null,
+          customerEmail: customerEmail ?? null,
           delivery,
           table,
           note: note ?? null,
@@ -177,6 +179,8 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
       })
     })
     const count = orderItems.reduce((s, i) => s + i.quantity, 0)
+    // Confirmación al cliente con su enlace de seguimiento (si se paga online, llega al pagarse).
+    if (customerEmail && !paymentRequired) after(() => sendOrderConfirmation(order.id, false).catch((e) => console.error("[pedido] correo", e)))
     // Si hay que pagarlo online, el aviso al negocio llega cuando se paga (no por pedidos que nadie pagó).
     if (!paymentRequired) after(async () =>
       sendPush(await businessManagers(business.id), {

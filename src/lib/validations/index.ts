@@ -459,6 +459,8 @@ export const webOrderSchema = z.object({
   slug: z.string().trim().toLowerCase().max(40),
   customerName: z.string().trim().min(2, "Escribe tu nombre").max(60, "Máximo 60 caracteres"),
   customerPhone: optionalText(20),
+  /** Para enviarle la confirmación con el enlace de seguimiento (opcional). */
+  customerEmail: email,
   delivery: z.boolean(),
   note: optionalText(300),
   items: z

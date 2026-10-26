@@ -812,6 +812,8 @@ model WebOrder {
   business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customerName  String
   customerPhone String?
+  /// Para enviarle la confirmación y el enlace de seguimiento (opcional).
+  customerEmail String?
   /// "Retiro en el local" o "Despacho" (con la dirección en la nota).
   delivery      Boolean        @default(false)
   /// Mesa desde la que se pidió con la carta QR (restaurantes). Null: pedido normal.

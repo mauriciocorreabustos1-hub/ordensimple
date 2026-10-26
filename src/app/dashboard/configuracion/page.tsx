@@ -221,7 +221,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                     disabled={!canManage}
                   />
                 ) : (
-                  <ProUpsell title="La tienda online es parte del plan Pro" text="Publica tu catálogo y recibe pedidos por WhatsApp, sin comisiones." />
+                  <ProUpsell title="La tienda online es parte del plan Pro" text="Publica tu catálogo y recibe pedidos por WhatsApp o pagados con tarjeta." />
                 )}
               </CardContent>
             </Card>

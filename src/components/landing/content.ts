@@ -172,7 +172,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     id: "tienda",
     icon: Globe,
     title: "Tienda online",
-    description: "Tu catálogo en internet para recibir pedidos por WhatsApp, sin comisiones (plan Pro).",
+    description: "Tu catálogo en internet: pedidos por WhatsApp sin comisión, o pagados con tarjeta con Mercado Pago (plan Pro).",
     points: [
       "Tu propia página: ordensimple.cl/tienda/tu-negocio",
       "Tus productos con foto, precio y stock, buscador y categorías: se ve como una vitrina",
@@ -563,7 +563,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       },
       {
         q: "¿Puedo recibir pedidos por internet?",
-        a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en “Pedidos web” lo registras como venta con un toque. Sin comisiones.",
+        a: "Sí. Con el plan Pro activas tu tienda online en Configuración: una página con tus productos y precios que compartes por WhatsApp o en tus redes. Tus clientes eligen y te mandan el pedido por WhatsApp, y en “Pedidos web” lo registras como venta con un toque. Los pedidos por WhatsApp no tienen comisión. Si quieres que te paguen con tarjeta al pedir, conectas Mercado Pago en Cobros online: Mercado Pago cobra su comisión de siempre y OrdenSimple un 1 % por pago.",
       },
       {
         q: "¿Puedo hacer promociones como 2×1 o happy hour?",
@@ -620,7 +620,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
     items: [
       {
         q: "¿Es realmente gratis?",
-        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador, y llevas tu inventario con alertas de stock, tus recetas con su costo y precio, y tus clientes y el fiado con cobro por WhatsApp. El cierre de caja, los proveedores y el equipo son del plan Pro.",
+        a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador, y llevas tu inventario con alertas de stock, tus recetas con su costo y precio, y tus clientes y el fiado con cobro por WhatsApp. También puedes cobrar con tarjeta enviando enlaces de pago con Mercado Pago (sin costo fijo: 1 % por pago, además de la comisión de Mercado Pago). El cierre de caja, los proveedores y el equipo son del plan Pro.",
       },
       BILLING_ENABLED
         ? {

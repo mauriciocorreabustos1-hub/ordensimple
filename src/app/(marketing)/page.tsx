@@ -186,7 +186,7 @@ export default async function LandingPage() {
               align="left"
               eyebrow="Tienda online"
               title="¿Vendes por WhatsApp? Ten tu propia página web"
-              description="Tus productos con foto, precio y stock en una página con tu nombre. Tus clientes arman el pedido y te llega por WhatsApp, ordenado y listo para despachar. Sin comisiones."
+              description="Tus productos con foto, precio y stock en una página con tu nombre. Tus clientes arman el pedido y te llega por WhatsApp, ordenado y listo para despachar, sin comisión. Si quieres, que te lo paguen con tarjeta al pedir."
             />
             <ul className="space-y-2 text-[15px]">
               {["Tu dirección: ordensimple.cl/tienda/tu-negocio","Retiro en el local o despacho, con la dirección del cliente","Con un toque el pedido queda como venta y se descuenta el stock","Te avisa al celular apenas entra un pedido","Tu cliente ve en qué va su pedido con un enlace"].map((t) => (

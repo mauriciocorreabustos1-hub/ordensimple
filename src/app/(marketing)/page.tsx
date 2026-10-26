@@ -14,6 +14,7 @@ import { AgendaPreview } from "@/components/landing/agenda-preview"
 import { LabelsPreview } from "@/components/landing/labels-preview"
 import { PromosPreview } from "@/components/landing/promos-preview"
 import { LoyaltyPreview } from "@/components/landing/loyalty-preview"
+import { PaymentsPreview } from "@/components/landing/payments-preview"
 import { QuotePreview } from "@/components/landing/quote-preview"
 import { RecipesPreview } from "@/components/landing/recipes-preview"
 import { TrackingPreview } from "@/components/landing/tracking-preview"
@@ -422,6 +423,37 @@ export default async function LandingPage() {
             </div>
           </div>
           <LoyaltyPreview />
+        </div>
+      </Section>
+
+      {/* Cobros online con Mercado Pago. */}
+      <Section muted className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5 lg:order-2">
+            <SectionTitle
+              align="left"
+              eyebrow="Cobros online"
+              title="Que te paguen con tarjeta, aunque no tengas máquina"
+              description="Conecta tu cuenta de Mercado Pago y cobra desde tu tienda, tus cotizaciones o un enlace por WhatsApp. El pago queda registrado solo en OrdenSimple."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Tarjeta de crédito, débito o saldo de Mercado Pago","En tu tienda online, en tus cotizaciones o con un enlace que mandas por WhatsApp","Tú decides si los pedidos se pagan online, solo los despachos o al retirar","El dinero llega directo a tu cuenta de Mercado Pago y te avisamos de cada pago","Sin costo fijo: Mercado Pago cobra su comisión y OrdenSimple un 1 % por pago"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <SignupLink inApp="/dashboard/cobros" loggedInLabel="Conectar Mercado Pago">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/funciones#cobros">Ver cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <PaymentsPreview className="lg:order-1" />
         </div>
       </Section>
 

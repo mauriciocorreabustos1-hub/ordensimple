@@ -1,6 +1,7 @@
 import {
   BadgePercent,
   BellRing,
+  CreditCard,
   BookOpen,
   FileText,
   Stamp,
@@ -230,6 +231,21 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "Sabes si ya la abrió y te llega un aviso al celular cuando responde",
       "La vendes con un toque y con los precios cotizados: se descuenta el stock",
       "Estados: pendiente, aceptada, rechazada, vencida y vendida",
+    ],
+  },
+  {
+    id: "cobros",
+    icon: CreditCard,
+    title: "Cobros online",
+    description: "Tus clientes te pagan con tarjeta o Mercado Pago y el dinero llega a tu cuenta (todos los planes).",
+    points: [
+      "Conectas tu cuenta de Mercado Pago con un botón: nunca vemos tu clave",
+      "Tarjeta de crédito, débito o saldo de Mercado Pago",
+      "Tienda online: tú decides si todo se paga al pedir, solo los despachos o al retirar o recibir",
+      "Cotizaciones: tu cliente la acepta y la paga desde el mismo enlace",
+      "Enlaces de pago: cobras un monto (un abono, una reserva) y lo mandas por WhatsApp; al pagarse queda como venta",
+      "Aviso al celular de cada pago y el historial con lo que recibiste",
+      "Sin costo fijo: Mercado Pago cobra su comisión de siempre y OrdenSimple un 1 % por pago",
     ],
   },
   {
@@ -570,6 +586,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí, gratis. En Recetas anotas tus materiales con su precio (harina, levadura, aceites, cera…) y cada receta con lo que rinde. Te decimos el costo por unidad y el precio sugerido, llevas el stock y el vencimiento de tus materiales, y al vender se descuentan solos.",
       },
       {
+        q: "¿Mis clientes me pueden pagar con tarjeta?",
+        a: "Sí, en todos los planes. En Cobros online conectas tu cuenta de Mercado Pago y tus clientes te pagan con tarjeta de crédito, débito o saldo de Mercado Pago: en tu tienda online, en tus cotizaciones o con un enlace de pago que mandas por WhatsApp. El dinero llega directo a tu cuenta. No hay costo fijo: Mercado Pago cobra su comisión de siempre y OrdenSimple un 1 % por pago.",
+      },
+      {
         q: "¿Puedo dar tarjetas de fidelidad a mis clientes?",
         a: "Sí, con el plan Pro. Eliges si das sellos (por ejemplo, 10 compras y un premio) o puntos según lo que compran, y cuál es el premio. Le envías la tarjeta al cliente por WhatsApp, la guarda en la pantalla de inicio de su celular y se le suma sola cada vez que le vendes.",
       },
@@ -686,6 +706,7 @@ export const PLAN_COMPARISON: ComparisonRow[] = [
   { label: "Clientes, fiado y cobro por WhatsApp", values: [true, true, true] },
   { label: "Comandas y pantalla de cocina (restaurantes y cafés)", values: [false, true, true] },
   { label: "Tienda online con pedidos por WhatsApp", values: [false, true, true] },
+  { label: "Cobros online con Mercado Pago (1 % por pago)", values: ["Enlaces de pago", "Tienda, cotizaciones y enlaces", "Tienda, cotizaciones y enlaces"] },
   { label: "Seguimiento del pedido para tu cliente", values: [false, true, true] },
   { label: "Cotizaciones con enlace para aceptarlas", values: [false, true, true] },
   { label: "Carta con QR por mesa", values: [false, true, true] },

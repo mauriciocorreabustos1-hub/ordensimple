@@ -5,6 +5,16 @@ import { sendEmail } from "@/lib/email"
 import { orderConfirmationEmail } from "@/lib/email-templates"
 import { orderTrackPath } from "@/lib/store"
 import { whatsappLink } from "@/lib/whatsapp"
+import { allowAttempt } from "@/server/rate-limit"
+
+/** El nombre lo escribe cualquiera en la tienda: en el correo va solo el primer nombre y solo con letras (sin enlaces). */
+function safeFirstName(name: string) {
+  const token = name.trim().split(/\s+/)[0] ?? ""
+  // Algo con puntos, barras o arrobas no es un nombre (parece un enlace o un correo): se saluda sin nombre.
+  if (/[./:@]/.test(token)) return "hola"
+  const first = token.replace(/[^\p{L}'-]/gu, "").slice(0, 30)
+  return first.length >= 2 ? first : "hola"
+}
 
 /**
  * Confirmación del pedido al correo del cliente (si lo dejó), con el enlace para ver en qué va.
@@ -15,6 +25,7 @@ export async function sendOrderConfirmation(orderId: string, paid: boolean) {
     where: { id: orderId },
     select: {
       id: true,
+      businessId: true,
       customerName: true,
       customerEmail: true,
       delivery: true,
@@ -26,9 +37,13 @@ export async function sendOrderConfirmation(orderId: string, paid: boolean) {
     },
   })
   if (!o?.customerEmail) return
+  // Como máximo 3 confirmaciones al día a una misma dirección (nadie puede usar las tiendas para llenar un correo ajeno).
+  if (!(await allowAttempt(`correo-pedido:${o.customerEmail.toLowerCase()}`, 3, 24 * 60 * 60_000))) return
+  // Y como máximo 200 al día por tienda.
+  if (!(await allowAttempt(`correo-pedido-negocio:${o.businessId}`, 200, 24 * 60 * 60_000))) return
   const code = o.id.slice(-5).toUpperCase()
   const email = orderConfirmationEmail({
-    customerName: o.customerName,
+    customerName: safeFirstName(o.customerName),
     businessName: o.business.name,
     code,
     items: o.items as { name: string; quantity: number; unitPrice: number }[],

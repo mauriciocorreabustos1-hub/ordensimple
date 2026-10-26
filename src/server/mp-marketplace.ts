@@ -160,7 +160,24 @@ export async function checkoutUrl(payment: { id: string; businessId: string; des
   return pref.init_point
 }
 
-type MpPayment = { id: number | string; status: string; external_reference?: string | null; transaction_amount?: number; currency_id?: string; payment_type_id?: string; date_approved?: string | null }
+type MpPayment = {
+  id: number | string
+  status: string
+  external_reference?: string | null
+  transaction_amount?: number
+  currency_id?: string
+  payment_type_id?: string
+  date_approved?: string | null
+  /** Comisión del marketplace cobrada en este pago (según la versión de la API viene aquí o en fee_details). */
+  marketplace_fee?: number | null
+  fee_details?: { type?: string; amount?: number }[] | null
+}
+
+/** Comisión de OrdenSimple que Mercado Pago dice haber cobrado en el pago. */
+function collectedFee(mp: MpPayment) {
+  const fromDetails = (mp.fee_details ?? []).filter((f) => f.type === "application_fee").reduce((s, f) => s + Number(f.amount ?? 0), 0)
+  return Math.max(Number(mp.marketplace_fee ?? 0), fromDetails)
+}
 
 function statusFrom(mp: string): OnlineStatus {
   if (mp === "approved") return "APPROVED"
@@ -181,16 +198,25 @@ export async function syncPayment(businessId: string, mpPaymentId: string) {
   const payment = await db.onlinePayment.findFirst({ where: { id: ref, businessId } })
   if (!payment) return null
   const status = statusFrom(mp.status)
-  // El monto tiene que ser el que cobramos.
-  if (status === "APPROVED" && Math.round(Number(mp.transaction_amount ?? 0)) !== payment.amount) {
-    console.error("[mercadopago] monto distinto", payment.id, mp.transaction_amount)
-    return payment
+  // Un pago ya aprobado solo lo puede cambiar ese mismo pago de Mercado Pago (por ejemplo, si se devuelve).
+  if (payment.status === "APPROVED" && payment.mpPaymentId && payment.mpPaymentId !== String(mp.id)) return payment
+  if (status === "APPROVED") {
+    // Tiene que ser el cobro que armó OrdenSimple: mismo monto, misma moneda y con la comisión incluida.
+    const business = await db.business.findUniqueOrThrow({ where: { id: businessId }, select: { currency: true } })
+    const sameAmount = Math.round(Number(mp.transaction_amount ?? 0)) === payment.amount
+    const sameCurrency = (mp.currency_id ?? "").toUpperCase() === business.currency.toUpperCase()
+    const feePaid = payment.fee <= 0 || collectedFee(mp) >= payment.fee
+    if (!sameAmount || !sameCurrency || !feePaid) {
+      console.error("[mercadopago] pago que no calza con el cobro", payment.id, { sameAmount, sameCurrency, feePaid })
+      return payment
+    }
   }
   if (status === "PENDING" || status === payment.status) return payment
 
   const firstApproval = status === "APPROVED" && payment.status !== "APPROVED"
   const updated = await db.onlinePayment.updateMany({
-    where: { id: payment.id, status: { not: status } },
+    // Ya aprobado: solo ese mismo pago de Mercado Pago lo cambia (aunque dos avisos lleguen a la vez). Si no, vale un nuevo intento.
+    where: { id: payment.id, status: { not: status }, OR: [{ status: { not: "APPROVED" } }, { mpPaymentId: String(mp.id) }] },
     data: { status, mpPaymentId: String(mp.id), method: mp.payment_type_id ?? null, ...(status === "APPROVED" ? { paidAt: mp.date_approved ? new Date(mp.date_approved) : new Date() } : {}) },
   })
   if (updated.count !== 1 || !firstApproval) return payment

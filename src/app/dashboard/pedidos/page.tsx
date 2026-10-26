@@ -73,6 +73,7 @@ export default async function WebOrdersPage() {
     trackToken: o.trackToken,
     stage: o.stage,
     paidOnline: paid.get(o.id) ?? null,
+    paymentRequired: o.paymentRequired,
   }))
 
   return (

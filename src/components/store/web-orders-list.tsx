@@ -39,6 +39,8 @@ export type WebOrderRow = {
   stage: OrderStage
   /** Pagado online con Mercado Pago: cómo (credit_card, debit_card…). */
   paidOnline: string | null
+  /** El negocio lo cobra online: mientras no se pague, espera aparte. */
+  paymentRequired: boolean
 }
 
 const trackUrl = (o: WebOrderRow) => `${window.location.origin}${orderTrackPath(o.trackToken)}`
@@ -85,7 +87,10 @@ export function WebOrdersList({
     router.refresh()
   }
 
-  const fresh = orders.filter((o) => o.status === "NEW")
+  // Los que se deben pagar online y no se han pagado esperan aparte (no se atienden todavía).
+  const unpaid = (o: WebOrderRow) => o.status === "NEW" && o.paymentRequired && !o.paidOnline
+  const waiting = orders.filter(unpaid)
+  const fresh = orders.filter((o) => o.status === "NEW" && !unpaid(o))
   // Aceptados que todavía no se entregan: el cliente los sigue en su enlace.
   const ongoing = orders.filter((o) => o.status === "DONE" && o.stage !== "DELIVERED")
   const past = orders.filter((o) => o.status !== "NEW" && !ongoing.includes(o))
@@ -192,6 +197,30 @@ export function WebOrdersList({
           ))}
         </ul>
       )}
+
+      {waiting.length ? (
+        <details className="rounded-2xl border bg-card px-4 py-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            Esperando pago ({waiting.length})
+            <span className="block text-xs font-normal text-muted-foreground">Pedidos que se deben pagar online y el cliente todavía no paga. Te avisamos cuando se paguen.</span>
+          </summary>
+          <ul className="mt-2 divide-y">
+            {waiting.map((o) => (
+              <li key={o.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="min-w-0 truncate">
+                  {o.customerName} <span className="text-muted-foreground">· n.º {o.code} · {when(o.createdAt)}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="tabular">{money(o.total)}</span>
+                  <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Descartar pedido" onClick={() => void run(o.id, () => cancelWebOrder(o.id))} disabled={busy === o.id}>
+                    {busy === o.id ? <Loader2 className="animate-spin" /> : <X />}
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       {ongoing.length ? (
         <div className="space-y-2">

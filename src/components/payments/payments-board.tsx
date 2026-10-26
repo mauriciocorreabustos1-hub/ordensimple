@@ -9,7 +9,6 @@ import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
 import { formatMoney } from "@/lib/currency"
 import { mpMethodLabel, ONLINE_FEE_RATE, ONLINE_STATUS_LABEL, paymentLinkPath, paymentLinkWhatsappText, type OnlineStatus } from "@/lib/online-payments"
 import { cn } from "@/lib/utils"
@@ -21,7 +20,7 @@ export type LinkRow = { id: string; token: string; title: string; amount: number
 
 export function PaymentsBoard({
   connected,
-  storeEnabled,
+  storeMode,
   canManage,
   payments,
   links,
@@ -31,7 +30,8 @@ export function PaymentsBoard({
   notice,
 }: {
   connected: boolean
-  storeEnabled: boolean
+  /** Qué se paga online en la tienda (lo fija el dueño). */
+  storeMode: "OFF" | "ALL" | "DELIVERY"
   canManage: boolean
   payments: PaymentRow[]
   links: LinkRow[]
@@ -88,12 +88,34 @@ export function PaymentsBoard({
               Tus clientes pagan con tarjeta o con su saldo de Mercado Pago, y el dinero llega directo a tu cuenta. Mercado Pago descuenta su comisión y OrdenSimple
               un {Math.round(ONLINE_FEE_RATE * 100)} % por cada pago.
             </p>
-            <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
-              <div>
-                <p className="text-sm font-medium">Pagar online en tu tienda</p>
-                <p className="text-xs text-muted-foreground">Al hacer el pedido, tu cliente elige pagar ahora o al retirar o recibir.</p>
+            <div className="space-y-2 rounded-xl border p-3">
+              <p className="text-sm font-medium">¿Cómo te pagan los pedidos de tu tienda?</p>
+              <div role="radiogroup" aria-label="Cómo te pagan los pedidos de tu tienda" className="grid gap-2 sm:grid-cols-3">
+                {(
+                  [
+                    { value: "OFF", label: "Al retirar o recibir", hint: "Como siempre: lo acuerdas por WhatsApp." },
+                    { value: "ALL", label: "Todo online, al pedir", hint: "Ningún pedido llega sin pagar." },
+                    { value: "DELIVERY", label: "Despachos online", hint: "Los despachos se pagan al pedir; los retiros, al retirar." },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={storeMode === o.value}
+                    onClick={() => o.value !== storeMode && void run("tienda", () => setStorePayments(o.value))}
+                    disabled={!canManage || busy !== null}
+                    className={cn(
+                      "rounded-xl border px-3 py-2 text-left text-sm transition-colors disabled:opacity-60",
+                      storeMode === o.value ? "border-primary bg-primary/10 text-primary" : "bg-background text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <span className="block font-medium">{o.label}</span>
+                    <span className="block text-xs opacity-80">{o.hint}</span>
+                  </button>
+                ))}
               </div>
-              <Switch checked={storeEnabled} onCheckedChange={(v) => void run("tienda", () => setStorePayments(v))} disabled={!canManage || busy !== null} aria-label="Pagar online en la tienda" />
+              <p className="text-xs text-muted-foreground">Lo decides tú: tu cliente no elige. Un pedido que se debe pagar online te llega cuando ya está pagado.</p>
             </div>
             <p className="text-xs text-muted-foreground">También pueden pagar tus cotizaciones desde su enlace, y puedes crear enlaces de pago abajo.</p>
             {canManage ? (

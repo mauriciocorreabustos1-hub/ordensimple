@@ -51,10 +51,10 @@ export function StoreFront({
   timezone = "America/Santiago",
   coupons = false,
   table = null,
-  onlinePay = false,
+  payRule = null,
 }: {
-  /** El negocio recibe pagos online (Mercado Pago). */
-  onlinePay?: boolean
+  /** Qué cobra online el negocio al pedir (lo fija el dueño): todo, solo despachos, o nada. */
+  payRule?: "ALL" | "DELIVERY" | null
   /** Mesa desde la que abrieron la carta con el QR (el pedido se sirve en la mesa). */
   table?: string | null
   slug: string
@@ -284,7 +284,7 @@ export function StoreFront({
           hints={hints}
           total={total}
           coupons={coupons}
-          onlinePay={onlinePay && !table}
+          payRule={table ? null : payRule}
           done={done}
           onDone={(d) => {
             setDone(d)
@@ -313,12 +313,12 @@ function Checkout({
   promos,
   total,
   coupons,
-  onlinePay,
+  payRule,
   done,
   onDone,
   onClose,
 }: {
-  onlinePay: boolean
+  payRule: "ALL" | "DELIVERY" | null
   table: string | null
   gross: number
   /** Promociones "2×1" a medias: qué le falta agregar para aprovecharlas. */
@@ -339,8 +339,8 @@ function Checkout({
   const [delivery, setDelivery] = React.useState(false)
   const [note, setNote] = React.useState("")
   const [website, setWebsite] = React.useState("")
-  const [payNow, setPayNow] = React.useState(onlinePay)
-  const paying = onlinePay && payNow
+  // Lo fija el negocio: este pedido se paga online al hacerlo (el cliente no elige).
+  const paying = payRule === "ALL" || (payRule === "DELIVERY" && delivery)
   const [error, setError] = React.useState<string | null>(null)
   const [pending, startTransition] = React.useTransition()
   const [couponText, setCouponText] = React.useState("")
@@ -406,7 +406,7 @@ function Checkout({
       })
       const link = whatsappLink(r.data.whatsapp, text)
       onDone({ link, code: r.data.code, track: r.data.track })
-      if (paying) {
+      if (r.data.payNow) {
         // Pagar ahora: a Mercado Pago. Al volver, ve su pedido pagado (y el negocio recibe el aviso).
         const pay = await payWebOrder(r.data.track)
         if (pay.ok && pay.data) {
@@ -574,31 +574,8 @@ function Checkout({
               placeholder={delivery ? "Calle, número, depto, comuna" : table ? "Ej.: sin cebolla, la bebida bien fría" : "Ej.: paso a las 18:00"}
             />
           </div>
-          {onlinePay ? (
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium">¿Cómo pagas?</p>
-              <div role="radiogroup" aria-label="Cómo pagas" className="grid grid-cols-2 gap-2">
-                {[
-                  { value: true, label: "Pagar ahora", hint: "Tarjeta o Mercado Pago" },
-                  { value: false, label: delivery ? "Al recibir" : "Al retirar", hint: "Como acuerdes" },
-                ].map((o) => (
-                  <button
-                    key={String(o.value)}
-                    type="button"
-                    role="radio"
-                    aria-checked={payNow === o.value}
-                    onClick={() => setPayNow(o.value)}
-                    className={cn(
-                      "rounded-xl border px-3 py-2 text-left text-sm transition-colors",
-                      payNow === o.value ? "border-primary bg-primary/10 text-primary" : "bg-background text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <span className="block font-medium">{o.label}</span>
-                    <span className="block text-xs opacity-80">{o.hint}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+          {paying ? (
+            <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">💳 {businessName} cobra {payRule === "DELIVERY" ? "los despachos" : "los pedidos"} al pedir: pagas ahora con tarjeta o Mercado Pago.</p>
           ) : null}
           {/* Campo trampa para robots (las personas no lo ven). */}
           <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />

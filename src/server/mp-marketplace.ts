@@ -281,9 +281,13 @@ export async function onlinePayInfo(businessId: string, where: { webOrderId?: st
   return { paid, connected: Boolean(account), storeEnabled: Boolean(account?.storeEnabled) }
 }
 
-/** ¿La tienda ofrece pagar online? */
-export async function storeAcceptsOnline(businessId: string) {
-  if (!onlinePaymentsAvailable()) return false
-  const account = await db.mercadoPagoAccount.findUnique({ where: { businessId }, select: { storeEnabled: true } })
-  return Boolean(account?.storeEnabled)
+/** Qué se paga online en la tienda (lo fija el dueño): todo, solo los despachos, o nada (null: se paga al retirar o recibir). */
+export async function storePayRule(businessId: string): Promise<"ALL" | "DELIVERY" | null> {
+  if (!onlinePaymentsAvailable()) return null
+  const account = await db.mercadoPagoAccount.findUnique({ where: { businessId }, select: { storeEnabled: true, storePayRule: true } })
+  return account?.storeEnabled ? account.storePayRule : null
 }
+
+/** ¿Este pedido se paga online al hacerlo? (las mesas de la carta QR pagan en el local) */
+export const mustPayOnline = (rule: "ALL" | "DELIVERY" | null, o: { delivery: boolean; table?: string | null }) =>
+  !o.table && (rule === "ALL" || (rule === "DELIVERY" && o.delivery))

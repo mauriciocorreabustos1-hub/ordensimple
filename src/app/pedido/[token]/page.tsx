@@ -37,6 +37,7 @@ const getOrder = cache(async (token: string) => {
       stage: true,
       stageTimes: true,
       createdAt: true,
+      paymentRequired: true,
       business: {
         select: { id: true, name: true, currency: true, timezone: true, logoUpdatedAt: true, storeWhatsapp: true, storeSlug: true, storeEnabled: true },
       },
@@ -149,7 +150,14 @@ export default async function OrderTrackPage({ params, searchParams }: PageProps
           {pay.paid ? <p className="font-medium text-success">✅ Pagado con {mpMethodLabel(pay.paid.method)}</p> : null}
         </section>
 
-        {!pay.paid && pay.storeEnabled && !cancelled && order.stage !== "DELIVERED" ? <PayButton kind="order" token={token} label="Pagar ahora con tarjeta o Mercado Pago" /> : null}
+        {!pay.paid && order.paymentRequired && !cancelled ? (
+          <p className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+            Falta pagar tu pedido: {b.name} lo prepara cuando esté pagado.
+          </p>
+        ) : null}
+        {!pay.paid && pay.connected && (pay.storeEnabled || order.paymentRequired) && !cancelled && order.stage !== "DELIVERED" ? (
+          <PayButton kind="order" token={token} label="Pagar ahora con tarjeta o Mercado Pago" />
+        ) : null}
 
         <div className="grid gap-2">
           {b.storeWhatsapp ? (

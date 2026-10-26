@@ -835,10 +835,12 @@ model WebOrder {
   couponDiscount Int     @default(0)
 
   /// Enlace de seguimiento (/pedido/<trackToken>): el cliente ve en qué va su pedido sin preguntar.
-  trackToken String        @unique
-  stage      WebOrderStage @default(RECEIVED)
+  trackToken      String        @unique
+  stage           WebOrderStage @default(RECEIVED)
   /// Cuándo pasó a cada etapa: { PREPARING: iso, READY: iso, DELIVERED: iso }.
-  stageTimes Json?
+  stageTimes      Json?
+  /// Hay que pagarlo online antes de atenderlo (según lo que eligió el negocio): mientras no se pague, espera aparte.
+  paymentRequired Boolean       @default(false)
 
   @@index([businessId, status, createdAt])
   @@map("web_order")
@@ -896,23 +898,31 @@ model LoyaltyMovement {
 
 /// Cuenta de Mercado Pago que el negocio conectó para cobrar online (OAuth). Las claves van cifradas.
 model MercadoPagoAccount {
-  id            String   @id @default(cuid())
-  businessId    String   @unique
-  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id            String       @id @default(cuid())
+  businessId    String       @unique
+  business      Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   /// Id de la cuenta en Mercado Pago.
   mpUserId      String
   accessToken   String
   refreshToken  String?
   publicKey     String?
   expiresAt     DateTime
-  liveMode      Boolean  @default(true)
-  /// Ofrecer pagar online en la tienda.
-  storeEnabled  Boolean  @default(true)
+  liveMode      Boolean      @default(true)
+  /// Cobrar online en la tienda (si no, se paga al retirar o recibir).
+  storeEnabled  Boolean      @default(false)
+  /// Cuándo es obligatorio pagar online en la tienda (lo decide el dueño).
+  storePayRule  StorePayRule @default(ALL)
   connectedById String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@map("mercado_pago_account")
+}
+
+/// Qué se paga online en la tienda (lo fija el dueño; el cliente no elige). ALL: todo, al pedir. DELIVERY: los despachos al pedir; los retiros, al retirar.
+enum StorePayRule {
+  ALL
+  DELIVERY
 }
 
 enum OnlinePaymentKind {

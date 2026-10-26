@@ -37,11 +37,11 @@ export async function payWebOrder(track: string): Promise<ActionResult<{ url: st
     if (await rateLimited()) return { ok: false, message: "Demasiados intentos. Espera un rato." }
     const order = await db.webOrder.findUnique({
       where: { trackToken: track },
-      select: { id: true, businessId: true, total: true, status: true, customerName: true, business: { select: { name: true, currency: true } } },
+      select: { id: true, businessId: true, total: true, status: true, customerName: true, paymentRequired: true, business: { select: { name: true, currency: true } } },
     })
     if (!order || order.status === "CANCELLED") return { ok: false, message: "Este pedido ya no se puede pagar." }
     const account = await connected(order.businessId)
-    if (!account?.storeEnabled) return { ok: false, message: UNAVAILABLE }
+    if (!account || (!account.storeEnabled && !order.paymentRequired)) return { ok: false, message: UNAVAILABLE }
     if (await alreadyPaid({ webOrderId: order.id })) return { ok: false, message: "Este pedido ya está pagado." }
     const payment = await newPayment({ businessId: order.businessId, kind: "WEB_ORDER", webOrderId: order.id, amount: order.total, description: `Pedido n.º ${order.id.slice(-5).toUpperCase()} · ${order.business.name}` })
     return { ok: true, data: { url: await checkoutUrl(payment, { currency: order.business.currency, payerName: order.customerName }) } }
@@ -104,17 +104,25 @@ export async function disconnectMercadoPago(): Promise<ActionResult> {
   return { ok: true, message: "Mercado Pago desconectado: tus clientes ya no pueden pagar online" }
 }
 
-export async function setStorePayments(enabled: boolean): Promise<ActionResult> {
+/** Qué se paga online en la tienda: nada (al retirar o recibir), todo, o solo los despachos. Lo fija el dueño. */
+export async function setStorePayments(mode: "OFF" | "ALL" | "DELIVERY"): Promise<ActionResult> {
   const ctx = await requireBusiness()
+  if (!["OFF", "ALL", "DELIVERY"].includes(mode)) return { ok: false, message: "Opción no válida." }
   try {
     assertCan(ctx, "settings:manage")
-    const r = await db.mercadoPagoAccount.updateMany({ where: { businessId: ctx.businessId }, data: { storeEnabled: enabled } })
+    const r = await db.mercadoPagoAccount.updateMany({
+      where: { businessId: ctx.businessId },
+      data: mode === "OFF" ? { storeEnabled: false } : { storeEnabled: true, storePayRule: mode },
+    })
     if (r.count !== 1) return { ok: false, message: "Primero conecta tu cuenta de Mercado Pago." }
   } catch (error) {
     return toActionError(error)
   }
   revalidate()
-  return { ok: true, message: enabled ? "Tus clientes pueden pagar online en la tienda" : "La tienda ya no ofrece pagar online" }
+  return {
+    ok: true,
+    message: mode === "OFF" ? "En tu tienda se paga al retirar o recibir" : mode === "ALL" ? "En tu tienda todo se paga online al pedir" : "Los despachos se pagan online; los retiros, al retirar",
+  }
 }
 
 const linkSchema = z.object({

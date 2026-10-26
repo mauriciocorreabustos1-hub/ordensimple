@@ -13,7 +13,7 @@ import { BookingFlow } from "@/components/store/booking-flow"
 import { StoreTabs } from "@/components/store/store-tabs"
 import { bookableDays, bookableServices, bookableStaff, getBookableBusiness } from "@/server/booking"
 import { storeTables } from "@/server/store-tables"
-import { storeAcceptsOnline } from "@/server/mp-marketplace"
+import { storePayRule } from "@/server/mp-marketplace"
 
 /** Tienda publicada y con plan vigente; si no, la página no existe. */
 const getStore = cache(async (slug: string) => {
@@ -86,7 +86,7 @@ export default async function StorePage({ params, searchParams }: PageProps<"/ti
     canUseFeature(plan, "promos") ? db.storeCoupon.count({ where: { businessId: store.id, active: true } }).then((n) => n > 0) : Promise.resolve(false),
   ])
   const canBook = Boolean(booking && services.length)
-  const onlinePay = await storeAcceptsOnline(store.id)
+  const payRule = await storePayRule(store.id)
   const bookingFlow = canBook ? (
     <BookingFlow
       slug={slug}
@@ -103,7 +103,7 @@ export default async function StorePage({ params, searchParams }: PageProps<"/ti
   const storeFront = (
     <StoreFront
       table={table}
-      onlinePay={onlinePay}
+      payRule={payRule}
       promotions={promotions.filter((p) => p.online)}
       timezone={store.timezone}
       coupons={hasCoupons}

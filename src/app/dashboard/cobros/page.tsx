@@ -24,7 +24,7 @@ export default async function OnlinePaymentsPage({ searchParams }: PageProps<"/d
     )
   }
   const [account, payments, links] = await Promise.all([
-    db.mercadoPagoAccount.findUnique({ where: { businessId: ctx.businessId }, select: { storeEnabled: true } }),
+    db.mercadoPagoAccount.findUnique({ where: { businessId: ctx.businessId }, select: { storeEnabled: true, storePayRule: true } }),
     db.onlinePayment.findMany({
       where: { businessId: ctx.businessId, status: { not: "PENDING" } },
       orderBy: { createdAt: "desc" },
@@ -40,7 +40,7 @@ export default async function OnlinePaymentsPage({ searchParams }: PageProps<"/d
       <PageHeader title="Cobros online" description={DESCRIPTION} />
       <PaymentsBoard
         connected={Boolean(account)}
-        storeEnabled={account?.storeEnabled ?? false}
+        storeMode={account?.storeEnabled ? account.storePayRule : "OFF"}
         canManage={can(ctx.role, "settings:manage")}
         payments={payments.map((p) => ({ ...p, createdAt: p.createdAt.toISOString(), paidAt: p.paidAt?.toISOString() ?? null }))}
         links={links.map((l) => ({ id: l.id, token: l.token, title: l.title, amount: l.amount, customerName: l.customerName, customerPhone: l.customerPhone, status: l.status, createdAt: l.createdAt.toISOString() }))}

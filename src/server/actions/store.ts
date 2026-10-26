@@ -17,6 +17,7 @@ import { applyStock, buildLines, lineData, linkPromotions, MAX_TOTAL, promotions
 import { couponAmount, findCoupon } from "@/server/coupons"
 import { webCustomer } from "@/server/web-customer"
 import { storeTables } from "@/server/store-tables"
+import { mustPayOnline, storePayRule } from "@/server/mp-marketplace"
 import { assertCan, requireBusiness } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -73,6 +74,8 @@ export type WebOrderResult = {
   items: { name: string; quantity: number; unitPrice: number }[]
   /** Para el enlace de seguimiento (/pedido/<track>). */
   track: string
+  /** El negocio cobra este pedido online al hacerlo: se va a pagar (y el aviso al negocio llega al pagarse). */
+  payNow: boolean
 }
 
 /** Lo que cambió entre lo que veía el cliente y lo que vale ahora (promociones que terminaron o empezaron). */
@@ -141,6 +144,8 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
         data: { changed: true, subtotal, promos: promo.applied.map((a) => ({ name: a.name, amount: a.amount })), coupon: coupon ? { code: coupon.code, amount: coupon.amount } : null, total },
       }
     }
+    // Lo fija el negocio: todo pagado online, solo los despachos, o al retirar o recibir.
+    const paymentRequired = mustPayOnline(await storePayRule(business.id), { delivery, table })
     const order = await db.$transaction(async (tx) => {
       // El cupón se cuenta como usado solo si quedan usos (si dos lo usan a la vez, no se pasa del límite).
       if (coupon) {
@@ -166,12 +171,14 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
           couponDiscount: coupon?.amount ?? 0,
           // Enlace de seguimiento: aleatorio, para que nadie pueda ver pedidos ajenos.
           trackToken: randomBytes(18).toString("base64url"),
+          paymentRequired,
         },
         select: { id: true, trackToken: true },
       })
     })
     const count = orderItems.reduce((s, i) => s + i.quantity, 0)
-    after(async () =>
+    // Si hay que pagarlo online, el aviso al negocio llega cuando se paga (no por pedidos que nadie pagó).
+    if (!paymentRequired) after(async () =>
       sendPush(await businessManagers(business.id), {
         title: table ? `🍽️ Pedido desde ${table}` : "🛒 Nuevo pedido web",
         body: `${customerName}: ${count} ${count === 1 ? "producto" : "productos"} · ${formatMoney(total, business.currency)}${delivery ? " · despacho" : ""}`,
@@ -192,6 +199,7 @@ export async function createWebOrder(input: WebOrderInput): Promise<ActionResult
         table,
         items: orderItems.map(({ name, quantity, unitPrice }) => ({ name, quantity, unitPrice })),
         track: order.trackToken,
+        payNow: paymentRequired,
       },
     }
   } catch (error) {

@@ -16,6 +16,14 @@ function safeFirstName(name: string) {
   return first.length >= 2 ? first : ""
 }
 
+/** La misma casilla escrita de distintas formas cuenta como una: ana+1@gmail.com y a.na@googlemail.com son ana@gmail.com. */
+function mailboxKey(email: string) {
+  const [local = "", domain = ""] = email.trim().toLowerCase().split("@")
+  const base = local.split("+")[0]
+  const gmail = domain === "gmail.com" || domain === "googlemail.com"
+  return `${gmail ? base.replace(/\./g, "") : base}@${gmail ? "gmail.com" : domain}`
+}
+
 /**
  * Confirmación del pedido al correo del cliente (si lo dejó), con el enlace para ver en qué va.
  * Si el pedido se paga online, se envía cuando se paga. Las respuestas van al correo del negocio, si tiene.
@@ -37,10 +45,12 @@ export async function sendOrderConfirmation(orderId: string, paid: boolean) {
     },
   })
   if (!o?.customerEmail) return
-  // Como máximo 3 confirmaciones al día a una misma dirección (nadie puede usar las tiendas para llenar un correo ajeno).
-  if (!(await allowAttempt(`correo-pedido:${o.customerEmail.toLowerCase()}`, 3, 24 * 60 * 60_000))) return
-  // Y como máximo 200 al día por tienda.
-  if (!(await allowAttempt(`correo-pedido-negocio:${o.businessId}`, 200, 24 * 60 * 60_000))) return
+  // Sin pagar: como máximo 3 confirmaciones al día a una misma dirección y 200 por tienda (nadie puede usar las tiendas
+  // para llenar un correo ajeno). Un pedido pagado es real: su confirmación siempre sale.
+  if (!paid) {
+    if (!(await allowAttempt(`correo-pedido:${mailboxKey(o.customerEmail)}`, 3, 24 * 60 * 60_000))) return
+    if (!(await allowAttempt(`correo-pedido-negocio:${o.businessId}`, 200, 24 * 60 * 60_000))) return
+  }
   const code = o.id.slice(-5).toUpperCase()
   const email = orderConfirmationEmail({
     customerName: safeFirstName(o.customerName),

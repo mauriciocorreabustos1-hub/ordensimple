@@ -17,8 +17,9 @@ import { cn } from "@/lib/utils"
 import { getCustomers, type CustomerSegment } from "@/server/queries/contacts"
 import { getDebtors, getOverdueDebtors } from "@/server/queries/fiado"
 import { OverdueCard } from "@/components/contacts/overdue-card"
+import { DebtReminderButton } from "@/components/contacts/debt-reminder-button"
+import { canCollectOnline } from "@/server/mp-marketplace"
 import { requireBusiness } from "@/server/session"
-import { fiadoReminderText, whatsappLink } from "@/lib/whatsapp"
 
 export const metadata: Metadata = { title: "Clientes" }
 
@@ -32,6 +33,7 @@ const SEGMENTS: { value: CustomerSegment; label: string }[] = [
 
 export default async function CustomersPage({ searchParams }: PageProps<"/dashboard/clientes">) {
   const ctx = await requireBusiness()
+  const onlinePay = await canCollectOnline(ctx.businessId)
   if (!canUseFeature(ctx.business.plan, "customers")) {
     return <ProGate title="Clientes" description="Conoce a quienes te compran y cuánto te compran." />
   }
@@ -115,7 +117,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
       </div>
 
       {overdue.length && !q ? (
-        <OverdueCard debtors={overdue} days={ctx.settings.fiadoDays} currency={ctx.currency} businessName={ctx.business.name} />
+        <OverdueCard debtors={overdue} days={ctx.settings.fiadoDays} currency={ctx.currency} businessName={ctx.business.name} onlinePay={onlinePay} />
       ) : null}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -205,20 +207,20 @@ export default async function CustomersPage({ searchParams }: PageProps<"/dashbo
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
               </Link>
               {owes(c.id) > 0 ? (
-                <a
-                  href={whatsappLink(
-                    c.phone,
-                    fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(owes(c.id)) }),
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <DebtReminderButton
+                  customerId={c.id}
+                  customerName={c.name}
+                  phone={c.phone}
+                  businessName={ctx.business.name}
+                  amountText={money(owes(c.id))}
+                  onlinePay={onlinePay}
                   className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-card text-[11px] font-medium text-success transition-colors hover:border-success/40 hover:bg-success/10"
-                  aria-label={`Cobrar a ${c.name} por WhatsApp`}
-                  title={c.phone ? "Cobrar por WhatsApp" : "Cobrar por WhatsApp (eliges el contacto)"}
+                  ariaLabel={`Cobrar a ${c.name} por WhatsApp`}
+                  title={onlinePay ? "Cobrar por WhatsApp, con enlace para pagar con tarjeta" : c.phone ? "Cobrar por WhatsApp" : "Cobrar por WhatsApp (eliges el contacto)"}
                 >
                   <MessageCircle className="size-5" />
                   Cobrar
-                </a>
+                </DebtReminderButton>
               ) : null}
             </li>
           ))}

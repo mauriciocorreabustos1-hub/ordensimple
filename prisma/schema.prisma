@@ -986,6 +986,9 @@ model PaymentLink {
   amount        Int
   customerName  String?
   customerPhone String?
+  /// Enlace para cobrar el fiado de un cliente: al pagarse queda como abono a su cuenta (no como venta nueva).
+  customerId    String?
+  forDebt       Boolean           @default(false)
   status        PaymentLinkStatus @default(ACTIVE)
   /// Venta que se registró al pagarse.
   saleId        String?

@@ -19,12 +19,15 @@ import { getCustomerBalance, getCustomerFiadoHistory } from "@/server/queries/fi
 import { PaymentDialog } from "@/components/contacts/payment-dialog"
 import { deleteCustomerPayment } from "@/server/actions/fiado"
 import { requireBusiness } from "@/server/session"
-import { fiadoReminderText, whatsappLink } from "@/lib/whatsapp"
+import { canCollectOnline } from "@/server/mp-marketplace"
+import { DebtReminderButton } from "@/components/contacts/debt-reminder-button"
+import { whatsappLink } from "@/lib/whatsapp"
 
 export const metadata: Metadata = { title: "Cliente" }
 
 export default async function CustomerDetailPage({ params }: PageProps<"/dashboard/clientes/[id]">) {
   const ctx = await requireBusiness()
+  const onlinePay = await canCollectOnline(ctx.businessId)
   if (!canUseFeature(ctx.business.plan, "customers")) {
     return <ProGate title="Clientes" description="Conoce a quienes te compran y cuánto te compran." />
   }
@@ -136,17 +139,17 @@ export default async function CustomerDetailPage({ params }: PageProps<"/dashboa
                   asChild
                   title={c.phone ? undefined : "No tiene teléfono guardado: en WhatsApp eliges el contacto"}
                 >
-                  <a
-                    href={whatsappLink(
-                      c.phone,
-                      fiadoReminderText({ customerName: c.name, businessName: ctx.business.name, amount: money(balance) }),
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <DebtReminderButton
+                    customerId={c.id}
+                    customerName={c.name}
+                    phone={c.phone}
+                    businessName={ctx.business.name}
+                    amountText={money(balance)}
+                    onlinePay={onlinePay}
                   >
                     <MessageCircle />
-                    Cobrar por WhatsApp
-                  </a>
+                    {onlinePay ? "Cobrar con enlace de pago" : "Cobrar por WhatsApp"}
+                  </DebtReminderButton>
                 </Button>
               ) : null}
               {balance > 0 && canRegisterPayment ? (

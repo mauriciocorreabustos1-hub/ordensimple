@@ -250,6 +250,15 @@ async function paidLink(linkId: string, businessId: string, amount: number, meth
   await db.$transaction(async (tx) => {
     const link = await tx.paymentLink.findFirst({ where: { id: linkId, businessId, status: "ACTIVE" } })
     if (!link) return
+    // Cobro de fiado: es un abono a la cuenta del cliente (la venta ya se registró cuando se fió).
+    if (link.forDebt && link.customerId) {
+      await tx.customerPayment.create({
+        data: { businessId, customerId: link.customerId, amount, paymentMethod: method, note: "Pago online con Mercado Pago", createdById: link.createdById },
+      })
+      const r = await tx.paymentLink.updateMany({ where: { id: linkId, status: "ACTIVE" }, data: { status: "PAID", paidAt: new Date() } })
+      if (r.count !== 1) throw new Error("LINK_PAID")
+      return
+    }
     const sale = await tx.sale.create({
       data: {
         businessId,
@@ -281,6 +290,12 @@ export async function onlinePayInfo(businessId: string, where: { webOrderId?: st
     onlinePaymentsAvailable() ? db.mercadoPagoAccount.findUnique({ where: { businessId }, select: { storeEnabled: true } }) : null,
   ])
   return { paid, connected: Boolean(account), storeEnabled: Boolean(account?.storeEnabled) }
+}
+
+/** ¿El negocio tiene Mercado Pago conectado para cobrar online? */
+export async function canCollectOnline(businessId: string) {
+  if (!onlinePaymentsAvailable()) return false
+  return Boolean(await db.mercadoPagoAccount.findUnique({ where: { businessId }, select: { id: true } }))
 }
 
 /** Qué se paga online en la tienda (lo fija el dueño): todo, solo los despachos, o nada (null: se paga al retirar o recibir). */

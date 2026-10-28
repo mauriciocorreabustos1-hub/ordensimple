@@ -10,6 +10,8 @@ import { idSchema, optionalText, positiveMoney } from "@/lib/validations"
 import { checkoutUrl, newPayment, onlinePaymentsAvailable } from "@/server/mp-marketplace"
 import { allowAttempt } from "@/server/rate-limit"
 import { assertCan, requireBusiness } from "@/server/session"
+import { getCustomerBalance } from "@/server/queries/fiado"
+import { paymentLinkPath } from "@/lib/online-payments"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 const TOKEN_RE = /^[\w-]{16,64}$/
@@ -146,6 +148,44 @@ export async function createPaymentLink(input: PaymentLinkInput): Promise<Action
     })
     revalidate()
     return { ok: true, message: "Enlace de pago listo", data: link }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+/**
+ * Enlace para que un cliente pague su fiado con tarjeta o Mercado Pago (por el saldo de hoy). Al pagarse queda como
+ * abono a su cuenta. Si ya había uno por pagar por otro monto, se anula y se crea uno nuevo.
+ */
+export async function debtPaymentLink(customerId: string): Promise<ActionResult<{ path: string; amount: number }>> {
+  const ctx = await requireBusiness()
+  if (!idSchema.safeParse(customerId).success) return { ok: false, message: "Cliente no encontrado." }
+  try {
+    assertCan(ctx, "sales:create")
+    if (!(await connected(ctx.businessId))) return { ok: false, message: "Conecta tu cuenta de Mercado Pago en Cobros online para enviar enlaces de pago." }
+    const customer = await db.customer.findFirst({ where: { id: customerId, businessId: ctx.businessId }, select: { id: true, name: true, phone: true } })
+    if (!customer) return { ok: false, message: "Cliente no encontrado." }
+    const balance = await getCustomerBalance(ctx.businessId, customer.id)
+    if (balance <= 0) return { ok: false, message: `${customer.name} no tiene deuda pendiente.` }
+    const open = await db.paymentLink.findFirst({ where: { businessId: ctx.businessId, customerId: customer.id, forDebt: true, status: "ACTIVE" }, select: { id: true, token: true, amount: true } })
+    if (open?.amount === balance) return { ok: true, data: { path: paymentLinkPath(open.token), amount: balance } }
+    if (open) await db.paymentLink.updateMany({ where: { id: open.id, status: "ACTIVE" }, data: { status: "CANCELLED" } })
+    const link = await db.paymentLink.create({
+      data: {
+        businessId: ctx.businessId,
+        token: randomBytes(18).toString("base64url"),
+        title: "Saldo pendiente (fiado)",
+        amount: balance,
+        customerName: customer.name,
+        customerPhone: customer.phone,
+        customerId: customer.id,
+        forDebt: true,
+        createdById: ctx.user.id,
+      },
+      select: { token: true },
+    })
+    revalidate()
+    return { ok: true, data: { path: paymentLinkPath(link.token), amount: balance } }
   } catch (error) {
     return toActionError(error)
   }

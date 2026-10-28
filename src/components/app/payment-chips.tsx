@@ -58,6 +58,9 @@ export function PaymentChips({
           >
             <Icon className="size-4" />
             {m.label}
+            {/* Para no confundirlos: el fiado es crédito del local (te pagan después); "Crédito" es la tarjeta. */}
+            {m.value === "FIADO" ? <span className="-mt-1 text-[10px] font-normal text-muted-foreground">a crédito</span> : null}
+            {m.value === "CREDIT" ? <span className="-mt-1 text-[10px] font-normal text-muted-foreground">tarjeta</span> : null}
             {locked ? <span className="rounded-full bg-primary/10 px-1.5 text-[10px] leading-4 font-semibold text-primary">Pro</span> : null}
           </button>
         )

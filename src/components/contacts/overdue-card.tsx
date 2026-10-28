@@ -3,7 +3,7 @@ import { AlarmClock, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatMoney } from "@/lib/currency"
-import { fiadoReminderText, whatsappLink } from "@/lib/whatsapp"
+import { DebtReminderButton } from "@/components/contacts/debt-reminder-button"
 import type { OverdueDebtor } from "@/server/queries/fiado"
 
 const SHOWN = 6
@@ -14,11 +14,14 @@ export function OverdueCard({
   days,
   currency,
   businessName,
+  onlinePay = false,
 }: {
   debtors: OverdueDebtor[]
   days: number
   currency: string
   businessName: string
+  /** Mercado Pago conectado: el recordatorio lleva enlace de pago. */
+  onlinePay?: boolean
 }) {
   const money = (n: number) => formatMoney(n, currency)
   const total = debtors.reduce((s, d) => s + d.balance, 0)
@@ -47,15 +50,18 @@ export function OverdueCard({
                 </p>
               </Link>
               <Button variant="outline" size="sm" asChild className="shrink-0">
-                <a
-                  href={whatsappLink(d.phone, fiadoReminderText({ customerName: d.name, businessName, amount: money(d.balance) }))}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Cobrar a ${d.name} por WhatsApp`}
+                <DebtReminderButton
+                  customerId={d.id}
+                  customerName={d.name}
+                  phone={d.phone}
+                  businessName={businessName}
+                  amountText={money(d.balance)}
+                  onlinePay={onlinePay}
+                  ariaLabel={`Cobrar a ${d.name} por WhatsApp`}
                 >
                   <MessageCircle />
                   Cobrar
-                </a>
+                </DebtReminderButton>
               </Button>
             </li>
           ))}

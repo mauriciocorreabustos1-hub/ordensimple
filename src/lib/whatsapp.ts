@@ -11,7 +11,11 @@ export function whatsappLink(phone: string | null | undefined, text?: string) {
 }
 
 /** Mensaje amable para cobrar un fiado. */
-export function fiadoReminderText({ customerName, businessName, amount }: { customerName: string; businessName: string; amount: string }) {
+export function fiadoReminderText({ customerName, businessName, amount, payUrl }: { customerName: string; businessName: string; amount: string; payUrl?: string }) {
   const first = customerName.split(" ")[0] || customerName
+  // Con enlace de pago, puede pagar al tiro con tarjeta o Mercado Pago.
+  if (payUrl) {
+    return `Hola ${first}, ¿cómo estás? Te escribo de ${businessName}. Te recuerdo que tienes un saldo pendiente de ${amount} en fiado. Si quieres, puedes pagarlo aquí con tarjeta o Mercado Pago: ${payUrl} ¡Muchas gracias!`
+  }
   return `Hola ${first}, ¿cómo estás? Te escribo de ${businessName}. Te recuerdo que tienes un saldo pendiente de ${amount} en fiado. ¿Cuándo podrías pasar a pagarlo? ¡Muchas gracias!`
 }

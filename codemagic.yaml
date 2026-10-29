@@ -58,6 +58,8 @@ workflows:
         script: |
           cd mobile/android
           chmod +x gradlew
-          ./gradlew bundleRelease -PversionCode=$BUILD_NUMBER
+          ./gradlew bundleRelease assembleRelease -PversionCode=$BUILD_NUMBER
     artifacts:
       - mobile/android/app/build/outputs/bundle/release/*.aab
+      # El .apk se instala directo en un celular para probar (sin pasar por Google Play).
+      - mobile/android/app/build/outputs/apk/release/*.apk

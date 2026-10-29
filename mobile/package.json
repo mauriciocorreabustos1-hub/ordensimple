@@ -1,0 +1,23 @@
+{
+  "name": "ordensimple-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App de OrdenSimple para iPhone y Android: abre www.ordensimple.cl con Bluetooth nativo para imprimir boletas.",
+  "scripts": {
+    "sync": "cap sync",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'"
+  },
+  "dependencies": {
+    "@capacitor-community/bluetooth-le": "^7.3.2",
+    "@capacitor/android": "^7.6.10",
+    "@capacitor/core": "^7.6.10",
+    "@capacitor/ios": "^7.6.10"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.6.10"
+  },
+  "allowScripts": {
+    "sharp@0.32.6": true
+  }
+}

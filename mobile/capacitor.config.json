@@ -1,0 +1,27 @@
+{
+  "appId": "cl.ordensimple.app",
+  "appName": "OrdenSimple",
+  "webDir": "www",
+  "server": {
+    "url": "https://www.ordensimple.cl/dashboard",
+    "allowNavigation": ["www.ordensimple.cl", "ordensimple.cl"]
+  },
+  "ios": {
+    "appendUserAgent": "OrdenSimpleApp",
+    "contentInset": "never",
+    "scheme": "OrdenSimple"
+  },
+  "android": {
+    "appendUserAgent": "OrdenSimpleApp"
+  },
+  "plugins": {
+    "BluetoothLe": {
+      "displayStrings": {
+        "scanning": "Buscando impresoras...",
+        "cancel": "Cancelar",
+        "availableDevices": "Impresoras cercanas",
+        "noDeviceFound": "No se encontró ninguna impresora"
+      }
+    }
+  }
+}

@@ -192,6 +192,23 @@
   }
 }
 
+/* En la app de iPhone la página llega hasta arriba, bajo la hora y la batería: se deja ese espacio libre y tapado
+   (en Safari y en el computador mide 0). Las barras fijas de arriba usan top-safe. */
+body {
+  padding-top: env(safe-area-inset-top);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: env(safe-area-inset-top);
+  background: var(--background);
+  z-index: 60;
+}
+@utility top-safe {
+  top: env(safe-area-inset-top);
+}
+
 /* Espacio para la barra inferior del celular y el área segura del iPhone */
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);

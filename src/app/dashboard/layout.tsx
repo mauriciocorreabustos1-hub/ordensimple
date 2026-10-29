@@ -97,7 +97,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           profile={profile}
         />
         <div className="min-h-dvh bg-background lg:pl-64">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
+          <header className="sticky top-safe z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
             <Logo href="/" />
             <UserMenu name={ctx.user.name} email={ctx.user.email} image={ctx.user.image} businesses={businesses} isAdmin={isAdmin} />
           </header>

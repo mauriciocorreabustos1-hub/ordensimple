@@ -167,22 +167,23 @@ export function OnboardingWizard({ firstName, planChoice }: { firstName: string;
           </Field>
         ) : null}
 
-        <div className="flex items-center justify-between gap-2 pt-2">
+        {/* En el celular los botones van uno bajo otro (el principal arriba y a todo el ancho): lado a lado no caben. */}
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
           {step > 0 ? (
-            <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={pending}>
+            <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setStep((s) => s - 1)} disabled={pending}>
               <ArrowLeft />
               Atrás
             </Button>
           ) : (
-            <span />
+            <span className="hidden sm:block" />
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
             {step > 0 && !last ? (
-              <Button variant="ghost" onClick={() => setStep((s) => s + 1)} disabled={pending}>
+              <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setStep((s) => s + 1)} disabled={pending}>
                 Omitir
               </Button>
             ) : null}
-            <Button size="lg" className="h-11 px-5" onClick={next} disabled={pending}>
+            <Button size="lg" className="h-11 w-full px-5 sm:w-auto" onClick={next} disabled={pending}>
               {pending ? <Loader2 className="animate-spin" /> : last && !planChoice ? <Rocket /> : null}
               {last ? (planChoice ? "Continuar al pago" : "Empezar a usar OrdenSimple") : "Continuar"}
               {(!last || planChoice) && !pending ? <ArrowRight /> : null}

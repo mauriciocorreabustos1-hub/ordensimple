@@ -248,14 +248,18 @@ export async function syncPayment(businessId: string, mpPaymentId: string) {
 /** Enlace pagado: queda como venta del día (una sola vez). */
 async function paidLink(linkId: string, businessId: string, amount: number, method: ReturnType<typeof saleMethodFromMp>) {
   await db.$transaction(async (tx) => {
-    const link = await tx.paymentLink.findFirst({ where: { id: linkId, businessId, status: "ACTIVE" } })
+    // Un enlace de fiado anulado (por otro con el saldo nuevo) pudo pagarse igual en una pestaña abierta: el dinero
+    // llegó, así que también queda como abono.
+    const link = await tx.paymentLink.findFirst({
+      where: { id: linkId, businessId, OR: [{ status: "ACTIVE" }, { status: "CANCELLED", forDebt: true }] },
+    })
     if (!link) return
     // Cobro de fiado: es un abono a la cuenta del cliente (la venta ya se registró cuando se fió).
     if (link.forDebt && link.customerId) {
       await tx.customerPayment.create({
         data: { businessId, customerId: link.customerId, amount, paymentMethod: method, note: "Pago online con Mercado Pago", createdById: link.createdById },
       })
-      const r = await tx.paymentLink.updateMany({ where: { id: linkId, status: "ACTIVE" }, data: { status: "PAID", paidAt: new Date() } })
+      const r = await tx.paymentLink.updateMany({ where: { id: linkId, status: { in: ["ACTIVE", "CANCELLED"] } }, data: { status: "PAID", paidAt: new Date() } })
       if (r.count !== 1) throw new Error("LINK_PAID")
       return
     }

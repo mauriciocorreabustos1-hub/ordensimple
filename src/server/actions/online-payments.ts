@@ -12,6 +12,7 @@ import { allowAttempt } from "@/server/rate-limit"
 import { assertCan, requireBusiness } from "@/server/session"
 import { getCustomerBalance } from "@/server/queries/fiado"
 import { paymentLinkPath } from "@/lib/online-payments"
+import { canUseFeature } from "@/lib/plans"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 const TOKEN_RE = /^[\w-]{16,64}$/
@@ -162,6 +163,7 @@ export async function debtPaymentLink(customerId: string): Promise<ActionResult<
   if (!idSchema.safeParse(customerId).success) return { ok: false, message: "Cliente no encontrado." }
   try {
     assertCan(ctx, "sales:create")
+    if (!canUseFeature(ctx.business.plan, "customers")) return { ok: false, message: "El fiado es parte del plan Pro." }
     if (!(await connected(ctx.businessId))) return { ok: false, message: "Conecta tu cuenta de Mercado Pago en Cobros online para enviar enlaces de pago." }
     const customer = await db.customer.findFirst({ where: { id: customerId, businessId: ctx.businessId }, select: { id: true, name: true, phone: true } })
     if (!customer) return { ok: false, message: "Cliente no encontrado." }

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 const FEATURES = [
-  { icon: Printer, title: "Imprime directo", text: "Boletas, cuentas y comandas salen en la impresora que elijas, sin la ventana de impresión. Las térmicas cortan el papel solas." },
+  { icon: Printer, title: "Imprime al instante", text: "Un clic y la boleta, la cuenta o la comanda sale en la impresora que elijas. Sin ventanas ni configuraciones: la térmica corta el papel sola." },
   { icon: Wifi, title: "Impresoras USB y de red", text: "Cualquier impresora instalada en Windows y las de cocina conectadas por Wi-Fi o cable, por su dirección IP." },
   { icon: Monitor, title: "Su propia ventana", text: "Un ícono en el escritorio que abre tu negocio al tiro, separado del navegador." },
   { icon: RefreshCw, title: "Siempre al día", text: "Se actualiza sola. Todo lo nuevo de OrdenSimple aparece sin reinstalar nada." },
@@ -22,8 +22,8 @@ export default function DownloadPage() {
   return (
     <>
       <PageHero
-        title="OrdenSimple para PC"
-        description="Para la caja y la cocina: tu negocio en su propia ventana, con boletas y comandas que salen directo en tus impresoras."
+        title="Cobra, imprime y atiende al siguiente"
+        description="OrdenSimple para el computador de tu caja: la boleta sale impresa en el mismo segundo en que registras la venta, y la comanda llega impresa a la cocina."
       />
       <Section className="border-t-0">
         <div className="mx-auto max-w-3xl space-y-10 px-4 py-12">
@@ -31,7 +31,7 @@ export default function DownloadPage() {
             <Button asChild size="lg" className="h-12 px-6 text-base">
               <a href={DESKTOP_DOWNLOAD_URL}>
                 <Download />
-                Descargar para Windows
+                Descargar gratis para Windows
               </a>
             </Button>
             <p className="text-sm text-muted-foreground">Windows 10 u 11 de 64 bits · unos 100 MB · gratis, usa tu misma cuenta de OrdenSimple.</p>

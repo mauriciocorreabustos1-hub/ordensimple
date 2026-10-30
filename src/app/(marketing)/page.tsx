@@ -466,11 +466,11 @@ export default async function LandingPage() {
             <SectionTitle
               align="left"
               eyebrow="Nuevo: app para PC"
-              title="Todo OrdenSimple en tu computador"
-              description="Descarga la app para Windows: tu negocio completo en su propia ventana, y lo que imprimes sale directo en tu impresora, sin la ventana de impresión."
+              title="Cobra, imprime y atiende al siguiente"
+              description="Con OrdenSimple en el computador de tu caja, la boleta sale impresa en el mismo segundo en que registras la venta. Sin pasos de más, sin pelear con la impresora y sin clientes esperando en la fila."
             />
             <ul className="space-y-2 text-[15px]">
-              {["Ventas, caja, inventario, fiado, reportes, comandas y todo lo demás", "Boletas, cuentas y comandas directo en cualquier impresora USB o de red", "La térmica corta el papel sola, sin Ctrl + P", "Se actualiza sola, sin reinstalar nada", "La app es gratis y usa tu misma cuenta"].map((t) => (
+              {["Un clic y la boleta sale: nada de ventanas ni configuraciones", "La comanda llega impresa a la cocina, con letra grande", "Funciona con tu impresora de siempre: térmica, USB o de red", "Todo tu negocio en una ventana: ventas, caja, inventario, fiado y reportes", "Gratis, con tu misma cuenta, y se actualiza sola"].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {t}
@@ -481,13 +481,14 @@ export default async function LandingPage() {
               <Button size="lg" className="h-11" asChild>
                 <a href={DESKTOP_DOWNLOAD_URL}>
                   <Download />
-                  Descargar para Windows
+                  Descargar gratis para Windows
                 </a>
               </Button>
               <Button size="lg" variant="outline" className="h-11" asChild>
                 <Link href="/descargar">Cómo instalarla</Link>
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground">Windows 10 y 11 · se instala en un minuto · sin tarjeta</p>
           </div>
           <DesktopPreview />
         </div>

@@ -67,7 +67,7 @@ export function DesktopPreview({ className }: { className?: string }) {
       <div className="relative z-20 -mt-1 ml-auto w-[66%] rotate-2 sm:-mt-3 sm:w-[50%]">
         <p className="mb-1.5 flex items-center justify-end gap-1.5 text-xs font-semibold text-primary">
           <Printer className="size-3.5" />
-          Salió sola, sin Ctrl + P
+          Impresa al instante
         </p>
         <div className="rounded-b-md border border-neutral-200 bg-white p-3 font-mono text-[10.5px] leading-snug text-black shadow-2xl">
           <p className="text-center font-bold">ALMACEN DON PEDRO</p>

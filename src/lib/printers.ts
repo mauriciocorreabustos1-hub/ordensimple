@@ -41,11 +41,11 @@ export type PrinterPrefs = {
 }
 
 export const PRINTER_KINDS: Record<PrinterKind, { label: string; hint: string }> = {
-  dialog: { label: "Diálogo de impresión", hint: "Cualquier impresora instalada en este computador (USB, red o AirPrint). Se abre la ventana de impresión cada vez." },
+  dialog: { label: "Impresora instalada en el computador", hint: "Cualquier impresora instalada en este computador (USB, red o AirPrint). Se abre la ventana de impresión, salvo que uses el acceso directo de abajo." },
   bluetooth: { label: "Bluetooth (BLE)", hint: "La primera vez eliges la impresora en la lista." },
   "bt-classic": { label: "Bluetooth clásico", hint: "Para impresoras portátiles. Primero emparéjala en los ajustes de Bluetooth del celular." },
   network: { label: "Red: Wi-Fi o cable (IP)", hint: "Escribe la dirección IP de la impresora. Sale en la hoja de prueba que imprime al mantener apretado el botón de avance al encenderla." },
-  usb: { label: "USB directo", hint: "Conectada por cable a este computador o tablet, sin driver ni ventana de impresión." },
+  usb: { label: "USB directo", hint: "Conectada por cable a esta tablet o computador (Android, Mac o Linux), sin driver ni ventana de impresión." },
   serial: { label: "Puerto serie (COM)", hint: "Impresoras USB que se instalan como puerto COM, o con cable serie." },
   rawbt: { label: "App RawBT (Android)", hint: "Instala la app gratuita RawBT desde Google Play y conecta ahí tu impresora una vez." },
 }
@@ -135,6 +135,28 @@ type SerialApi = { requestPort: () => Promise<SerialPort>; getPorts: () => Promi
 const usb = () => (typeof navigator === "undefined" ? undefined : (navigator as Navigator & { usb?: UsbApi }).usb)
 const serial = () => (typeof navigator === "undefined" ? undefined : (navigator as Navigator & { serial?: SerialApi }).serial)
 
+export function isWindows() {
+  return typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent)
+}
+
+/**
+ * Acceso directo para Windows que abre OrdenSimple en Chrome (o Edge) imprimiendo sin la ventana de impresión: todo sale
+ * en la impresora predeterminada de Windows. Usa un perfil propio para que funcione aunque el navegador ya esté abierto.
+ */
+export function kioskShortcut(origin: string) {
+  const url = `${origin}/dashboard`
+  const flags = `--kiosk-printing --user-data-dir="%LOCALAPPDATA%\\OrdenSimpleCaja" --app=${url}`
+  const chromeKey = (root: string) => `${root}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe`
+  return [
+    "@echo off",
+    "rem OrdenSimple: imprime directo en la impresora predeterminada de Windows, sin la ventana de impresion.",
+    `reg query "${chromeKey("HKLM")}" >nul 2>&1 && (start "" chrome ${flags} & exit /b)`,
+    `reg query "${chromeKey("HKCU")}" >nul 2>&1 && (start "" chrome ${flags} & exit /b)`,
+    `start "" msedge ${flags}`,
+    "",
+  ].join("\r\n")
+}
+
 /** Las formas de conectar que funcionan en este aparato (las otras se explican en la pantalla). */
 export function availableKinds(): PrinterKind[] {
   const out: PrinterKind[] = []
@@ -143,7 +165,8 @@ export function availableKinds(): PrinterKind[] {
   if (tcp()) out.push("network")
   if (canUseWebBluetooth()) out.push("bluetooth")
   if (classic()) out.push("bt-classic")
-  if (usb()) out.push("usb")
+  // En Windows la impresora USB la toma su driver y el navegador no puede usarla: ahí se imprime como impresora instalada.
+  if (usb() && !isWindows()) out.push("usb")
   if (serial()) out.push("serial")
   if (isAndroid() && !isNativeApp()) out.push("rawbt")
   return out

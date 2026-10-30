@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bluetooth, Loader2, Printer, Search } from "lucide-react"
+import { Bluetooth, Download, Loader2, Printer, Search } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,8 @@ import {
   availableKinds,
   chooseSerialPort,
   chooseUsbPrinter,
+  isWindows,
+  kioskShortcut,
   PRINTER_KINDS,
   printerError,
   printTicket,
@@ -35,14 +37,20 @@ const ROLE_TEXT: Record<PrinterRole, { title: string; description: string }> = {
 /** Formas de conectar que este aparato no tiene, y dónde sí se puede. */
 function missingNote(kinds: PrinterKind[]) {
   const notes: string[] = []
-  if (!kinds.includes("network")) notes.push("Las impresoras de red (Wi-Fi o cable) se usan desde la app de OrdenSimple para Android o iPhone.")
+  if (!kinds.includes("network"))
+    notes.push(
+      isWindows()
+        ? "Las impresoras de red (Wi-Fi o cable) se usan aquí si están instaladas en Windows; directo por su IP, desde la app de OrdenSimple."
+        : "Las impresoras de red (Wi-Fi o cable) se usan desde la app de OrdenSimple para Android o iPhone.",
+    )
   if (!kinds.includes("bt-classic"))
     notes.push(
       isIos()
         ? "Las impresoras Bluetooth clásicas no funcionan con iPhone (Apple no lo permite a ninguna app): usa una BLE o de red."
         : "Las impresoras Bluetooth clásicas se usan desde la app de OrdenSimple para Android, o con la app RawBT.",
     )
-  if (!kinds.includes("usb") && !isNativeApp()) notes.push("USB directo y puerto serie funcionan en Chrome o Edge.")
+  if (isWindows()) notes.push("En Windows las impresoras USB se usan como “Impresora instalada en el computador”: Windows no deja que el navegador les hable directo.")
+  else if (!kinds.includes("usb") && !isNativeApp()) notes.push("USB directo y puerto serie funcionan en Chrome o Edge.")
   return notes
 }
 
@@ -280,6 +288,7 @@ export function PrinterSettings({ food }: { food: boolean }) {
           </Card>
         </>
       ) : null}
+      {isWindows() && !isNativeApp() ? <KioskCard /> : null}
       {notes.length ? (
         <div className="space-y-1 rounded-xl border p-3 text-xs text-muted-foreground">
           {notes.map((n) => (
@@ -288,5 +297,44 @@ export function PrinterSettings({ food }: { food: boolean }) {
         </div>
       ) : null}
     </div>
+  )
+}
+
+/** Windows: imprimir sin la ventana de impresión, en la impresora predeterminada (USB o de red con su driver). */
+function KioskCard() {
+  function download() {
+    const blob = new Blob([kioskShortcut(window.location.origin)], { type: "application/octet-stream" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "OrdenSimple caja.cmd"
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Imprimir sin la ventana de impresión (Windows)</CardTitle>
+        <CardDescription>Para la caja o la cocina con una impresora USB o de red instalada en Windows: cada boleta y comanda sale sola, sin Ctrl + P.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <ol className="list-decimal space-y-1.5 pl-5">
+          <li>
+            Deja tu impresora térmica como <strong>predeterminada</strong>: Configuración de Windows, sección Bluetooth y dispositivos, Impresoras y escáneres. Apaga
+            “Permitir que Windows administre mi impresora predeterminada”, entra a tu impresora y toca <strong>Establecer como predeterminada</strong>.
+          </li>
+          <li>Descarga el acceso directo y ábrelo. Si Windows avisa que es un archivo descargado, toca “Más información” y luego “Ejecutar de todas formas”.</li>
+          <li>Se abre OrdenSimple en su propia ventana: inicia sesión una vez. Desde ahí todo se imprime directo.</li>
+          <li>Aquí mismo, en esa ventana, elige “Impresora instalada en el computador” para las cuentas y para la cocina.</li>
+        </ol>
+        <Button variant="outline" onClick={download}>
+          <Download />
+          Descargar acceso directo
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Copia el archivo al escritorio para abrir la caja siempre desde ahí. En las otras ventanas del navegador se sigue abriendo la ventana de impresión como siempre.
+        </p>
+      </CardContent>
+    </Card>
   )
 }

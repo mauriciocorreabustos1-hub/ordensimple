@@ -10,7 +10,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --x64",
-    "release": "electron-builder --win --x64 --publish always"
+    "release": "electron-builder --win --x64 --publish always",
+    "dist:store": "electron-builder --win appx --x64 --publish never"
   },
   "build": {
     "appId": "cl.ordensimple.escritorio",
@@ -58,7 +59,21 @@
     ],
     "asarUnpack": [
       "raw-print.ps1"
-    ]
+    ],
+    "appx": {
+      "identityName": "OrdenSimple.OrdenSimple",
+      "publisher": "CN=87B0B154-83A6-45F1-86F9-D3E47922A616",
+      "publisherDisplayName": "OrdenSimple",
+      "displayName": "OrdenSimple",
+      "applicationId": "OrdenSimple",
+      "backgroundColor": "#007653",
+      "languages": [
+        "es-CL",
+        "es-419",
+        "es-ES"
+      ],
+      "artifactName": "OrdenSimple-Store.${ext}"
+    }
   },
   "dependencies": {
     "electron-updater": "^6.8.11"

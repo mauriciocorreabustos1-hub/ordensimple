@@ -1,0 +1,36 @@
+# Compila OrdenSimple para PC en formato MSIX para Microsoft Store, en un Windows de GitHub
+# (que trae las herramientas oficiales de Microsoft). El archivo queda en "Artifacts" de la ejecución,
+# listo para subirlo en Partner Center. Microsoft lo firma al publicarlo.
+name: Microsoft Store (MSIX)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/microsoft-store.yml"
+
+jobs:
+  msix:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Compilar para Microsoft Store
+        run: npm run dist:store
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OrdenSimple-Microsoft-Store
+          path: desktop/dist/*.appx
+          if-no-files-found: error

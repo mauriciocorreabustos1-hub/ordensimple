@@ -217,7 +217,8 @@ ipcMain.handle(
 
 app.whenReady().then(() => {
   createWindow()
-  if (app.isPackaged) {
+  // Instalada desde Microsoft Store, las actualizaciones las hace la tienda; desde ordensimple.cl, la app misma.
+  if (app.isPackaged && !process.windowsStore) {
     autoUpdater.autoDownload = true
     autoUpdater.on("update-downloaded", async (info) => {
       const { response } = await dialog.showMessageBox(win, {

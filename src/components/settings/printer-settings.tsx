@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Field } from "@/components/app/field"
 import { isIos } from "@/lib/bluetooth-print"
-import { isNativeApp } from "@/lib/native-app"
+import { DESKTOP_DOWNLOAD_URL } from "@/lib/desktop"
+import { desktopBridge, isNativeApp } from "@/lib/native-app"
 import { kitchenTicket } from "@/lib/kitchen-ticket"
 import { Ticket } from "@/lib/ticket"
 import {
@@ -18,6 +19,7 @@ import {
   chooseUsbPrinter,
   isWindows,
   kioskShortcut,
+  listDesktopPrinters,
   PRINTER_KINDS,
   printerError,
   printTicket,
@@ -37,6 +39,8 @@ const ROLE_TEXT: Record<PrinterRole, { title: string; description: string }> = {
 /** Formas de conectar que este aparato no tiene, y dónde sí se puede. */
 function missingNote(kinds: PrinterKind[]) {
   const notes: string[] = []
+  // En la app de PC están todas las de Windows y las de red: no hay nada que explicar.
+  if (desktopBridge()) return notes
   if (!kinds.includes("network"))
     notes.push(
       isWindows()
@@ -155,6 +159,8 @@ function PrinterCard({ role, kinds }: { role: PrinterRole; kinds: PrinterKind[] 
             </Field>
           </div>
         ) : null}
+
+        {setup?.kind === "desktop" ? <DesktopPrinterPicker setup={setup} save={save} /> : null}
 
         {setup?.kind === "bt-classic" ? (
           <div className="space-y-2">
@@ -288,7 +294,12 @@ export function PrinterSettings({ food }: { food: boolean }) {
           </Card>
         </>
       ) : null}
-      {isWindows() && !isNativeApp() ? <KioskCard /> : null}
+      {isWindows() && !isNativeApp() && !desktopBridge() ? (
+        <>
+          <DesktopAppCard />
+          <KioskCard />
+        </>
+      ) : null}
       {notes.length ? (
         <div className="space-y-1 rounded-xl border p-3 text-xs text-muted-foreground">
           {notes.map((n) => (
@@ -314,8 +325,8 @@ function KioskCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Imprimir sin la ventana de impresión (Windows)</CardTitle>
-        <CardDescription>Para la caja o la cocina con una impresora USB o de red instalada en Windows: cada boleta y comanda sale sola, sin Ctrl + P.</CardDescription>
+        <CardTitle>Sin instalar nada: imprimir sin la ventana de impresión</CardTitle>
+        <CardDescription>Si prefieres no instalar la app para PC: un acceso directo que abre OrdenSimple en Chrome o Edge y manda todo a la impresora predeterminada de Windows.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <ol className="list-decimal space-y-1.5 pl-5">
@@ -334,6 +345,75 @@ function KioskCard() {
         <p className="text-xs text-muted-foreground">
           Copia el archivo al escritorio para abrir la caja siempre desde ahí. En las otras ventanas del navegador se sigue abriendo la ventana de impresión como siempre.
         </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** App de PC: elegir entre las impresoras instaladas en Windows. */
+function DesktopPrinterPicker({ setup, save }: { setup: PrinterSetup; save: (s: PrinterSetup) => void }) {
+  const [list, setList] = React.useState<{ name: string; displayName: string; isDefault: boolean }[] | null>(null)
+  React.useEffect(() => {
+    let alive = true
+    listDesktopPrinters()
+      .then((l) => alive && setList(l))
+      .catch(() => alive && setList([]))
+    return () => {
+      alive = false
+    }
+  }, [])
+  if (!list) return <p className="text-sm text-muted-foreground">Buscando impresoras…</p>
+  if (!list.length) return <p className="text-sm text-muted-foreground">No hay impresoras instaladas en este PC. Instálala en Windows y vuelve a abrir esta pantalla.</p>
+  return (
+    <div className="space-y-3">
+      <Field label="Impresora" htmlFor="printer-desktop-name">
+        <select
+          id="printer-desktop-name"
+          value={setup.name ?? ""}
+          onChange={(e) => save({ ...setup, name: e.target.value || undefined })}
+          className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="">Elige una impresora</option>
+          {list.map((p) => (
+            <option key={p.name} value={p.name}>
+              {p.displayName}
+              {p.isDefault ? " (predeterminada)" : ""}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" checked={Boolean(setup.page)} onChange={(e) => save({ ...setup, page: e.target.checked })} className="mt-0.5 size-4 accent-primary" />
+        <span>
+          No es una impresora térmica de boletas
+          <span className="block text-xs text-muted-foreground">Se imprime como página (por ejemplo, en una impresora de tinta o láser). Las térmicas no lo necesitan: así cortan el papel solas.</span>
+        </span>
+      </label>
+    </div>
+  )
+}
+
+/** Windows en el navegador: lo recomendado es la app para PC, que imprime directo en cualquier impresora. */
+function DesktopAppCard() {
+  return (
+    <Card className="border-primary/40">
+      <CardHeader>
+        <CardTitle>Recomendado en Windows: OrdenSimple para PC</CardTitle>
+        <CardDescription>
+          Imprime directo, sin la ventana de impresión, en la impresora que elijas (USB o de red), y la térmica corta el papel sola. Una para cuentas y otra para la
+          cocina.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center gap-3">
+        <Button asChild>
+          <a href={DESKTOP_DOWNLOAD_URL}>
+            <Download />
+            Descargar para Windows
+          </a>
+        </Button>
+        <a href="/descargar" className="text-sm text-primary underline-offset-2 hover:underline">
+          Cómo instalarla
+        </a>
       </CardContent>
     </Card>
   )

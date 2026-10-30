@@ -4,7 +4,7 @@ import * as React from "react"
 import { Download, EllipsisVertical, Share, Smartphone, SquarePlus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AppModal } from "@/components/app/app-modal"
-import { APP_USER_AGENT } from "@/lib/native-app"
+import { APP_USER_AGENT, DESKTOP_USER_AGENT } from "@/lib/native-app"
 import { cn } from "@/lib/utils"
 
 /**
@@ -45,7 +45,8 @@ export function useInstallInfo(): Info | null {
         installed:
           window.matchMedia("(display-mode: standalone)").matches ||
           Boolean((navigator as { standalone?: boolean }).standalone) ||
-          navigator.userAgent.includes(APP_USER_AGENT),
+          navigator.userAgent.includes(APP_USER_AGENT) ||
+          navigator.userAgent.includes(DESKTOP_USER_AGENT),
         // Instagram, Facebook y TikTok abren las páginas en su propio navegador, que no permite instalar.
         inAppBrowser: /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|Bytedance/i.test(ua),
         canPrompt: Boolean(deferred),

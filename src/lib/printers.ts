@@ -13,10 +13,10 @@
 import * as React from "react"
 import { ROLL_CHARS } from "@/lib/escpos"
 import { canUseWebBluetooth, isAndroid, nativePrinterId, printViaBluetooth, rawbtLink } from "@/lib/bluetooth-print"
-import { isNativeApp, nativePlugin } from "@/lib/native-app"
+import { desktopBridge, isNativeApp, nativePlugin } from "@/lib/native-app"
 import { ticketToEscPos, ticketToHtml, type Ticket } from "@/lib/ticket"
 
-export type PrinterKind = "dialog" | "bluetooth" | "bt-classic" | "network" | "usb" | "serial" | "rawbt"
+export type PrinterKind = "desktop" | "dialog" | "bluetooth" | "bt-classic" | "network" | "usb" | "serial" | "rawbt"
 export type PrinterRole = "cuenta" | "cocina"
 
 export type PrinterSetup = {
@@ -27,8 +27,10 @@ export type PrinterSetup = {
   port?: number
   /** Bluetooth: la impresora elegida (dirección en el clásico, id en BLE de la app). */
   address?: string
-  /** Nombre para mostrar. */
+  /** Nombre para mostrar (en "desktop", el nombre de la impresora en Windows). */
   name?: string
+  /** App de PC: imprimir como página (impresoras que no son térmicas) en vez de comandos ESC/POS. */
+  page?: boolean
 }
 
 export type PrinterPrefs = {
@@ -41,6 +43,7 @@ export type PrinterPrefs = {
 }
 
 export const PRINTER_KINDS: Record<PrinterKind, { label: string; hint: string }> = {
+  desktop: { label: "Impresora de este PC", hint: "Cualquier impresora instalada en Windows (USB o de red). Sale directo, sin ventana de impresión." },
   dialog: { label: "Impresora instalada en el computador", hint: "Cualquier impresora instalada en este computador (USB, red o AirPrint). Se abre la ventana de impresión, salvo que uses el acceso directo de abajo." },
   bluetooth: { label: "Bluetooth (BLE)", hint: "La primera vez eliges la impresora en la lista." },
   "bt-classic": { label: "Bluetooth clásico", hint: "Para impresoras portátiles. Primero emparéjala en los ajustes de Bluetooth del celular." },
@@ -159,6 +162,8 @@ export function kioskShortcut(origin: string) {
 
 /** Las formas de conectar que funcionan en este aparato (las otras se explican en la pantalla). */
 export function availableKinds(): PrinterKind[] {
+  // App de PC: las impresoras de Windows y las de red, todo directo.
+  if (desktopBridge()) return ["desktop", "network"]
   const out: PrinterKind[] = []
   // Dentro de la app no hay ventana de impresión.
   if (!isNativeApp()) out.push("dialog")
@@ -187,9 +192,16 @@ function toBase64(data: Uint8Array) {
 }
 
 async function sendNetwork(setup: PrinterSetup, data: Uint8Array) {
+  if (!setup.host) throw new PrintError("Falta la dirección IP de la impresora.")
+  const desktop = desktopBridge()
+  if (desktop) {
+    await desktop.sendTcp(setup.host, setup.port || 9100, toBase64(data)).catch(() => {
+      throw new PrintError(`No se pudo conectar con la impresora en ${setup.host}. Revisa que esté encendida y en la misma red.`)
+    })
+    return
+  }
   const api = tcp()
   if (!api) throw new PrintError("La impresora de red se usa desde la app de OrdenSimple.")
-  if (!setup.host) throw new PrintError("Falta la dirección IP de la impresora.")
   const { client } = await withTimeout(
     api.connect({ ipAddress: setup.host, port: setup.port || 9100 }),
     8000,
@@ -293,6 +305,19 @@ export async function printTicket(setup: PrinterSetup, ticket: Ticket): Promise<
     printDialog(ticket, setup.width)
     return "la impresora"
   }
+  if (setup.kind === "desktop") {
+    const desktop = desktopBridge()
+    if (!desktop) throw new PrintError("“Impresora de este PC” se usa desde OrdenSimple para PC.")
+    if (!setup.name) throw new PrintError("Elige tu impresora en Configuración, sección Impresoras.")
+    const name = setup.name
+    try {
+      if (setup.page) await desktop.printHtml(ticketToHtml(ticket, setup.width, ROLL_CHARS[setup.width]), name)
+      else await desktop.printRaw(name, toBase64(ticketToEscPos(ticket, ROLL_CHARS[setup.width])))
+    } catch {
+      throw new PrintError(`No se pudo imprimir en ${name}. Revisa que esté encendida y conectada.`)
+    }
+    return name
+  }
   const data = ticketToEscPos(ticket, ROLL_CHARS[setup.width])
   switch (setup.kind) {
     case "network":
@@ -332,6 +357,11 @@ function rememberBluetooth(setup: PrinterSetup, id: { deviceId: string; name: st
 }
 
 /* ---------- Para elegir la impresora en Configuración ---------- */
+
+/** Impresoras instaladas en Windows (app de PC). */
+export async function listDesktopPrinters() {
+  return (await desktopBridge()?.listPrinters()) ?? []
+}
 
 /** Busca impresoras Bluetooth clásicas cercanas (app de Android). Demora unos 12 segundos. */
 export async function scanClassicPrinters() {

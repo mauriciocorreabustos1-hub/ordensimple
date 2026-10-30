@@ -1,0 +1,70 @@
+{
+  "name": "ordensimple-escritorio",
+  "productName": "OrdenSimple",
+  "version": "1.0.0",
+  "description": "OrdenSimple para PC: abre tu negocio e imprime boletas y comandas directo en tus impresoras.",
+  "author": "OrdenSimple",
+  "homepage": "https://www.ordensimple.cl",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "release": "electron-builder --win --x64 --publish always"
+  },
+  "build": {
+    "appId": "cl.ordensimple.escritorio",
+    "productName": "OrdenSimple",
+    "copyright": "OrdenSimple",
+    "files": [
+      "main.js",
+      "preload.js",
+      "raw-print.ps1",
+      "offline.html",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "OrdenSimple-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "OrdenSimple",
+      "uninstallDisplayName": "OrdenSimple",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mauriciocorreabustos1-hub",
+        "repo": "ordensimple-escritorio",
+        "releaseType": "release"
+      }
+    ],
+    "asarUnpack": [
+      "raw-print.ps1"
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "electron": "^37.10.3",
+    "electron-builder": "^26.18.0"
+  }
+}

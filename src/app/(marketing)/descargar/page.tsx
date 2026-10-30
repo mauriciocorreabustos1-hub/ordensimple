@@ -1,0 +1,73 @@
+import type { Metadata } from "next"
+import Link from "next/link"
+import { Download, Monitor, Printer, RefreshCw, Wifi } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CtaSection, PageHero, Section } from "@/components/landing/sections"
+import { DESKTOP_DOWNLOAD_URL } from "@/lib/desktop"
+
+export const metadata: Metadata = {
+  title: "OrdenSimple para PC",
+  description: "Descarga OrdenSimple para Windows: tu negocio en su propia ventana, con boletas y comandas que salen directo en tus impresoras, sin la ventana de impresión.",
+  alternates: { canonical: "/descargar" },
+}
+
+const FEATURES = [
+  { icon: Printer, title: "Imprime directo", text: "Boletas, cuentas y comandas salen en la impresora que elijas, sin la ventana de impresión. Las térmicas cortan el papel solas." },
+  { icon: Wifi, title: "Impresoras USB y de red", text: "Cualquier impresora instalada en Windows y las de cocina conectadas por Wi-Fi o cable, por su dirección IP." },
+  { icon: Monitor, title: "Su propia ventana", text: "Un ícono en el escritorio que abre tu negocio al tiro, separado del navegador." },
+  { icon: RefreshCw, title: "Siempre al día", text: "Se actualiza sola. Todo lo nuevo de OrdenSimple aparece sin reinstalar nada." },
+]
+
+export default function DownloadPage() {
+  return (
+    <>
+      <PageHero
+        title="OrdenSimple para PC"
+        description="Para la caja y la cocina: tu negocio en su propia ventana, con boletas y comandas que salen directo en tus impresoras."
+      />
+      <Section className="border-t-0">
+        <div className="mx-auto max-w-3xl space-y-10 px-4 py-12">
+          <div className="flex flex-col items-start gap-3">
+            <Button asChild size="lg" className="h-12 px-6 text-base">
+              <a href={DESKTOP_DOWNLOAD_URL}>
+                <Download />
+                Descargar para Windows
+              </a>
+            </Button>
+            <p className="text-sm text-muted-foreground">Windows 10 u 11 de 64 bits · unos 100 MB · gratis, usa tu misma cuenta de OrdenSimple.</p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="space-y-2 rounded-2xl border p-5">
+                <f.icon className="size-5 text-primary" />
+                <h2 className="font-semibold">{f.title}</h2>
+                <p className="text-sm text-muted-foreground">{f.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold tracking-tight">Cómo instalarla</h2>
+            <ol className="list-decimal space-y-2 pl-5 text-sm">
+              <li>Descarga el instalador y ábrelo.</li>
+              <li>
+                Si Windows muestra “Windows protegió su PC”, toca <strong>Más información</strong> y luego <strong>Ejecutar de todas formas</strong>. Aparece porque la
+                app es nueva y Windows todavía no la conoce.
+              </li>
+              <li>Se instala sola y deja el ícono de OrdenSimple en el escritorio. Ábrela e inicia sesión.</li>
+              <li>
+                En Configuración, sección Impresoras, elige <strong>Impresora de este PC</strong> y tu impresora. Toca <strong>Imprimir prueba</strong>.
+              </li>
+            </ol>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            ¿Usas celular o tablet? <Link href="/instalar" className="text-primary underline-offset-2 hover:underline">Instálala en tu celular</Link>.
+          </p>
+        </div>
+      </Section>
+      <CtaSection title="¿Todavía no tienes cuenta?" text="Créala gratis y después descarga la app para tu PC." />
+    </>
+  )
+}

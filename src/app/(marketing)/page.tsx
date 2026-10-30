@@ -459,18 +459,18 @@ export default async function LandingPage() {
         </div>
       </Section>
 
-      {/* OrdenSimple para PC: la caja con impresión directa. */}
+      {/* OrdenSimple para PC: todo el negocio en el computador, con impresión directa. */}
       <Section className="overflow-hidden">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-5">
             <SectionTitle
               align="left"
               eyebrow="Nuevo: app para PC"
-              title="La caja en tu computador, imprimiendo sola"
-              description="Descarga OrdenSimple para Windows: tu negocio en su propia ventana, y las boletas, cuentas y comandas salen directo en tus impresoras, sin la ventana de impresión."
+              title="Todo OrdenSimple en tu computador"
+              description="Descarga la app para Windows: tu negocio completo en su propia ventana, y lo que imprimes sale directo en tu impresora, sin la ventana de impresión."
             />
             <ul className="space-y-2 text-[15px]">
-              {["Cualquier impresora instalada en Windows, USB o de red", "Una impresora para las cuentas y otra para la cocina", "La térmica corta el papel sola y la comanda sale con letra grande", "Se actualiza sola, sin reinstalar nada", "La app es gratis y usa tu misma cuenta"].map((t) => (
+              {["Ventas, caja, inventario, fiado, reportes, comandas y todo lo demás", "Boletas, cuentas y comandas directo en cualquier impresora USB o de red", "La térmica corta el papel sola, sin Ctrl + P", "Se actualiza sola, sin reinstalar nada", "La app es gratis y usa tu misma cuenta"].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   {t}

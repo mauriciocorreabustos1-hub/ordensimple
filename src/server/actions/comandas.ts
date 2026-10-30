@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
-import { sendPush } from "@/server/push"
+import { businessManagers, sendPush } from "@/server/push"
 import { db } from "@/lib/db"
 import { isFoodBusiness } from "@/lib/business-kind"
 import { canUseFeature } from "@/lib/plans"
@@ -273,7 +273,8 @@ export async function cancelComanda(id: string): Promise<ActionResult> {
 // ─── Cocina ─────────────────────────────────────────────────────────────────
 
 /** El garzón envía a la cocina lo que todavía no se había enviado. */
-export async function sendComandaToKitchen(id: string): Promise<ActionResult<{ sent: number }>> {
+/** `device`: el aparato que envía (para no avisarle a él mismo; le llega al celular del dueño si envía desde el PC). */
+export async function sendComandaToKitchen(id: string, device?: string): Promise<ActionResult<{ sent: number }>> {
   const ctx = await requireBusiness()
   if (!idSchema.safeParse(id).success) return { ok: false, message: "Comanda no encontrada" }
   let sent = 0
@@ -282,11 +283,29 @@ export async function sendComandaToKitchen(id: string): Promise<ActionResult<{ s
     const reason = blocked(ctx)
     if (reason) return { ok: false, message: reason }
     if (!(await findOpen(ctx, id))) return { ok: false, message: "Esta comanda ya se cobró o se anuló. Recarga la página." }
-    const items = (await db.comandaItem.findMany({ where: { comandaId: id }, select: { id: true, quantity: true, sentQty: true } })).filter((i) => i.quantity > i.sentQty)
+    const items = (await db.comandaItem.findMany({ where: { comandaId: id }, select: { id: true, quantity: true, sentQty: true, description: true } })).filter((i) => i.quantity > i.sentQty)
     if (!items.length) return { ok: false, message: "No hay nada nuevo para enviar a la cocina." }
     sent = items.reduce((sum, i) => sum + i.quantity - i.sentQty, 0)
     const sentAt = new Date()
     await db.$transaction(items.map((i) => db.comandaItem.update({ where: { id: i.id }, data: { sentQty: i.quantity, sentAt } })))
+    // Aviso al celular del dueño y los administradores: llegó un pedido a la cocina (menos al aparato que lo envió).
+    const comanda = await db.comanda.findUnique({ where: { id }, select: { label: true } })
+    const businessId = ctx.businessId
+    const lines = items.map((i) => `${i.quantity - i.sentQty} × ${i.description}`)
+    after(() =>
+      businessManagers(businessId).then((managers) =>
+        sendPush(
+          managers,
+          {
+            title: `🍳 ${comanda?.label ?? "Comanda"}: pedido a la cocina`,
+            body: lines.length > 3 ? `${lines.slice(0, 3).join(", ")} y ${lines.length - 3} más` : lines.join(", "),
+            url: "/dashboard/cocina",
+            tag: `cocina-${id}-${sentAt.getTime()}`,
+          },
+          typeof device === "string" ? device.slice(0, 1000) : undefined,
+        ),
+      ),
+    )
   } catch (error) {
     return toActionError(error)
   }

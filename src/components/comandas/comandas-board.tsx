@@ -19,6 +19,7 @@ import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import { BillStep, personGroups } from "@/components/comandas/bill-split"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
 import { kitchenTicket } from "@/lib/kitchen-ticket"
+import { thisPushDevice } from "@/lib/push-device"
 import { getPrinterPrefs, printerError, printTicket } from "@/lib/printers"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
@@ -594,7 +595,7 @@ function ComandaEditor({
       .map((i) => ({ description: i.description, quantity: i.quantity - i.sentQty, note: i.note, person: i.person }))
     startTransition(async () => {
       await flush()
-      const r = await sendComandaToKitchen(comanda.id)
+      const r = await sendComandaToKitchen(comanda.id, await thisPushDevice())
       if (!r.ok) {
         toast.error(r.message)
         return

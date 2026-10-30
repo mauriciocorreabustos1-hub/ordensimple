@@ -8,18 +8,10 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { markKitchenReady } from "@/server/actions/comandas"
+import { thisPushDevice } from "@/lib/push-device"
 import { kitchenTicket, type KitchenLine } from "@/lib/kitchen-ticket"
 import { getPrinterPrefs, printerError, printTicket, usePrinterPrefs } from "@/lib/printers"
 
-/** Dirección de avisos de este aparato (si los activó), para no avisarle a la cocina lo que ella misma marcó. */
-async function thisDevice() {
-  try {
-    const reg = await navigator.serviceWorker?.getRegistration("/")
-    return (await reg?.pushManager.getSubscription())?.endpoint
-  } catch {
-    return undefined
-  }
-}
 
 export type KitchenTicket = {
   id: string
@@ -169,7 +161,7 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
 
   async function ready(target: { itemId?: string; comandaId?: string }, ids: string[], label: string) {
     setHidden((h) => new Set([...h, ...ids]))
-    const r = await markKitchenReady(target, false, await thisDevice())
+    const r = await markKitchenReady(target, false, await thisPushDevice())
     if (!r.ok) {
       setHidden((h) => new Set([...h].filter((id) => !ids.includes(id))))
       toast.error(r.message)

@@ -94,6 +94,27 @@ Menu.setApplicationMenu(
 
 /* ---------- Impresión (solo para las páginas de OrdenSimple) ---------- */
 
+/** Solo una impresora que esté de verdad instalada en Windows (y nunca algo que parezca un parámetro). */
+async function checkPrinter(deviceName) {
+  if (typeof deviceName !== "string" || !deviceName || deviceName.startsWith("-")) throw new Error("BAD_PRINTER")
+  const list = await win.webContents.getPrintersAsync()
+  if (!list.some((p) => p.name === deviceName)) throw new Error("BAD_PRINTER")
+  return deviceName
+}
+
+// Impresoras de red: solo los puertos de impresión directa y nunca este mismo PC (ni direcciones especiales).
+const PRINTER_PORTS = new Set([9100, 9101, 9102])
+function checkNetworkTarget(host, port) {
+  if (typeof host !== "string" || !/^[\w.:-]{1,100}$/.test(host)) throw new Error("BAD_INPUT")
+  const n = Number(port) || 9100
+  if (!PRINTER_PORTS.has(n)) throw new Error("BAD_PORT")
+  const h = host.toLowerCase()
+  // Para probar con ORDENSIMPLE_URL apuntando a un servidor local se permite este PC.
+  const local = /^(localhost|127\.|0\.|::1$|::$|169\.254\.|fe80:|22[4-9]\.|23\d\.|2[45]\d\.)/.test(h)
+  if (local && !process.env.ORDENSIMPLE_URL) throw new Error("BAD_HOST")
+  return { host, port: n }
+}
+
 function guard(handler) {
   return async (event, ...args) => {
     if (!isOurs(event.senderFrame?.url ?? "")) throw new Error("NOT_ALLOWED")
@@ -112,21 +133,21 @@ ipcMain.handle(
 // Una página (HTML del ticket) a la impresora elegida, sin ventana de impresión.
 ipcMain.handle(
   "printers:html",
-  guard(
-    (html, deviceName) =>
-      new Promise((resolve, reject) => {
-        if (typeof html !== "string" || html.length > 2_000_000) return reject(new Error("BAD_INPUT"))
-        const page = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
-        page.webContents.once("did-finish-load", () => {
-          page.webContents.print({ silent: true, deviceName: deviceName || undefined, printBackground: false, margins: { marginType: "none" } }, (ok, reason) => {
-            page.destroy()
-            if (ok) resolve(true)
-            else reject(new Error(reason || "PRINT_FAILED"))
-          })
+  guard(async (html, deviceName) => {
+    if (typeof html !== "string" || html.length > 2_000_000) throw new Error("BAD_INPUT")
+    const printer = await checkPrinter(deviceName)
+    return new Promise((resolve, reject) => {
+      const page = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
+      page.webContents.once("did-finish-load", () => {
+        page.webContents.print({ silent: true, deviceName: printer, printBackground: false, margins: { marginType: "none" } }, (ok, reason) => {
+          page.destroy()
+          if (ok) resolve(true)
+          else reject(new Error(reason || "PRINT_FAILED"))
         })
-        void page.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-      }),
-  ),
+      })
+      void page.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    })
+  }),
 )
 
 // Bytes ESC/POS directo a una impresora de Windows (cola de impresión en modo RAW): corta el papel y usa letra grande.
@@ -134,7 +155,8 @@ ipcMain.handle(
   "printers:raw",
   guard(async (deviceName, base64) => {
     if (process.platform !== "win32") throw new Error("ONLY_WINDOWS")
-    if (typeof deviceName !== "string" || !deviceName || typeof base64 !== "string" || base64.length > 4_000_000) throw new Error("BAD_INPUT")
+    if (typeof base64 !== "string" || base64.length > 4_000_000) throw new Error("BAD_INPUT")
+    await checkPrinter(deviceName)
     const file = path.join(os.tmpdir(), `ordensimple-${process.pid}-${Date.now()}.bin`)
     fs.writeFileSync(file, Buffer.from(base64, "base64"))
     const script = app.isPackaged ? path.join(process.resourcesPath, "app.asar.unpacked", "raw-print.ps1") : path.join(__dirname, "raw-print.ps1")
@@ -160,8 +182,14 @@ ipcMain.handle(
   guard(
     (host, port, base64) =>
       new Promise((resolve, reject) => {
-        if (typeof host !== "string" || !/^[\w.:-]{1,100}$/.test(host)) return reject(new Error("BAD_INPUT"))
-        const socket = net.connect({ host, port: Number(port) || 9100 })
+        if (typeof base64 !== "string" || base64.length > 4_000_000) return reject(new Error("BAD_INPUT"))
+        let target
+        try {
+          target = checkNetworkTarget(host, port)
+        } catch (e) {
+          return reject(e)
+        }
+        const socket = net.connect(target)
         socket.setTimeout(8000, () => {
           socket.destroy()
           reject(new Error("TIMEOUT"))

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Check } from "lucide-react"
+import { Check, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { PriceTag } from "@/components/landing/price-tag"
@@ -18,6 +18,8 @@ import { PaymentsPreview } from "@/components/landing/payments-preview"
 import { QuotePreview } from "@/components/landing/quote-preview"
 import { RecipesPreview } from "@/components/landing/recipes-preview"
 import { TrackingPreview } from "@/components/landing/tracking-preview"
+import { DesktopPreview } from "@/components/landing/desktop-preview"
+import { DESKTOP_DOWNLOAD_URL } from "@/lib/desktop"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -454,6 +456,40 @@ export default async function LandingPage() {
             </div>
           </div>
           <PaymentsPreview className="lg:order-1" />
+        </div>
+      </Section>
+
+      {/* OrdenSimple para PC: la caja con impresión directa. */}
+      <Section className="overflow-hidden">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <SectionTitle
+              align="left"
+              eyebrow="Nuevo: app para PC"
+              title="La caja en tu computador, imprimiendo sola"
+              description="Descarga OrdenSimple para Windows: tu negocio en su propia ventana, y las boletas, cuentas y comandas salen directo en tus impresoras, sin la ventana de impresión."
+            />
+            <ul className="space-y-2 text-[15px]">
+              {["Cualquier impresora instalada en Windows, USB o de red", "Una impresora para las cuentas y otra para la cocina", "La térmica corta el papel sola y la comanda sale con letra grande", "Se actualiza sola, sin reinstalar nada", "La app es gratis y usa tu misma cuenta"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" className="h-11" asChild>
+                <a href={DESKTOP_DOWNLOAD_URL}>
+                  <Download />
+                  Descargar para Windows
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="h-11" asChild>
+                <Link href="/descargar">Cómo instalarla</Link>
+              </Button>
+            </div>
+          </div>
+          <DesktopPreview />
         </div>
       </Section>
 

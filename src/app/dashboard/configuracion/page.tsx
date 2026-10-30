@@ -29,6 +29,7 @@ import { ThemePicker } from "@/components/settings/theme-picker"
 import { MarketingSwitch } from "@/components/settings/marketing-switch"
 import { AccountSection } from "@/components/settings/account-section"
 import { TeamSection } from "@/components/settings/team-section"
+import { PrinterSettings } from "@/components/settings/printer-settings"
 import { db } from "@/lib/db"
 import { formatDate } from "@/lib/dates"
 import { getAppUrl } from "@/lib/app-url"
@@ -296,6 +297,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
             </Card>
             </>
           ) : null}
+          {section === "impresoras" ? <PrinterSettings food={isFoodBusiness(ctx.business.type)} /> : null}
           {section === "avisos" ? (
             <>
             <Card id="avisos" className="scroll-mt-20">

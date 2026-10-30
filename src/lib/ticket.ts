@@ -4,7 +4,7 @@
 import { EscPos } from "@/lib/escpos"
 
 type Op =
-  | { t: "line"; text: string; bold?: boolean; center?: boolean }
+  | { t: "line"; text: string; bold?: boolean; center?: boolean; big?: boolean }
   | { t: "row"; left: string; right: string; bold?: boolean }
   | { t: "rule"; char: string }
   | { t: "feed"; lines: number }
@@ -12,7 +12,8 @@ type Op =
 
 export class Ticket {
   readonly ops: Op[] = []
-  line(text = "", o: { bold?: boolean; center?: boolean } = {}) {
+  /** big: letra al doble (en la comanda de cocina, para leerla de lejos). */
+  line(text = "", o: { bold?: boolean; center?: boolean; big?: boolean } = {}) {
     this.ops.push({ t: "line", text, ...o })
     return this
   }
@@ -44,7 +45,9 @@ export function ticketToEscPos(ticket: Ticket, chars: number) {
     if (op.t === "line") {
       if (op.center) p.center()
       if (op.bold) p.bold()
+      if (op.big) p.big()
       p.line(op.text)
+      if (op.big) p.big(false)
       if (op.bold) p.bold(false)
       if (op.center) p.center(false)
     } else if (op.t === "row") {
@@ -99,7 +102,7 @@ function layout(ticket: Ticket, chars: number) {
   const tickets: Out[][] = [[]]
   const add = (o: Out) => tickets[tickets.length - 1].push(o)
   for (const op of ticket.ops) {
-    if (op.t === "line") for (const l of wrap(pdfText(op.text), chars)) add({ text: l, bold: Boolean(op.bold), center: Boolean(op.center) })
+    if (op.t === "line") for (const l of wrap(pdfText(op.text), chars)) add({ text: l, bold: Boolean(op.bold || op.big), center: Boolean(op.center) })
     else if (op.t === "row") {
       const left = pdfText(op.left)
       const right = pdfText(op.right)
@@ -182,4 +185,23 @@ export async function ticketToImages(ticket: Ticket, widthDots: number, chars: n
     images.push(await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas"))), "image/png")))
   }
   return images
+}
+
+/**
+ * Página HTML con el ticket para el diálogo de impresión del navegador: el ancho del rollo como máximo, pegada arriba,
+ * y cada ticket (separado por un corte) en su propia hoja. Sin tamaño de hoja (ver RollPaper).
+ */
+export function ticketToHtml(ticket: Ticket, widthMm: number, chars: number) {
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  const pages = layout(ticket, chars)
+    .map((lines) => `<div class="t">${lines.map((l) => `<div class="${l.bold ? "b " : ""}${l.center ? "c" : ""}">${esc(l.text) || "&nbsp;"}</div>`).join("")}</div>`)
+    .join("")
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+@page { margin: 0 }
+html, body { margin: 0; padding: 0; background: #fff }
+body { box-sizing: border-box; max-width: ${widthMm}mm; padding: 1mm 3mm 0; font: ${widthMm === 58 ? "9pt" : "10.5pt"}/1.35 ui-monospace, "Courier New", monospace; color: #000 }
+div div { white-space: pre }
+.b { font-weight: 700 } .c { text-align: center }
+.t { break-after: page; page-break-after: always } .t:last-child { break-after: auto; page-break-after: auto }
+</style></head><body>${pages}</body></html>`
 }

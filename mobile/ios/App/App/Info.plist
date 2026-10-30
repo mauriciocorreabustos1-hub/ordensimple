@@ -4,6 +4,8 @@
 <dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>OrdenSimple usa Bluetooth para imprimir boletas y comandas en tu impresora térmica.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>OrdenSimple se conecta a tu impresora de boletas y comandas en la red Wi-Fi del local.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>OrdenSimple usa la cámara para escanear códigos de barra y sacar fotos de tus productos y facturas.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -1,12 +1,15 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Bell, BellOff, Check, ChefHat, Maximize } from "lucide-react"
+import { Bell, BellOff, Check, ChefHat, Maximize, Printer } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { markKitchenReady } from "@/server/actions/comandas"
+import { kitchenTicket, type KitchenLine } from "@/lib/kitchen-ticket"
+import { getPrinterPrefs, printerError, printTicket, usePrinterPrefs } from "@/lib/printers"
 
 /** Dirección de avisos de este aparato (si los activó), para no avisarle a la cocina lo que ella misma marcó. */
 async function thisDevice() {
@@ -107,15 +110,52 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
   const [fresh, setFresh] = React.useState<Set<string>>(() => new Set())
   const [arrivals, setArrivals] = React.useState(0)
   const [lastTickets, setLastTickets] = React.useState(tickets)
+  // Comandas por imprimir en este aparato (si imprime solo lo que llega: Configuración, sección Impresoras).
+  const [jobs, setJobs] = React.useState<{ label: string; items: KitchenLine[] }[]>([])
   if (lastTickets !== tickets) {
+    // Cuánto faltaba de cada plato antes: si llegan más unidades de uno que ya estaba, se imprimen solo las nuevas.
+    const before = new Map(lastTickets.flatMap((t) => t.items.map((i) => [i.id, i.quantity] as const)))
     setLastTickets(tickets)
     const arrived = tickets.flatMap((t) => t.items).filter((i) => !known.has(keyOf(i)))
     if (arrived.length) {
       setKnown(new Set([...known, ...arrived.map(keyOf)]))
       setFresh(new Set([...fresh, ...arrived.map((i) => i.id)]))
       setArrivals((n) => n + 1)
+      const prefs = getPrinterPrefs()
+      if (prefs.kitchenAuto && prefs.cocina) {
+        const news = tickets
+          .map((t) => ({
+            label: t.label,
+            items: t.items
+              .filter((i) => !known.has(keyOf(i)))
+              .map((i) => ({ description: i.description, quantity: i.quantity - (before.get(i.id) ?? 0), note: i.note, person: i.person }))
+              .filter((i) => i.quantity > 0),
+          }))
+          .filter((j) => j.items.length)
+        if (news.length) setJobs((j) => [...j, ...news])
+      }
     }
   }
+  // Se imprimen de a una, en el orden en que llegaron.
+  const printing = React.useRef(false)
+  React.useEffect(() => {
+    const [job] = jobs
+    const printer = getPrinterPrefs().cocina
+    if (!job || printing.current) return
+    printing.current = true
+    void (async () => {
+      try {
+        if (printer) await printTicket(printer, kitchenTicket(job.label, job.items))
+      } catch (error) {
+        toast.error(`No salió la comanda de ${job.label}: ${printerError(error)}`)
+      } finally {
+        printing.current = false
+        setJobs((j) => j.slice(1))
+      }
+    })()
+  }, [jobs])
+  const printerPrefs = usePrinterPrefs()
+  const autoPrint = Boolean(printerPrefs.kitchenAuto && printerPrefs.cocina)
   // Suena una vez por cada tanda de pedidos que llega.
   React.useEffect(() => {
     if (arrivals && sound) beep(sound)
@@ -160,6 +200,12 @@ export function KitchenBoard({ tickets }: { tickets: KitchenTicket[] }) {
         <Button variant={sound ? "outline" : wantedSound ? "default" : "outline"} onClick={toggleSound}>
           {sound ? <Bell /> : <BellOff />}
           {sound ? "Sonido activado" : wantedSound ? "Toca para reactivar el sonido" : "Activar sonido"}
+        </Button>
+        <Button variant={autoPrint ? "outline" : "ghost"} asChild>
+          <Link href="/dashboard/configuracion?seccion=impresoras" title={autoPrint ? "Este aparato imprime cada pedido nuevo" : "Imprimir las comandas en una impresora"}>
+            <Printer />
+            {autoPrint ? "Imprime los pedidos nuevos" : "Imprimir comandas"}
+          </Link>
         </Button>
         <Button variant="outline" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => null)}>
           <Maximize />

@@ -4,12 +4,19 @@
   "webDir": "www",
   "server": {
     "url": "https://www.ordensimple.cl/dashboard",
-    "allowNavigation": ["www.ordensimple.cl", "ordensimple.cl"]
+    "allowNavigation": [
+      "www.ordensimple.cl",
+      "ordensimple.cl"
+    ]
   },
   "ios": {
     "appendUserAgent": "OrdenSimpleApp",
     "contentInset": "never",
-    "scheme": "OrdenSimple"
+    "scheme": "OrdenSimple",
+    "includePlugins": [
+      "@capacitor-community/bluetooth-le",
+      "capacitor-tcp-socket"
+    ]
   },
   "android": {
     "appendUserAgent": "OrdenSimpleApp"

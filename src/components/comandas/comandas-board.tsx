@@ -18,6 +18,8 @@ import { ProductImage } from "@/components/products/product-image"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
 import { BillStep, personGroups } from "@/components/comandas/bill-split"
 import { cancelComanda, chargeComanda, createComanda, saveComanda, sendComandaToKitchen } from "@/server/actions/comandas"
+import { kitchenTicket } from "@/lib/kitchen-ticket"
+import { getPrinterPrefs, printerError, printTicket } from "@/lib/printers"
 
 /** sentQty: cuántas se enviaron a la cocina; readyQty: cuántas ya marcó listas; paidQty: cuántas ya se pagaron. */
 export type ComandaLine = {
@@ -586,12 +588,21 @@ function ComandaEditor({
 
   /** Manda a la pantalla de Cocina lo que todavía no se había enviado. */
   function sendToKitchen() {
+    // Lo que sale ahora (para la comanda impresa): solo lo que faltaba enviar.
+    const toSend = comanda.items
+      .filter((i) => i.quantity > i.sentQty)
+      .map((i) => ({ description: i.description, quantity: i.quantity - i.sentQty, note: i.note, person: i.person }))
     startTransition(async () => {
       await flush()
       const r = await sendComandaToKitchen(comanda.id)
       if (!r.ok) {
         toast.error(r.message)
         return
+      }
+      // Si este aparato imprime las comandas al enviarlas (Configuración, sección Impresoras).
+      const prefs = getPrinterPrefs()
+      if (prefs.kitchenOnSend && prefs.cocina && toSend.length) {
+        printTicket(prefs.cocina, kitchenTicket(comanda.label, toSend)).catch((error) => toast.error(`No salió la comanda impresa: ${printerError(error)}`))
       }
       onChange((c) => ({ ...c, items: c.items.map((i) => ({ ...i, sentQty: i.quantity })) }))
       const sent = r.data?.sent ?? unsent

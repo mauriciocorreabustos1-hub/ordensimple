@@ -65,10 +65,16 @@ export function connectedPrinterName() {
   return savedNative?.name ?? saved?.device.name ?? null
 }
 
-async function printNative(ble: NativeBle, data: Uint8Array) {
+/** La impresora BLE elegida en la app (para recordarla entre una vez y otra). */
+export function nativePrinterId() {
+  return savedNative ? { deviceId: savedNative.deviceId, name: savedNative.name } : null
+}
+
+async function printNative(ble: NativeBle, data: Uint8Array, remembered?: { deviceId: string; name?: string }) {
   if (!savedNative) {
     await ble.initialize()
-    const device = await ble.requestDevice({ optionalServices: PRINTER_SERVICES })
+    // Si ya se eligió antes en este aparato, se conecta a esa sin mostrar la lista.
+    const device = remembered ?? (await ble.requestDevice({ optionalServices: PRINTER_SERVICES }))
     await ble.connect({ deviceId: device.deviceId })
     const { services } = await ble.getServices({ deviceId: device.deviceId })
     for (const s of services) {
@@ -111,9 +117,9 @@ async function findCharacteristic(device: Device) {
 }
 
 /** Envía los bytes a la impresora (la elige la persona la primera vez). Devuelve el nombre de la impresora. */
-export async function printViaBluetooth(data: Uint8Array) {
+export async function printViaBluetooth(data: Uint8Array, remembered?: { deviceId: string; name?: string }) {
   const ble = nativeBle()
-  if (ble) return printNative(ble, data)
+  if (ble) return printNative(ble, data, remembered)
   const api = bluetooth()
   if (!api) throw new Error("NO_BLUETOOTH")
   if (!saved || !saved.device.gatt?.connected) {

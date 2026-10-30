@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Minus, Plus, Printer } from "lucide-react"
+import Link from "next/link"
+import { Loader2, Minus, Plus, Printer } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
@@ -10,6 +12,7 @@ import { BluetoothPrintButton } from "@/components/print/bluetooth-print-button"
 import { TicketFileButtons } from "@/components/print/ticket-file-buttons"
 import { Ticket, ticketToEscPos } from "@/lib/ticket"
 import { applyPromotions, type PromoRule } from "@/lib/promotions"
+import { PRINTER_KINDS, printerError, printTicket, usePrinterPrefs } from "@/lib/printers"
 import type { ComandaData, ComandaLine } from "@/components/comandas/comandas-board"
 
 // La cuenta de la mesa para imprimir: todo junto (o en partes iguales) o separada por persona,
@@ -106,6 +109,22 @@ export function BillStep({
   const grand = sections.reduce((s, x) => s + x.total, 0)
   const grandTip = sections.reduce((s, x) => s + tipOf(x.total), 0)
   // La boleta tal como sale por Bluetooth o en PDF (la misma que en papel).
+  // Impresora elegida en Configuración (en este aparato): la cuenta sale directo, sin ventana de impresión.
+  const printer = usePrinterPrefs().cuenta
+  const direct = printer && printer.kind !== "dialog" ? printer : null
+  const [printing, setPrinting] = React.useState(false)
+  async function printDirect() {
+    if (!direct) return
+    setPrinting(true)
+    try {
+      const name = await printTicket(direct, ticket())
+      if (direct.kind !== "rawbt") toast.success(`Enviado a ${name}`)
+    } catch (error) {
+      toast.error(printerError(error))
+    } finally {
+      setPrinting(false)
+    }
+  }
   const ticket = () =>
     billTicket({
       businessName,
@@ -201,11 +220,17 @@ export function BillStep({
         <Button variant="outline" size="lg" className="h-12" onClick={onBack}>
           Volver
         </Button>
-        <Button size="lg" className="h-12" onClick={() => window.print()} disabled={!grand}>
-          <Printer />
+        <Button size="lg" className="h-12" onClick={() => (direct ? void printDirect() : window.print())} disabled={!grand || printing}>
+          {printing ? <Loader2 className="animate-spin" /> : <Printer />}
           Imprimir cuenta
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground">
+        {direct ? `Sale por ${PRINTER_KINDS[direct.kind].label}${direct.name ? ` (${direct.name})` : ""}. ` : "¿Tu impresora es de red, USB o Bluetooth? "}
+        <Link href="/dashboard/configuracion?seccion=impresoras" className="text-primary underline-offset-2 hover:underline">
+          {direct ? "Cambiar impresora" : "Configúrala aquí"}
+        </Link>
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>Para impresoras de boletas (rollo). Elige el ancho de tu papel:</span>
         <RollWidthSelect />
@@ -226,7 +251,7 @@ export function BillStep({
           </p>
         </div>
       </details>
-      <BluetoothPrintButton disabled={!grand} build={(chars) => ticketToEscPos(ticket(), chars)} />
+      {direct ? null : <BluetoothPrintButton disabled={!grand} build={(chars) => ticketToEscPos(ticket(), chars)} />}
       <div className="space-y-1.5">
         <TicketFileButtons disabled={!grand} build={ticket} fileName={`Cuenta ${comanda.label}`} />
         <p className="text-xs text-muted-foreground">Del ancho del rollo, para la app de tu impresora, AirPrint o WhatsApp.</p>

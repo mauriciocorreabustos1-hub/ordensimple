@@ -9,8 +9,12 @@ $repo = "mauriciocorreabustos1-hub/ordensimple-escritorio"
 $version = (Get-Content (Join-Path $PSScriptRoot "package.json") -Raw | ConvertFrom-Json).version
 $dist = Join-Path $PSScriptRoot "dist"
 
-& $gh repo view $repo *> $null
-if ($LASTEXITCODE -ne 0) {
+# Si el repositorio todavía no existe, se crea (el aviso de "no existe" de gh no detiene el script).
+$ErrorActionPreference = "Continue"
+& $gh repo view $repo 2>&1 | Out-Null
+$exists = $LASTEXITCODE -eq 0
+$ErrorActionPreference = "Stop"
+if (-not $exists) {
   & $gh repo create $repo --public --add-readme --description "Instaladores de OrdenSimple para PC (Windows). Descarga en https://www.ordensimple.cl/descargar"
 }
 

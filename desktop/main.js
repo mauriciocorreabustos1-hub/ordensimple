@@ -8,6 +8,7 @@ const path = require("node:path")
 const fs = require("node:fs")
 const os = require("node:os")
 const net = require("node:net")
+const dns = require("node:dns/promises")
 const { execFile } = require("node:child_process")
 const { autoUpdater } = require("electron-updater")
 
@@ -104,15 +105,33 @@ async function checkPrinter(deviceName) {
 
 // Impresoras de red: solo los puertos de impresión directa y nunca este mismo PC (ni direcciones especiales).
 const PRINTER_PORTS = new Set([9100, 9101, 9102])
-function checkNetworkTarget(host, port) {
+const BLOCKED = new net.BlockList()
+BLOCKED.addSubnet("0.0.0.0", 8, "ipv4")
+BLOCKED.addSubnet("127.0.0.0", 8, "ipv4")
+BLOCKED.addSubnet("169.254.0.0", 16, "ipv4")
+BLOCKED.addSubnet("224.0.0.0", 3, "ipv4") // multicast y reservadas
+BLOCKED.addSubnet("::", 128, "ipv6")
+BLOCKED.addSubnet("::1", 128, "ipv6")
+BLOCKED.addSubnet("fe80::", 10, "ipv6")
+BLOCKED.addSubnet("ff00::", 8, "ipv6")
+
+function isBlocked(address) {
+  // "::ffff:127.0.0.1" es una IPv4 escrita como IPv6: se revisa como IPv4.
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address)
+  if (mapped) return BLOCKED.check(mapped[1], "ipv4")
+  return BLOCKED.check(address, net.isIPv6(address) ? "ipv6" : "ipv4")
+}
+
+/** La IP real a la que se conecta (ya revisada): así no la cambia un nombre que se resuelva distinto después. */
+async function checkNetworkTarget(host, port) {
   if (typeof host !== "string" || !/^[\w.:-]{1,100}$/.test(host)) throw new Error("BAD_INPUT")
   const n = Number(port) || 9100
   if (!PRINTER_PORTS.has(n)) throw new Error("BAD_PORT")
-  const h = host.toLowerCase()
+  const addresses = await dns.lookup(host, { all: true, verbatim: true })
+  if (!addresses.length) throw new Error("BAD_HOST")
   // Para probar con ORDENSIMPLE_URL apuntando a un servidor local se permite este PC.
-  const local = /^(localhost|127\.|0\.|::1$|::$|169\.254\.|fe80:|22[4-9]\.|23\d\.|2[45]\d\.)/.test(h)
-  if (local && !process.env.ORDENSIMPLE_URL) throw new Error("BAD_HOST")
-  return { host, port: n }
+  if (!process.env.ORDENSIMPLE_URL && addresses.some((a) => isBlocked(a.address))) throw new Error("BAD_HOST")
+  return { host: addresses[0].address, port: n }
 }
 
 function guard(handler) {
@@ -179,16 +198,10 @@ ipcMain.handle(
 // Bytes a una impresora de red (puerto 9100), como la app del celular.
 ipcMain.handle(
   "printers:tcp",
-  guard(
-    (host, port, base64) =>
-      new Promise((resolve, reject) => {
-        if (typeof base64 !== "string" || base64.length > 4_000_000) return reject(new Error("BAD_INPUT"))
-        let target
-        try {
-          target = checkNetworkTarget(host, port)
-        } catch (e) {
-          return reject(e)
-        }
+  guard(async (host, port, base64) => {
+    if (typeof base64 !== "string" || base64.length > 4_000_000) throw new Error("BAD_INPUT")
+    const target = await checkNetworkTarget(host, port)
+    return new Promise((resolve, reject) => {
         const socket = net.connect(target)
         socket.setTimeout(8000, () => {
           socket.destroy()
@@ -196,8 +209,8 @@ ipcMain.handle(
         })
         socket.on("error", (e) => reject(e))
         socket.on("connect", () => socket.end(Buffer.from(base64, "base64"), () => resolve(true)))
-      }),
-  ),
+    })
+  }),
 )
 
 /* ---------- Arranque y actualizaciones ---------- */

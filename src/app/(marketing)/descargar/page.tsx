@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Download, Monitor, Printer, RefreshCw, Wifi } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Monitor, Printer, RefreshCw, Wifi } from "lucide-react"
 import { CtaSection, PageHero, Section } from "@/components/landing/sections"
 import { DESKTOP_DOWNLOAD_URL } from "@/lib/desktop"
+import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 
 export const metadata: Metadata = {
   title: "OrdenSimple para PC",
@@ -15,7 +15,7 @@ const FEATURES = [
   { icon: Printer, title: "Imprime al instante", text: "Un clic y la boleta, la cuenta o la comanda sale en la impresora que elijas. Sin ventanas ni configuraciones: la térmica corta el papel sola." },
   { icon: Wifi, title: "Impresoras USB y de red", text: "Cualquier impresora instalada en Windows y las de cocina conectadas por Wi-Fi o cable, por su dirección IP." },
   { icon: Monitor, title: "Su propia ventana", text: "Un ícono en el escritorio que abre tu negocio al tiro, separado del navegador." },
-  { icon: RefreshCw, title: "Siempre al día", text: "Se actualiza sola. Todo lo nuevo de OrdenSimple aparece sin reinstalar nada." },
+  { icon: RefreshCw, title: "Segura y siempre al día", text: "Verificada por Microsoft y se actualiza sola desde la tienda. Todo lo nuevo aparece sin reinstalar nada." },
 ]
 
 export default function DownloadPage() {
@@ -28,13 +28,8 @@ export default function DownloadPage() {
       <Section className="border-t-0">
         <div className="mx-auto max-w-3xl space-y-10 px-4 py-12">
           <div className="flex flex-col items-start gap-3">
-            <Button asChild size="lg" className="h-12 px-6 text-base">
-              <a href={DESKTOP_DOWNLOAD_URL}>
-                <Download />
-                Descargar gratis para Windows
-              </a>
-            </Button>
-            <p className="text-sm text-muted-foreground">Windows 10 u 11 de 64 bits · unos 100 MB · gratis, usa tu misma cuenta de OrdenSimple.</p>
+            <MsStoreBadge height={56} />
+            <p className="text-sm text-muted-foreground">Gratis · Windows 10 y 11 · verificada por Microsoft · usa tu misma cuenta de OrdenSimple.</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -50,17 +45,23 @@ export default function DownloadPage() {
           <div className="space-y-3">
             <h2 className="text-xl font-semibold tracking-tight">Cómo instalarla</h2>
             <ol className="list-decimal space-y-2 pl-5 text-sm">
-              <li>Descarga el instalador y ábrelo.</li>
               <li>
-                Si Windows muestra “Windows protegió su PC”, toca <strong>Más información</strong> y luego <strong>Ejecutar de todas formas</strong>. Aparece porque la
-                app es nueva y Windows todavía no la conoce.
+                Toca <strong>Descargar desde Microsoft Store</strong>. Se abre la tienda de tu computador: toca <strong>Obtener</strong>.
               </li>
-              <li>Se instala sola y deja el ícono de OrdenSimple en el escritorio. Ábrela e inicia sesión.</li>
+              <li>Se instala sola en un minuto. Abre OrdenSimple desde el menú Inicio e inicia sesión con tu cuenta.</li>
               <li>
                 En Configuración, sección Impresoras, elige <strong>Impresora de este PC</strong> y tu impresora. Toca <strong>Imprimir prueba</strong>.
               </li>
             </ol>
           </div>
+
+          <p className="text-sm text-muted-foreground">
+            ¿Tu computador no tiene Microsoft Store (por ejemplo, uno de empresa)?{" "}
+            <a href={DESKTOP_DOWNLOAD_URL} className="text-primary underline-offset-2 hover:underline">
+              Descarga el instalador directo
+            </a>
+            . Si Windows muestra “Windows protegió su PC”, toca “Más información” y luego “Ejecutar de todas formas”.
+          </p>
 
           <p className="text-sm text-muted-foreground">
             ¿Usas celular o tablet? <Link href="/instalar" className="text-primary underline-offset-2 hover:underline">Instálala en tu celular</Link>.

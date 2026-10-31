@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Check, Download } from "lucide-react"
+import { Check, ChefHat, Printer, ShieldCheck, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { PriceTag } from "@/components/landing/price-tag"
@@ -19,7 +19,7 @@ import { QuotePreview } from "@/components/landing/quote-preview"
 import { RecipesPreview } from "@/components/landing/recipes-preview"
 import { TrackingPreview } from "@/components/landing/tracking-preview"
 import { DesktopPreview } from "@/components/landing/desktop-preview"
-import { DESKTOP_DOWNLOAD_URL } from "@/lib/desktop"
+import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { VideoDemo } from "@/components/landing/video-demo"
@@ -462,33 +462,41 @@ export default async function LandingPage() {
       {/* OrdenSimple para PC: todo el negocio en el computador, con impresión directa. */}
       <Section className="overflow-hidden">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-5">
+          <div className="space-y-6">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+              <span className="size-1.5 rounded-full bg-primary" />
+              Nuevo · Ya disponible en Microsoft Store
+            </span>
             <SectionTitle
               align="left"
-              eyebrow="Nuevo: app para PC"
-              title="Cobra, imprime y atiende al siguiente"
-              description="Con OrdenSimple en el computador de tu caja, la boleta sale impresa en el mismo segundo en que registras la venta. Sin pasos de más, sin pelear con la impresora y sin clientes esperando en la fila."
+              title="Tu caja en el computador: vende, imprime y atiende al siguiente"
+              description="Instala OrdenSimple gratis desde Microsoft Store. Registras la venta y la boleta sale impresa en el mismo segundo, en tu impresora de siempre. Sin pasos de más y sin clientes esperando en la fila."
             />
-            <ul className="space-y-2 text-[15px]">
-              {["Un clic y la boleta sale: nada de ventanas ni configuraciones", "La comanda llega impresa a la cocina, con letra grande", "Funciona con tu impresora de siempre: térmica, USB o de red", "Todo tu negocio en una ventana: ventas, caja, inventario, fiado y reportes", "Gratis, con tu misma cuenta, y se actualiza sola"].map((t) => (
-                <li key={t} className="flex items-start gap-2">
-                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                  {t}
-                </li>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                { icon: Printer, title: "Imprime al instante", text: "Boletas, cuentas y comandas salen solas, sin ventanas ni configuraciones. La térmica corta el papel." },
+                { icon: ChefHat, title: "Cocina sin gritos", text: "La comanda llega impresa a la cocina con letra grande, y suena un aviso en el celular." },
+                { icon: Store, title: "Todo tu negocio", text: "Ventas, caja, inventario, fiado, reportes y comandas en una sola ventana." },
+                { icon: ShieldCheck, title: "Segura y siempre al día", text: "Verificada por Microsoft y con actualizaciones automáticas. Usa tu misma cuenta." },
+              ].map((f) => (
+                <div key={f.title} className="flex gap-3 rounded-xl border bg-card p-3.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <f.icon className="size-4.5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{f.title}</p>
+                    <p className="text-sm text-muted-foreground">{f.text}</p>
+                  </div>
+                </div>
               ))}
-            </ul>
-            <div className="flex flex-wrap gap-2">
-              <Button size="lg" className="h-11" asChild>
-                <a href={DESKTOP_DOWNLOAD_URL}>
-                  <Download />
-                  Descargar gratis para Windows
-                </a>
-              </Button>
-              <Button size="lg" variant="outline" className="h-11" asChild>
-                <Link href="/descargar">Cómo instalarla</Link>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <MsStoreBadge />
+              <Button size="lg" variant="outline" className="h-[52px]" asChild>
+                <Link href="/descargar">Ver cómo funciona</Link>
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">Windows 10 y 11 · se instala en un minuto · sin tarjeta</p>
+            <p className="text-sm text-muted-foreground">Gratis · Windows 10 y 11 · funciona con impresoras térmicas, USB y de red</p>
           </div>
           <DesktopPreview />
         </div>

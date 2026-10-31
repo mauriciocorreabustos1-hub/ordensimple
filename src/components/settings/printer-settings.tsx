@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Field } from "@/components/app/field"
 import { isIos } from "@/lib/bluetooth-print"
-import { DESKTOP_DOWNLOAD_URL } from "@/lib/desktop"
+import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { desktopBridge, isNativeApp } from "@/lib/native-app"
 import { kitchenTicket } from "@/lib/kitchen-ticket"
 import { Ticket } from "@/lib/ticket"
@@ -405,12 +405,7 @@ function DesktopAppCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap items-center gap-3">
-        <Button asChild>
-          <a href={DESKTOP_DOWNLOAD_URL}>
-            <Download />
-            Descargar para Windows
-          </a>
-        </Button>
+        <MsStoreBadge height={44} />
         <a href="/descargar" className="text-sm text-primary underline-offset-2 hover:underline">
           Cómo instalarla
         </a>

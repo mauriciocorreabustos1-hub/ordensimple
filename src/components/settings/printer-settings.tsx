@@ -386,7 +386,7 @@ function DesktopPrinterPicker({ setup, save }: { setup: PrinterSetup; save: (s: 
         <input type="checkbox" checked={Boolean(setup.page)} onChange={(e) => save({ ...setup, page: e.target.checked })} className="mt-0.5 size-4 accent-primary" />
         <span>
           No es una impresora térmica de boletas
-          <span className="block text-xs text-muted-foreground">Se imprime como página (por ejemplo, en una impresora de tinta o láser). Las térmicas no lo necesitan: así cortan el papel solas.</span>
+          <span className="block text-xs text-muted-foreground">Se imprime como página (por ejemplo, en una impresora de tinta o láser).</span>
         </span>
       </label>
     </div>
@@ -400,7 +400,7 @@ function DesktopAppCard() {
       <CardHeader>
         <CardTitle>Recomendado en Windows: OrdenSimple para PC</CardTitle>
         <CardDescription>
-          Imprime directo, sin la ventana de impresión, en la impresora que elijas (USB o de red), y la térmica corta el papel sola. Una para cuentas y otra para la
+          Imprime directo, sin la ventana de impresión, en la impresora que elijas (USB o de red). Una para cuentas y otra para la
           cocina.
         </CardDescription>
       </CardHeader>

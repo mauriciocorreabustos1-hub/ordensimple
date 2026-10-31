@@ -139,7 +139,7 @@ export default async function LandingPage() {
             />
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                { icon: Printer, title: "Imprime al instante", text: "Boletas, cuentas y comandas salen solas, sin ventanas ni configuraciones. La térmica corta el papel." },
+                { icon: Printer, title: "Imprime al instante", text: "Un clic y la boleta, la cuenta o la comanda sale impresa, sin ventanas ni configuraciones." },
                 { icon: ChefHat, title: "Cocina sin gritos", text: "La comanda llega impresa a la cocina con letra grande, y suena un aviso en el celular." },
                 { icon: Store, title: "Todo tu negocio", text: "Ventas, caja, inventario, fiado, reportes y comandas en una sola ventana." },
                 { icon: ShieldCheck, title: "Segura y siempre al día", text: "Verificada por Microsoft y con actualizaciones automáticas. Usa tu misma cuenta." },

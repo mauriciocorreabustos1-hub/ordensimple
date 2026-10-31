@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 const FEATURES = [
-  { icon: Printer, title: "Imprime al instante", text: "Un clic y la boleta, la cuenta o la comanda sale en la impresora que elijas. Sin ventanas ni configuraciones: la térmica corta el papel sola." },
+  { icon: Printer, title: "Imprime al instante", text: "Un clic y la boleta, la cuenta o la comanda sale en la impresora que elijas. Sin ventanas ni configuraciones." },
   { icon: Wifi, title: "Impresoras USB y de red", text: "Cualquier impresora instalada en Windows y las de cocina conectadas por Wi-Fi o cable, por su dirección IP." },
   { icon: Monitor, title: "Su propia ventana", text: "Un ícono en el escritorio que abre tu negocio al tiro, separado del navegador." },
   { icon: RefreshCw, title: "Segura y siempre al día", text: "Verificada por Microsoft y se actualiza sola desde la tienda. Todo lo nuevo aparece sin reinstalar nada." },

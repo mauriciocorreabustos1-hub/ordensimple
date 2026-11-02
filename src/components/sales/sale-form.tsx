@@ -17,6 +17,7 @@ import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createSale, updateSale } from "@/server/actions/sales"
+import { afterSaleSaved } from "@/components/sales/sale-receipt"
 import { useOfflineSales } from "@/components/app/offline-sales"
 import { useCanApproveDiscounts, usePromotions } from "@/components/app/quick-actions"
 import { applyPromotions } from "@/lib/promotions"
@@ -194,6 +195,7 @@ export function SaleForm({
         setDisc({ value: null, blocked: null })
       }
       onDone?.()
+      if (!editing && "data" in result && result.data && "saleId" in result.data) void afterSaleSaved(result.data.saleId)
     })
   }
 

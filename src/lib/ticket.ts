@@ -117,6 +117,11 @@ function layout(ticket: Ticket, chars: number) {
   return tickets.filter((t) => t.some((l) => l.text.trim()))
 }
 
+/** Las líneas tal como se imprimen, para mostrarlas en pantalla. */
+export function ticketLines(ticket: Ticket, chars: number) {
+  return layout(ticket, chars).flat()
+}
+
 /**
  * PDF del tamaño de la boleta: el ancho del rollo y el largo justo de lo impreso. Cada ticket (separado por un corte)
  * va en su propia página. La letra se ajusta para que entren `chars` caracteres por línea.

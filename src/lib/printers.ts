@@ -40,6 +40,8 @@ export type PrinterPrefs = {
   kitchenOnSend?: boolean
   /** En la pantalla de Cocina de este aparato, imprimir solo lo que llega. */
   kitchenAuto?: boolean
+  /** Al registrar una venta en este aparato: mostrar el comprobante (por defecto), imprimirlo solo o solo avisar. */
+  saleReceipt?: "show" | "print" | "off"
 }
 
 export const PRINTER_KINDS: Record<PrinterKind, { label: string; hint: string }> = {

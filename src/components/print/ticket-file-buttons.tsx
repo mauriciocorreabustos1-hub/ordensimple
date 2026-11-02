@@ -62,7 +62,7 @@ export function TicketFileButtons({ build, fileName, disabled }: { build: () => 
     <div className="flex flex-wrap gap-2">
       <Button variant="outline" onClick={() => void run("image")} disabled={disabled || pending !== null}>
         {pending === "image" ? <Loader2 className="animate-spin" /> : <ImageDown />}
-        Boleta en imagen
+        Guardar imagen
       </Button>
       <Button variant="outline" onClick={() => void run("pdf")} disabled={disabled || pending !== null}>
         {pending === "pdf" ? <Loader2 className="animate-spin" /> : <FileDown />}

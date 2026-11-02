@@ -16,6 +16,7 @@ import { can, canApproveDiscounts } from "@/lib/roles"
 import { deleteSale } from "@/server/actions/sales"
 import { EditSaleButton, type EditableSale } from "@/components/sales/edit-sale-button"
 import { ReturnButton } from "@/components/sales/return-button"
+import { SaleReceiptButton } from "@/components/sales/sale-receipt"
 import { db } from "@/lib/db"
 import { cn } from "@/lib/utils"
 import { toDateKey } from "@/lib/dates"
@@ -206,6 +207,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                             </p>
                           ) : null}
                         </div>
+                        <SaleReceiptButton saleId={s.id} />
                         {returnButton(s)}
                         {s.returnOfId ? null : editButton(s)}
                         {canDelete ? (
@@ -291,6 +293,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                         <TableCell className={cn("tabular text-right font-medium", s.total < 0 && "text-danger")}>{money(s.total)}</TableCell>
                         <TableCell className="pr-2">
                             <div className="flex items-center justify-end gap-1">
+                              <SaleReceiptButton saleId={s.id} />
                               {returnButton(s)}
                               {s.returnOfId ? null : editButton(s)}
                               {canDelete ? (

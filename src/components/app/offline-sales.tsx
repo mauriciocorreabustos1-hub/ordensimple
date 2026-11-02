@@ -52,7 +52,7 @@ export function newClientId() {
   }
 }
 
-type SaveResult = { ok: true; offline: boolean; message?: string } | { ok: false; message: string }
+type SaveResult = { ok: true; offline: boolean; message?: string; data?: { saleId: string } } | { ok: false; message: string }
 
 type OfflineSalesValue = {
   /** Guarda la venta: en línea va directo; sin internet queda pendiente en este equipo. */
@@ -91,7 +91,7 @@ export function OfflineSalesProvider({ businessId, children }: { businessId: str
         try {
           const r = await send({ kind: sale.kind, input } as PendingSale)
           return r.ok
-            ? { ok: true, offline: false, message: r.message }
+            ? { ok: true, offline: false, message: r.message, data: r.data }
             : { ok: false, message: r.message ?? "No se pudo guardar la venta." }
         } catch {
           // No llegó al servidor (sin señal o conexión cortada): queda guardada aquí.

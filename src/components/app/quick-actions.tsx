@@ -6,6 +6,7 @@ import type { PromoRule } from "@/lib/promotions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppModal } from "@/components/app/app-modal"
 import { QuickSaleForm } from "@/components/sales/quick-sale-form"
+import { SaleReceiptHost } from "@/components/sales/sale-receipt"
 import { SaleForm, type ProductOption } from "@/components/sales/sale-form"
 import { ExpenseForm, type ExpenseCategoryOption } from "@/components/expenses/expense-form"
 
@@ -180,6 +181,7 @@ export function QuickActionsProvider({
           onDone={close}
         />
       </AppModal>
+      <SaleReceiptHost />
       </LoyaltyActiveContext.Provider>
       </SalesVatContext.Provider>
       </PromotionsContext.Provider>

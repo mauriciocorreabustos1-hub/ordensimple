@@ -15,6 +15,7 @@ import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
 import { createQuickSale, updateQuickSale } from "@/server/actions/sales"
+import { afterSaleSaved } from "@/components/sales/sale-receipt"
 import { useOfflineSales } from "@/components/app/offline-sales"
 
 export type QuickSaleEdit = {
@@ -87,6 +88,7 @@ export function QuickSaleForm({
         setCustomerName("")
       }
       onDone?.()
+      if (!editing && "data" in result && result.data && "saleId" in result.data) void afterSaleSaved(result.data.saleId)
     })
   }
 

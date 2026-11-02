@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { canApproveDiscounts } from "@/lib/roles"
-import { dateKeyToInstant, toDateKey } from "@/lib/dates"
+import { dateKeyToInstant, formatDate, formatTime, toDateKey } from "@/lib/dates"
+import { PAYMENT_LABEL } from "@/lib/constants"
+import type { SaleReceiptData } from "@/lib/sale-receipt"
 import {
   idSchema,
   quickSaleSchema,
@@ -67,7 +69,7 @@ function resolveDate(key: string, ctx: BusinessContext, previous?: Date) {
 
 // ─── Venta rápida ───────────────────────────────────────────────────────────
 
-export async function createQuickSale(input: QuickSaleInput): Promise<ActionResult> {
+export async function createQuickSale(input: QuickSaleInput): Promise<ActionResult<{ saleId: string }>> {
   const ctx = await requireBusiness()
   const parsed = quickSaleSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
@@ -79,6 +81,7 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
     if (fiadoBlocked(ctx, paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     let loyal: LoyaltyEarned | null = null
+    let saleId = ""
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       const sale = await tx.sale.create({
@@ -97,9 +100,10 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
         select: { id: true },
       })
       loyal = await earnLoyalty(tx, ctx, sale.id, customerId, amount)
+      saleId = sale.id
     })
     revalidate()
-    return { ok: true, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
+    return { ok: true, data: { saleId }, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
     return toActionError(error)
@@ -147,7 +151,67 @@ export async function updateQuickSale(id: string, input: QuickSaleInput): Promis
 
 // ─── Venta con detalle ──────────────────────────────────────────────────────
 
-export async function createSale(input: SaleInput): Promise<ActionResult> {
+/** Los datos del comprobante de una venta de este negocio (quien ve la lista de ventas puede verlo). */
+export async function getSaleReceipt(id: string): Promise<ActionResult<SaleReceiptData>> {
+  const ctx = await requireBusiness()
+  if (typeof id !== "string" || !id || id.length > 64) return { ok: false, message: "Venta no encontrada." }
+  try {
+    const sale = await db.sale.findFirst({
+      where: { id, businessId: ctx.businessId },
+      include: {
+        items: { orderBy: { createdAt: "asc" }, select: { description: true, quantity: true, unitPrice: true, subtotal: true } },
+        customer: { select: { name: true, phone: true } },
+        createdBy: { select: { name: true } },
+      },
+    })
+    if (!sale) return { ok: false, message: "Venta no encontrada." }
+    const settings = await db.businessSettings.findUnique({
+      where: { businessId: ctx.businessId },
+      select: { taxId: true, address: true, contactPhone: true },
+    })
+    // Las sucursales son negocios del mismo dueño: arriba va el nombre del primero y aparte la sucursal.
+    const owner = await db.businessMember.findFirst({ where: { businessId: ctx.businessId, role: "OWNER" }, select: { userId: true } })
+    const owned = owner
+      ? await db.business.findMany({
+          where: { members: { some: { userId: owner.userId, role: "OWNER" } } },
+          select: { name: true },
+          orderBy: { createdAt: "asc" },
+          take: 2,
+        })
+      : []
+    // En la sucursal principal no se repite el mismo nombre dos veces.
+    const hasBranches = owned.length > 1
+    const brand = hasBranches ? owned[0].name : ctx.business.name
+    return {
+      ok: true,
+      data: {
+        code: sale.id.slice(-6).toUpperCase(),
+        businessName: brand,
+        branchName: brand === ctx.business.name ? null : ctx.business.name,
+        taxId: settings?.taxId ?? null,
+        address: settings?.address ?? null,
+        phone: settings?.contactPhone ?? null,
+        dateText: formatDate(sale.date, ctx.timezone, { day: "2-digit", month: "2-digit", year: "numeric" }),
+        timeText: formatTime(sale.date, ctx.timezone),
+        attendedBy: sale.createdBy?.name ?? null,
+        customerName: sale.customer?.name ?? null,
+        customerPhone: sale.customer?.phone ?? null,
+        items: sale.items,
+        promoDiscount: sale.promoDiscount,
+        discount: sale.discount,
+        tip: sale.tip,
+        total: sale.total,
+        paymentLabel: PAYMENT_LABEL[sale.paymentMethod],
+        isReturn: Boolean(sale.returnOfId),
+        currency: ctx.currency,
+      },
+    }
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+export async function createSale(input: SaleInput): Promise<ActionResult<{ saleId: string }>> {
   const ctx = await requireBusiness()
   const parsed = saleSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
@@ -172,6 +236,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
     if (!disc.ok) return { ok: false, message: disc.message }
 
     let loyal: LoyaltyEarned | null = null
+    let saleId = ""
     await db.$transaction(async (tx) => {
       const customerId = await resolveCustomer(tx, ctx.businessId, customerName)
       const sale = await tx.sale.create({
@@ -193,9 +258,10 @@ export async function createSale(input: SaleInput): Promise<ActionResult> {
       await linkPromotions(tx, sale.id, promo.applied)
       await disc.link(tx, sale.id)
       loyal = await earnLoyalty(tx, ctx, sale.id, customerId, sale.total)
+      saleId = sale.id
     })
     revalidate()
-    return { ok: true, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
+    return { ok: true, data: { saleId }, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
     if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }

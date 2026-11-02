@@ -246,7 +246,7 @@ export function BillStep({
             Para que quede fijo en el computador: Configuración de Windows, sección Impresoras, tu impresora, Preferencias de impresión, Tamaño de papel.
           </p>
           <p>
-            Lo más seguro es no pasar por esa ventana: imprime por Bluetooth o usa “Boleta en imagen” con la app de tu impresora, que la imprime del ancho
+            Lo más seguro es no pasar por esa ventana: imprime por Bluetooth o usa “Guardar imagen” con la app de tu impresora, que la imprime del ancho
             exacto del rollo.
           </p>
         </div>

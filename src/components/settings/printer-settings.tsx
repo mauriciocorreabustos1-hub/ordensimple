@@ -32,7 +32,7 @@ import {
 } from "@/lib/printers"
 
 const ROLE_TEXT: Record<PrinterRole, { title: string; description: string }> = {
-  cuenta: { title: "Boletas y cuentas", description: "Donde sale la cuenta de cada mesa al tocar Imprimir." },
+  cuenta: { title: "Comprobantes y cuentas", description: "Donde salen los comprobantes de venta y la cuenta de cada mesa." },
   cocina: { title: "Comandas para la cocina", description: "Donde sale lo que hay que preparar, sin precios y con letra grande." },
 }
 
@@ -251,6 +251,36 @@ export function PrinterSettings({ food }: { food: boolean }) {
         Esto se guarda <strong>en este aparato</strong>: configura cada celular, tablet o computador con la impresora que tiene cerca.
       </p>
       <PrinterCard role="cuenta" kinds={kinds} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Al registrar una venta</CardTitle>
+          <CardDescription>El comprobante lleva los productos, la fecha y hora, la sucursal y quién atendió. Siempre puedes volver a verlo desde Ventas.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2.5">
+          {(
+            [
+              ["show", "Mostrar el comprobante", "Para imprimirlo o enviarlo por WhatsApp."],
+              ["print", "Imprimirlo solo", prefs.cuenta ? "Sale en la impresora de arriba apenas guardas la venta." : "Primero elige la impresora de arriba."],
+              ["off", "Solo avisar", "Para vender rápido: aparece un aviso con el botón “Ver comprobante”."],
+            ] as const
+          ).map(([value, label, hint]) => (
+            <label key={value} className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-accent/50">
+              <input
+                type="radio"
+                name="sale-receipt"
+                className="mt-0.5 size-4 accent-primary"
+                checked={(prefs.saleReceipt ?? "show") === value}
+                disabled={value === "print" && !prefs.cuenta}
+                onChange={() => setPrinterPrefs((p) => ({ ...p, saleReceipt: value }))}
+              />
+              <span>
+                <span className="font-medium">{label}</span>
+                <span className="block text-muted-foreground">{hint}</span>
+              </span>
+            </label>
+          ))}
+        </CardContent>
+      </Card>
       {food ? (
         <>
           <PrinterCard role="cocina" kinds={kinds} />

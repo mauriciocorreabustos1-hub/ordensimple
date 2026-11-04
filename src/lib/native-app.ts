@@ -34,10 +34,10 @@ export function nativePlugin<T>(name: string): T | undefined {
 }
 
 /**
- * La visita viene de la app para iPhone (se lee en el servidor). En el iPhone los planes no se contratan dentro de la
- * app: Apple exige su propio sistema de pago para eso.
+ * La visita viene de una app de App Store o Google Play (se lee en el servidor). Ahí los planes no se contratan dentro
+ * de la app: Apple y Google exigen su propio sistema de pago para las suscripciones. La de PC usa otro user agent:
+ * Microsoft Store permite el pago propio en apps que no son juegos.
  */
-export function isIosAppUserAgent(userAgent: string | null | undefined) {
-  // El iPad se presenta como "Macintosh": basta con que no sea la app de Android.
-  return Boolean(userAgent?.includes(APP_USER_AGENT) && !/Android/i.test(userAgent))
+export function isMobileStoreAppUserAgent(userAgent: string | null | undefined) {
+  return Boolean(userAgent?.includes(APP_USER_AGENT))
 }

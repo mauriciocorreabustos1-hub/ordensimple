@@ -12,7 +12,7 @@ import { db } from "@/lib/db"
 import { mercadoPagoConfigured } from "@/lib/mercadopago"
 import { BILLING_ENABLED, discountedPrice, PAID_PLANS, parsePlanChoice, PLAN_OF_CHOICE, PLANS } from "@/lib/plans"
 import { requireBusiness, requirePermission } from "@/server/session"
-import { isIosAppUserAgent } from "@/lib/native-app"
+import { isMobileStoreAppUserAgent } from "@/lib/native-app"
 
 export const metadata: Metadata = { title: "Tu plan" }
 
@@ -30,10 +30,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
       ? formatDate(ctx.business.planExpiresAt, ctx.timezone, { day: "numeric", month: "long", year: "numeric" })
       : null
 
-  // En la app de iPhone no se contratan planes ni se canjean códigos (Apple exige su propio sistema de pago).
-  const iosApp = isIosAppUserAgent((await headers()).get("user-agent"))
+  // En las apps de iPhone y Android no se contratan planes ni se canjean códigos (Apple y Google exigen su sistema de pago).
+  const storeApp = isMobileStoreAppUserAgent((await headers()).get("user-agent"))
   // Suscripción con Mercado Pago (solo si el cobro está encendido).
-  const showBilling = !iosApp && BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP"
+  const showBilling = !storeApp && BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP"
   const sub = showBilling
     ? await db.subscription.findFirst({
         where: { businessId: ctx.businessId, status: { in: ["authorized", "paused", "pending"] } },
@@ -107,7 +107,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tu plan" description={iosApp ? "Lo que incluye tu plan." : "Lo que incluye tu plan, y cómo contratar o cambiar a Pro o Empresa."} />
+      <PageHeader title="Tu plan" description={storeApp ? "Lo que incluye tu plan." : "Lo que incluye tu plan, y cómo contratar o cambiar a Pro o Empresa."} />
 
       {subscriptionResult === "ok" ? (
         <p className="rounded-lg bg-success/10 p-3 text-sm">¡Listo! Tu suscripción quedó activa.</p>
@@ -146,8 +146,8 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
 
       {payFirst ? currentPlan : null}
 
-      {iosApp ? (
-        <p className="rounded-lg border p-3 text-sm text-muted-foreground">En la app para iPhone no se pueden contratar ni cambiar planes.</p>
+      {storeApp ? (
+        <p className="rounded-lg border p-3 text-sm text-muted-foreground">En esta app no se pueden contratar ni cambiar planes.</p>
       ) : (
         <Card>
           <CardContent className="pt-6">

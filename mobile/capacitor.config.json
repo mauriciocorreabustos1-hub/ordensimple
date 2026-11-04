@@ -19,7 +19,8 @@
     ]
   },
   "android": {
-    "appendUserAgent": "OrdenSimpleApp"
+    "appendUserAgent": "OrdenSimpleApp",
+    "adjustMarginsForEdgeToEdge": "force"
   },
   "plugins": {
     "BluetoothLe": {

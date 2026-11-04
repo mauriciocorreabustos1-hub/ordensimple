@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/app/page-header"
+import { HideInStoreApp } from "@/components/app/hide-in-store-app"
 import { formatMoney } from "@/lib/currency"
 import { BILLING_ENABLED, checkoutPath, PLANS } from "@/lib/plans"
 
@@ -20,13 +21,15 @@ export function ProGate({ title, description }: { title: string; description: st
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
             Con Pro tienes tu utilidad real y tu F29, flujo de caja con lo que viene, todo tu historial, proveedores, merma y vencidos,
             escaneo continuo, Excel, productos ilimitados y un equipo más grande.
-            {BILLING_ENABLED && price ? ` Pro cuesta ${formatMoney(price, "CLP")} al mes y lo cancelas cuando quieras.` : ""}
+            <HideInStoreApp>{BILLING_ENABLED && price ? ` Pro cuesta ${formatMoney(price, "CLP")} al mes y lo cancelas cuando quieras.` : ""}</HideInStoreApp>
           </p>
           <p className="mx-auto max-w-md text-xs text-muted-foreground">Tus datos están a salvo: nada se borra.</p>
         </div>
-        <Button asChild>
-          <Link href={BILLING_ENABLED ? checkoutPath("pro") : "/precios"}>{BILLING_ENABLED ? "Contratar Pro" : "Ver planes"}</Link>
-        </Button>
+        <HideInStoreApp>
+          <Button asChild>
+            <Link href={BILLING_ENABLED ? checkoutPath("pro") : "/precios"}>{BILLING_ENABLED ? "Contratar Pro" : "Ver planes"}</Link>
+          </Button>
+        </HideInStoreApp>
       </div>
     </div>
   )
@@ -45,9 +48,11 @@ export function ProUpsell({ title, text, className }: { title: string; text: str
         <p className="text-sm font-semibold">{title}</p>
         <p className="text-sm text-muted-foreground">{text}</p>
       </div>
-      <Button size="sm" asChild>
-        <Link href={BILLING_ENABLED ? checkoutPath("pro") : "/precios"}>{BILLING_ENABLED ? "Pasar a Pro" : "Ver planes"}</Link>
-      </Button>
+      <HideInStoreApp>
+        <Button size="sm" asChild>
+          <Link href={BILLING_ENABLED ? checkoutPath("pro") : "/precios"}>{BILLING_ENABLED ? "Pasar a Pro" : "Ver planes"}</Link>
+        </Button>
+      </HideInStoreApp>
     </div>
   )
 }

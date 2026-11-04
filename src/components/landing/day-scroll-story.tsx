@@ -104,15 +104,22 @@ export function DayScrollStory() {
     const still = window.matchMedia("(prefers-reduced-motion: reduce)")
     let frame = 0
     let shown = 0
+    let last = 0
     // El avance sigue al scroll con un pequeño retraso: la rueda del mouse no da saltos.
-    const tick = () => {
+    // Se calcula por tiempo, para que vaya igual en pantallas rápidas y en equipos lentos.
+    const tick = (now: number) => {
       frame = 0
       if (still.matches) return setP(1)
       const box = el.getBoundingClientRect()
       const target = clamp(-box.top / (box.height - window.innerHeight))
-      shown += (target - shown) * 0.14
-      if (Math.abs(target - shown) < 0.0004) shown = target
-      else frame = requestAnimationFrame(tick)
+      shown += (target - shown) * (1 - Math.exp(-(last ? now - last : 16) / 110))
+      if (Math.abs(target - shown) < 0.0004) {
+        shown = target
+        last = 0
+      } else {
+        last = now
+        frame = requestAnimationFrame(tick)
+      }
       setP(shown)
     }
     const request = () => {

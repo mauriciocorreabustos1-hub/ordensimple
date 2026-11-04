@@ -18,6 +18,7 @@ import { PaymentsPreview } from "@/components/landing/payments-preview"
 import { QuotePreview } from "@/components/landing/quote-preview"
 import { RecipesPreview } from "@/components/landing/recipes-preview"
 import { TrackingPreview } from "@/components/landing/tracking-preview"
+import { DayScrollStory } from "@/components/landing/day-scroll-story"
 import { DesktopPreview } from "@/components/landing/desktop-preview"
 import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { getUserCount } from "@/components/landing/user-count"
@@ -89,40 +90,7 @@ export default async function LandingPage() {
         </Container>
       </section>
 
-      <Section id="video" className="overflow-hidden">
-        <div className="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
-          <div className="space-y-6">
-            <SectionTitle
-              align="left"
-              eyebrow="Míralo en 20 segundos"
-              title="Un día en tu negocio con OrdenSimple"
-              description="Sin cuadernos, sin planillas y sin calculadora. Así se ve tu día a día:"
-            />
-            <ul className="space-y-3">
-              {DAY.map((d) => (
-                <li key={d.time} className="flex items-start gap-3">
-                  <span className="tabular mt-0.5 rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">
-                    {d.time}
-                  </span>
-                  <span className="text-pretty">{d.text}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Check className="size-4 text-primary" />
-              Funciona en el celular y en el computador.
-            </p>
-            <Button size="lg" className="h-12 px-6 text-base" asChild>
-              <SignupLink loggedInLabel="Ir a mi negocio">Pruébalo gratis</SignupLink>
-            </Button>
-          </div>
-          <VideoDemo
-            src="/videos/un-dia-con-ordensimple.mp4"
-            poster="/videos/un-dia-con-ordensimple.webp"
-            label="Video: un día en un negocio usando OrdenSimple, desde abrir en la mañana hasta cerrar la caja en la noche."
-          />
-        </div>
-      </Section>
+      <DayScrollStory />
 
       {/* OrdenSimple para PC: todo el negocio en el computador, con impresión directa. */}
       <Section muted className="overflow-hidden">
@@ -167,7 +135,42 @@ export default async function LandingPage() {
         </div>
       </Section>
 
-      <Section>
+      <Section id="video" className="overflow-hidden">
+        <div className="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
+          <div className="space-y-6">
+            <SectionTitle
+              align="left"
+              eyebrow="Míralo en 20 segundos"
+              title="Un día en tu negocio con OrdenSimple"
+              description="Sin cuadernos, sin planillas y sin calculadora. Así se ve tu día a día:"
+            />
+            <ul className="space-y-3">
+              {DAY.map((d) => (
+                <li key={d.time} className="flex items-start gap-3">
+                  <span className="tabular mt-0.5 rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">
+                    {d.time}
+                  </span>
+                  <span className="text-pretty">{d.text}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Check className="size-4 text-primary" />
+              Funciona en el celular y en el computador.
+            </p>
+            <Button size="lg" className="h-12 px-6 text-base" asChild>
+              <SignupLink loggedInLabel="Ir a mi negocio">Pruébalo gratis</SignupLink>
+            </Button>
+          </div>
+          <VideoDemo
+            src="/videos/un-dia-con-ordensimple.mp4"
+            poster="/videos/un-dia-con-ordensimple.webp"
+            label="Video: un día en un negocio usando OrdenSimple, desde abrir en la mañana hasta cerrar la caja en la noche."
+          />
+        </div>
+      </Section>
+
+      <Section muted>
         <SectionTitle
           align="left"
           title="Lo que cambia cuando dejas el cuaderno"

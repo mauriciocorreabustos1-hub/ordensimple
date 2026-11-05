@@ -586,6 +586,14 @@ export const FAQ_GROUPS: FaqGroup[] = [
         a: "Sí, gratis. En Recetas anotas tus materiales con su precio (harina, levadura, aceites, cera…) y cada receta con lo que rinde. Te decimos el costo por unidad y el precio sugerido, llevas el stock y el vencimiento de tus materiales, y al vender se descuentan solos.",
       },
       {
+        q: "¿Quién procesa los pagos con tarjeta y cuándo me llega la plata?",
+        a: "Los procesa Mercado Pago. Tu cliente paga en la página de Mercado Pago, que es quien recibe los datos de su tarjeta: OrdenSimple no los ve ni los guarda. El dinero se deposita en tu propia cuenta de Mercado Pago, no pasa por OrdenSimple. Cuándo lo puedes usar o retirar depende de las condiciones de tu cuenta de Mercado Pago.",
+      },
+      {
+        q: "¿Cuánto me cobran por cada pago con tarjeta?",
+        a: "Son dos comisiones aparte. OrdenSimple cobra un 1 % de cada pago, y se descuenta solo al momento de pagar. Mercado Pago cobra además su propia comisión, que depende de tu cuenta y del medio de pago: revísala en las tarifas vigentes de Mercado Pago. No hay costo fijo ni mensual por usar los cobros online.",
+      },
+      {
         q: "¿Mis clientes me pueden pagar con tarjeta?",
         a: "Sí, en todos los planes. En Cobros online conectas tu cuenta de Mercado Pago y tus clientes te pagan con tarjeta de crédito, débito o saldo de Mercado Pago: en tu tienda online, en tus cotizaciones o con un enlace de pago que mandas por WhatsApp. El dinero llega directo a tu cuenta. No hay costo fijo: Mercado Pago cobra su comisión de siempre y OrdenSimple un 1 % por pago.",
       },

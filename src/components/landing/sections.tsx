@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Check, Minus, X } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
+import { ONLINE_FEE_RATE } from "@/lib/online-payments"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
@@ -247,74 +248,105 @@ export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
 }
 
 /** En la portada (`compact`) cada plan muestra lo principal; el detalle está en /precios. */
+/** Lo que limita cada plan, sacado de PLANS: personas, negocios y productos. */
+function planLimits(plan: (typeof PLANS)[keyof typeof PLANS]) {
+  const people = plan.maxMembers <= 1 ? "Solo tú" : plan.maxMembers >= 1000 ? "Trabajadores sin límite" : `Tú + ${plan.maxMembers - 1} trabajadores`
+  const places = plan.maxBusinesses <= 1 ? "1 negocio" : `Hasta ${plan.maxBusinesses} sucursales`
+  const products = plan.maxProducts === null ? "Productos ilimitados" : `Hasta ${plan.maxProducts} productos`
+  return [people, places, products]
+}
+
 /** Los planes como carteles de almacén: el precio va en su etiqueta y Pro resalta con la carpeta en verde. */
 export function PricingCards({ compact = false }: { compact?: boolean }) {
   const MAX = 6
   return (
-    <div className="grid gap-4 md:grid-cols-3 md:items-stretch">
-      {Object.values(PLANS).map((plan) => {
-        const featured = plan.id === "PRO"
-        const quiet = featured ? "text-deep-foreground/80" : "text-muted-foreground"
-        const line = featured ? "border-deep-foreground/20" : "border-border"
-        return (
-          <div key={plan.id} className={cn("flex flex-col rounded-2xl p-6 sm:p-7", featured ? "bg-deep text-deep-foreground shadow-xl md:-my-3 md:py-10" : "border bg-card")}>
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="font-display text-2xl font-semibold tracking-tight">{plan.name}</h3>
-              {featured ? <p className="text-sm font-medium">Recomendado</p> : null}
-            </div>
-            <p className={cn("mt-1 min-h-11 text-sm text-pretty", quiet)}>{plan.description}</p>
+    <div>
+      <div className="mx-auto grid max-w-xl gap-4 lg:max-w-none lg:grid-cols-3 lg:items-start">
+        {Object.values(PLANS).map((plan) => {
+          const featured = plan.id === "PRO"
+          const quiet = featured ? "text-deep-foreground/80" : "text-muted-foreground"
+          const line = featured ? "border-deep-foreground/20" : "border-border"
+          const main = plan.highlights.slice(0, MAX)
+          const rest = plan.highlights.slice(MAX)
+          return (
+            <div key={plan.id} className={cn("flex flex-col rounded-2xl p-6 sm:p-7", featured ? "bg-deep text-deep-foreground shadow-xl lg:-my-3 lg:py-10" : "border bg-card")}>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-display text-2xl font-semibold tracking-tight">{plan.name}</h3>
+                {featured ? <p className="text-sm font-medium">Recomendado</p> : null}
+              </div>
+              <p className={cn("mt-1 min-h-11 text-sm text-pretty", quiet)}>{plan.description}</p>
 
-            <div className="mt-5">
-              <PriceTag hole={featured ? "bg-deep" : "bg-card"} className={cn("shadow-md", featured ? "bg-deep-foreground text-deep shadow-black/20" : plan.id === "FREE" && "bg-foreground text-background shadow-black/15")}>
-                <span className="font-display text-2xl font-semibold whitespace-nowrap">{plan.priceLabel}</span>
-              </PriceTag>
-              {plan.priceNote ? <p className={cn("mt-3 text-xs text-pretty", quiet)}>{plan.priceNote}</p> : null}
-            </div>
+              <div className="mt-5">
+                <PriceTag hole={featured ? "bg-deep" : "bg-card"} className={cn("shadow-md", featured ? "bg-deep-foreground text-deep shadow-black/20" : plan.id === "FREE" && "bg-foreground text-background shadow-black/15")}>
+                  <span className="font-display text-2xl font-semibold whitespace-nowrap">{plan.priceLabel}</span>
+                </PriceTag>
+                {plan.priceNote ? <p className={cn("mt-3 text-xs text-pretty", quiet)}>{plan.priceNote}</p> : null}
+              </div>
 
-            <p className={cn("mt-5 border-t pt-4 text-sm text-pretty", line)}>
-              <span className="font-semibold">Para: </span>
-              <span className={quiet}>{plan.audience.charAt(0).toLowerCase() + plan.audience.slice(1)}</span>
-            </p>
+              <p className={cn("mt-5 border-t pt-4 text-sm text-pretty", line)}>
+                <span className="font-semibold">Para: </span>
+                <span className={quiet}>{plan.audience.charAt(0).toLowerCase() + plan.audience.slice(1)}</span>
+              </p>
 
-            <ul className="mt-4 flex-1 text-sm">
-              {(compact ? plan.highlights.slice(0, MAX) : plan.highlights).map((h) => (
-                <li key={h} className={cn("border-t py-2 text-pretty first:border-t-0", line, h.startsWith("Todo lo de") && "font-semibold")}>
-                  {h}
-                </li>
-              ))}
-              {compact && plan.highlights.length > MAX ? (
-                <li className={cn("border-t py-2", line)}>
-                  <Link href="/precios" className={cn("font-medium underline-offset-4 hover:underline", !featured && "text-primary")}>
-                    Y {plan.highlights.length - MAX} cosas más
-                  </Link>
-                </li>
+              <ul aria-label={`Límites del plan ${plan.name}`} className="mt-3 flex flex-wrap gap-1.5">
+                {planLimits(plan).map((l) => (
+                  <li key={l} className={cn("rounded-full px-2.5 py-1 text-xs font-medium", featured ? "bg-deep-foreground/12" : "bg-muted")}>
+                    {l}
+                  </li>
+                ))}
+              </ul>
+
+              <ul className="mt-4 text-sm">
+                {(compact ? main : plan.highlights).map((h) => (
+                  <li key={h} className={cn("border-t py-2 text-pretty first:border-t-0", line, h.startsWith("Todo lo de") && "font-semibold")}>
+                    {h}
+                  </li>
+                ))}
+              </ul>
+              {compact && rest.length ? (
+                <details className={cn("group border-t text-sm", line)}>
+                  <summary className={cn("flex min-h-11 cursor-pointer list-none items-center justify-between font-medium [&::-webkit-details-marker]:hidden", !featured && "text-primary")}>
+                    Ver {rest.length} funciones más
+                    <span aria-hidden className="transition-transform group-open:rotate-180">⌄</span>
+                  </summary>
+                  <ul>
+                    {rest.map((h) => (
+                      <li key={h} className={cn("border-t py-2 text-pretty", line)}>
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               ) : null}
-            </ul>
 
-            <div className="mt-5">
-              {plan.id === "FREE" ? (
-                <Button size="lg" variant="outline" className="h-11 w-full" asChild>
-                  <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
-                </Button>
-              ) : plan.id === "PRO" ? (
-                <Button size="lg" className="h-11 w-full bg-deep-foreground text-deep hover:bg-deep-foreground/90" asChild>
-                  {/* Enlace normal (no Link): /pagar/... es una redirección del servidor, no una página. */}
-                  <a href={BILLING_ENABLED ? "/pagar/pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</a>
-                </Button>
-              ) : BILLING_ENABLED ? (
-                <Button size="lg" variant="outline" className="h-11 w-full" asChild>
-                  {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- /pagar es una redirección del servidor, no una página */}
-                  <a href="/pagar/empresa">Elegir Empresa</a>
-                </Button>
-              ) : (
-                <Button size="lg" variant="outline" className="h-11 w-full" disabled>
-                  Muy pronto
-                </Button>
-              )}
+              <div className="mt-auto pt-5">
+                {plan.id === "FREE" ? (
+                  <Button size="lg" variant="outline" className="h-11 w-full" asChild>
+                    <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
+                  </Button>
+                ) : plan.id === "PRO" ? (
+                  <Button size="lg" className="h-11 w-full bg-deep-foreground text-deep hover:bg-deep-foreground/90" asChild>
+                    {/* Enlace normal (no Link): /pagar/... es una redirección del servidor, no una página. */}
+                    <a href={BILLING_ENABLED ? "/pagar/pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</a>
+                  </Button>
+                ) : BILLING_ENABLED ? (
+                  <Button size="lg" variant="outline" className="h-11 w-full" asChild>
+                    {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- /pagar es una redirección del servidor, no una página */}
+                    <a href="/pagar/empresa">Elegir Empresa</a>
+                  </Button>
+                ) : (
+                  <Button size="lg" variant="outline" className="h-11 w-full" disabled>
+                    Muy pronto
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
+      <p className="mt-6 max-w-3xl text-sm text-pretty text-muted-foreground">
+        Precios en pesos chilenos. Los planes pagados se renuevan cada mes y los cancelas cuando quieras. Si cobras con tarjeta por Mercado Pago, OrdenSimple cobra un {Math.round(ONLINE_FEE_RATE * 100)} % de cada pago, aparte de la comisión de Mercado Pago.
+      </p>
     </div>
   )
 }

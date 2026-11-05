@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils"
 const STEPS = [
   { from: 0, to: 0.1, time: "08:30", title: "Abres con la cuenta en cero", text: "Cada mañana ves de un vistazo cómo parte tu día." },
   { from: 0.1, to: 0.4, time: "Mañana", title: "Cada venta se suma sola", text: "Tocas el producto o lo escaneas con la cámara. El total se actualiza y el comprobante queda listo." },
-  { from: 0.4, to: 0.6, time: "14:30", title: "Anotas un gasto y sabes cuánto te queda", text: "Se descuenta al momento de lo que llevas ganado." },
+  { from: 0.4, to: 0.6, time: "14:30", title: "Anotas un gasto y sabes cuánto te queda", text: "Lo anotas en segundos y al tiro ves tus ventas menos tus gastos del día." },
   { from: 0.6, to: 0.8, time: "17:20", title: "El fiado queda a nombre del cliente", text: "Sabes quién te debe y cuánto, y le recuerdas por WhatsApp con un toque." },
-  { from: 0.8, to: 1, time: "21:00", title: "Cierras la caja en un minuto", text: "Cuentas el efectivo, ves si cuadra y sabes cuánto ganaste hoy." },
+  { from: 0.8, to: 1, time: "21:00", title: "Cierras la caja en un minuto", text: "Cuentas el efectivo, ves si cuadra y sabes cuánto te quedó hoy." },
 ]
 
 const MOVES = [
@@ -219,6 +219,9 @@ export function DayScrollStory() {
                 )
               })}
             </ol>
+            <p className="mt-6 max-w-md border-t pt-4 text-sm text-pretty text-muted-foreground max-lg:hidden motion-reduce:max-lg:block">
+              “Te quedó” es lo que vendiste menos lo que gastaste. Tu utilidad, que además descuenta el costo de la mercadería y el IVA, la ves en Resultados.
+            </p>
           </div>
 
           {/* El escenario: en pantallas chicas el celular se corta abajo, para que el texto siempre se lea. */}
@@ -404,7 +407,7 @@ export function DayScrollStory() {
               </span>
               <span className="text-xs">
                 <span className="block font-semibold">La caja cuadra</span>
-                <span className="tabular block opacity-90">Hoy te quedaron $209.580</span>
+                <span className="tabular block opacity-90">Ventas menos gastos: $209.580</span>
               </span>
             </div>
           </div>

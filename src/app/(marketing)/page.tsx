@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { PriceTag } from "@/components/landing/price-tag"
@@ -11,6 +10,7 @@ import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { SocialSection } from "@/components/landing/social-section"
 import { BusinessFinder } from "@/components/landing/business-finder"
+import { Testimonials } from "@/components/landing/testimonials"
 import { TrustSection } from "@/components/landing/trust-section"
 import { BusinessTypesLoop } from "@/components/landing/business-types-loop"
 import { DayScrollStory } from "@/components/landing/day-scroll-story"
@@ -18,7 +18,6 @@ import { DesktopPreview } from "@/components/landing/desktop-preview"
 import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
-import { VideoDemo } from "@/components/landing/video-demo"
 import {
   BeforeAfter,
   BenefitsSection,
@@ -39,12 +38,6 @@ export const metadata: Metadata = { alternates: { canonical: "/" } }
 export const revalidate = 600
 
 const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 5)
-
-const DAY = [
-  { time: "08:30", text: "Abres y ves de inmediato cómo va tu negocio." },
-  { time: "13:00", text: "Vendes escaneando los productos con el celular." },
-  { time: "21:00", text: "Cierras la caja en 1 minuto y sabes cuánto ganaste." },
-]
 
 export default async function LandingPage() {
   const users = await getUserCount()
@@ -126,42 +119,7 @@ export default async function LandingPage() {
         </div>
       </Section>
 
-      <Section id="video" className="overflow-hidden">
-        <div className="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
-          <div className="space-y-6">
-            <SectionTitle
-              align="left"
-              eyebrow="Míralo en 20 segundos"
-              title="Un día en tu negocio con OrdenSimple"
-              description="Sin cuadernos, sin planillas y sin calculadora. Así se ve tu día a día:"
-            />
-            <ul className="space-y-3">
-              {DAY.map((d) => (
-                <li key={d.time} className="flex items-start gap-3">
-                  <span className="tabular mt-0.5 rounded-md bg-accent px-2 py-0.5 text-sm font-semibold text-accent-foreground">
-                    {d.time}
-                  </span>
-                  <span className="text-pretty">{d.text}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Check className="size-4 text-primary" />
-              Funciona en el celular y en el computador.
-            </p>
-            <Button size="lg" className="h-12 px-6 text-base" asChild>
-              <SignupLink loggedInLabel="Ir a mi negocio">Pruébalo gratis</SignupLink>
-            </Button>
-          </div>
-          <VideoDemo
-            src="/videos/un-dia-con-ordensimple.mp4"
-            poster="/videos/un-dia-con-ordensimple.webp"
-            label="Video: un día en un negocio usando OrdenSimple, desde abrir en la mañana hasta cerrar la caja en la noche."
-          />
-        </div>
-      </Section>
-
-      <Section muted>
+      <Section>
         <SectionTitle
           animated
           align="left"
@@ -177,6 +135,8 @@ export default async function LandingPage() {
       <BenefitsSection />
 
       <BusinessFinder />
+
+      <Testimonials />
 
       <TrustSection users={users} />
 
@@ -213,7 +173,7 @@ export default async function LandingPage() {
               title="¿Tienes dudas?"
               description="Lo que más nos preguntan los dueños de negocio antes de empezar."
             />
-            <Link href="/preguntas-frecuentes" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+            <Link href="/preguntas-frecuentes" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary hover:underline">
               Ver todas las preguntas
             </Link>
           </div>

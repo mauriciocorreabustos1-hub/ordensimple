@@ -1,14 +1,15 @@
 import Link from "next/link"
+import { Building2, DatabaseBackup, Download, KeyRound, Lock, Users } from "lucide-react"
 import { Container } from "@/components/landing/sections"
 
 // Solo lo que OrdenSimple hace de verdad (ver la política de privacidad, sección Seguridad). Sin testimonios ni cifras inventadas.
 const FACTS = [
-  { title: "Conexión cifrada", text: "Todo viaja por HTTPS, y tu contraseña se guarda cifrada: nadie puede leerla." },
-  { title: "Cada negocio, por separado", text: "Los datos de tu negocio no se mezclan con los de otros, y solo los ve quien tú autorices." },
-  { title: "Respaldos periódicos", text: "Tu información queda en la nube: si se te pierde o se te rompe el celular, entras desde otro y está todo." },
-  { title: "Verificación en dos pasos", text: "Si quieres más seguridad, al iniciar sesión te pedimos un código además de la contraseña." },
-  { title: "Tus datos son tuyos", text: "No los vendemos ni los usamos para publicidad. Los descargas en Excel o borras tu cuenta cuando quieras." },
-  { title: "Hecho en Chile", text: "En pesos chilenos, con el IVA y el F29 como se usan acá, y con ayuda por WhatsApp en tu idioma." },
+  { icon: Lock, title: "Seguridad de la información", text: "Todo viaja cifrado por HTTPS, y tu contraseña se guarda cifrada: no queda escrita tal como la tecleas." },
+  { icon: Building2, title: "Cada negocio, por separado", text: "Los datos de tu negocio no se mezclan con los de otros negocios que usan OrdenSimple." },
+  { icon: Users, title: "Tú decides quién entra", text: "Invitas a cada trabajador con su propio acceso, y le quitas el acceso cuando quieras." },
+  { icon: KeyRound, title: "Verificación en dos pasos", text: "Si la activas, al iniciar sesión te pedimos un código además de la contraseña. También limitamos los intentos fallidos." },
+  { icon: DatabaseBackup, title: "Respaldos periódicos", text: "Tu información queda en la nube con respaldos periódicos: si cambias o pierdes el celular, entras desde otro con tu cuenta." },
+  { icon: Download, title: "Tus datos son tuyos", text: "No los vendemos ni los usamos para publicidad. Descargas tus ventas y gastos en Excel, o borras tu cuenta cuando quieras." },
 ]
 
 /** Confianza con hechos verificables: seguridad, privacidad y cuántas personas ya lo usan (el número real). */
@@ -22,7 +23,7 @@ export function TrustSection({ users }: { users?: number | null }) {
               Tu negocio, en buenas manos
             </h2>
             <p className="text-lg text-pretty text-muted-foreground">
-              Anotas plata, deudas y clientes. Por eso cuidamos tu información como si fuera nuestra.
+              Anotas plata, deudas y clientes. Por eso cuidamos tu información con estas medidas, y te contamos cuáles son.
             </p>
             {users ? (
               <p className="text-pretty">
@@ -34,14 +35,19 @@ export function TrustSection({ users }: { users?: number | null }) {
               Leer la política de privacidad
             </Link>
           </div>
-          <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+          <ul className="grid gap-3 sm:grid-cols-2">
             {FACTS.map((f) => (
-              <div key={f.title} className="border-t border-foreground/15 pt-4">
-                <dt className="font-semibold">{f.title}</dt>
-                <dd className="mt-1 text-sm text-pretty text-muted-foreground">{f.text}</dd>
-              </div>
+              <li key={f.title} className="flex gap-3.5 rounded-2xl border bg-card p-5">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <f.icon className="size-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold">{f.title}</h3>
+                  <p className="mt-1 text-sm text-pretty text-muted-foreground">{f.text}</p>
+                </div>
+              </li>
             ))}
-          </dl>
+          </ul>
         </div>
       </Container>
     </section>

@@ -4,6 +4,8 @@ import * as React from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { ChevronDown } from "lucide-react"
+import { BUSINESS_TYPE_EVENT, BUSINESS_TYPES, type BusinessTypeId } from "@/components/landing/business-types"
+import { smoothScrollTo } from "@/components/landing/smooth-scroll"
 import { SignupLink } from "@/components/landing/signup-link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -125,14 +127,15 @@ const FEATURES = {
 type FeatureId = keyof typeof FEATURES
 
 // Cada rubro abre con lo que más le sirve; una misma función puede estar en varios.
-const BUSINESSES: { id: string; label: string; features: FeatureId[] }[] = [
-  { id: "almacen", label: "Almacén o minimarket", features: ["etiquetas", "promos", "fidelidad", "cobros"] },
-  { id: "comida", label: "Restaurante o café", features: ["comandas", "promos", "fidelidad", "recetas"] },
-  { id: "servicios", label: "Peluquería o consulta", features: ["agenda", "fidelidad", "cobros"] },
-  { id: "whatsapp", label: "Vendo por WhatsApp", features: ["tienda", "seguimiento", "cobros", "promos"] },
-  { id: "taller", label: "Taller o ferretería", features: ["cotizaciones", "etiquetas", "cobros"] },
-  { id: "propio", label: "Hago lo que vendo", features: ["recetas", "etiquetas", "tienda"] },
-]
+const FEATURES_BY_TYPE: Record<BusinessTypeId, FeatureId[]> = {
+  almacen: ["etiquetas", "promos", "fidelidad", "cobros"],
+  comida: ["comandas", "promos", "fidelidad", "recetas"],
+  servicios: ["agenda", "fidelidad", "cobros"],
+  whatsapp: ["tienda", "seguimiento", "cobros", "promos"],
+  taller: ["cotizaciones", "etiquetas", "cobros"],
+  propio: ["recetas", "etiquetas", "tienda"],
+}
+const BUSINESSES = BUSINESS_TYPES.map((b) => ({ ...b, features: FEATURES_BY_TYPE[b.id] }))
 
 /** "¿Qué negocio tienes?": un archivador con una pestaña por rubro, y adentro solo lo que le sirve a ese negocio. */
 export function BusinessFinder() {
@@ -164,6 +167,27 @@ export function BusinessFinder() {
     tabs.current[next]?.focus()
     tabs.current[next]?.scrollIntoView({ block: "nearest", inline: "nearest" })
   }
+
+  // El menú "Soluciones" llega con /#rubro-<id>: abre esa pestaña y baja hasta el archivador.
+  React.useEffect(() => {
+    const fromHash = () => {
+      const index = BUSINESSES.findIndex((b) => location.hash === `#rubro-${b.id}`)
+      if (index < 0) return
+      setBusinessIndex(index)
+      setOpen(BUSINESSES[index].features[0])
+      requestAnimationFrame(() => {
+        const top = (root.current?.getBoundingClientRect().top ?? 0) + window.scrollY - 64
+        smoothScrollTo(top)
+      })
+    }
+    fromHash()
+    window.addEventListener("hashchange", fromHash)
+    window.addEventListener(BUSINESS_TYPE_EVENT, fromHash)
+    return () => {
+      window.removeEventListener("hashchange", fromHash)
+      window.removeEventListener(BUSINESS_TYPE_EVENT, fromHash)
+    }
+  }, [])
 
   // El dibujo nuevo sube y se asienta; la primera vez no, porque nadie eligió nada todavía.
   React.useEffect(() => {

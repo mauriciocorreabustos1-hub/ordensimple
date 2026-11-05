@@ -11,6 +11,7 @@ import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { SocialSection } from "@/components/landing/social-section"
 import { BusinessFinder } from "@/components/landing/business-finder"
+import { TrustSection } from "@/components/landing/trust-section"
 import { BusinessTypesLoop } from "@/components/landing/business-types-loop"
 import { DayScrollStory } from "@/components/landing/day-scroll-story"
 import { DesktopPreview } from "@/components/landing/desktop-preview"
@@ -55,18 +56,18 @@ export default async function LandingPage() {
       <section className="overflow-hidden border-b bg-accent/30">
         <Container className="grid gap-x-14 gap-y-10 pt-12 pb-14 md:pt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:pb-20">
           <h1 className="font-display text-[clamp(2.75rem,6.4vw,5.25rem)] leading-[0.98] font-semibold tracking-tight text-balance lg:col-span-2">
-            <span className="block">Deja el cuaderno.</span> <span className="block">Sabe cuánto ganaste hoy.</span>
+            <span className="block">Deja el cuaderno.</span> <span className="block">Ten todo tu negocio bajo control.</span>
           </h1>
           <div className="space-y-6">
             <p className="max-w-lg text-lg text-pretty text-muted-foreground">
-              Administra tu almacén, restaurante, botillería, peluquería o puesto de feria desde el celular: anotas ventas, gastos, fiados y productos, y cada noche sabes cuánto te quedó de verdad.
+              Administra tus ventas, inventario, clientes, pedidos y caja desde un solo lugar, en el celular o el computador. Menos trabajo administrativo, más tiempo para hacer crecer tu negocio.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" asChild>
-                <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
+                <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
-                <Link href="/como-funciona">Ver cómo funciona</Link>
+                <Link href="/demo">Ver demostración</Link>
               </Button>
             </div>
             {/* Cuántos somos, como número de atención: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
@@ -176,6 +177,8 @@ export default async function LandingPage() {
       <BenefitsSection />
 
       <BusinessFinder />
+
+      <TrustSection users={users} />
 
       <Section>
         <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">

@@ -7,6 +7,7 @@ const PAGES = [
   "/funciones",
   "/restaurantes",
   "/como-funciona",
+  "/demo",
   "/precios",
   "/instalar",
   "/descargar",

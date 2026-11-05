@@ -9,6 +9,7 @@ import { db } from "@/lib/db"
 import { formatMoney } from "@/lib/currency"
 import { formatDate } from "@/lib/dates"
 import { mpMethodLabel } from "@/lib/online-payments"
+import { whatsappLink } from "@/lib/whatsapp"
 import { onlinePayInfo } from "@/server/mp-marketplace"
 
 // Enlace de pago: el negocio cobra un monto y el cliente paga con tarjeta o Mercado Pago.
@@ -18,7 +19,7 @@ const getLink = cache(async (token: string) => {
   if (!/^[\w-]{16,64}$/.test(token)) return null
   return db.paymentLink.findUnique({
     where: { token },
-    select: { id: true, title: true, amount: true, status: true, customerName: true, paidAt: true, business: { select: { id: true, name: true, currency: true, timezone: true, logoUpdatedAt: true } } },
+    select: { id: true, title: true, amount: true, status: true, customerName: true, paidAt: true, business: { select: { id: true, name: true, currency: true, timezone: true, logoUpdatedAt: true, storeWhatsapp: true, settings: { select: { contactPhone: true } } } } },
   })
 })
 
@@ -32,6 +33,7 @@ export default async function PaymentLinkPage({ params, searchParams }: PageProp
   const { pago } = await searchParams
   const link = await getLink(token)
   if (!link) notFound()
+  const contact = link.business.storeWhatsapp || link.business.settings?.contactPhone
   const b = link.business
   const info = await onlinePayInfo(b.id, { linkId: link.id })
   const first = link.customerName?.split(" ")[0]
@@ -64,7 +66,14 @@ export default async function PaymentLinkPage({ params, searchParams }: PageProp
               <p className="text-xs text-muted-foreground">Pagas de forma segura en Mercado Pago. Aceptan tarjetas de crédito, débito y saldo de Mercado Pago.</p>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Por ahora este negocio no está recibiendo pagos online. Escríbele para pagar de otra forma.</p>
+            <>
+              <p className="text-sm text-muted-foreground">Por ahora este negocio no está recibiendo pagos online. Escríbele para pagar de otra forma.</p>
+              {contact ? (
+                <a href={whatsappLink(contact, `Hola, quiero pagar ${link.title.toLowerCase()} de ${formatMoney(link.amount, link.business.currency)}.`)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#25d366] px-5 text-sm font-semibold text-black">
+                  Escribir por WhatsApp
+                </a>
+              ) : null}
+            </>
           )}
         </section>
         <p className="text-center text-xs text-muted-foreground">

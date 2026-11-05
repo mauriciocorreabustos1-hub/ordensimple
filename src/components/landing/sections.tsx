@@ -1,11 +1,13 @@
 import Link from "next/link"
-import { Check, Minus, Users, X } from "lucide-react"
+import { Check, Minus, X } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
 import { cn } from "@/lib/utils"
 import { BEFORE_AFTER, PLAN_COMPARISON, RECEIPT_STEPS, STEPS, type FaqGroup, type Feature } from "@/components/landing/content"
+import { AnimatedTitle } from "@/components/landing/animated-title"
+import { PriceTag } from "@/components/landing/price-tag"
 import { SignupLink } from "@/components/landing/signup-link"
 
 export function Container({ className, children }: { className?: string; children: React.ReactNode }) {
@@ -34,16 +36,24 @@ export function SectionTitle({
   title,
   description,
   align = "left",
+  animated,
 }: {
   /** Ya no se muestra (quedaba con cara de plantilla); se mantiene para no tocar cada página. */
   eyebrow?: string
   title: string
   description?: string
   align?: "center" | "left"
+  /** El título entra línea por línea la primera vez que aparece en pantalla. */
+  animated?: boolean
 }) {
+  const titleClass = "font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]"
   return (
     <div className={cn("max-w-2xl space-y-3", align === "center" && "mx-auto text-center")}>
-      <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
+      {animated ? (
+        <AnimatedTitle text={title} align={align} className={titleClass} />
+      ) : (
+        <h2 className={titleClass}>{title}</h2>
+      )}
       {description ? <p className="text-lg text-pretty text-muted-foreground">{description}</p> : null}
     </div>
   )
@@ -162,14 +172,14 @@ export function BeforeAfter() {
   )
 }
 
-/** "Empieza en 2 minutos" como una boleta: cada paso con lo que tarda, y el total al final. */
+/** "Empieza en 2 minutos" como un comprobante: cada paso con lo que tarda, y el total al final. */
 export function ReceiptSteps() {
   return (
     <div className="mx-auto w-full max-w-sm drop-shadow-xl md:rotate-1">
       <div className="receipt-edge bg-card px-6 pt-7 pb-10 font-mono text-sm text-card-foreground">
         <div className="space-y-1 text-center">
           <p className="text-base font-semibold">OrdenSimple</p>
-          <p className="text-xs text-muted-foreground">Boleta de inicio · N° 000001</p>
+          <p className="text-xs text-muted-foreground">Comprobante de inicio · N° 000001</p>
         </div>
         <ol className="my-5 space-y-4 border-y border-dashed border-foreground/25 py-5">
           {RECEIPT_STEPS.map((s, i) => (
@@ -237,73 +247,71 @@ export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
 }
 
 /** En la portada (`compact`) cada plan muestra lo principal; el detalle está en /precios. */
+/** Los planes como carteles de almacén: el precio va en su etiqueta y Pro resalta con la carpeta en verde. */
 export function PricingCards({ compact = false }: { compact?: boolean }) {
   const MAX = 6
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-3 md:items-stretch">
       {Object.values(PLANS).map((plan) => {
         const featured = plan.id === "PRO"
+        const quiet = featured ? "text-deep-foreground/80" : "text-muted-foreground"
+        const line = featured ? "border-deep-foreground/20" : "border-border"
         return (
-          <div
-            key={plan.id}
-            className={cn(
-              "flex flex-col gap-5 rounded-2xl border bg-card p-6",
-              featured && "border-primary ring-1 ring-primary md:-my-2 md:py-8",
-            )}
-          >
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <p className="text-lg font-semibold">{plan.name}</p>
-                {featured ? (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Recomendado</span>
-                ) : null}
-              </div>
-              <p className="text-sm text-muted-foreground">{plan.description}</p>
+          <div key={plan.id} className={cn("flex flex-col rounded-2xl p-6 sm:p-7", featured ? "bg-deep text-deep-foreground shadow-xl md:-my-3 md:py-10" : "border bg-card")}>
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="font-display text-2xl font-semibold tracking-tight">{plan.name}</h3>
+              {featured ? <p className="text-sm font-medium">Recomendado</p> : null}
             </div>
-            <p className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2 text-xs">
-              <Users className="mt-px size-3.5 shrink-0 text-primary" />
-              <span>
-                <span className="font-medium">Ideal para:</span> {plan.audience.charAt(0).toLowerCase() + plan.audience.slice(1)}
-              </span>
+            <p className={cn("mt-1 min-h-11 text-sm text-pretty", quiet)}>{plan.description}</p>
+
+            <div className="mt-5">
+              <PriceTag hole={featured ? "bg-deep" : "bg-card"} className={cn("shadow-md", featured ? "bg-deep-foreground text-deep shadow-black/20" : plan.id === "FREE" && "bg-foreground text-background shadow-black/15")}>
+                <span className="font-display text-2xl font-semibold whitespace-nowrap">{plan.priceLabel}</span>
+              </PriceTag>
+              {plan.priceNote ? <p className={cn("mt-3 text-xs text-pretty", quiet)}>{plan.priceNote}</p> : null}
+            </div>
+
+            <p className={cn("mt-5 border-t pt-4 text-sm text-pretty", line)}>
+              <span className="font-semibold">Para: </span>
+              <span className={quiet}>{plan.audience.charAt(0).toLowerCase() + plan.audience.slice(1)}</span>
             </p>
-            <div className="space-y-1">
-              <p className="text-3xl font-semibold tracking-tight">{plan.priceLabel}</p>
-              {plan.priceNote ? <p className="text-xs text-muted-foreground">{plan.priceNote}</p> : null}
-            </div>
-            <ul className="flex-1 space-y-2 text-sm">
+
+            <ul className="mt-4 flex-1 text-sm">
               {(compact ? plan.highlights.slice(0, MAX) : plan.highlights).map((h) => (
-                <li key={h} className={cn("flex items-start gap-2", h.startsWith("Todo lo de") && "font-medium")}>
-                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                <li key={h} className={cn("border-t py-2 text-pretty first:border-t-0", line, h.startsWith("Todo lo de") && "font-semibold")}>
                   {h}
                 </li>
               ))}
               {compact && plan.highlights.length > MAX ? (
-                <li className="pl-6">
-                  <Link href="/precios" className="text-primary hover:underline">
+                <li className={cn("border-t py-2", line)}>
+                  <Link href="/precios" className={cn("font-medium underline-offset-4 hover:underline", !featured && "text-primary")}>
                     Y {plan.highlights.length - MAX} cosas más
                   </Link>
                 </li>
               ) : null}
             </ul>
-            {plan.id === "FREE" ? (
-              <Button size="lg" variant={featured ? "default" : "outline"} className="h-11" asChild>
-                <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
-              </Button>
-            ) : plan.id === "PRO" ? (
-              <Button size="lg" className="h-11" asChild>
-                {/* Enlace normal (no Link): /pagar/... es una redirección del servidor, no una página. */}
-                <a href={BILLING_ENABLED ? "/pagar/pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</a>
-              </Button>
-            ) : BILLING_ENABLED ? (
-              <Button size="lg" variant="outline" className="h-11" asChild>
-                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- /pagar es una redirección del servidor, no una página */}
-                <a href="/pagar/empresa">Elegir Empresa</a>
-              </Button>
-            ) : (
-              <Button size="lg" variant="outline" className="h-11" disabled>
-                Muy pronto
-              </Button>
-            )}
+
+            <div className="mt-5">
+              {plan.id === "FREE" ? (
+                <Button size="lg" variant="outline" className="h-11 w-full" asChild>
+                  <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
+                </Button>
+              ) : plan.id === "PRO" ? (
+                <Button size="lg" className="h-11 w-full bg-deep-foreground text-deep hover:bg-deep-foreground/90" asChild>
+                  {/* Enlace normal (no Link): /pagar/... es una redirección del servidor, no una página. */}
+                  <a href={BILLING_ENABLED ? "/pagar/pro" : "/registro"}>{BILLING_ENABLED ? "Elegir Pro" : "Usar Pro gratis"}</a>
+                </Button>
+              ) : BILLING_ENABLED ? (
+                <Button size="lg" variant="outline" className="h-11 w-full" asChild>
+                  {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- /pagar es una redirección del servidor, no una página */}
+                  <a href="/pagar/empresa">Elegir Empresa</a>
+                </Button>
+              ) : (
+                <Button size="lg" variant="outline" className="h-11 w-full" disabled>
+                  Muy pronto
+                </Button>
+              )}
+            </div>
           </div>
         )
       })}

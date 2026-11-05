@@ -24,7 +24,7 @@ export default function FeaturesPage() {
           {FEATURE_GROUPS.map((g, i) => (
             <span key={g.id} className="flex items-center gap-1">
               {i > 0 ? <span className="text-muted-foreground/50" aria-hidden>·</span> : null}
-              <a href={`#${g.id}`} className="rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <a href={`#${g.id}`} className="inline-flex min-h-8 items-center rounded px-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:min-h-11">
                 {g.title}
               </a>
             </span>

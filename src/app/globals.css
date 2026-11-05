@@ -229,6 +229,13 @@ body::before {
   background-position: 0 0, 0 14px;
 }
 
+/* Franja de rubros del inicio: se mueve media cinta, porque la lista va repetida. */
+@keyframes rubros {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 /* Borde de abajo en zigzag, como una boleta cortada. */
 .receipt-edge {
   mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;

@@ -486,7 +486,7 @@ export const BEFORE_AFTER: { before: string; after: string }[] = [
 
 export type Step = { n: string; title: string; text: string; detail: string }
 
-/** Los pasos de "Empieza en 2 minutos" en la portada, como líneas de una boleta. */
+/** Los pasos de "Empieza en 2 minutos" en la portada, como líneas de un comprobante. */
 export const RECEIPT_STEPS: { what: string; note: string; time: string }[] = [
   { what: "Crea tu cuenta", note: "Nombre, correo y contraseña. Sin tarjeta.", time: "30 seg" },
   { what: "Tu negocio", note: "Nombre, rubro y moneda. Salta lo que no sepas.", time: "1 min" },

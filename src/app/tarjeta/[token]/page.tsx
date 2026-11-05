@@ -81,7 +81,7 @@ export default async function LoyaltyCardPage({ params }: PageProps<"/tarjeta/[t
           <div className="relative flex items-center gap-3">
             <BusinessLogo businessId={b.id} name={b.name} logoUpdatedAt={b.logoUpdatedAt} className="size-12 rounded-xl border-2 border-white/30 bg-white" />
             <div className="min-w-0">
-              <p className="truncate text-lg font-semibold">{b.name}</p>
+              <h1 className="truncate text-lg font-semibold">{b.name}</h1>
               <p className="text-sm text-white/80">Tarjeta de {first}</p>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Check, Pause, PiggyBank, Play, Receipt, ScanLine, ShoppingBag } from "lucide-react"
+import { LogoMark } from "@/components/app/logo"
 import { cn } from "@/lib/utils"
 
 // Vista ilustrativa del producto con datos de ejemplo (no son datos reales).
@@ -147,10 +148,11 @@ export function DashboardPreview() {
       <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-to-b from-primary/20 to-transparent blur-2xl" />
       <div className="relative overflow-hidden rounded-2xl border bg-card shadow-xl">
         <div className="flex items-center gap-1.5 border-b bg-muted/50 px-4 py-2.5">
-          <span className="size-2.5 rounded-full bg-foreground/15" />
-          <span className="size-2.5 rounded-full bg-foreground/15" />
-          <span className="size-2.5 rounded-full bg-foreground/15" />
-          <span className="ml-3 text-xs text-muted-foreground">ordensimple.cl/dashboard</span>
+          <LogoMark className="size-5" />
+          <span className="text-xs font-semibold tracking-tight">
+            Orden<span className="text-primary">Simple</span>
+          </span>
+          <span className="ml-2 border-l pl-2.5 text-xs text-muted-foreground">Almacén Don Pedro</span>
           {reduced ? null : (
             <button
               type="button"

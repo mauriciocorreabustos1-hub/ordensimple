@@ -115,7 +115,7 @@ export default async function QuotePublicPage({ params, searchParams }: PageProp
             </div>
             <div className="text-sm sm:text-right">
               <p className="text-xs font-semibold tracking-[0.15em] text-black/50 uppercase">Cotización</p>
-              <p className="text-2xl font-semibold tabular">N.º {quoteNumber(quote.number)}</p>
+              <h1 className="text-2xl font-semibold tabular">N.º {quoteNumber(quote.number)}</h1>
               <p className="text-black/60">Fecha: {date(quote.createdAt)}</p>
               <p className="text-black/60">Válida hasta: {date(quote.validUntil)}</p>
               <p className="no-print mt-1 inline-block rounded-full bg-black/5 px-2 py-0.5 text-xs font-medium">{QUOTE_STATE_LABEL[state]}</p>

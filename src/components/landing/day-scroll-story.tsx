@@ -3,6 +3,8 @@
 import * as React from "react"
 import { Check, Home, Menu, MessageCircle, Plus, Receipt, ShoppingBag, Wallet } from "lucide-react"
 import { LogoMark } from "@/components/app/logo"
+import { AnimatedTitle } from "@/components/landing/animated-title"
+import { smoothScrollTo } from "@/components/landing/smooth-scroll"
 import { cn } from "@/lib/utils"
 
 // Un día en el negocio, llevado por el scroll: al deslizar corre la hora y la app se va llenando, pantalla por
@@ -105,8 +107,7 @@ export function DayScrollStory() {
     let frame = 0
     let shown = 0
     let last = 0
-    // El avance sigue al scroll con un pequeño retraso: la rueda del mouse no da saltos.
-    // Se calcula por tiempo, para que vaya igual en pantallas rápidas y en equipos lentos.
+    // El avance sigue al scroll con un pequeño retraso, calculado por tiempo: va igual en pantallas rápidas y en equipos lentos.
     const tick = (now: number) => {
       frame = 0
       if (still.matches) return setP(1)
@@ -143,7 +144,7 @@ export function DayScrollStory() {
     const top = el.getBoundingClientRect().top + window.scrollY
     // Un poco después del inicio del tramo, para que ya se vea lo que cuenta.
     const at = step.from + (step.to - step.from) * (step.from === 0 ? 0 : 0.6)
-    window.scrollTo({ top: top + (el.offsetHeight - window.innerHeight) * at, behavior: "smooth" })
+    smoothScrollTo(top + (el.offsetHeight - window.innerHeight) * at)
   }
 
   const current = Math.max(0, STEPS.findIndex((s) => p <= s.to))
@@ -163,9 +164,12 @@ export function DayScrollStory() {
       <div className="sticky top-0 h-svh overflow-hidden pt-16 motion-reduce:static motion-reduce:h-auto">
         <div className="mx-auto grid h-full max-w-6xl grid-rows-[auto_minmax(0,1fr)] gap-4 px-4 pt-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-1 lg:items-center lg:gap-16 lg:py-6">
           <div>
-            <h2 id="dia-titulo" className="sr-only font-display text-4xl leading-[1.08] font-semibold tracking-tight text-balance lg:not-sr-only lg:static lg:mb-8">
+            <h2 id="dia-titulo" className="sr-only">
               Desliza y mira cómo se ordena tu día
             </h2>
+            <div aria-hidden className="mb-8 max-lg:hidden">
+              <AnimatedTitle tag="p" text="Desliza y mira cómo se ordena tu día" className="font-display text-4xl leading-[1.08] font-semibold tracking-tight text-balance" />
+            </div>
 
             {/* En el computador se ve toda la jornada; en el celular, solo el momento actual. */}
             <ol className="relative max-lg:min-h-[7.25rem] motion-reduce:max-lg:min-h-0">

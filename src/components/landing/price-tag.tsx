@@ -2,9 +2,9 @@ import { cn } from "@/lib/utils"
 
 /**
  * Cartel de precio como los de un almacén (forma de etiqueta con su hoyito), en el verde de la marca.
- * Es el elemento memorable de la portada: se usa una sola vez por página.
+ * Es el elemento memorable de la marca: aparece en la portada y en los precios.
  */
-export function PriceTag({ children, className }: { children: React.ReactNode; className?: string }) {
+export function PriceTag({ children, className, hole = "bg-background" }: { children: React.ReactNode; className?: string; /** Color del hoyito: el del fondo que queda detrás de la etiqueta. */ hole?: string }) {
   return (
     <span
       className={cn(
@@ -13,7 +13,7 @@ export function PriceTag({ children, className }: { children: React.ReactNode; c
         className,
       )}
     >
-      <span aria-hidden className="absolute top-1/2 left-4 size-2.5 -translate-y-1/2 rounded-full bg-background" />
+      <span aria-hidden className={cn("absolute top-1/2 left-4 size-2.5 -translate-y-1/2 rounded-full", hole)} />
       {children}
     </span>
   )

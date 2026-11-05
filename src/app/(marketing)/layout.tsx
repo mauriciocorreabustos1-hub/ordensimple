@@ -2,6 +2,7 @@ import Link from "next/link"
 import { SocialButtons, WhatsAppButton } from "@/components/landing/social-links"
 import { WhatsAppFloat } from "@/components/landing/whatsapp-float"
 import { Logo } from "@/components/app/logo"
+import { SmoothScroll } from "@/components/landing/smooth-scroll"
 import { SiteHeader } from "@/components/landing/site-header"
 import { CookieNotice } from "@/components/landing/cookie-notice"
 
@@ -38,6 +39,7 @@ const FOOTER = [
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <SmoothScroll />
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <footer className="border-t bg-muted/30">

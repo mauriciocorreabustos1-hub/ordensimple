@@ -1,7 +1,7 @@
 import { Boxes, Check, ChefHat, Home, Monitor, NotebookPen, ShoppingBag, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// Dibujo de OrdenSimple para PC: la ventana con todo el negocio y la boleta que sale sola en la impresora (datos de ejemplo).
+// Dibujo de OrdenSimple para PC: la ventana con todo el negocio y el comprobante que sale solo en la impresora (datos de ejemplo).
 
 const MENU = [
   { icon: Home, label: "Inicio" },
@@ -63,12 +63,12 @@ export function DesktopPreview({ className }: { className?: string }) {
         </div>
       </div>
 
-      {/* La boleta que sale sola */}
+      {/* El comprobante que sale solo */}
       <div className="relative z-20 mt-4 ml-auto w-[66%] rotate-2 sm:mt-2 sm:w-[50%]">
-        {/* Etiqueta pegada al borde de arriba de la boleta */}
+        {/* Etiqueta pegada al borde de arriba del comprobante */}
         <p className="absolute -top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-md">
           <Check className="size-3.5" />
-          Boleta impresa al instante
+          Comprobante impreso al instante
         </p>
         <div className="rounded-b-md border border-neutral-200 bg-white p-3 pt-5 font-mono text-[10.5px] leading-snug text-black shadow-2xl">
           <p className="text-center font-bold">ALMACEN DON PEDRO</p>

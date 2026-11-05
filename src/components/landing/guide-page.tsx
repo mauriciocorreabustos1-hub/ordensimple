@@ -91,7 +91,7 @@ export function GuidePage({
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h1>
           <p className="text-lg text-pretty text-muted-foreground">{description}</p>
           <p className="text-sm text-muted-foreground">
-            Actualizado el {updated} · {readingMinutes} min de lectura
+            Actualizado el {updated}. Se lee en {readingMinutes} minutos.
           </p>
         </header>
 

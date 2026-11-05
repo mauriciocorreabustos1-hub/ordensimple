@@ -41,7 +41,8 @@ export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">):
   const { slug } = await params
   const store = await getStore(slug)
   if (!store) return { title: "Tienda no encontrada", robots: { index: false } }
-  const booking = await getBookableBusiness(slug)
+  const bookable = await getBookableBusiness(slug)
+  const booking = bookable ? (await bookableServices(bookable.id)).length > 0 : false
   const description = store.storeMessage || (booking ? `Reserva tu hora en ${store.name} en un minuto.` : `Mira los productos de ${store.name} y haz tu pedido por WhatsApp.`)
   return {
     title: { absolute: `${store.name} · ${booking ? "Reserva tu hora" : "Pedidos por WhatsApp"}` },

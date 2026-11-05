@@ -7,12 +7,12 @@ import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 
 export const metadata: Metadata = {
   title: "OrdenSimple para PC",
-  description: "Descarga OrdenSimple para Windows: tu negocio en su propia ventana, con boletas y comandas que salen directo en tus impresoras, sin la ventana de impresión.",
+  description: "Descarga OrdenSimple para Windows: tu negocio en su propia ventana, con comprobantes y comandas que salen directo en tus impresoras, sin la ventana de impresión.",
   alternates: { canonical: "/descargar" },
 }
 
 const FEATURES = [
-  { icon: Printer, title: "Imprime al instante", text: "Un clic y la boleta, la cuenta o la comanda sale en la impresora que elijas. Sin ventanas ni configuraciones." },
+  { icon: Printer, title: "Imprime al instante", text: "Un clic y el comprobante, la cuenta o la comanda sale en la impresora que elijas. Sin ventanas ni configuraciones." },
   { icon: Wifi, title: "Impresoras USB y de red", text: "Cualquier impresora instalada en Windows y las de cocina conectadas por Wi-Fi o cable, por su dirección IP." },
   { icon: Monitor, title: "Su propia ventana", text: "Un ícono en el escritorio que abre tu negocio al tiro, separado del navegador." },
   { icon: RefreshCw, title: "Segura y siempre al día", text: "Verificada por Microsoft y se actualiza sola desde la tienda. Todo lo nuevo aparece sin reinstalar nada." },
@@ -23,13 +23,13 @@ export default function DownloadPage() {
     <>
       <PageHero
         title="Cobra, imprime y atiende al siguiente"
-        description="OrdenSimple para el computador de tu caja: la boleta sale impresa en el mismo segundo en que registras la venta, y la comanda llega impresa a la cocina."
+        description="OrdenSimple para el computador de tu caja: el comprobante sale impreso en el mismo segundo en que registras la venta, y la comanda llega impresa a la cocina."
       />
       <Section className="border-t-0">
         <div className="mx-auto max-w-3xl space-y-10 px-4 py-12">
           <div className="flex flex-col items-start gap-3">
             <MsStoreBadge height={56} />
-            <p className="text-sm text-muted-foreground">Gratis · Windows 10 y 11 · verificada por Microsoft · usa tu misma cuenta de OrdenSimple.</p>
+            <p className="text-sm text-muted-foreground">Gratis para Windows 10 y 11, verificada por Microsoft. Usa tu misma cuenta de OrdenSimple.</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">

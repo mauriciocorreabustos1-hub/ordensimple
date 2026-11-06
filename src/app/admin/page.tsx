@@ -1,6 +1,6 @@
 import Link from "next/link"
-import { Activity, AlertTriangle, BarChart3, Download, Gift, LayoutDashboard, Link2, MailCheck, Megaphone, NotebookPen, Building2, Bug, CheckCircle2, Crown, Mail, MonitorSmartphone, Search, ShoppingBag, TicketPercent, TrendingUp, UserPlus, Users, ShieldCheck } from "lucide-react"
-import { AdminNav, type AdminNavItem } from "@/components/admin/admin-nav"
+import { BarChart3, Download, Gift, Link2, MailCheck, Megaphone, NotebookPen, Bug, CheckCircle2, Crown, Mail, Search, TicketPercent, ShieldCheck } from "lucide-react"
+import { AdminShell } from "@/components/admin/admin-shell"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
 import { DirectEmailComposer } from "@/components/admin/direct-email-composer"
@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { PageHeader } from "@/components/app/page-header"
-import { StatCard } from "@/components/app/stat-card"
 import { getAppUrl } from "@/lib/app-url"
 import { formatMoney, formatNumber } from "@/lib/currency"
 import { formatDate, formatDateTime } from "@/lib/dates"
@@ -136,7 +135,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const maxSignups = Math.max(1, ...stats.signupsByDay.map((d) => d.count))
 
   const pageHref = (p: number) =>
-    `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), ...(role !== "todos" ? { rol: role } : {}), pagina: String(p) })}`
+    `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), ...(role !== "todos" ? { rol: role } : {}), pagina: String(p) })}#usuarios`
   const filterHref = (a: ActivityFilter, r: RoleFilter) =>
     `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(a !== "todos" ? { actividad: a } : {}), ...(r !== "todos" ? { rol: r } : {}) })}#usuarios`
 
@@ -155,117 +154,118 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   if (planCounts.expired)
     alerts.push({ href: "#usuarios", tone: "warning", text: `${formatNumber(planCounts.expired)} ${planCounts.expired === 1 ? "plan vencido" : "planes vencidos"}` })
 
-  const navItems: AdminNavItem[] = [
-    { id: "resumen", label: "Resumen" },
-    { id: "usuarios", label: "Usuarios", count: users.total },
-    { id: "crecimiento", label: "Crecimiento" },
-    { id: "planes", label: "Planes y cobros" },
-    { id: "correos", label: "Correos", count: unverified.pending || undefined, tone: "warning" },
-    { id: "equipo", label: "Equipo y errores", count: errors.last24 || undefined, tone: "danger" },
-  ]
+
+  const signups14 = stats.signupsByDay.reduce((n, d) => n + d.count, 0)
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Panel de administración"
-        description="Cuentas, negocios y uso de OrdenSimple. Solo los administradores pueden ver esta página."
-      />
+      <PageHeader title="Panel de administración" description="Cuentas, negocios y uso de OrdenSimple. Solo los administradores pueden ver esta página." />
 
-      <div className="rounded-xl border bg-card p-4">
-        <p className="mb-2.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">Para revisar</p>
-        {alerts.length ? (
-          <ul className="flex flex-wrap gap-2">
-            {alerts.map((a) => (
-              <li key={a.href + a.text}>
-                <a
-                  href={a.href}
-                  className={cn(
-                    "inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-sm hover:bg-muted",
-                    a.tone === "danger" ? "border-danger/30 text-danger" : "border-warning/40 text-warning",
-                  )}
-                >
-                  <AlertTriangle className="size-4 shrink-0" aria-hidden />
-                  <span className="text-foreground">{a.text}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="size-4 text-success" aria-hidden />
-            Todo en orden: sin errores en las últimas 24 horas y Mercado Pago conectado.
-          </p>
-        )}
-      </div>
-
-      <div className="lg:grid lg:grid-cols-[11.5rem_minmax(0,1fr)] lg:gap-10">
-        <AdminNav items={navItems} />
-
-        <div className="mt-6 space-y-14 lg:mt-0">
-          <Part id="resumen" n={1} icon={LayoutDashboard} title="Resumen" description="Cómo va OrdenSimple hoy: quiénes entran, cuántos negocios hay y cuánto se usa.">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              <StatCard compactOnMobile label="Entraron hoy" value={formatNumber(stats.usedToday)} icon={MonitorSmartphone} tone="sales"
-                hint={`${stats.used7} ${stats.used7 === 1 ? "persona" : "personas"} en 7 días · ${stats.used30} en 30 días`} />
-              <StatCard compactOnMobile label="Usuarios" value={formatNumber(stats.users)} icon={Users} tone="profit"
-                hint={`${stats.users7} nuevos esta semana · ${stats.users30} en 30 días`} />
-              <StatCard compactOnMobile label="Negocios creados" value={formatNumber(stats.businesses)} icon={Building2}
-                hint="Cuentas que terminaron la configuración inicial." />
-              <StatCard compactOnMobile label="Negocios activos" value={formatNumber(stats.active7)} icon={Activity} tone="sales"
-                hint={`Registraron ventas en los últimos 7 días (${stats.active30} en 30 días).`} />
-              <StatCard compactOnMobile label="Registros totales" value={formatNumber(stats.sales + stats.expenses)} icon={ShoppingBag}
-                hint={`${formatNumber(stats.sales)} ventas · ${formatNumber(stats.expenses)} gastos · ${formatNumber(stats.products)} productos`} />
-            </div>
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="size-4 text-primary" />
-                  Cuentas nuevas por día
-                </CardTitle>
-                <CardDescription>Últimos 14 días.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex h-32 items-end gap-1.5" role="img" aria-label="Cuentas nuevas por día en los últimos 14 días">
-                  {stats.signupsByDay.map((d) => (
-                    <div key={d.key} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-                      <span className="tabular text-[10px] text-muted-foreground">{d.count || ""}</span>
-                      <div
-                        className="w-full max-w-6 rounded-t bg-chart-1"
-                        style={{ height: `${d.count ? Math.max(6, (d.count / maxSignups) * 100) : 2}%`, opacity: d.count ? 1 : 0.25 }}
-                        title={`${formatDate(d.day, TZ, { day: "numeric", month: "short" })}: ${d.count}`}
-                      />
-                      <span className="text-[10px] text-muted-foreground">{formatDate(d.day, TZ, { day: "numeric" })}</span>
+      <AdminShell
+        sections={[
+          {
+            id: "resumen",
+            label: "Resumen",
+            title: "Cómo va OrdenSimple",
+            description: "El cierre de hoy: quiénes entraron, cuántos negocios venden y lo que conviene revisar.",
+            count: alerts.length || undefined,
+            tone: "danger",
+            content: (
+              <div key="resumen" className="grid gap-8 xl:grid-cols-[minmax(0,21rem)_minmax(0,1fr)] xl:gap-10">
+                <div className="mx-auto w-full max-w-sm drop-shadow-[0_1px_2px_rgb(0_0_0/0.12)] xl:mx-0">
+                  <div className="receipt-edge bg-[#fbfaf6] px-6 pt-6 pb-10 font-mono text-[13px] leading-6 text-[#13201c]">
+                    <p className="text-center font-display text-base font-semibold tracking-tight">OrdenSimple</p>
+                    <p className="text-center text-xs text-[#13201c]/60">Cierre al {formatDateTime(now, TZ)}</p>
+                    <Rule />
+                    <Line label="Entraron hoy" value={stats.usedToday} strong />
+                    <Line label="En 7 días" value={stats.used7} />
+                    <Line label="En 30 días" value={stats.used30} />
+                    <Rule />
+                    <Line label="Cuentas" value={stats.users} strong />
+                    <Line label="Nuevas esta semana" value={stats.users7} />
+                    <Line label="Negocios creados" value={stats.businesses} />
+                    <Line label="Vendieron en 7 días" value={stats.active7} />
+                    <Line label="Vendieron en 30 días" value={stats.active30} />
+                    <Rule />
+                    <Line label="Ventas anotadas" value={stats.sales} />
+                    <Line label="Gastos anotados" value={stats.expenses} />
+                    <Line label="Productos" value={stats.products} />
+                    <Rule />
+                    <Line label="Con Pro" value={planCounts.pro} />
+                    <Line label="Con Empresa" value={planCounts.business} />
+                    <Line label="Planes vencidos" value={planCounts.expired} />
+                    <div className="mt-3 flex items-baseline justify-between border-t-2 border-double border-[#13201c]/45 pt-2">
+                      <span className="font-semibold">Registros en total</span>
+                      <span className="tabular font-display text-xl font-semibold">{formatNumber(stats.sales + stats.expenses)}</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            <div className="space-y-3 rounded-xl border bg-card p-4 text-sm">
-              <p className="flex items-center gap-2 font-medium">
-                <Crown className="size-4 text-warning" />
-                Suscripciones
-              </p>
-              <div className="grid grid-cols-3 gap-2 text-center sm:max-w-md">
-                {[
-                  { label: "con Pro", value: planCounts.pro },
-                  { label: "con Empresa", value: planCounts.business },
-                  { label: "vencidas", value: planCounts.expired },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-lg bg-muted/50 px-2 py-2">
-                    <p className="tabular text-xl font-semibold">{formatNumber(s.value)}</p>
-                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                    <p className="mt-4 text-center text-xs text-[#13201c]/60">Para dar un plan, busca a la persona en Usuarios y toca Plan.</p>
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Para dar un plan, busca al usuario y toca <strong>Plan</strong>.
-              </p>
-            </div>
-            </div>
-          </Part>
+                </div>
 
-          <Part id="usuarios" n={2} icon={Users} title="Usuarios" count={users.total} description="Busca a una persona, mira cómo usa la app, dale un plan o escríbele.">
-                <form className="flex flex-wrap gap-2" action="/admin" role="search">
+                <div className="min-w-0 space-y-8 max-xl:order-first">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold">Qué revisar</h3>
+                    {alerts.length ? (
+                      <ul className="divide-y overflow-hidden rounded-xl border">
+                        {alerts.map((a) => (
+                          <li key={a.href + a.text}>
+                            <a href={a.href} className="flex min-h-12 items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/60">
+                              <span className={cn("size-2 shrink-0 rounded-full", a.tone === "danger" ? "bg-danger" : "bg-warning")} aria-hidden />
+                              <span className="flex-1">{a.text}</span>
+                              <span className="text-xs text-muted-foreground">Ver</span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">
+                        <CheckCircle2 className="size-4 text-success" aria-hidden />
+                        Todo en orden: sin errores en las últimas 24 horas y Mercado Pago conectado.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <h3 className="font-semibold">Cuentas nuevas por día</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {formatNumber(signups14)} en los últimos 14 días
+                      </p>
+                    </div>
+                    <div className="rounded-xl border px-4 pt-5 pb-3">
+                      <div className="flex h-44 items-end gap-1.5 sm:gap-2" role="img" aria-label={`Cuentas nuevas por día: ${formatNumber(signups14)} en los últimos 14 días`}>
+                        {stats.signupsByDay.map((d, i) => {
+                          const today = i === stats.signupsByDay.length - 1
+                          return (
+                            <div key={d.key} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+                              <span className="tabular text-[11px] text-muted-foreground">{d.count || ""}</span>
+                              <div
+                                className={cn("w-full max-w-8 rounded-md", today ? "bg-primary" : "bg-primary/45")}
+                                style={{ height: `${d.count ? Math.max(6, (d.count / maxSignups) * 100) : 3}%`, opacity: d.count ? 1 : 0.35 }}
+                                title={`${formatDate(d.day, TZ, { day: "numeric", month: "short" })}: ${d.count}`}
+                              />
+                              <span className={cn("tabular text-[11px]", today ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                                {today ? "Hoy" : formatDate(d.day, TZ, { day: "numeric" })}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ),
+          },
+          {
+            id: "usuarios",
+            label: "Usuarios",
+            title: "Usuarios",
+            description: "Busca a una persona, mira cómo usa la app, dale un plan o escríbele.",
+            count: users.total,
+            content: (
+              <div key="usuarios" className="space-y-4">
+                <form className="flex flex-wrap gap-2" action="/admin#usuarios" role="search">
                   <div className="relative w-full sm:w-auto">
                     <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input name="q" defaultValue={q} placeholder="Buscar por nombre o correo" aria-label="Buscar usuarios por nombre o correo" className="h-9 w-full pl-9 sm:w-72" />
@@ -284,7 +284,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                   </Button>
                 </form>
               <div className="grid gap-2 rounded-xl border bg-card p-3 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-x-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase">Actividad</p>
+                <p className="text-sm font-medium text-muted-foreground">Actividad</p>
                 <div className="flex flex-wrap gap-2">
                   {ACTIVITY_FILTERS.map((a) => (
                     <Button key={a.value} variant={activity === a.value ? "default" : "outline"} size="sm" className="rounded-full" asChild>
@@ -294,7 +294,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                     </Button>
                   ))}
                 </div>
-                <p className="text-xs font-medium text-muted-foreground uppercase">Rol</p>
+                <p className="text-sm font-medium text-muted-foreground">Rol</p>
                 <div className="flex flex-wrap gap-2">
                   {ROLE_FILTERS.map((r) => {
                     const on = role === r.value
@@ -317,7 +317,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               {users.rows.length === 0 ? (
                 <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">No se encontraron usuarios.</p>
               ) : (
-                <div className="grid gap-2">
+                <div className="@container grid gap-2">
                   {users.rows.map((u) => {
                     const m = u.memberships[0]
                     const b = m?.business
@@ -325,7 +325,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                     const act = b ? usage.get(b.id) : undefined
                     const lastSaleDays = act?.lastSaleAt ? (now.getTime() - act.lastSaleAt.getTime()) / 86_400_000 : null
                     return (
-                      <div key={u.id} className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1.3fr_1.5fr_1fr_auto] md:items-center">
+                      <div key={u.id} className="grid gap-x-6 gap-y-3 rounded-xl border bg-card p-4 @2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] @2xl:items-start @6xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)_auto] @6xl:items-center">
                         <div className="min-w-0">
                           <Link href={`/admin/usuarios/${u.id}`} className="block truncate font-medium hover:text-primary hover:underline">
                             {u.name}
@@ -405,7 +405,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                           </p>
                           {device(u.sessions[0]?.userAgent) ? <p>Desde: {device(u.sessions[0]?.userAgent)}</p> : null}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                        <div className="flex flex-wrap items-center gap-2 @2xl:justify-end">
                           {b && m.role === "OWNER" ? (
                             <PlanDialog
                               businessId={b.id}
@@ -476,9 +476,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                   ) : null}
                 </div>
               ) : null}
-          </Part>
-
-          <Part id="crecimiento" n={3} icon={TrendingUp} title="Crecimiento" description="De dónde llega la gente y qué funciones usan de verdad.">
+              </div>
+            ),
+          },
+          {
+            id: "crecimiento",
+            label: "Crecimiento",
+            title: "De dónde llegan y qué usan",
+            description: "Por qué anuncio entró cada persona, cuántas avanzaron y qué funciones se usan de verdad.",
+            content: (
+              <div key="crecimiento" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -559,9 +566,20 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                 </p>
               </CardContent>
             </Card>
-          </Part>
-
-          <Part id="planes" n={4} icon={Crown} title="Planes y cobros" description="Mercado Pago, códigos de descuento, invitaciones y enlaces con días gratis.">
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <BarChart3 className="size-3.5" />
+              Las visitas a la página (personas, países, dispositivos) se ven en Vercel, en tu proyecto, sección Analytics.
+            </p>
+              </div>
+            ),
+          },
+          {
+            id: "planes",
+            label: "Planes y cobros",
+            title: "Planes y cobros",
+            description: "Mercado Pago, códigos de descuento, invitaciones y enlaces con días gratis.",
+            content: (
+              <div key="planes" className="space-y-10">
             <div id="cobros" className="scroll-mt-32 lg:scroll-mt-24 space-y-3">
               <h3 className="flex items-center gap-2 text-base font-semibold">
                 <Crown className="size-5 text-muted-foreground" />
@@ -687,9 +705,18 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </div>
               <SpecialLinks links={specialRows} baseUrl={getAppUrl()} />
             </div>
-          </Part>
-
-          <Part id="correos" n={5} icon={Mail} title="Correos" description="Confirmación de correos, promociones y mensajes a personas específicas.">
+              </div>
+            ),
+          },
+          {
+            id: "correos",
+            label: "Correos",
+            title: "Correos",
+            description: "Confirmación de correos, promociones y mensajes a personas específicas.",
+            count: unverified.pending || undefined,
+            tone: "warning",
+            content: (
+              <div key="correos" className="space-y-10">
             <Card id="confirmar-correos" className="scroll-mt-32 lg:scroll-mt-24">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -773,9 +800,18 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                 </div>
               ) : null}
             </div>
-          </Part>
-
-          <Part id="equipo" n={6} icon={ShieldCheck} title="Equipo y errores" description="Quién entra a este panel y qué falló en la app.">
+              </div>
+            ),
+          },
+          {
+            id: "equipo",
+            label: "Equipo y errores",
+            title: "Equipo y errores",
+            description: "Quién entra a este panel y qué falló en la app.",
+            count: errors.last24 || undefined,
+            tone: "danger",
+            content: (
+              <div key="equipo" className="space-y-10">
             <div id="administradores" className="scroll-mt-32 lg:scroll-mt-24 space-y-4">
               <div className="space-y-1">
                 <h3 className="flex items-center gap-2 text-base font-semibold">
@@ -822,52 +858,26 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                 </ul>
               )}
             </div>
-          </Part>
-
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <BarChart3 className="size-3.5" />
-              Las visitas a la página (personas, países, dispositivos) se ven en Vercel, en tu proyecto, sección Analytics.
-            </p>
-        </div>
-      </div>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }
 
-/** Una parte del panel, con su número como en el índice. */
-function Part({
-  id,
-  n,
-  icon: Icon,
-  title,
-  count,
-  description,
-  children,
-}: {
-  id: string
-  n: number
-  icon: React.ComponentType<{ className?: string }>
-  title: string
-  count?: number
-  description: string
-  children: React.ReactNode
-}) {
+/** Una línea de la boleta: concepto, puntos y cifra. */
+function Line({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
-    <section id={id} aria-labelledby={`${id}-titulo`} className="scroll-mt-32 space-y-5 lg:scroll-mt-24">
-      <div className="flex items-start gap-3 border-b pb-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="size-5" />
-        </span>
-        <div className="min-w-0 space-y-0.5">
-          <p className="tabular text-xs text-muted-foreground">{String(n).padStart(2, "0")}</p>
-          <h2 id={`${id}-titulo`} className="text-xl font-semibold tracking-tight">
-            {title}
-            {count !== undefined ? <span className="tabular font-normal text-muted-foreground"> ({formatNumber(count)})</span> : null}
-          </h2>
-          <p className="text-sm text-pretty text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      {children}
-    </section>
+    <div className={cn("flex items-baseline gap-2", strong && "font-semibold")}>
+      <span className="shrink-0">{label}</span>
+      <span className="min-w-4 flex-1 -translate-y-1 border-b border-dotted border-[#13201c]/30" aria-hidden />
+      <span className="tabular">{formatNumber(value)}</span>
+    </div>
   )
+}
+
+function Rule() {
+  return <div className="my-2.5 border-t border-dashed border-[#13201c]/25" aria-hidden />
 }

@@ -301,7 +301,7 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
               </ul>
 
               <ul className="mt-4 text-sm">
-                {(compact ? main : plan.highlights).map((h) => (
+                {(compact ? main : lines).map((h) => (
                   <li key={h} className={cn("border-t py-2 text-pretty first:border-t-0", line, h.startsWith("Todo lo de") && "font-semibold")}>
                     {h}
                   </li>

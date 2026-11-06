@@ -64,7 +64,8 @@ export default async function ProductsPage() {
       include: { category: { select: { name: true } }, barcodes: { select: { code: true }, orderBy: { createdAt: "asc" } } },
       orderBy: [{ active: "desc" }, { name: "asc" }],
     }),
-    db.category.findMany({ where: { businessId: ctx.businessId }, select: { name: true }, orderBy: { name: "asc" } }),
+    // Solo se sugieren las categorías que todavía tienen productos.
+    db.category.findMany({ where: { businessId: ctx.businessId, products: { some: { isService: false } } }, select: { name: true }, orderBy: { name: "asc" } }),
   ])
   const money = (n: number) => formatMoney(n, ctx.currency)
   const canManage = can(ctx.role, "products:manage")

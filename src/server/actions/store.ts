@@ -423,3 +423,23 @@ export async function previewCoupon(slug: string, code: string): Promise<ActionR
     return toActionError(error)
   }
 }
+
+/**
+ * "Tus pedidos" de la tienda se guardan en el teléfono del cliente. Esto dice cuáles siguen existiendo en esa tienda,
+ * para no mostrar pedidos que el negocio ya eliminó. Solo responde por los enlaces que el mismo cliente tiene.
+ */
+export async function existingStoreOrders(slug: string, tracks: string[]): Promise<string[]> {
+  if (typeof slug !== "string" || slug.length > 40 || !Array.isArray(tracks)) return []
+  const list = tracks.filter((t): t is string => typeof t === "string" && t.length > 0 && t.length <= 100).slice(0, 5)
+  if (!list.length) return []
+  try {
+    const found = await db.webOrder.findMany({
+      where: { trackToken: { in: list }, business: { storeSlug: slug.toLowerCase() } },
+      select: { trackToken: true },
+    })
+    return found.map((o) => o.trackToken)
+  } catch {
+    // Si no se pudo revisar, se dejan como estaban.
+    return list
+  }
+}

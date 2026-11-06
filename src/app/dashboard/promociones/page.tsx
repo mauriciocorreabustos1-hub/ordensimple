@@ -19,11 +19,15 @@ export default async function PromotionsPage() {
     return <ProGate title="Promociones y cupones" description="2×1, descuentos por categoría, happy hour y cupones para tu tienda online, que se aplican solos." />
   }
   const since = addDays(new Date(), -30, ctx.timezone)
-  const [promotions, coupons, products, categories, usage] = await Promise.all([
+  const [promotions, coupons, products, allCategories, usage] = await Promise.all([
     db.promotion.findMany({ where: { businessId: ctx.businessId }, orderBy: [{ active: "desc" }, { createdAt: "desc" }] }),
     db.storeCoupon.findMany({ where: { businessId: ctx.businessId }, orderBy: [{ active: "desc" }, { createdAt: "desc" }] }),
     db.product.findMany({ where: { businessId: ctx.businessId, active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    db.category.findMany({ where: { businessId: ctx.businessId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    db.category.findMany({
+      where: { businessId: ctx.businessId },
+      select: { id: true, name: true, _count: { select: { products: { where: { active: true } } } } },
+      orderBy: { name: "asc" },
+    }),
     db.salePromotion.groupBy({
       by: ["promotionId"],
       where: { promotionId: { not: null }, sale: { businessId: ctx.businessId, date: { gte: since } } },
@@ -31,6 +35,10 @@ export default async function PromotionsPage() {
       _count: { _all: true },
     }),
   ])
+  // Solo las categorías que todavía tienen productos, más las que ya usa alguna promoción (para mostrar su nombre).
+  const categories = allCategories
+    .filter((c) => c._count.products > 0 || promotions.some((p) => p.categoryId === c.id))
+    .map((c) => ({ id: c.id, name: c.name }))
   const used = new Map(usage.map((u) => [u.promotionId, { amount: u._sum.amount ?? 0, count: u._count._all }]))
   // Las fechas se muestran como días (el término guardado es el día siguiente a las 00:00).
   const dayOf = (d: Date | null, end = false) => (d ? toDateKey(end ? addDays(d, -1, ctx.timezone) : d, ctx.timezone) : null)

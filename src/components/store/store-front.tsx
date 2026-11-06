@@ -11,7 +11,7 @@ import { formatMoney } from "@/lib/currency"
 import { orderTrackPath, orderWhatsappText } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { whatsappLink } from "@/lib/whatsapp"
-import { createWebOrder, previewCoupon } from "@/server/actions/store"
+import { createWebOrder, existingStoreOrders, previewCoupon } from "@/server/actions/store"
 import { payWebOrder } from "@/server/actions/online-payments"
 import { applyPromotions, promoActive, promoBadge, promoHint, type PromoRule } from "@/lib/promotions"
 import { ProductImage } from "@/components/products/product-image"
@@ -30,6 +30,17 @@ function readRecent(slug: string): RecentOrder[] {
   try {
     const list = JSON.parse(localStorage.getItem(ORDERS_KEY(slug)) ?? "[]") as RecentOrder[]
     return Array.isArray(list) ? list.filter((o) => o && typeof o.track === "string" && Date.now() - o.at < ORDERS_DAYS * 86_400_000).slice(0, 3) : []
+  } catch {
+    return []
+  }
+}
+
+/** Deja en el teléfono solo los pedidos que siguen existiendo (el negocio pudo eliminarlos). */
+function keepRecent(slug: string, tracks: string[]) {
+  try {
+    const keep = readRecent(slug).filter((o) => tracks.includes(o.track))
+    localStorage.setItem(ORDERS_KEY(slug), JSON.stringify(keep))
+    return keep
   } catch {
     return []
   }
@@ -75,8 +86,18 @@ export function StoreFront({
   const [done, setDone] = React.useState<Done | null>(null)
   const [recent, setRecent] = React.useState<RecentOrder[]>([])
   React.useEffect(() => {
+    const saved = readRecent(slug)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage solo existe en el navegador
-    setRecent(readRecent(slug))
+    setRecent(saved)
+    if (!saved.length) return
+    // Se revisa con el negocio: los pedidos eliminados dejan de aparecer.
+    let alive = true
+    existingStoreOrders(slug, saved.map((o) => o.track)).then((tracks) => {
+      if (alive && tracks.length < saved.length) setRecent(keepRecent(slug, tracks))
+    }).catch(() => {})
+    return () => {
+      alive = false
+    }
   }, [slug])
 
   // El carro se recuerda en este teléfono por si cierran la página sin querer.

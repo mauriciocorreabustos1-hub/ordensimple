@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Check, CircleHelp, LogOut, Monitor, Moon, Settings, ShieldCheck, Store, Sun } from "lucide-react"
+import { Check, CircleHelp, LogOut, Monitor, Moon, Settings, ShieldCheck, ShoppingBag, Store, Sun } from "lucide-react"
 import { OPEN_WELCOME_TOUR } from "@/components/app/welcome-tour"
 import { useTheme } from "@/lib/theme"
 import { toast } from "sonner"
@@ -163,6 +163,12 @@ export function UserMenu({
         <DropdownMenuItem onSelect={() => window.dispatchEvent(new Event(OPEN_WELCOME_TOUR))}>
           <CircleHelp />
           Cómo usar OrdenSimple
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/primeros-pasos?practicar=1">
+            <ShoppingBag />
+            Practicar una venta
+          </Link>
         </DropdownMenuItem>
         {isAdmin ? (
           <DropdownMenuItem asChild>

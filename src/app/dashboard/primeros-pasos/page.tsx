@@ -69,10 +69,12 @@ function byRubro(type: string) {
   }
 }
 
-export default async function FirstStepsPage() {
+export default async function FirstStepsPage({ searchParams }: PageProps<"/dashboard/primeros-pasos">) {
   const ctx = await requireBusiness()
-  // Agregar productos es del dueño o un administrador; un trabajador va directo a su Inicio.
-  requirePermission(ctx, "products:manage")
+  // ?practicar=1: desde el menú, "Practicar una venta". Abre solo la práctica y no cambia la guía inicial.
+  const practice = (await searchParams).practicar === "1"
+  // La guía (agregar productos) es del dueño o un administrador. La práctica de venta la puede hacer cualquiera del equipo.
+  if (!practice) requirePermission(ctx, "products:manage")
   const type = ctx.business.type ?? ""
   const profile = businessProfile(type)
   const [products, services, categories] = await Promise.all([
@@ -114,6 +116,8 @@ export default async function FirstStepsPage() {
       categories={categories.map((c) => c.name)}
       demoItems={demoItems}
       features={features}
+      fiado={canUseFeature(ctx.business.plan, "customers")}
+      practice={practice}
     />
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Loader2, MailCheck, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,8 @@ const HIDE_KEY = "confirmar-correo-oculto-hasta"
 /** Aviso para confirmar el correo: reenviar el enlace o corregir el correo si quedó mal escrito. Se puede ocultar 1 día. */
 export function EmailVerifyBanner({ email }: { email: string }) {
   const router = useRouter()
+  // En los primeros pasos va en una sola línea, para no tapar la guía (los botones y la lógica son los mismos).
+  const compact = usePathname().startsWith("/dashboard/primeros-pasos")
   const [hidden, setHidden] = React.useState(false)
   const [editing, setEditing] = React.useState(false)
   const [newEmail, setNewEmail] = React.useState(email)
@@ -66,10 +68,22 @@ export function EmailVerifyBanner({ email }: { email: string }) {
   }
 
   return (
-    <div className="mb-5 flex flex-col gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm sm:flex-row sm:items-center">
-      <MailCheck className="size-5 shrink-0 text-warning" />
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-medium">Confirma tu correo</p>
+    <div
+      className={
+        compact
+          ? "mx-auto mb-4 flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm"
+          : "mb-5 flex flex-col gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm sm:flex-row sm:items-center"
+      }
+    >
+      <MailCheck className={compact ? "size-4 shrink-0 text-warning" : "size-5 shrink-0 text-warning"} />
+      <div className={compact ? "min-w-0 flex-1 basis-[calc(100%-1.75rem)] space-y-1 sm:basis-0" : "min-w-0 flex-1 space-y-1"}>
+        {compact && !editing ? (
+          <p className="min-w-0 truncate" title={email}>
+            <span className="font-medium">Confirma tu correo:</span> <span className="text-muted-foreground">te enviamos un enlace a {email}</span>
+          </p>
+        ) : (
+          <p className="font-medium">Confirma tu correo</p>
+        )}
         {editing ? (
           <form onSubmit={change} className="flex flex-wrap gap-2 pt-1">
             <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="h-9 max-w-xs bg-background" aria-label="Correo correcto" autoFocus />
@@ -81,7 +95,7 @@ export function EmailVerifyBanner({ email }: { email: string }) {
               Cancelar
             </Button>
           </form>
-        ) : (
+        ) : compact ? null : (
           <p className="text-muted-foreground">
             Te mandamos un enlace a <strong className="text-foreground break-all">{email}</strong>. Confírmalo para asegurarte de que te lleguen tus
             avisos y poder recuperar tu cuenta si olvidas la contraseña.
@@ -89,7 +103,7 @@ export function EmailVerifyBanner({ email }: { email: string }) {
         )}
       </div>
       {editing ? null : (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={compact ? "flex items-center gap-1 max-sm:w-full max-sm:pl-7" : "flex flex-wrap items-center gap-2"}>
           <Button size="sm" variant="outline" className="bg-background" disabled={pending || cooldown} onClick={resend}>
             {pending ? <Loader2 className="animate-spin" /> : null}
             {sent ? "Enviado" : "Reenviar correo"}

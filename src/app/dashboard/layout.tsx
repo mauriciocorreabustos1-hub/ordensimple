@@ -84,6 +84,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         customers={customers.map((c) => c.name)}
         suppliers={suppliers.map((s) => s.name)}
       >
+        {/* data-app-chrome: menú y barras, que se esconden en los primeros pasos (ver globals.css, [data-foco]). */}
+        <div data-app-chrome>
         <AppSidebar
           businessId={ctx.businessId}
           logoUpdatedAt={ctx.business.logoUpdatedAt}
@@ -96,8 +98,9 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           isAdmin={isAdmin}
           profile={profile}
         />
-        <div className="min-h-dvh bg-background lg:pl-64">
-          <header className="sticky top-safe z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
+        </div>
+        <div data-app-content className="min-h-dvh bg-background lg:pl-64">
+          <header data-app-chrome className="sticky top-safe z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
             <Logo href="/" />
             <UserMenu name={ctx.user.name} email={ctx.user.email} image={ctx.user.image} businesses={businesses} isAdmin={isAdmin} />
           </header>
@@ -108,7 +111,9 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             {children}
           </main>
         </div>
-        <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} profile={profile} />
+        <div data-app-chrome>
+          <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} profile={profile} />
+        </div>
         {/* Tutorial de bienvenida: se abre solo la primera vez que la persona entra a la app. */}
         <WelcomeTour show={!(ctx.user as { welcomeTourAt?: Date | null }).welcomeTourAt} />
         {/* Guía práctica (anotar una venta, un gasto…): empieza desde la bienvenida. */}

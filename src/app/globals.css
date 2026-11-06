@@ -247,3 +247,14 @@ body::before {
     radial-gradient(circle 8px at left center, #0000 98%, #000) left / 51% 100% no-repeat,
     radial-gradient(circle 8px at right center, #0000 98%, #000) right / 51% 100% no-repeat;
 }
+
+/* Primeros pasos: la guía va sola, sin el menú ni las barras de la app (la página lleva [data-foco]).
+   Al salir de la guía la marca ya no está y todo vuelve a verse. */
+body:has([data-foco]) [data-app-chrome] {
+  display: none;
+}
+@media (min-width: 64rem) {
+  body:has([data-foco]) [data-app-content] {
+    padding-left: 0;
+  }
+}

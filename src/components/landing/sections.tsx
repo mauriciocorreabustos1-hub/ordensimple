@@ -256,6 +256,9 @@ function planLimits(plan: (typeof PLANS)[keyof typeof PLANS]) {
   return [people, places, products]
 }
 
+/** Lo que ya dicen los límites de arriba de la tarjeta (personas, sucursales y productos): no se repite en la lista. */
+const LIMIT_LINE = /^(1 negocio, solo tú|Hasta \d+ productos|Productos ilimitados|Tú \+ \d+ trabajadores( y hasta \d+ sucursales)?|Trabajadores sin límite|Hasta \d+ sucursales)$/
+
 /** Los planes como carteles de almacén: el precio va en su etiqueta y Pro resalta con la carpeta en verde. */
 export function PricingCards({ compact = false }: { compact?: boolean }) {
   const MAX = 6
@@ -266,8 +269,9 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
           const featured = plan.id === "PRO"
           const quiet = featured ? "text-deep-foreground/80" : "text-muted-foreground"
           const line = featured ? "border-deep-foreground/20" : "border-border"
-          const main = plan.highlights.slice(0, MAX)
-          const rest = plan.highlights.slice(MAX)
+          const lines = plan.highlights.filter((h) => !LIMIT_LINE.test(h))
+          const main = lines.slice(0, MAX)
+          const rest = lines.slice(MAX)
           return (
             <div key={plan.id} className={cn("flex flex-col rounded-2xl p-6 sm:p-7", featured ? "bg-deep text-deep-foreground shadow-xl lg:-my-3 lg:py-10" : "border bg-card")}>
               <div className="flex items-baseline justify-between gap-3">

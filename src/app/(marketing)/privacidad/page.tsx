@@ -41,8 +41,8 @@ export default function PrivacyPage() {
       <LegalSection n={2} title="Qué datos recopilamos">
         <ul>
           <li>
-            <strong>Datos de tu cuenta:</strong> nombre, correo electrónico y contraseña. La contraseña se guarda cifrada;
-            nadie, ni siquiera nosotros, puede verla.
+            <strong>Datos de tu cuenta:</strong> nombre, correo electrónico y contraseña. La contraseña se almacena de forma segura
+            mediante un sistema de protección criptográfica; nadie, ni siquiera nosotros, puede verla.
           </li>
           <li>
             <strong>Datos de tu negocio:</strong> nombre, rubro, país, moneda y la información que registras (ventas, gastos,
@@ -162,7 +162,7 @@ export default function PrivacyPage() {
 
       <LegalSection n={7} title="Seguridad">
         <p>
-          Usamos conexiones cifradas (HTTPS), contraseñas cifradas, separación de los datos de cada negocio, límites a los
+          Usamos conexiones cifradas (HTTPS), contraseñas con protección criptográfica, separación de los datos de cada negocio, límites a los
           intentos de inicio de sesión y respaldos periódicos. Ningún sistema es 100% infalible: si detectamos un incidente
           que afecte tus datos, te avisaremos según lo exige la ley.
         </p>

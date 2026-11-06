@@ -19,7 +19,7 @@ export function ProGate({ title, description }: { title: string; description: st
         <div className="space-y-1">
           <p className="text-lg font-semibold">Esta función es parte del plan Pro</p>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            Con Pro tienes tu utilidad real y tu F29, flujo de caja con lo que viene, todo tu historial, proveedores, merma y vencidos,
+            Con Pro tienes tu utilidad estimada y tu F29, flujo de caja con lo que viene, todo tu historial, proveedores, merma y vencidos,
             escaneo continuo, Excel, productos ilimitados y un equipo más grande.
             <HideInStoreApp>{BILLING_ENABLED && price ? ` Pro cuesta ${formatMoney(price, "CLP")} al mes y lo cancelas cuando quieras.` : ""}</HideInStoreApp>
           </p>

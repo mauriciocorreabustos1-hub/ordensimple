@@ -21,13 +21,16 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 // Títulos de la web pública: una letra con más carácter que la del texto.
 const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], weight: ["500", "600", "700"] })
 
+const SITE_DESCRIPTION =
+  "OrdenSimple es un software de gestión para emprendedores y pymes en Chile. Administra ventas, inventario, clientes, gastos y caja desde un solo lugar. Comienza gratis."
+
 export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
   title: {
     default: "OrdenSimple — Administra tu negocio sin complicarte",
     template: "%s · OrdenSimple",
   },
-  description: "Controla tus ventas, gastos, productos y ganancias desde un solo lugar. Hecho para emprendedores y pymes de Chile.",
+  description: SITE_DESCRIPTION,
   applicationName: "OrdenSimple",
   // Código de Google Search Console (variable GOOGLE_SITE_VERIFICATION en Vercel).
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
@@ -46,12 +49,12 @@ export const metadata: Metadata = {
     locale: "es_CL",
     siteName: "OrdenSimple",
     title: "OrdenSimple — Administra tu negocio sin complicarte",
-    description: "Controla tus ventas, gastos, productos y ganancias desde un solo lugar. Gratis para empezar.",
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
     title: "OrdenSimple — Administra tu negocio sin complicarte",
-    description: "Controla tus ventas, gastos, productos y ganancias desde un solo lugar.",
+    description: SITE_DESCRIPTION,
   },
 }
 

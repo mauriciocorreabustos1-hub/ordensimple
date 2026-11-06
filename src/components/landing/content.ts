@@ -426,7 +426,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     description: "Tu información, solo para ti.",
     points: [
       "Cada negocio está separado: nadie más ve tus datos",
-      "Contraseñas cifradas y recuperación por correo",
+      "Contraseñas con protección criptográfica y recuperación por correo",
       "Funciona en celular, tablet y computador",
       "Tema claro y oscuro",
     ],

@@ -115,7 +115,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Cotizaciones con enlace: tu cliente las revisa y acepta",
       "Tarjeta de fidelidad con sellos o puntos en el celular del cliente",
       "Cobros online en tu tienda y tus cotizaciones (1 % por pago)",
-      "Resultados e IVA: tu utilidad real y una estimación de tu F29 (IVA + PPM)",
+      "Resultados e IVA: tu utilidad estimada y una estimación de tu F29 (IVA + PPM)",
       "Productos ilimitados",
       "Tú + 20 trabajadores y hasta 3 sucursales",
       "Cierre de caja diario",

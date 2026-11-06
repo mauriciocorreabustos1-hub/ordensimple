@@ -297,7 +297,7 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
           <span className="flex items-center gap-2">
             <Crown className="size-4 shrink-0 text-warning" />
-            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) ves tu utilidad real y tu F29, el flujo
+            Estás en el plan Gratis. Con Pro ({formatMoney(PLANS.PRO.monthlyPrice, "CLP")} al mes) ves tu utilidad estimada y tu F29, el flujo
             de caja con lo que viene, todo tu historial, merma y vencidos, y vendes escaneando sin parar.
           </span>
           <Link href={checkoutPath("pro")} className="shrink-0 font-medium text-primary hover:underline">

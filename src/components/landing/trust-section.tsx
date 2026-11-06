@@ -4,7 +4,7 @@ import { Container } from "@/components/landing/sections"
 
 // Solo lo que OrdenSimple hace de verdad (ver la política de privacidad, sección Seguridad). Sin testimonios ni cifras inventadas.
 const FACTS = [
-  { icon: Lock, title: "Seguridad de la información", text: "Todo viaja cifrado por HTTPS, y tu contraseña se guarda cifrada: no queda escrita tal como la tecleas." },
+  { icon: Lock, title: "Seguridad de la información", text: "Todo viaja cifrado por HTTPS. Tus contraseñas se almacenan de forma segura mediante un sistema de protección criptográfica." },
   { icon: Building2, title: "Cada negocio, por separado", text: "Los datos de tu negocio no se mezclan con los de otros negocios que usan OrdenSimple." },
   { icon: Users, title: "Tú decides quién entra", text: "Invitas a cada trabajador con su propio acceso, y le quitas el acceso cuando quieras." },
   { icon: KeyRound, title: "Verificación en dos pasos", text: "Si la activas, al iniciar sesión te pedimos un código además de la contraseña. También limitamos los intentos fallidos." },

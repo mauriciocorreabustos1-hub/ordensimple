@@ -1,5 +1,7 @@
 # Ficha de OrdenSimple en Microsoft Store
 
+Última actualización: envío 3 (6 de noviembre de 2026), solo la ficha, con el mismo paquete de la versión 1.0.0.
+
 Copiar en Partner Center (Apps y juegos, OrdenSimple, envío nuevo). Las capturas están en `capturas/` (1920 x 1080).
 
 ## Precios y disponibilidad
@@ -19,12 +21,16 @@ Cuestionario de IARC: categoría “Productividad / Negocios”; responder “No
 
 ## Ficha (español)
 - **Nombre:** OrdenSimple
-- **Descripción breve:** Ventas, caja, inventario y fiado de tu negocio, con boletas que salen impresas al instante.
+- **Descripción breve:** Ventas, caja, inventario y fiado de tu negocio, con comprobantes que salen impresos al instante en tu impresora de siempre.
 - **Descripción:**
 
 Cobra, imprime y atiende al siguiente. OrdenSimple es la forma simple de llevar las cuentas de tu negocio: cuánto vendiste, cuánto gastaste y cuánto te quedó, sin planillas ni cuadernos.
 
-Con la app para PC, la boleta sale impresa en el mismo segundo en que registras la venta, en tu impresora de siempre: térmica de boletas, USB o de red. La comanda llega impresa a la cocina, con letra grande.
+Con la app para PC, el comprobante sale impreso en el mismo segundo en que registras la venta, en tu impresora de siempre: térmica, USB o de red. La comanda llega impresa a la cocina, con letra grande.
+
+EMPIEZA EN MINUTOS
+- Una guía te ayuda a configurar tu negocio y a practicar una venta, sin tocar tus datos reales.
+- Carga todo tu catálogo de una vez desde un archivo Excel o CSV.
 
 VENTAS Y CAJA
 - Registra cada venta en segundos: efectivo, débito, tarjeta, transferencia o fiado.
@@ -44,13 +50,15 @@ PARA TU LOCAL
 Empieza gratis. Usa la misma cuenta en el computador, el celular y la web.
 
 - **Características del producto (una por línea):**
-  - Boletas y comandas impresas al instante, sin ventanas de impresión
+  - Comprobantes y comandas impresos al instante, sin ventanas de impresión
   - Funciona con impresoras térmicas, USB y de red
   - Ventas, caja, inventario, fiado y reportes
+  - Importa tus productos desde Excel o CSV
   - Comandas por mesa y pantalla de cocina
-  - Se actualiza sola
+  - Gratis, con tu misma cuenta, y se actualiza sola
 - **Palabras clave:** ventas, caja, inventario, boletas, pyme, punto de venta, fiado
-- **Notas de la versión:** Primera versión de OrdenSimple para PC.
+- **Notas de la versión:** Ahora puedes importar todos tus productos desde un archivo Excel o CSV. Y si recién empiezas, una guía te ayuda a configurar tu negocio y a practicar una venta.
+- **Versión anterior (30 de octubre de 2026):** Primera versión de OrdenSimple para PC.
 
 ## Opciones de envío (notas para la certificación, en inglés)
 OrdenSimple is a business management web app (sales, cash register, inventory) wrapped in a desktop shell that adds direct printing to thermal receipt printers. A free account can be created inside the app (Crear cuenta). Test account: [escribir el correo y la contraseña de una cuenta de prueba aquí, en Partner Center]. Paid plans are sold through the developer's website using its own payment provider, as allowed for non-game apps (policy 10.8.1).

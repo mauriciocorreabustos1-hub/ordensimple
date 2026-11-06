@@ -12,13 +12,21 @@ export type Sheet = string[][]
 export class SpreadsheetError extends Error {}
 
 /** Límites para que un archivo malicioso (o enorme) no consuma la memoria del servidor. */
-const MAX_UNZIPPED = 30 * 1024 * 1024
+const MAX_UNZIPPED = 20 * 1024 * 1024
 const MAX_ROWS = 5001
 const MAX_COLS = 40
+const MAX_ENTRIES = 500
 
 // ─── Lectura de .zip ─────────────────────────────────────────────────────────
 
-function unzip(buf: Buffer, wanted: (name: string) => boolean): Map<string, Buffer> {
+type ZipEntry = { flags: number; method: number; compressed: number; local: number }
+
+/**
+ * Índice del .zip (sin descomprimir nada todavía) y una función para abrir solo los archivos que hacen falta.
+ * Contra los "zip bomb": se cuenta lo que de verdad sale al descomprimir (no lo que el archivo dice que mide), con un
+ * tope total, y hay un máximo de archivos adentro.
+ */
+function unzip(buf: Buffer) {
   // Fin del directorio central: firma 0x06054b50, buscada desde el final.
   let eocd = -1
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65_557); i--) {
@@ -28,39 +36,52 @@ function unzip(buf: Buffer, wanted: (name: string) => boolean): Map<string, Buff
     }
   }
   if (eocd < 0) throw new SpreadsheetError("El archivo no es un Excel válido (.xlsx).")
-  const entries = buf.readUInt16LE(eocd + 10)
+  const count = buf.readUInt16LE(eocd + 10)
+  if (count > MAX_ENTRIES) throw new SpreadsheetError("El archivo Excel tiene demasiadas partes. Guárdalo de nuevo como .xlsx.")
   let p = buf.readUInt32LE(eocd + 16)
-  const out = new Map<string, Buffer>()
-  let total = 0
-  for (let n = 0; n < entries && p + 46 <= buf.length; n++) {
-    if (buf.readUInt32LE(p) !== 0x02014b50) throw new SpreadsheetError("El archivo Excel está dañado.")
-    const flags = buf.readUInt16LE(p + 8)
-    const method = buf.readUInt16LE(p + 10)
-    const compressed = buf.readUInt32LE(p + 20)
-    const size = buf.readUInt32LE(p + 24)
+  const entries = new Map<string, ZipEntry>()
+  const offsets = new Set<number>()
+  for (let n = 0; n < count; n++) {
+    if (p + 46 > buf.length || buf.readUInt32LE(p) !== 0x02014b50) throw new SpreadsheetError("El archivo Excel está dañado.")
     const nameLen = buf.readUInt16LE(p + 28)
-    const extraLen = buf.readUInt16LE(p + 30)
-    const commentLen = buf.readUInt16LE(p + 32)
-    const local = buf.readUInt32LE(p + 42)
     const name = buf.subarray(p + 46, p + 46 + nameLen).toString("utf8")
-    p += 46 + nameLen + extraLen + commentLen
-    if (!wanted(name)) continue
-    if (flags & 1) throw new SpreadsheetError("El archivo tiene contraseña. Guárdalo sin contraseña y vuelve a subirlo.")
-    total += size
-    if (total > MAX_UNZIPPED) throw new SpreadsheetError("El archivo es demasiado grande.")
-    if (local + 30 > buf.length || buf.readUInt32LE(local) !== 0x04034b50) throw new SpreadsheetError("El archivo Excel está dañado.")
-    const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28)
-    const data = buf.subarray(start, start + compressed)
-    if (method === 0) out.set(name, data)
-    else if (method === 8) {
+    const local = buf.readUInt32LE(p + 42)
+    if (entries.has(name) || offsets.has(local)) throw new SpreadsheetError("El archivo Excel está dañado.")
+    offsets.add(local)
+    entries.set(name, { flags: buf.readUInt16LE(p + 8), method: buf.readUInt16LE(p + 10), compressed: buf.readUInt32LE(p + 20), local })
+    p += 46 + nameLen + buf.readUInt16LE(p + 30) + buf.readUInt16LE(p + 32)
+  }
+  let total = 0
+  const read = (name: string): Buffer | undefined => {
+    const e = entries.get(name)
+    if (!e) return undefined
+    if (e.flags & 1) throw new SpreadsheetError("El archivo tiene contraseña. Guárdalo sin contraseña y vuelve a subirlo.")
+    if (e.local + 30 > buf.length || buf.readUInt32LE(e.local) !== 0x04034b50) throw new SpreadsheetError("El archivo Excel está dañado.")
+    const start = e.local + 30 + buf.readUInt16LE(e.local + 26) + buf.readUInt16LE(e.local + 28)
+    const data = buf.subarray(start, start + e.compressed)
+    let out: Buffer
+    if (e.method === 0) out = data
+    else if (e.method === 8) {
       try {
-        out.set(name, inflateRawSync(data, { maxOutputLength: MAX_UNZIPPED }))
+        out = inflateRawSync(data, { maxOutputLength: Math.max(1, MAX_UNZIPPED - total) })
       } catch {
-        throw new SpreadsheetError("No pudimos abrir el archivo Excel.")
+        throw new SpreadsheetError("El archivo es demasiado grande o está dañado.")
       }
     } else throw new SpreadsheetError("El archivo Excel usa un formato que no reconocemos.")
+    total += out.length
+    if (total > MAX_UNZIPPED) throw new SpreadsheetError("El archivo es demasiado grande.")
+    return out
   }
-  return out
+  return { names: [...entries.keys()], read }
+}
+
+/** Atributo de una etiqueta XML ya recortada (por ejemplo, Target de un <Relationship>). */
+function attr(tag: string, name: string) {
+  const i = tag.indexOf(` ${name}="`)
+  if (i < 0) return undefined
+  const from = i + name.length + 3
+  const to = tag.indexOf(`"`, from)
+  return to < 0 ? undefined : tag.slice(from, to)
 }
 
 // ─── Lectura de .xlsx ────────────────────────────────────────────────────────
@@ -92,19 +113,22 @@ function colIndex(ref: string) {
 }
 
 export function readXlsx(buf: Buffer): Sheet {
-  const files = unzip(buf, (n) => n === "xl/workbook.xml" || n === "xl/_rels/workbook.xml.rels" || n === "xl/sharedStrings.xml" || /^xl\/worksheets\/[^/]+\.xml$/.test(n))
-  const workbook = files.get("xl/workbook.xml")?.toString("utf8")
+  const zip = unzip(buf)
+  const workbook = zip.read("xl/workbook.xml")?.toString("utf8")
   if (!workbook) throw new SpreadsheetError("El archivo no es un Excel válido (.xlsx).")
-  // Primera hoja del libro.
-  const rid = workbook.match(/<sheet\b[^>]*\br:id="([^"]+)"/)?.[1]
-  const rels = files.get("xl/_rels/workbook.xml.rels")?.toString("utf8") ?? ""
-  const target = rid ? rels.match(new RegExp(`<Relationship\\b[^>]*Id="${rid}"[^>]*Target="([^"]+)"`))?.[1] ?? rels.match(new RegExp(`<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="${rid}"`))?.[1] : undefined
-  const path = target ? (target.startsWith("/") ? target.slice(1) : `xl/${target}`) : "xl/worksheets/sheet1.xml"
-  const sheet = files.get(path)?.toString("utf8") ?? [...files.entries()].find(([n]) => n.startsWith("xl/worksheets/"))?.[1].toString("utf8")
+  // Primera hoja del libro: su r:id y, en las relaciones del libro, el archivo que le corresponde.
+  const sheetTag = workbook.match(/<sheet\s[^>]*>/)?.[0] ?? ""
+  const rid = attr(sheetTag, "r:id")
+  const rels = zip.read("xl/_rels/workbook.xml.rels")?.toString("utf8") ?? ""
+  const rel = rid ? [...rels.matchAll(/<Relationship\s[^>]*>/g)].map((m) => m[0]).find((t) => attr(t, "Id") === rid) : undefined
+  const target = rel ? attr(rel, "Target") : undefined
+  const wanted = target ? (target.startsWith("/") ? target.slice(1) : `xl/${target}`) : "xl/worksheets/sheet1.xml"
+  const path = zip.names.includes(wanted) ? wanted : zip.names.find((n) => /^xl\/worksheets\/[^/]+\.xml$/.test(n))
+  const sheet = path ? zip.read(path)?.toString("utf8") : undefined
   if (!sheet) throw new SpreadsheetError("El Excel no tiene hojas con datos.")
 
   const shared: string[] = []
-  const sst = files.get("xl/sharedStrings.xml")?.toString("utf8")
+  const sst = zip.read("xl/sharedStrings.xml")?.toString("utf8")
   if (sst) for (const m of sst.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g)) shared.push(runText(m[1]))
 
   const rows: Sheet = []

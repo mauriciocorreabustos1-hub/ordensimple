@@ -10,21 +10,51 @@ import { cn } from "@/lib/utils"
 export type FirstStep = { key: string; label: string; hint: string; done: boolean; href?: string; action?: "sale" | "expense" }
 
 const HIDE_KEY = "primeros-pasos-oculto"
+const CONGRATS_KEY = "primeros-pasos-felicitado"
 
 /** "Primeros pasos": lo mínimo para que el negocio quede andando. Desaparece al completarlo o al ocultarlo. */
-export function FirstSteps({ businessId, steps }: { businessId: string; steps: FirstStep[] }) {
+export function FirstSteps({ businessId, steps, fresh = false }: { businessId: string; steps: FirstStep[]; fresh?: boolean }) {
   const { open } = useQuickActions()
   const [hidden, setHidden] = React.useState(false)
+  const [congratulated, setCongratulated] = React.useState(true)
   React.useEffect(() => {
     try {
       // Se lee después de montar para que el servidor y el navegador dibujen lo mismo la primera vez.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (localStorage.getItem(HIDE_KEY) === businessId) setHidden(true)
+      setCongratulated(localStorage.getItem(CONGRATS_KEY) === businessId)
     } catch {}
   }, [businessId])
 
   const done = steps.filter((s) => s.done).length
-  if (hidden || done === steps.length) return null
+  if (hidden) return null
+  // Al completar todo: una felicitación chica, una sola vez, y después deja de ocupar espacio.
+  if (done === steps.length) {
+    // Solo a negocios nuevos: a quien terminó hace tiempo no se le muestra de repente.
+    if (congratulated || !fresh) return null
+    return (
+      <div role="status" className="flex items-center gap-3 rounded-2xl border border-success/30 bg-success/5 p-4 text-sm">
+        <CheckCircle2 className="size-5 shrink-0 text-success" />
+        <p className="flex-1">
+          <span className="font-semibold">¡Tu negocio está listo!</span> Completaste los primeros pasos. Desde ahora, todo lo que anotes se ve en
+          tus números.
+        </p>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Cerrar felicitación"
+          onClick={() => {
+            setCongratulated(true)
+            try {
+              localStorage.setItem(CONGRATS_KEY, businessId)
+            } catch {}
+          }}
+        >
+          <X />
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <section aria-labelledby="primeros-pasos" className="space-y-3 rounded-2xl border border-primary/30 bg-accent/30 p-4">
@@ -35,7 +65,10 @@ export function FirstSteps({ businessId, steps }: { businessId: string; steps: F
             Primeros pasos
           </h2>
           <p className="text-sm text-muted-foreground">
-            Llevas {done} de {steps.length}. Con esto tus números empiezan a tener sentido.
+            Llevas {done} de {steps.length}. Con esto tus números empiezan a tener sentido.{" "}
+            <Link href="/dashboard/primeros-pasos" className="font-medium text-primary hover:underline">
+              Practicar una venta de ejemplo
+            </Link>
           </p>
         </div>
         <Button

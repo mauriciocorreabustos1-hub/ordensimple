@@ -79,7 +79,7 @@ export default async function OnboardingPage({ searchParams }: PageProps<"/onboa
             </p>
           </div>
         ) : (
-          <OnboardingWizard firstName={user.name.split(" ")[0]} planChoice={choice ?? undefined} />
+          <OnboardingWizard userId={user.id} firstName={user.name.split(" ")[0]} planChoice={choice ?? undefined} />
         )}
       </main>
     </div>

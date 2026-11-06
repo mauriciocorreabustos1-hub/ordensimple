@@ -12,6 +12,8 @@ import { GUIDE_START } from "@/components/app/guided-tour"
 
 /** Evento para abrir el tutorial desde el menú ("Cómo usar OrdenSimple"). */
 export const OPEN_WELCOME_TOUR = "abrir-tutorial"
+/** Evento de los primeros pasos: la persona ya practicó una venta, así que el tutorial no se abre solo. */
+export const WELCOME_TOUR_SEEN = "tutorial-visto"
 
 const STEPS = [
   {
@@ -74,6 +76,14 @@ export function WelcomeTour({ show }: { show: boolean }) {
   const [open, setOpen] = React.useState(false)
   const [step, setStep] = React.useState(0)
   const marked = React.useRef(!show)
+
+  React.useEffect(() => {
+    const seen = () => {
+      marked.current = true
+    }
+    window.addEventListener(WELCOME_TOUR_SEEN, seen)
+    return () => window.removeEventListener(WELCOME_TOUR_SEEN, seen)
+  }, [])
 
   // Se abre solo en el Inicio (no encima del pago si llegó a pagar un plan, por ejemplo).
   React.useEffect(() => {

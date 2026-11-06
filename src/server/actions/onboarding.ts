@@ -87,5 +87,5 @@ export async function completeOnboarding(input: OnboardingInput, planChoice?: st
 }
 
 function redirectToDashboard(): never {
-  redirect("/dashboard?bienvenida=1")
+  redirect("/dashboard/primeros-pasos")
 }

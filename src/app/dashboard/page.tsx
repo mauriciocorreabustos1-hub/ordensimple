@@ -160,15 +160,22 @@ export default async function DashboardPage() {
   const counts = showFinances
     ? await db.business.findUnique({
         where: { id: ctx.businessId },
-        select: { _count: { select: { products: true, sales: true, expenses: true, cashClosings: true, members: true } } },
+        select: { createdAt: true, _count: { select: { products: true, sales: true, expenses: true, cashClosings: true, members: true } } },
       })
     : null
   const firstSteps: FirstStep[] | null = counts
     ? (
         [
         {
+          key: "datos",
+          label: "Completa los datos de tu negocio",
+          hint: "Tu rubro, para adaptar la app a tu negocio.",
+          done: Boolean(ctx.business.type),
+          href: "/dashboard/configuracion",
+        },
+        {
           key: "producto",
-          label: "Crea tu primer producto",
+          label: "Agrega tu primer producto o servicio",
           hint: "Con su precio y cuánto te cuesta.",
           done: counts._count.products > 0,
           href: "/dashboard/productos",
@@ -288,7 +295,9 @@ export default async function DashboardPage() {
         </h1>
       </div>
 
-      {firstSteps ? <FirstSteps businessId={ctx.businessId} steps={firstSteps} /> : null}
+      {firstSteps ? (
+        <FirstSteps businessId={ctx.businessId} steps={firstSteps} fresh={Boolean(counts && now.getTime() - counts.createdAt.getTime() < 30 * 86_400_000)} />
+      ) : null}
       <InstallCard />
 
       <HealthCard health={health} />

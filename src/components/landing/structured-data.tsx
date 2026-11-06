@@ -40,7 +40,7 @@ export function StructuredData() {
         operatingSystem: "Web, Android, iOS",
         inLanguage: "es-CL",
         description:
-          "Controla tus ventas, gastos, productos, fiado y cierre de caja desde el celular. Hecho para emprendedores y pymes de Chile.",
+          "OrdenSimple es un software de gestión para emprendedores y pymes en Chile. Administra ventas, inventario, clientes, gastos y caja desde un solo lugar. Comienza gratis.",
         offers: { "@type": "Offer", price: "0", priceCurrency: "CLP", description: "Plan Gratis" },
         publisher: { "@id": `${url}/#organization` },
       },

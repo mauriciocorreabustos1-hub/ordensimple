@@ -175,16 +175,16 @@ export function DashboardPreview() {
             {[
               { label: "Ventas hoy", short: "Ventas", value: sales, icon: ShoppingBag, tone: "bg-chart-1/15 text-chart-1", up: true },
               { label: "Gastos", short: "Gastos", value: BASE.expenses, icon: Receipt, tone: "bg-chart-2/15 text-chart-2", up: false },
-              { label: "Ganancia aprox.", short: "Ganancia", value: profit, icon: PiggyBank, tone: "bg-chart-3/15 text-chart-3", up: true },
+              { label: "Resultado estimado", short: "Resultado", value: profit, icon: PiggyBank, tone: "bg-chart-3/15 text-chart-3", up: true },
             ].map((s) => (
               <div
                 key={s.label}
                 className={cn(
-                  "space-y-2 rounded-xl border p-2.5 transition-colors duration-700 sm:p-3",
+                  "space-y-2 rounded-xl border p-2 transition-colors duration-700 sm:p-3",
                   saved && s.up ? "border-success/40 bg-success/5" : "",
                 )}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 max-[359px]:flex-col max-[359px]:items-start sm:gap-1.5">
                   <span className={`flex size-6 items-center justify-center rounded-md ${s.tone}`}>
                     <s.icon className="size-3.5" />
                   </span>

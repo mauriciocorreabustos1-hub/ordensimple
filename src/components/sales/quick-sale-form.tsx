@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
+import { CashChange } from "@/components/sales/cash-change"
 import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
@@ -53,6 +54,7 @@ export function QuickSaleForm({
   const offline = useOfflineSales()
   const fiado = paymentMethod === "FIADO"
   const loyalty = useLoyaltyActive()
+  const [round, setRound] = React.useState(0)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -86,6 +88,7 @@ export function QuickSaleForm({
         setAmount(0)
         setNote("")
         setCustomerName("")
+        setRound((r) => r + 1)
       }
       onDone?.()
       if (!editing && "data" in result && result.data && "saleId" in result.data) void afterSaleSaved(result.data.saleId)
@@ -100,6 +103,7 @@ export function QuickSaleForm({
       <Field label="¿Cómo te pagaron?">
         <PaymentChips value={paymentMethod} onChange={setPaymentMethod} />
       </Field>
+      {!editing && paymentMethod === "CASH" ? <CashChange key={`vuelto-${round}`} total={amount} currency={currency} /> : null}
       {fiado || loyalty ? (
         <Field
           label={fiado ? "¿A quién le fiaste?" : "Cliente"}

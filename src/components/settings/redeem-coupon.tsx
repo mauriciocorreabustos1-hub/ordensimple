@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { redeemCoupon } from "@/server/actions/plan"
 
-/** "¿Tienes un código?" en Configuración → Tu plan. */
+/** "Canjear código" en Tu plan: códigos de activación del Pro permanente (OS-PRO-...) y cupones de descuento. */
 export function RedeemCoupon() {
   const [code, setCode] = React.useState("")
   const [error, setError] = React.useState<string | undefined>()
@@ -28,7 +28,7 @@ export function RedeemCoupon() {
   return (
     <form onSubmit={submit} className="grid gap-1.5">
       <label htmlFor="coupon-code" className="text-sm font-medium">
-        ¿Tienes un código de descuento?
+        Código de activación o de descuento
       </label>
       <div className="flex gap-2">
         <Input
@@ -38,11 +38,11 @@ export function RedeemCoupon() {
             setCode(e.target.value.toUpperCase().replace(/\s/g, ""))
             setError(undefined)
           }}
-          placeholder="EJEMPLO30"
+          placeholder="OS-PRO-XXXX-XXXX"
           maxLength={30}
           autoComplete="off"
           aria-invalid={Boolean(error)}
-          className="h-10 max-w-56 font-mono uppercase"
+          className="h-10 max-w-64 font-mono uppercase"
         />
         <Button type="submit" variant="outline" size="lg" className="h-10" disabled={pending}>
           {pending ? <Loader2 className="animate-spin" /> : <TicketPercent />}

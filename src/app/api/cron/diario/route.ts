@@ -5,6 +5,8 @@ import { sendVerifyReminders } from "@/server/verify-reminders"
 import { processReferralRewards } from "@/server/referrals"
 import { resumeGiftPauses } from "@/server/billing"
 import { recordError } from "@/server/error-log"
+import { mercadoLibre } from "@/server/mercadolibre"
+import { retryMlDeliveries } from "@/server/ml-sales"
 
 // Con muchos negocios, enviar los correos puede tomar varios minutos.
 export const maxDuration = 300
@@ -34,11 +36,13 @@ export async function GET(request: Request) {
   const now = process.env.NODE_ENV !== "production" && ahora ? new Date(ahora) : new Date()
   // Primero reactivar los cobros pausados como regalo: es lo que más importa que no se salte.
   const cobrosReanudados = await step("reanudar cobros", () => resumeGiftPauses(now))
+  // Códigos del Pro permanente: ventas que quedaron sin código y mensajes que no se pudieron enviar.
+  const codigosMercadoLibre = await step("códigos de Mercado Libre", () => retryMlDeliveries(mercadoLibre))
   const [bienvenida, avisos, verificacion, invitaciones] = await Promise.all([
     step("bienvenida", () => sendOnboardingNudges(now)),
     step("avisos", () => sendBusinessAlerts(now)),
     step("confirmar correo", () => sendVerifyReminders(now)),
     step("invitaciones", () => processReferralRewards(now)),
   ])
-  return Response.json({ bienvenida, avisos, verificacion, invitaciones, cobrosReanudados })
+  return Response.json({ bienvenida, avisos, verificacion, invitaciones, cobrosReanudados, codigosMercadoLibre })
 }

@@ -9,6 +9,7 @@ import type { PaymentMethod } from "@/generated/prisma/enums"
 import { AppModal } from "@/components/app/app-modal"
 import { MoneyInput } from "@/components/app/money-input"
 import { PaymentChips } from "@/components/app/payment-chips"
+import { CashChange } from "@/components/sales/cash-change"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatMoney } from "@/lib/currency"
@@ -796,6 +797,7 @@ function ComandaEditor({
             <p className="text-sm font-medium">¿Cómo te pagaron?</p>
             <PaymentChips value={payment} onChange={setPayment} />
           </div>
+          {payment === "CASH" ? <CashChange key={`vuelto-${round}`} total={total + tip} currency={currency} /> : null}
           {payment === "FIADO" ? (
             <div className="space-y-1.5">
               <label htmlFor="comanda-customer" className="text-sm font-medium">

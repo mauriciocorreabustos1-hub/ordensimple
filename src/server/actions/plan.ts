@@ -8,7 +8,9 @@ import { formatDate } from "@/lib/dates"
 import { effectivePlan, PLAN_RANK, PLANS } from "@/lib/plans"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, type ActionResult } from "@/server/actions/result"
-import { allowAttempt } from "@/server/rate-limit"
+import { allowAttempt, isRateLimited } from "@/server/rate-limit"
+import { headers } from "next/headers"
+import { LicenseError, looksLikeLicenseCode, redeemLicense } from "@/server/licenses"
 
 const codeSchema = z.string().trim().toUpperCase().min(3).max(30)
 
@@ -20,6 +22,8 @@ export async function redeemCoupon(rawCode: string): Promise<ActionResult> {
   const parsed = codeSchema.safeParse(rawCode)
   if (!parsed.success) return { ok: false, message: "Escribe el código tal como te llegó." }
   const code = parsed.data
+
+  if (looksLikeLicenseCode(code)) return redeemActivationCode(ctx, code)
 
   try {
     assertCan(ctx, "settings:manage")
@@ -78,6 +82,37 @@ export async function redeemCoupon(rawCode: string): Promise<ActionResult> {
     if (error instanceof CouponError) return { ok: false, message: error.message }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { ok: false, message: "Tu negocio ya usó este código." }
+    }
+    return toActionError(error)
+  }
+}
+
+const HOUR = 60 * 60 * 1000
+/** Intentos fallidos de canje permitidos por hora: por cuenta y por conexión (IP). */
+const MAX_FAILS_USER = 5
+const MAX_FAILS_IP = 20
+
+/** Código de activación del Plan Pro permanente (OS-PRO-XXXX-XXXX). Solo el dueño de la cuenta. */
+async function redeemActivationCode(ctx: Awaited<ReturnType<typeof requireBusiness>>, code: string): Promise<ActionResult> {
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "sin-ip"
+  const userKey = `canje-codigo:u:${ctx.user.id}`
+  const ipKey = `canje-codigo:ip:${ip}`
+  try {
+    if ((await isRateLimited(userKey, MAX_FAILS_USER, HOUR)) || (await isRateLimited(ipKey, MAX_FAILS_IP, HOUR))) {
+      return { ok: false, message: "Probaste muchos códigos que no sirven. Espera una hora e intenta de nuevo." }
+    }
+    if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño de la cuenta puede canjear este código." }
+    const r = await redeemLicense({ userId: ctx.user.id, email: ctx.user.email, businessId: ctx.businessId, rawCode: code })
+    revalidatePath("/dashboard", "layout")
+    return {
+      ok: true,
+      message: `¡Listo! Tu cuenta ya tiene el Plan Pro permanente, sin vencimiento ni cobros mensuales.${r.businesses > 1 ? " También quedaron en Pro tus sucursales." : ""}${r.cancelledSubscriptions ? " Cancelamos tu suscripción mensual: no se te cobrará más." : ""}`,
+    }
+  } catch (error) {
+    if (error instanceof LicenseError) {
+      await allowAttempt(userKey, Number.MAX_SAFE_INTEGER, HOUR)
+      await allowAttempt(ipKey, Number.MAX_SAFE_INTEGER, HOUR)
+      return { ok: false, message: error.message }
     }
     return toActionError(error)
   }

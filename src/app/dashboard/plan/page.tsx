@@ -25,6 +25,8 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
   const planChoice = parsePlanChoice(params.plan)
 
   const plan = PLANS[ctx.business.plan]
+  // Pro permanente (código de activación): sin fecha de vencimiento ni cobros mensuales.
+  const lifetime = ctx.business.plan === "PRO" && !ctx.business.planExpiresAt && Boolean(ctx.business.licenseCodeId)
   const planEnds =
     ctx.business.plan !== "FREE" && ctx.business.planExpiresAt
       ? formatDate(ctx.business.planExpiresAt, ctx.timezone, { day: "numeric", month: "long", year: "numeric" })
@@ -33,7 +35,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
   // En las apps de iPhone y Android no se contratan planes ni se canjean códigos (Apple y Google exigen su sistema de pago).
   const storeApp = isMobileStoreAppUserAgent((await headers()).get("user-agent"))
   // Suscripción con Mercado Pago (solo si el cobro está encendido).
-  const showBilling = !storeApp && BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP"
+  const showBilling = !storeApp && !lifetime && BILLING_ENABLED && mercadoPagoConfigured() && ctx.business.currency === "CLP"
   const sub = showBilling
     ? await db.subscription.findFirst({
         where: { businessId: ctx.businessId, status: { in: ["authorized", "paused", "pending"] } },
@@ -80,7 +82,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Crown className="size-4 text-warning" />
-          Estás en el plan {plan.name}
+          {lifetime ? "Estás en el Plan Pro · Permanente" : `Estás en el plan ${plan.name}`}
         </CardTitle>
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>
@@ -90,8 +92,9 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
             <li key={h}>· {h}</li>
           ))}
         </ul>
-        {planEnds || ctx.business.discountPercent || extras.length ? (
+        {lifetime || planEnds || ctx.business.discountPercent || extras.length ? (
           <div className="flex flex-wrap gap-2">
+            {lifetime ? <Badge variant="secondary">Plan Pro · Permanente: sin vencimiento ni cobros mensuales</Badge> : null}
             {planEnds ? <Badge variant="secondary">Vigente hasta el {planEnds}</Badge> : null}
             {ctx.business.discountPercent ? (
               <Badge variant="secondary">
@@ -149,8 +152,12 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
       {storeApp ? (
         <p className="rounded-lg border p-3 text-sm text-muted-foreground">En esta app no se pueden contratar ni cambiar planes.</p>
       ) : (
-        <Card>
-          <CardContent className="pt-6">
+        <Card id="canjear" className="scroll-mt-20">
+          <CardHeader>
+            <CardTitle>Canjear código</CardTitle>
+            <CardDescription>Si compraste el Plan Pro permanente, ingresa aquí tu código de activación. También sirve para los códigos de descuento.</CardDescription>
+          </CardHeader>
+          <CardContent>
             <RedeemCoupon />
           </CardContent>
         </Card>

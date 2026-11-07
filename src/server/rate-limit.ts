@@ -21,3 +21,9 @@ export async function allowAttempt(key: string, max: number, windowMs: number) {
   await db.rateLimit.update({ where: { key }, data: { count: { increment: 1 } } })
   return true
 }
+
+/** ¿Ya se pasó del máximo en la ventana? Solo mira, no suma un intento (para contar solo los intentos fallidos). */
+export async function isRateLimited(key: string, max: number, windowMs: number) {
+  const row = await db.rateLimit.findUnique({ where: { key } })
+  return Boolean(row && Date.now() - Number(row.lastRequest) <= windowMs && row.count >= max)
+}

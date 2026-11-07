@@ -45,7 +45,8 @@ export async function setBusinessPlan(input: z.input<typeof setPlanSchema>): Pro
     const planExpiresAt = plan === "FREE" || days === null ? null : new Date(Date.now() + days * 86_400_000)
     const business = await db.business.update({
       where: { id: businessId },
-      data: { plan, planExpiresAt },
+      // Un cambio a mano reemplaza al Pro permanente de un código (si lo tenía).
+      data: { plan, planExpiresAt, licenseCodeId: null },
       select: {
         name: true,
         members: { where: { role: "OWNER" }, select: { user: { select: { name: true, email: true } } }, take: 1 },

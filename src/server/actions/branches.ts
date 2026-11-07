@@ -48,6 +48,8 @@ export async function createBranch(input: z.input<typeof branchSchema>): Promise
           timezone: ctx.business.timezone,
           plan: ctx.business.plan,
           planExpiresAt: ctx.business.planExpiresAt,
+          // Pro permanente: la sucursal también queda cubierta por el código (y vuelve a Gratis si se anula).
+          licenseCodeId: ctx.business.licenseCodeId,
           onboardingCompleted: true,
           members: { create: { userId: ctx.user.id, role: "OWNER" } },
           settings: { create: {} },

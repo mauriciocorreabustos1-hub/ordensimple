@@ -164,6 +164,8 @@ model Business {
   /// Cupos regalados por el admin, que se suman a los del plan.
   extraProducts       Int       @default(0)
   extraMembers        Int       @default(0)
+  /// Código de activación que dejó este negocio en Pro permanente (si se anula el código, vuelve a Gratis).
+  licenseCodeId       String?
   discountPercent     Int?
   discountCode        String?
   hasProducts         Boolean?
@@ -1678,4 +1680,101 @@ model RecipeMaterialMovement {
   @@index([saleId])
   @@index([materialId, createdAt])
   @@map("recipe_material_movement")
+}
+
+// ─── Códigos de activación (Pro permanente, vendido en Mercado Libre) ───────
+
+enum ActivationCodeStatus {
+  AVAILABLE // Disponible: nadie lo tiene
+  RESERVED // Reservado: asignado a una venta o entregado a mano, todavía sin canjear
+  USED // Usado: canjeado por una cuenta
+  VOID // Anulado
+}
+
+model ActivationCode {
+  id               String               @id @default(cuid())
+  /// OS-PRO-XXXX-XXXX
+  code             String               @unique
+  /// Por ahora solo "pro_permanente".
+  kind             String               @default("pro_permanente")
+  plan             Plan                 @default(PRO)
+  status           ActivationCodeStatus @default(AVAILABLE)
+  note             String?
+  createdBy        String?
+  createdAt        DateTime             @default(now())
+  reservedAt       DateTime?
+  /// Cuándo se le hizo llegar al comprador (mensaje de Mercado Libre o entrega a mano).
+  sentAt           DateTime?
+  redeemedAt       DateTime?
+  voidedAt         DateTime?
+  redeemedByUserId String?
+  redeemedByEmail  String?
+  /// Negocio desde donde se canjeó.
+  businessId       String?
+  /// Venta de Mercado Libre y unidad de esa venta (1, 2, 3...) a la que se asignó.
+  mlOrderId        String?
+  mlUnit           Int?
+  sendAttempts     Int                  @default(0)
+  lastError        String?
+  /// Mientras se está enviando el mensaje (para no enviarlo dos veces si llegan dos avisos a la vez).
+  sendingUntil     DateTime?
+
+  @@unique([mlOrderId, mlUnit])
+  @@index([status, createdAt])
+  @@map("activation_code")
+}
+
+/// Ventas de Mercado Libre del Pro permanente.
+model MlOrder {
+  /// Id de la orden en Mercado Libre.
+  id           String   @id
+  /// Pack de la orden (para la mensajería); si no tiene, es el mismo id de la orden.
+  packId       String
+  buyerId      String?
+  buyerNick    String?
+  /// Estado de la orden en Mercado Libre (paid, cancelled...).
+  status       String
+  paid         Boolean  @default(false)
+  /// Unidades compradas del Pro permanente.
+  units        Int      @default(0)
+  /// Unidades pagadas que todavía no tienen código (no quedaban disponibles).
+  pendingUnits Int      @default(0)
+  /// Algo que revisar: venta cancelada, pago devuelto o reclamo.
+  reviewReason String?
+  reviewedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("ml_order")
+}
+
+/// Cuenta de vendedor de Mercado Libre conectada (una sola).
+model MercadoLibreAccount {
+  id           String   @id @default("principal")
+  sellerId     String
+  nickname     String?
+  /// Cifrados.
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  connectedBy  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("mercado_libre_account")
+}
+
+/// Registro de lo que pasa con los códigos: avisos de Mercado Libre, envíos, canjes y anulaciones.
+model LicenseLog {
+  id        String   @id @default(cuid())
+  /// notificacion, asignado, enviado, envio_fallido, canje, anulado, generados, revisar, sin_codigos, conexion, error
+  kind      String
+  codeId    String?
+  code      String?
+  mlOrderId String?
+  detail    String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("license_log")
 }

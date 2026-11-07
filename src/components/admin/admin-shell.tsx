@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Crown, LayoutDashboard, Mail, ShieldCheck, TrendingUp, Users, type LucideIcon } from "lucide-react"
+import { Crown, KeyRound, LayoutDashboard, Mail, ShieldCheck, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const ICONS = { resumen: LayoutDashboard, usuarios: Users, crecimiento: TrendingUp, planes: Crown, correos: Mail, equipo: ShieldCheck } satisfies Record<string, LucideIcon>
+const ICONS = { resumen: LayoutDashboard, usuarios: Users, crecimiento: TrendingUp, planes: Crown, licencias: KeyRound, correos: Mail, equipo: ShieldCheck } satisfies Record<string, LucideIcon>
 
 export type AdminSection = {
   id: keyof typeof ICONS

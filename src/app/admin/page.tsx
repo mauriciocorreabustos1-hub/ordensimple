@@ -32,6 +32,8 @@ import { ReferralSettings } from "@/components/admin/referral-settings"
 import { getReferralAdmin, getSpecialLinksAdmin } from "@/server/referrals"
 import { SpecialLinks, type SpecialLinkRow } from "@/components/admin/special-links"
 import { originLabel } from "@/lib/signup-source"
+import { LicenseManager, type LicenseAdminData, type LicenseCodeRow } from "@/components/admin/license-manager"
+import { getLicenseAdmin, LICENSE_FILTERS, type LicenseFilter } from "@/server/queries/licenses"
 import {
   ACTIVITY_FILTERS,
   ROLE_FILTERS,
@@ -71,6 +73,10 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const role = (ROLE_FILTERS.some((r) => r.value === params.rol) ? params.rol : "todos") as RoleFilter
   // ?para=<id> deja a esa persona elegida en "Correo a personas específicas".
   const para = typeof params.para === "string" ? params.para.slice(0, 40) : ""
+  // Sección Códigos (Pro permanente): filtro por estado, búsqueda y aviso de la conexión con Mercado Libre.
+  const licenseFilter = (LICENSE_FILTERS.some((f) => f.value === params.codigos) ? params.codigos : "todos") as LicenseFilter
+  const licenseQ = typeof params.codigo === "string" ? params.codigo.trim().slice(0, 60) : ""
+  const mlFlash = typeof params.ml === "string" ? params.ml.slice(0, 20) : null
   const me = await requireAdmin()
   const [adminEmails, admins] = await Promise.all([adminEmailSet(), listAdmins()])
   const adminRows: AdminRow[] = admins.map((a) => ({
@@ -102,6 +108,41 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     getReferralAdmin(),
   ])
   const specialLinks = await getSpecialLinksAdmin()
+  const lic = await getLicenseAdmin({ filter: licenseFilter, q: licenseQ })
+  const when = (d: Date | null) => (d ? formatDateTime(d, TZ) : null)
+  const licenseRow = (c: (typeof lic.codes)[number]): LicenseCodeRow => ({
+    id: c.id,
+    code: c.code,
+    status: c.status,
+    note: c.note,
+    createdLabel: formatDateTime(c.createdAt, TZ),
+    sentLabel: when(c.sentAt),
+    redeemedLabel: when(c.redeemedAt),
+    voidedLabel: when(c.voidedAt),
+    redeemedByEmail: c.redeemedByEmail,
+    mlOrderId: c.mlOrderId,
+    mlUnit: c.mlUnit,
+    lastError: c.lastError,
+    sendAttempts: c.sendAttempts,
+  })
+  const licenseData: LicenseAdminData = {
+    counts: lic.counts,
+    filter: licenseFilter,
+    q: licenseQ,
+    matching: lic.matching,
+    codes: lic.codes.map(licenseRow),
+    review: lic.review.map((o) => ({ id: o.id, reason: o.reviewReason ?? "", buyerNick: o.buyerNick, updatedLabel: formatDateTime(o.updatedAt, TZ), codes: o.codes.map((c) => ({ id: c.id, code: c.code, status: c.status })) })),
+    waiting: lic.waiting.map((o) => ({ id: o.id, pendingUnits: o.pendingUnits, buyerNick: o.buyerNick })),
+    unsent: lic.unsent.map(licenseRow),
+    logs: lic.logs.map((l) => ({ id: l.id, kind: l.kind, detail: l.detail, at: formatDateTime(l.createdAt, TZ) })),
+    ml: {
+      configured: lic.ml.configured,
+      items: lic.ml.items,
+      account: lic.ml.account ? { name: lic.ml.account.nickname ?? `vendedor ${lic.ml.account.sellerId}`, connectedBy: lic.ml.account.connectedBy, updatedLabel: ago(lic.ml.account.updatedAt, new Date()) } : null,
+      notifyUrl: `${getAppUrl().startsWith("https://") ? getAppUrl() : "https://www.ordensimple.cl"}/api/mercadolibre/notificaciones`,
+    },
+    flash: mlFlash,
+  }
   const usage = await getBusinessActivity([...new Set(users.rows.flatMap((u) => (u.memberships[0] ? [u.memberships[0].business.id] : [])))])
   const clp = (n: number) => formatMoney(n, "CLP")
   const subsBy = (status: string) => subCounts.find((c) => c.status === status)?._count ?? 0
@@ -151,6 +192,11 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       tone: "warning",
       text: `${formatNumber(unverified.pending)} ${unverified.pending === 1 ? "cuenta" : "cuentas"} sin el enlace para confirmar su correo`,
     })
+  const licenseAttention = lic.review.length + lic.waiting.length + lic.unsent.length
+  if (licenseAttention)
+    alerts.push({ href: "#licencias", tone: "danger", text: `${formatNumber(licenseAttention)} ${licenseAttention === 1 ? "venta o código" : "ventas o códigos"} del Pro permanente para revisar` })
+  else if (lic.counts.available < 5)
+    alerts.push({ href: "#licencias", tone: "warning", text: lic.counts.available ? `Quedan ${lic.counts.available} códigos del Pro permanente` : "No quedan códigos del Pro permanente" })
   if (planCounts.expired)
     alerts.push({ href: "#usuarios", tone: "warning", text: `${formatNumber(planCounts.expired)} ${planCounts.expired === 1 ? "plan vencido" : "planes vencidos"}` })
 
@@ -707,6 +753,13 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             </div>
               </div>
             ),
+          },
+          {
+            id: "licencias",
+            label: "Códigos",
+            title: "Códigos del Plan Pro permanente",
+            description: "Códigos de activación que se venden en Mercado Libre: se entregan solos al comprador y se canjean en Tu plan, sección Canjear código.",
+            content: <LicenseManager key="licencias" data={licenseData} />,
           },
           {
             id: "correos",

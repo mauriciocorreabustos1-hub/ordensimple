@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:licencias": "node --env-file=.env --conditions=react-server --import tsx --test tests/licencias.test.ts",
     "postinstall": "prisma generate && node scripts/copy-wasm.mjs",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

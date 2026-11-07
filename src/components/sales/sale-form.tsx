@@ -22,6 +22,7 @@ import { useOfflineSales } from "@/components/app/offline-sales"
 import { useCanApproveDiscounts, usePromotions } from "@/components/app/quick-actions"
 import { applyPromotions } from "@/lib/promotions"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
+import { CashChange } from "@/components/sales/cash-change"
 import { earnedPart } from "@/lib/loyalty"
 
 export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[]; categoryId?: string | null }
@@ -386,6 +387,7 @@ export function SaleForm({
           <span className="tabular text-xl font-semibold">{formatMoney(total, currency)}</span>
         </div>
       </div>
+      {!editing && paymentMethod === "CASH" ? <CashChange key={`vuelto-${discKey}`} total={total} currency={currency} /> : null}
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
         {editing ? "Guardar cambios" : fiado ? "Anotar fiado" : "Guardar venta"}

@@ -152,7 +152,8 @@ export async function sendOrderCodes(orderId: string, client: MlClient, opts: Op
   const delays = opts.retryDelaysMs ?? [0, 2_000, 5_000]
   const alert = opts.alert ?? alertAdmins
   const order = await db.mlOrder.findUnique({ where: { id: orderId } })
-  if (!order || (order.reviewReason && !order.reviewedAt)) return { sent: 0, failed: 0 }
+  // Venta cancelada, devuelta o con reclamo: nunca se envía, aunque el aviso ya se haya marcado como revisado.
+  if (!order || order.reviewReason || !order.paid) return { sent: 0, failed: 0 }
   const pending = await db.activationCode.findMany({ where: { mlOrderId: orderId, status: "RESERVED", sentAt: null }, orderBy: { mlUnit: "asc" } })
   // Se "toman" los códigos por 2 minutos: si llega otro aviso de la misma venta mientras tanto, no los vuelve a enviar.
   const leased: typeof pending = []

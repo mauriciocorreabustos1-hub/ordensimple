@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:licencias": "node --env-file=.env --conditions=react-server --import tsx --test tests/licencias.test.ts",
+    "test:tarjetas": "node --conditions=react-server --import tsx --test tests/tarjetas.test.ts",
     "postinstall": "prisma generate && node scripts/copy-wasm.mjs",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

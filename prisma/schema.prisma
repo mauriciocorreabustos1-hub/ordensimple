@@ -97,6 +97,7 @@ model User {
   notifications        Notification[]
   adminNotes           AdminNote[]
   photo                UserPhoto?
+  contactCard          ContactCard?
 
   @@map("user")
 }
@@ -210,6 +211,7 @@ model Business {
   couponRedemptions CouponRedemption[]
   invitations       Invitation[]
   subscriptions     Subscription[]
+  contactCards      ContactCard[]
   referralsMade     Referral[]               @relation("ReferralReferrer")
   referredBy        Referral?                @relation("ReferralReferred")
   specialLinkUses   SpecialLinkUse[]
@@ -1777,4 +1779,42 @@ model LicenseLog {
 
   @@index([createdAt])
   @@map("license_log")
+}
+
+// ─── Tarjetas de presentación digitales ─────────────────────────────────────
+
+/// Tarjeta de una persona (una por usuario), pública en /perfil/<slug>. El slug no cambia: así el enlace y el QR siguen
+/// sirviendo aunque se editen los datos. Solo se publica lo que está en `published`.
+model ContactCard {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Negocio cuyo logo se muestra.
+  businessId     String?
+  business       Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  slug           String    @unique
+  /// Apagada: la dirección responde como si no existiera.
+  active         Boolean   @default(true)
+  fullName       String
+  jobTitle       String?
+  company        String?
+  phone          String?
+  whatsapp       String?
+  email          String?
+  website        String?
+  instagram      String?
+  facebook       String?
+  linkedin       String?
+  tiktok         String?
+  x              String?
+  /// Campos que la persona autorizó a mostrar. El nombre siempre se muestra.
+  published      String[]  @default([])
+  photo          Bytes?
+  photoType      String?
+  photoUpdatedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([businessId])
+  @@map("contact_card")
 }

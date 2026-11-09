@@ -25,7 +25,7 @@ export function Testimonials() {
   return (
     <section aria-labelledby="testimonios-titulo" className="border-t bg-muted/30">
       <Container className="py-16 md:py-24">
-        <h2 id="testimonios-titulo" className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+        <h2 id="testimonios-titulo" className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">
           Negocios que crecen con OrdenSimple
         </h2>
         <ul className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">

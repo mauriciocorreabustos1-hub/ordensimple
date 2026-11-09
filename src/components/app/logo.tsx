@@ -14,12 +14,12 @@ export function LogoMark({ className }: { className?: string }) {
   )
 }
 
-export function Logo({ href = "/", className }: { href?: string; className?: string }) {
+export function Logo({ href = "/", className, onDark }: { href?: string; className?: string; /** Sobre fondo verde oscuro. */ onDark?: boolean }) {
   return (
     <Link href={href} className={cn("inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
       <LogoMark />
       <span className="text-lg">
-        Orden<span className="text-primary">Simple</span>
+        Orden<span className={onDark ? "text-[#7fd8b4]" : "text-primary"}>Simple</span>
       </span>
     </Link>
   )

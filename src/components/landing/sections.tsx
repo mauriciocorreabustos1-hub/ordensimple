@@ -47,7 +47,7 @@ export function SectionTitle({
   /** El título entra línea por línea la primera vez que aparece en pantalla. */
   animated?: boolean
 }) {
-  const titleClass = "font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]"
+  const titleClass = "font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]"
   return (
     <div className={cn("max-w-2xl space-y-3", align === "center" && "mx-auto text-center")}>
       {animated ? (
@@ -71,13 +71,13 @@ export function PageHero({
   description: string
 }) {
   return (
-    <section className="border-b bg-accent/30">
-      <Container className="pt-14 pb-12 md:pt-20 md:pb-16">
-        <div className="max-w-3xl space-y-5">
-          <h1 className="font-display text-[2.4rem] leading-[1.04] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[1.02]">
+    <section className="ruled-page">
+      <Container className="pt-[calc(var(--line)*2)] pb-[calc(var(--line)*2)]">
+        <div className="max-w-4xl space-y-[var(--line)] pl-5 sm:pl-8">
+          <h1 className="font-display text-[2.5rem] leading-[48px] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[72px] lg:text-[4.1rem] lg:leading-[84px]">
             {title}
           </h1>
-          <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{description}</p>
+          <p className="max-w-2xl text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">{description}</p>
         </div>
       </Container>
     </section>
@@ -115,7 +115,7 @@ export function BenefitsSection() {
     <Section className="border-t-0 bg-deep text-deep-foreground">
       <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
         <div className="space-y-4">
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">
             Entiende tus números, aunque no te gusten los números.
           </h2>
           <p className="text-lg text-pretty text-deep-foreground/75">
@@ -132,12 +132,15 @@ export function BenefitsSection() {
             </li>
           </ul>
         </div>
-        <figure className="rounded-2xl bg-card p-6 text-card-foreground shadow-lg sm:p-8">
-          <p className="text-sm text-muted-foreground line-through decoration-muted-foreground/50">Margen neto del período: 18,4%</p>
-          <blockquote className="font-display mt-4 text-2xl leading-snug font-semibold text-balance sm:text-3xl">
-            De cada $10.000 que vendes, te quedan $1.840.
-          </blockquote>
-          <figcaption className="mt-4 text-sm text-muted-foreground">Así te lo muestra OrdenSimple en el Inicio.</figcaption>
+        {/* Lo que dice la app, impreso como boleta: la jerga tachada y la frase que se entiende. */}
+        <figure className="mx-auto w-full max-w-md drop-shadow-2xl">
+          <div className="receipt-edge bg-[#fbfaf6] px-6 pt-7 pb-12 text-[#13201c] sm:px-8">
+            <p className="font-mono text-sm text-[#5b6b66] line-through decoration-[#5b6b66]/60">Margen neto del período: 18,4%</p>
+            <blockquote className="font-display mt-4 text-2xl leading-snug font-semibold text-balance sm:text-3xl">
+              De cada $10.000 que vendes, te quedan $1.840.
+            </blockquote>
+            <figcaption className="mt-4 border-t border-dashed border-[#13201c]/25 pt-3 font-mono text-xs text-[#5b6b66]">Así te lo muestra OrdenSimple en el Inicio.</figcaption>
+          </div>
         </figure>
       </div>
     </Section>
@@ -157,8 +160,8 @@ export function BeforeAfter() {
       <ul>
         {BEFORE_AFTER.map((row) => (
           <li key={row.after} className="grid sm:grid-cols-2">
-            <p className="notebook relative bg-muted/40 py-3.5 pr-5 pl-12 leading-7 text-pretty text-muted-foreground">
-              <X className="absolute top-[1.3rem] left-3 size-4 text-danger/60" aria-hidden />
+            <p className="relative bg-muted/40 py-3.5 pr-5 pl-12 leading-7 text-pretty text-muted-foreground shadow-[inset_0_-1px_0_var(--border)]">
+              <X className="absolute top-[1.3rem] left-4 size-4 text-muted-foreground/70" aria-hidden />
               <span className="sr-only">Antes: </span>
               {row.before}
             </p>
@@ -176,7 +179,7 @@ export function BeforeAfter() {
 /** "Empieza en 2 minutos" como un comprobante: cada paso con lo que tarda, y el total al final. */
 export function ReceiptSteps() {
   return (
-    <div className="mx-auto w-full max-w-sm drop-shadow-xl md:rotate-1">
+    <div className="mx-auto w-full max-w-sm drop-shadow-2xl">
       <div className="receipt-edge bg-card px-6 pt-7 pb-10 font-mono text-sm text-card-foreground">
         <div className="space-y-1 text-center">
           <p className="text-base font-semibold">OrdenSimple</p>
@@ -259,12 +262,12 @@ function planLimits(plan: (typeof PLANS)[keyof typeof PLANS]) {
 /** Lo que ya dicen los límites de arriba de la tarjeta (personas, sucursales y productos): no se repite en la lista. */
 const LIMIT_LINE = /^(1 negocio, solo tú|Hasta \d+ productos|Productos ilimitados|Tú \+ \d+ trabajadores( y hasta \d+ sucursales)?|Trabajadores sin límite|Hasta \d+ sucursales)$/
 
-/** Los planes como carteles de almacén: el precio va en su etiqueta y Pro resalta con la carpeta en verde. */
+/** Cada plan es una carpeta del archivador: el nombre va en su pestaña, el precio en su etiqueta y Pro es la carpeta verde. */
 export function PricingCards({ compact = false }: { compact?: boolean }) {
   const MAX = 6
   return (
     <div>
-      <div className="mx-auto grid max-w-xl gap-4 lg:max-w-none lg:grid-cols-3 lg:items-start">
+      <div className="mx-auto grid max-w-xl gap-6 lg:max-w-none lg:grid-cols-3 lg:items-start lg:gap-4">
         {Object.values(PLANS).map((plan) => {
           const featured = plan.id === "PRO"
           const quiet = featured ? "text-deep-foreground/80" : "text-muted-foreground"
@@ -273,12 +276,20 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
           const main = lines.slice(0, MAX)
           const rest = lines.slice(MAX)
           return (
-            <div key={plan.id} className={cn("flex flex-col rounded-2xl p-6 sm:p-7", featured ? "bg-deep text-deep-foreground shadow-xl lg:-my-3 lg:py-10" : "border bg-card")}>
-              <div className="flex items-baseline justify-between gap-3">
+            <div key={plan.id} className="flex h-full flex-col">
+              <div
+                className={cn(
+                  "relative z-10 -mb-px flex w-fit items-baseline gap-3 rounded-t-xl px-5 pt-2.5 pb-2",
+                  featured ? "bg-deep text-deep-foreground" : "border border-b-0 bg-card",
+                  plan.id === "FREE" && "border-t-[3px] border-t-primary",
+                  plan.id === "BUSINESS" && "border-t-[3px] border-t-deep",
+                )}
+              >
                 <h3 className="font-display text-2xl font-semibold tracking-tight">{plan.name}</h3>
-                {featured ? <p className="text-sm font-medium">Recomendado</p> : null}
+                {featured ? <p className="text-sm font-medium text-deep-foreground/80">Recomendado</p> : null}
               </div>
-              <p className={cn("mt-1 min-h-11 text-sm text-pretty", quiet)}>{plan.description}</p>
+            <div className={cn("flex flex-1 flex-col rounded-2xl rounded-tl-none p-6 sm:p-7", featured ? "bg-deep text-deep-foreground shadow-xl" : "border bg-card")}>
+              <p className={cn("min-h-11 text-sm text-pretty", quiet)}>{plan.description}</p>
 
               <div className="mt-5">
                 <PriceTag hole={featured ? "bg-deep" : "bg-card"} className={cn("shadow-md", featured ? "bg-deep-foreground text-deep shadow-black/20" : plan.id === "FREE" && "bg-foreground text-background shadow-black/15")}>
@@ -345,12 +356,18 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
                 )}
               </div>
             </div>
+            </div>
           )
         })}
       </div>
       <p className="mt-6 max-w-3xl text-sm text-pretty text-muted-foreground">
         Precios en pesos chilenos. Los planes pagados se renuevan cada mes y los cancelas cuando quieras. Si cobras con tarjeta por Mercado Pago, OrdenSimple cobra un {Math.round(ONLINE_FEE_RATE * 100)} % de cada pago, aparte de la comisión de Mercado Pago.
       </p>
+      {compact ? null : (
+        <p className="mt-4 max-w-3xl rounded-lg border border-dashed border-foreground/30 px-4 py-3 text-sm text-pretty">
+          <strong className="font-semibold">¿Compraste el Plan Pro permanente en Mercado Libre?</strong> Crea tu cuenta gratis desde la página web o el computador, entra a Tu plan e ingresa tu código en Canjear código.
+        </p>
+      )}
     </div>
   )
 }
@@ -395,7 +412,7 @@ export function PricingComparison() {
 
 export function FaqList({ items }: { items: FaqGroup["items"] }) {
   return (
-    <Accordion type="single" collapsible className="rounded-2xl border bg-card px-5">
+    <Accordion type="single" collapsible className="border-t border-foreground/80">
       {items.map((f, i) => (
         <AccordionItem key={f.q} value={`q${i}`}>
           <AccordionTrigger className="text-base">{f.q}</AccordionTrigger>
@@ -417,22 +434,25 @@ export function CtaSection({
   users?: number | null
 }) {
   return (
-    <section className="bg-deep text-deep-foreground">
-      <Container className="grid items-end gap-8 py-16 md:grid-cols-[1fr_auto] md:py-20">
-        <div className="max-w-xl space-y-3">
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
-          <p className="text-lg text-deep-foreground/75">{text}</p>
-          {users && users > 1 ? (
-            <p className="text-deep-foreground/90">
-              Únete a las <span className="tabular font-semibold">{users.toLocaleString("es-CL")}</span> personas que ya lo usan.
-            </p>
-          ) : null}
-        </div>
-        <div className="space-y-2 md:text-right">
-          <Button size="lg" className="h-12 w-full bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90 sm:w-auto" asChild>
-            <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
-          </Button>
-          <p className="text-sm text-deep-foreground/70">Gratis para siempre, sin tarjeta.</p>
+    // El cierre de la página: la invitación sobre el verde oscuro que sigue en el pie.
+    <section className="bg-deep">
+      <Container className="py-16 md:py-24">
+        <div className="mx-auto max-w-2xl rounded-2xl bg-card text-card-foreground shadow-2xl">
+          <div>
+            <div className="space-y-4 px-6 py-10 text-center sm:px-12">
+              <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl sm:leading-[1.1]">{title}</h2>
+              <p className="text-pretty text-muted-foreground">{text}</p>
+              {users && users > 1 ? (
+                <p>
+                  Únete a las <span className="tabular font-semibold">{users.toLocaleString("es-CL")}</span> personas que ya lo usan.
+                </p>
+              ) : null}
+              <Button size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
+                <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <p className="text-sm text-muted-foreground">Gratis para siempre, sin tarjeta.</p>
+            </div>
+          </div>
         </div>
       </Container>
     </section>

@@ -64,7 +64,7 @@ export function DesktopPreview({ className }: { className?: string }) {
       </div>
 
       {/* El comprobante que sale solo */}
-      <div className="relative z-20 mt-4 ml-auto w-[66%] rotate-2 sm:mt-2 sm:w-[50%]">
+      <div className="relative z-20 mt-4 ml-auto w-[66%] sm:mt-2 sm:w-[50%]">
         {/* Etiqueta pegada al borde de arriba del comprobante */}
         <p className="absolute -top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-md">
           <Check className="size-3.5" />

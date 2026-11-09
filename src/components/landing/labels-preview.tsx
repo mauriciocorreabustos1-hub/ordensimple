@@ -15,7 +15,7 @@ export function LabelsPreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* Hoja de stickers */}
-      <div className="relative z-10 w-[92%] -rotate-1 rounded-2xl border bg-white p-3 shadow-xl sm:w-[84%] sm:p-4">
+      <div className="relative z-10 w-[92%] rounded-2xl border bg-white p-3 shadow-xl sm:w-[84%] sm:p-4">
         <div className="grid grid-cols-2 gap-2">
           {LABELS.map((l) => (
             <div key={l.code} className="rounded-md border border-dashed border-neutral-300 p-2 text-black">
@@ -29,7 +29,7 @@ export function LabelsPreview({ className }: { className?: string }) {
       </div>
 
       {/* Al vender: se escanea y se agrega */}
-      <div className="relative z-20 -mt-8 ml-auto w-[70%] rotate-1 rounded-2xl border-2 border-primary/40 bg-card p-3.5 shadow-2xl sm:-mt-12 sm:w-[54%]">
+      <div className="relative z-20 -mt-8 ml-auto w-[70%] rounded-2xl border-2 border-primary/40 bg-card p-3.5 shadow-2xl sm:-mt-12 sm:w-[54%]">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
           <ScanLine className="size-3.5" />
           Escaneado

@@ -14,7 +14,7 @@ export function AgendaPreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* La agenda del día */}
-      <div className="relative z-10 w-[94%] rotate-1 rounded-2xl border bg-card p-4 shadow-xl sm:w-[88%] sm:p-5">
+      <div className="relative z-10 w-[94%] rounded-2xl border bg-card p-4 shadow-xl sm:w-[88%] sm:p-5">
         <div className="flex items-baseline justify-between">
           <p className="font-display text-xl font-semibold">Hoy, martes</p>
           <span className="text-xs text-muted-foreground">4 citas · $58.000</span>
@@ -36,7 +36,7 @@ export function AgendaPreview({ className }: { className?: string }) {
       </div>
 
       {/* La reserva que hizo un cliente desde la página del negocio */}
-      <div className="relative z-20 -mt-6 w-[76%] -rotate-1 rounded-2xl border-2 border-primary/40 bg-card p-3.5 shadow-2xl sm:-mt-8 sm:w-[58%]">
+      <div className="relative z-20 -mt-6 w-[76%] rounded-2xl border-2 border-primary/40 bg-card p-3.5 shadow-2xl sm:-mt-8 sm:w-[58%]">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
           <BellRing className="size-3.5" />
           Reserva nueva por internet

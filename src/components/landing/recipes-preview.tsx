@@ -14,7 +14,7 @@ export function RecipesPreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* La receta con el costo de cada ingrediente */}
-      <div className="relative z-10 w-[92%] -rotate-1 rounded-2xl border bg-card p-4 shadow-xl sm:w-[84%] sm:p-5">
+      <div className="relative z-10 w-[92%] rounded-2xl border bg-card p-4 shadow-xl sm:w-[84%] sm:p-5">
         <div className="flex items-baseline justify-between gap-3">
           <p className="font-display text-lg font-semibold">Pan amasado</p>
           <span className="text-xs text-muted-foreground">rinde 20 unidades</span>
@@ -42,7 +42,7 @@ export function RecipesPreview({ className }: { className?: string }) {
       </div>
 
       {/* Stock de un material, con su vencimiento */}
-      <div className="relative z-20 -mt-4 ml-auto w-[70%] rotate-2 rounded-2xl border bg-card p-3 shadow-2xl sm:w-[56%]">
+      <div className="relative z-20 -mt-4 ml-auto w-[70%] rounded-2xl border bg-card p-3 shadow-2xl sm:w-[56%]">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
           <CalendarClock className="size-3.5" />
           Vence en 5 días

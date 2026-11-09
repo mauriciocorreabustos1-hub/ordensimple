@@ -50,6 +50,8 @@ export async function getLicenseAdmin({ filter, q }: { filter: LicenseFilter; q:
   const reviewCodes = review.length
     ? await db.activationCode.findMany({ where: { mlOrderId: { in: review.map((o) => o.id) }, status: { not: "VOID" } }, select: { id: true, code: true, status: true, mlOrderId: true } })
     : []
+  // Sigue cortada si el último error es posterior a la última renovación de la sesión.
+  const lastFailure = account ? await db.licenseLog.findFirst({ where: { kind: "conexion_error", createdAt: { gt: account.updatedAt } }, orderBy: { createdAt: "desc" } }) : null
   const count = (s: ActivationCodeStatus) => counts.find((c) => c.status === s)?._count ?? 0
   return {
     counts: { available: count("AVAILABLE"), reserved: count("RESERVED"), used: count("USED"), void: count("VOID") },
@@ -59,6 +61,6 @@ export async function getLicenseAdmin({ filter, q }: { filter: LicenseFilter; q:
     waiting,
     unsent,
     logs,
-    ml: { configured: mercadoLibreConfigured(), items: licenseItemIds(), account },
+    ml: { configured: mercadoLibreConfigured(), items: licenseItemIds(), account, lastFailure },
   }
 }

@@ -1,3 +1,4 @@
+import { SocialSection } from "@/components/landing/social-section"
 import type { Metadata } from "next"
 import { Container, CtaSection, PageHero } from "@/components/landing/sections"
 import { GuideList } from "@/components/landing/guide-page"
@@ -25,6 +26,7 @@ export default function GuidesPage() {
           <OtherCalculators />
         </section>
       </Container>
+      <SocialSection />
       <CtaSection />
     </>
   )

@@ -5,7 +5,7 @@ import { z } from "zod"
 import { db } from "@/lib/db"
 import { DEFAULT_EXPENSE_CATEGORIES } from "@/lib/constants"
 import { cancelPreapproval } from "@/lib/mercadopago"
-import { businessLimit, PLANS } from "@/lib/plans"
+import { businessLimit, effectivePlan, PLANS } from "@/lib/plans"
 import { requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
@@ -28,9 +28,9 @@ export async function createBranch(input: z.input<typeof branchSchema>): Promise
     // El límite depende del mejor plan entre los negocios de la persona.
     const owned = await db.businessMember.findMany({
       where: { userId: ctx.user.id, role: "OWNER" },
-      select: { business: { select: { plan: true } } },
+      select: { business: { select: { plan: true, planExpiresAt: true } } },
     })
-    const limit = Math.max(...owned.map((o) => businessLimit(o.business.plan)), businessLimit(ctx.business.plan))
+    const limit = Math.max(...owned.map((o) => businessLimit(effectivePlan(o.business))), businessLimit(ctx.business.plan))
     if (owned.length >= limit) {
       return {
         ok: false,

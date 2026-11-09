@@ -7,7 +7,7 @@ import { idSchema } from "@/lib/validations"
 import { requireAdmin } from "@/server/admin"
 import { generateCodes, LicenseError, logLicense, markDelivered, voidCode } from "@/server/licenses"
 import { mercadoLibre } from "@/server/mercadolibre"
-import { processMlOrder, sendOrderCodes } from "@/server/ml-sales"
+import { processMlOrder, retryMlDeliveries, sendOrderCodes } from "@/server/ml-sales"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
 
 // Panel de administración, sección Códigos (Plan Pro permanente). Solo administradores.
@@ -108,6 +108,20 @@ export async function recheckMlOrder(orderId: string): Promise<ActionResult> {
       return { ok: true, message: r.pendingUnits ? `Faltan ${r.pendingUnits} códigos: genera más` : r.failed ? "Códigos asignados, pero el mensaje falló" : "Venta al día" }
     }
     return { ok: r.result !== "ignorada", message: r.reason }
+  } catch (error) {
+    return failed(error)
+  }
+}
+
+/** Busca en Mercado Libre las ventas de los últimos 30 días que hayan quedado sin su código. */
+export async function checkMlSalesNow(): Promise<ActionResult> {
+  await requireAdmin()
+  try {
+    const r = await retryMlDeliveries(mercadoLibre, { days: 30, retryDelaysMs: [0, 1_000] })
+    revalidatePath("/admin")
+    if ("skipped" in r) return { ok: false, message: r.skipped }
+    if ("error" in r) return { ok: false, message: `Mercado Libre no respondió: ${r.error}` }
+    return { ok: true, message: `${r.revisadas} ${r.revisadas === 1 ? "venta revisada" : "ventas revisadas"}${r.recuperadas ? `, ${r.recuperadas} recuperadas` : ""}${r.sent ? `, ${r.sent} mensajes enviados` : ""}${r.errores ? `, ${r.errores} con error` : ""}` }
   } catch (error) {
     return failed(error)
   }

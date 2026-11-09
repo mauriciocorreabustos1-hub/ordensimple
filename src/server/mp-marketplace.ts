@@ -1,6 +1,7 @@
 import "server-only"
-import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes, timingSafeEqual } from "node:crypto"
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 import { db } from "@/lib/db"
+import { deriveKey, openSecret, sealSecret } from "@/server/secret-box"
 import { getAppUrl } from "@/lib/app-url"
 import { formatMoney } from "@/lib/currency"
 import { onlineFee, saleMethodFromMp, type OnlineStatus } from "@/lib/online-payments"
@@ -23,33 +24,17 @@ export const oauthRedirectUri = () => `${getAppUrl()}/api/mercadopago/oauth`
 
 // ─── Claves de cada negocio, cifradas ───────────────────────────────────────
 
-function key(purpose = "mercadopago-tokens") {
-  const secret = process.env.BETTER_AUTH_SECRET
-  if (!secret) throw new Error("Falta BETTER_AUTH_SECRET")
-  return Buffer.from(hkdfSync("sha256", secret, "ordensimple", purpose, 32))
-}
+const TOKENS = "mercadopago-tokens"
 
-export function encryptToken(plain: string) {
-  const iv = randomBytes(12)
-  const cipher = createCipheriv("aes-256-gcm", key(), iv)
-  const data = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()])
-  return `v1.${iv.toString("base64url")}.${cipher.getAuthTag().toString("base64url")}.${data.toString("base64url")}`
-}
-
-export function decryptToken(stored: string) {
-  const [v, iv, tag, data] = stored.split(".")
-  if (v !== "v1" || !iv || !tag || !data) throw new Error("Clave guardada inválida")
-  const decipher = createDecipheriv("aes-256-gcm", key(), Buffer.from(iv, "base64url"))
-  decipher.setAuthTag(Buffer.from(tag, "base64url"))
-  return Buffer.concat([decipher.update(Buffer.from(data, "base64url")), decipher.final()]).toString("utf8")
-}
+export const encryptToken = (plain: string) => sealSecret(plain, TOKENS)
+export const decryptToken = (stored: string) => openSecret(stored, TOKENS)
 
 // ─── Conexión (OAuth) ───────────────────────────────────────────────────────
 
 const STATE_TTL_MS = 15 * 60_000
 
 function sign(payload: string) {
-  return createHmac("sha256", key("mercadopago-oauth-state")).update(payload).digest("base64url")
+  return createHmac("sha256", deriveKey("mercadopago-oauth-state")).update(payload).digest("base64url")
 }
 
 /** Estado firmado para la vuelta de Mercado Pago: de qué negocio y persona es, y hasta cuándo vale. */
@@ -212,7 +197,14 @@ export async function syncPayment(businessId: string, mpPaymentId: string) {
       return payment
     }
   }
-  if (status === "PENDING" || status === payment.status) return payment
+  if (status === "PENDING") return payment
+  if (status === payment.status) {
+    // Aviso repetido: si el primero se cortó antes de registrar el enlace, se completa aquí (no se registra dos veces).
+    if (status === "APPROVED" && payment.kind === "LINK" && payment.linkId && payment.mpPaymentId === String(mp.id)) {
+      await paidLink(payment.linkId, businessId, payment.amount, saleMethodFromMp(mp.payment_type_id))
+    }
+    return payment
+  }
 
   const firstApproval = status === "APPROVED" && payment.status !== "APPROVED"
   const updated = await db.onlinePayment.updateMany({

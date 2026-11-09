@@ -7,7 +7,7 @@ export function QuotePreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* La cotización, como la abre el cliente */}
-      <div className="relative z-10 w-[92%] rotate-1 rounded-2xl border bg-card p-4 shadow-xl sm:w-[84%] sm:p-5">
+      <div className="relative z-10 w-[92%] rounded-2xl border bg-card p-4 shadow-xl sm:w-[84%] sm:p-5">
         <div className="flex items-start justify-between gap-3 border-b pb-3">
           <div>
             <p className="font-display text-base font-semibold">Ferretería El Roble</p>
@@ -48,7 +48,7 @@ export function QuotePreview({ className }: { className?: string }) {
       </div>
 
       {/* Lo que ve el negocio */}
-      <div className="relative z-20 -mt-4 ml-auto w-[72%] -rotate-2 rounded-2xl border bg-card p-3 shadow-2xl sm:w-[58%]">
+      <div className="relative z-20 -mt-4 ml-auto w-[72%] rounded-2xl border bg-card p-3 shadow-2xl sm:w-[58%]">
         <p className="text-xs font-semibold text-success">✅ Cotización n.º 0042 aceptada</p>
         <p className="mt-1 text-sm font-medium">Constructora Los Andes</p>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">

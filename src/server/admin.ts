@@ -2,14 +2,7 @@ import "server-only"
 import { notFound, redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { getSession } from "@/server/session"
-
-/** Dueños de la plataforma: los correos de ADMIN_EMAILS en Vercel. Solo ellos agregan o quitan administradores. */
-function ownerEmails() {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-}
+import { ownerEmails } from "@/server/admin-emails"
 
 /** ¿Es dueño de la plataforma (correo en ADMIN_EMAILS)? */
 export function isAdminEmail(email: string | null | undefined) {

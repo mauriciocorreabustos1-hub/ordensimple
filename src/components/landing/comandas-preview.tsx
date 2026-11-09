@@ -19,7 +19,7 @@ export function ComandasPreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* Comanda del garzón */}
-      <div className="relative z-10 w-[92%] -rotate-1 rounded-2xl border bg-card p-4 shadow-xl sm:w-[86%] sm:p-5">
+      <div className="relative z-10 w-[92%] rounded-2xl border bg-card p-4 shadow-xl sm:w-[86%] sm:p-5">
         <div className="flex items-baseline justify-between">
           <p className="font-display text-xl font-semibold">Mesa 4</p>
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">En cocina</span>
@@ -53,7 +53,7 @@ export function ComandasPreview({ className }: { className?: string }) {
       </div>
 
       {/* Ticket en la pantalla de la cocina */}
-      <div className="relative z-20 -mt-3 ml-auto w-[78%] rotate-1 overflow-hidden rounded-2xl border-2 border-amber-400 bg-card shadow-2xl sm:-mt-5 sm:w-[60%]">
+      <div className="relative z-20 -mt-3 ml-auto w-[78%] overflow-hidden rounded-2xl border-2 border-primary/40 bg-card shadow-2xl sm:-mt-5 sm:w-[60%]">
         <div className="flex items-baseline justify-between bg-amber-50 px-3.5 py-2 dark:bg-amber-500/15">
           <p className="font-display text-lg font-semibold">Mesa 7</p>
           <span className="tabular text-xs font-medium text-amber-700 dark:text-amber-300">16 min</span>

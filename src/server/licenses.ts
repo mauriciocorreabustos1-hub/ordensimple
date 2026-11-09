@@ -107,24 +107,35 @@ export async function redeemLicense(input: {
     .slice(0, PLANS.PRO.maxBusinesses)
     .map((b) => b.id)
 
-  // Cobro mensual: se cancela antes de gastar el código.
+  // Se aparta el código por un minuto: si dos personas lo canjean a la vez, a la segunda no se le cancela nada.
+  const leaseAt = new Date()
+  const lease = await db.activationCode.updateMany({
+    where: { id: found.id, status: { in: ["AVAILABLE", "RESERVED"] }, OR: [{ sendingUntil: null }, { sendingUntil: { lt: leaseAt } }] },
+    data: { sendingUntil: new Date(leaseAt.getTime() + 60_000) },
+  })
+  if (lease.count !== 1) throw new LicenseError("Ese código ya se está usando en este momento. Intenta de nuevo en un minuto.")
+  const release = () => db.activationCode.updateMany({ where: { id: found.id, status: { in: ["AVAILABLE", "RESERVED"] } }, data: { sendingUntil: null } })
+
+  // Cobro mensual: se cancela antes de gastar el código. Si falla, al reintentar solo quedan las que faltan.
   const subs = await db.subscription.findMany({ where: { businessId: { in: targets }, status: { in: LIVE_SUBSCRIPTION } }, select: { id: true, externalId: true } })
   for (const s of subs) {
     try {
       await cancel(s.externalId)
     } catch (error) {
       console.error("[licencias] no se pudo cancelar la suscripción", s.externalId, error)
+      await release()
       throw new LicenseError("No pudimos cancelar tu suscripción mensual en Mercado Pago, así que el código no se usó. Intenta de nuevo en unos minutos.")
     }
     await db.subscription.update({ where: { id: s.id }, data: { status: "cancelled", giftPausedUntil: null } })
   }
 
   const now = new Date()
-  await db.$transaction(async (tx) => {
+  await db
+    .$transaction(async (tx) => {
     // Solo si sigue sin usar: si dos personas canjean el mismo código a la vez, solo una lo logra.
     const claimed = await tx.activationCode.updateMany({
       where: { id: found.id, status: { in: ["AVAILABLE", "RESERVED"] } },
-      data: { status: "USED", redeemedAt: now, redeemedByUserId: input.userId, redeemedByEmail: input.email, businessId: current.id },
+      data: { status: "USED", redeemedAt: now, redeemedByUserId: input.userId, redeemedByEmail: input.email, businessId: current.id, sendingUntil: null },
     })
     if (claimed.count !== 1) throw new LicenseError("Ese código ya fue usado.")
     await tx.business.updateMany({ where: { id: { in: targets } }, data: { plan: "PRO", planExpiresAt: null, licenseCodeId: found.id } })
@@ -135,7 +146,11 @@ export async function redeemLicense(input: {
       mlOrderId: found.mlOrderId,
       detail: `${input.email} lo canjeó en ${current.name}${targets.length > 1 ? ` y ${targets.length - 1} ${targets.length === 2 ? "sucursal más" : "sucursales más"}` : ""}${subs.length ? " (se canceló su suscripción mensual)" : ""}`,
     })
-  })
+    })
+    .catch(async (error) => {
+      await release()
+      throw error
+    })
   return { businesses: targets.length, cancelledSubscriptions: subs.length }
 }
 

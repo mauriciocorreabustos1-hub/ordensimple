@@ -67,13 +67,13 @@ export default function RestaurantsPage() {
   const price = PLANS.PRO.monthlyPrice
   return (
     <>
-      <section className="border-b bg-accent/30">
-        <Container className="grid items-center gap-12 pt-14 pb-14 md:pt-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-6">
-            <h1 className="font-display text-[2.4rem] leading-[1.04] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[1.02]">
+      <section className="ruled-page">
+        <Container className="grid items-center gap-12 pt-[calc(var(--line)*2)] pb-[calc(var(--line)*2)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-6 pl-5 sm:pl-8">
+            <h1 className="font-display text-[2.5rem] leading-[48px] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[72px]">
               Comandas y cocina para tu restaurante
             </h1>
-            <p className="max-w-xl text-lg text-pretty text-muted-foreground">
+            <p className="max-w-xl text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">
               El garzón anota desde el celular, la cocina ve el pedido en su pantalla y al cobrar queda todo anotado. Para restaurantes,
               cafés, sangucherías y carros de comida.
             </p>
@@ -81,7 +81,7 @@ export default function RestaurantsPage() {
               <Button size="lg" className="h-12 px-6 text-base" asChild>
                 <SignupLink inApp="/dashboard/comandas" loggedInLabel="Ir a mis comandas">Crear mi cuenta gratis</SignupLink>
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
+              <Button size="lg" variant="outline" className="h-12 bg-card px-6 text-base" asChild>
                 <Link href="/precios">Ver el plan Pro</Link>
               </Button>
             </div>

@@ -16,16 +16,16 @@ const VIDEOS = [
 /** Invitación a seguir la cuenta: videos cortos con trucos para el negocio. */
 export function SocialSection() {
   return (
-    <section className="overflow-hidden border-t bg-deep text-deep-foreground">
+    <section className="overflow-hidden border-t">
       <Container className="grid items-center gap-10 py-16 md:py-20 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-14">
         <div className="space-y-5">
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">
             Trucos de 15 segundos para tu negocio
           </h2>
-          <p className="max-w-md text-lg text-pretty text-deep-foreground/75">
+          <p className="max-w-md text-lg text-pretty text-muted-foreground">
             Cada semana subimos videos cortos: cómo cobrar el fiado, cuadrar la caja, a cuánto vender y más. Síguenos para no perderte ninguno.
           </p>
-          <SocialButtons className="max-w-sm text-foreground" />
+          <SocialButtons className="max-w-sm" />
         </div>
         <div className="flex justify-center gap-3 sm:gap-5 lg:justify-end">
           {VIDEOS.map((v, i) => (
@@ -36,7 +36,7 @@ export function SocialSection() {
               rel="noopener noreferrer"
               aria-label={`Ver en TikTok: ${v.title}`}
               className={cn(
-                "group relative aspect-[9/16] w-[31%] max-w-[190px] overflow-hidden rounded-2xl border-4 border-black/40 shadow-2xl transition-transform hover:-translate-y-1",
+                "group relative aspect-[9/16] w-[31%] max-w-[190px] overflow-hidden rounded-2xl border-4 border-foreground/15 shadow-xl transition-transform hover:-translate-y-1",
                 i === 1 ? "sm:-translate-y-4 sm:hover:-translate-y-5" : "sm:translate-y-3 sm:hover:translate-y-2",
               )}
             >

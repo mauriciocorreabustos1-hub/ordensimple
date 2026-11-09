@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { AppModal } from "@/components/app/app-modal"
 import { Field } from "@/components/app/field"
 import {
+  checkMlSalesNow,
   disconnectMercadoLibre,
   dismissMlOrderReview,
   generateActivationCodes,
@@ -47,7 +48,7 @@ export type LicenseAdminData = {
   waiting: { id: string; pendingUnits: number; buyerNick: string | null }[]
   unsent: LicenseCodeRow[]
   logs: { id: string; kind: string; detail: string; at: string }[]
-  ml: { configured: boolean; items: string[]; account: { name: string; connectedBy: string | null; updatedLabel: string } | null; notifyUrl: string }
+  ml: { configured: boolean; items: string[]; account: { name: string; connectedBy: string | null; updatedLabel: string } | null; notifyUrl: string; failure: string | null }
   flash: string | null
 }
 
@@ -69,6 +70,7 @@ const LOG_LABEL: Record<string, string> = {
   revisar: "Revisar",
   sin_codigos: "Sin códigos",
   conexion: "Conexión",
+  conexion_error: "Conexión fallida",
   error: "Error",
 }
 
@@ -472,6 +474,7 @@ export function LicenseManager({ data }: { data: LicenseAdminData }) {
             ) : (
               <p className="font-medium text-destructive">✗ Sin conectar: las ventas no se entregan solas.</p>
             )}
+            {ml.failure ? <p className="rounded-lg bg-destructive/10 p-2 text-xs text-destructive">La última consulta falló: {ml.failure}</p> : null}
             <p className="text-xs text-muted-foreground">
               Publicaciones del Pro permanente:{" "}
               {ml.items.length ? <span className="font-mono text-foreground">{ml.items.join(", ")}</span> : <span className="text-destructive">falta MERCADOLIBRE_ITEM_IDS</span>}
@@ -483,6 +486,12 @@ export function LicenseManager({ data }: { data: LicenseAdminData }) {
                     <PlugZap />
                     {ml.account ? "Volver a conectar" : "Conectar Mercado Libre"}
                   </a>
+                </Button>
+              ) : null}
+              {ml.account ? (
+                <Button type="button" variant="outline" size="sm" disabled={pending} onClick={() => run(() => checkMlSalesNow())}>
+                  {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                  Buscar ventas pendientes
                 </Button>
               ) : null}
               {ml.account ? (
@@ -564,7 +573,7 @@ export function LicenseManager({ data }: { data: LicenseAdminData }) {
             {data.logs.map((l) => (
               <li key={l.id} className="grid gap-1 px-3 py-2 sm:grid-cols-[9rem_7rem_minmax(0,1fr)] sm:gap-3">
                 <span className="tabular text-xs text-muted-foreground">{l.at}</span>
-                <span className={cn("text-xs font-semibold", l.kind === "envio_fallido" || l.kind === "error" || l.kind === "revisar" || l.kind === "sin_codigos" ? "text-destructive" : "text-muted-foreground")}>
+                <span className={cn("text-xs font-semibold", l.kind === "envio_fallido" || l.kind === "error" || l.kind === "conexion_error" || l.kind === "revisar" || l.kind === "sin_codigos" ? "text-destructive" : "text-muted-foreground")}>
                   {LOG_LABEL[l.kind] ?? l.kind}
                 </span>
                 <span className="min-w-0 break-words">{l.detail}</span>

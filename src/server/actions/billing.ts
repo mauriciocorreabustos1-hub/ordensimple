@@ -33,6 +33,7 @@ export async function startSubscription(input: z.input<typeof subscribeSchema>):
   try {
     if (!BILLING_ENABLED || !mercadoPagoConfigured()) return { ok: false, message: "Las suscripciones todavía no están disponibles." }
     if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño del negocio puede contratar un plan." }
+    if (ctx.business.licenseCodeId && ctx.business.plan === "PRO") return { ok: false, message: "Tu cuenta ya tiene el Plan Pro permanente: no necesitas una suscripción." }
     if (ctx.business.currency !== "CLP") return { ok: false, message: "Por ahora las suscripciones son solo en pesos chilenos." }
     const plan = parsed.data.plan
     const price = PLANS[plan].monthlyPrice
@@ -109,6 +110,7 @@ export async function startCardSubscription(input: z.input<typeof cardSchema>): 
   try {
     if (!BILLING_ENABLED || !mercadoPagoConfigured()) return { ok: false, message: "Las suscripciones todavía no están disponibles." }
     if (ctx.role !== "OWNER") return { ok: false, message: "Solo el dueño del negocio puede contratar un plan." }
+    if (ctx.business.licenseCodeId && ctx.business.plan === "PRO") return { ok: false, message: "Tu cuenta ya tiene el Plan Pro permanente: no necesitas una suscripción." }
     if (ctx.business.currency !== "CLP") return { ok: false, message: "Por ahora las suscripciones son solo en pesos chilenos." }
     const price = PLANS[plan].monthlyPrice
     if (!price) return { ok: false, message: "Este plan aún no se puede contratar." }

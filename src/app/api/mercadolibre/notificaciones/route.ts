@@ -2,8 +2,9 @@ import { after } from "next/server"
 import { db } from "@/lib/db"
 import { recordError } from "@/server/error-log"
 import { logLicense } from "@/server/licenses"
-import { mercadoLibre } from "@/server/mercadolibre"
+import { MlApiError, mercadoLibre } from "@/server/mercadolibre"
 import { processMlOrder } from "@/server/ml-sales"
+import { allowAttempt } from "@/server/rate-limit"
 
 // Avisos de Mercado Libre (tema orders_v2). Se configura en Mercado Libre Developers con la URL
 // https://www.ordensimple.cl/api/mercadolibre/notificaciones
@@ -24,11 +25,15 @@ export async function POST(request: Request) {
     try {
       const account = await db.mercadoLibreAccount.findUnique({ where: { id: "principal" }, select: { sellerId: true } })
       if (!account || String(body.user_id ?? "") !== account.sellerId) return
-      await logLicense(db, { kind: "notificacion", mlOrderId: orderId, detail: `Aviso de Mercado Libre por la venta ${orderId}${body.attempts && body.attempts > 1 ? ` (intento ${body.attempts})` : ""}` })
+      // Tope por si alguien envía avisos falsos; si se pasa, la revisión diaria recupera las ventas reales.
+      if (!(await allowAttempt("ml-avisos", 1_000, 60 * 60_000))) return
       const r = await processMlOrder(orderId, mercadoLibre)
       if (r.result === "ignorada") return
-      if (r.result !== "procesada") await logLicense(db, { kind: "notificacion", mlOrderId: orderId, detail: `Venta ${orderId}: ${r.reason}` })
+      // Solo se registra lo que Mercado Libre confirmó que es una venta de esta publicación.
+      await logLicense(db, { kind: "notificacion", mlOrderId: orderId, detail: `Aviso de Mercado Libre por la venta ${orderId}${body.attempts && body.attempts > 1 ? ` (intento ${body.attempts})` : ""}${r.result !== "procesada" ? `: ${r.reason}` : ""}` })
     } catch (error) {
+      // Una venta que no existe o no es de esta cuenta: era un aviso falso.
+      if (error instanceof MlApiError && (error.status === 403 || error.status === 404)) return
       const message = error instanceof Error ? error.message : String(error)
       await logLicense(db, { kind: "error", mlOrderId: orderId, detail: `No se pudo procesar la venta ${orderId}: ${message}` }).catch(() => {})
       await recordError({ source: "servidor", message: `Mercado Libre, venta ${orderId}: ${message}`, path: "/api/mercadolibre/notificaciones", stack: error instanceof Error ? error.stack : undefined })

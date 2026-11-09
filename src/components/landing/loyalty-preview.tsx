@@ -10,7 +10,7 @@ export function LoyaltyPreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* La tarjeta del cliente */}
-      <div className="relative z-10 w-[92%] -rotate-1 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-emerald-800 p-5 text-primary-foreground shadow-xl sm:w-[84%]">
+      <div className="relative z-10 w-[92%] overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-emerald-800 p-5 text-primary-foreground shadow-xl sm:w-[84%]">
         <div className="absolute -top-14 -right-14 size-40 rounded-full bg-white/10" />
         <div className="relative flex items-center gap-3">
           <span className="flex size-11 items-center justify-center rounded-xl bg-white text-lg">☕</span>
@@ -39,7 +39,7 @@ export function LoyaltyPreview({ className }: { className?: string }) {
       </div>
 
       {/* El aviso al vender */}
-      <div className="relative z-20 -mt-4 ml-auto w-[76%] rotate-2 rounded-2xl border bg-card p-3 shadow-2xl sm:w-[60%]">
+      <div className="relative z-20 -mt-4 ml-auto w-[76%] rounded-2xl border bg-card p-3 shadow-2xl sm:w-[60%]">
         <p className="text-sm font-medium">✅ Venta de $3.500 guardada</p>
         <p className="text-xs text-primary">+1 sello para Camila (7 de 10)</p>
       </div>

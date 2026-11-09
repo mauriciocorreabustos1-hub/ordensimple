@@ -1,6 +1,7 @@
 import "server-only"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { ownerEmails } from "@/server/admin-emails"
 import { availableCount, logLicense } from "@/server/licenses"
 import { licenseItemIds, type MlClient } from "@/server/mercadolibre"
 import { allowAttempt } from "@/server/rate-limit"
@@ -12,12 +13,11 @@ import { allowAttempt } from "@/server/rate-limit"
 /** Texto del mensaje (máximo 350 caracteres, sin enlaces ni datos de contacto, solo caracteres latinos). */
 export function licenseMessage(codes: string | string[]) {
   const list = typeof codes === "string" ? [codes] : codes
+  // Se canjea en la web o en el computador: en las apps de celular la opción no existe (reglas de Apple y Google).
   if (list.length === 1) {
-    return `¡Gracias por tu compra! Tu código de activación del Plan Pro permanente de OrdenSimple es: ${list[0]}
-Para activarlo: crea tu cuenta gratis en OrdenSimple, entra a Planes, Canjear código e ingresa el código. Si tienes dudas, escríbenos por este chat.`
+    return `¡Gracias por tu compra! Tu código de activación del Plan Pro permanente de OrdenSimple es: ${list[0]}\nPara activarlo: crea tu cuenta gratis en la página web de OrdenSimple, entra a Tu plan, Canjear código e ingresa el código. Si tienes dudas, escríbenos por este chat.`
   }
-  return `¡Gracias por tu compra! Tus códigos de activación del Plan Pro permanente de OrdenSimple son: ${list.join(", ")}
-Para activarlos: crea tu cuenta gratis en OrdenSimple, entra a Planes, Canjear código e ingresa un código por cuenta. Si tienes dudas, escríbenos por este chat.`
+  return `¡Gracias por tu compra! Tus códigos del Plan Pro permanente de OrdenSimple son: ${list.join(", ")}\nPara activarlos: crea tu cuenta gratis en la página web de OrdenSimple, entra a Tu plan, Canjear código e ingresa un código por cuenta. Dudas: escríbenos por este chat.`
 }
 
 /** Pocos códigos disponibles: aviso por correo cuando quedan menos de 5. */
@@ -30,15 +30,8 @@ type Options = {
   alert?: (subject: string, text: string) => Promise<void>
 }
 
-function adminEmails() {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean)
-}
-
 async function alertAdmins(subject: string, text: string) {
-  const to = adminEmails()
+  const to = ownerEmails()
   for (const email of to) await sendEmail({ to: email, subject, text }).catch((e) => console.error("[mercadolibre] correo de aviso", e))
 }
 
@@ -62,7 +55,8 @@ export async function checkCodeStock(alert: Options["alert"] = alertAdmins) {
 
 /** Qué revisar de una venta: cancelada, pago devuelto o reclamo. */
 function reviewReasonOf(order: { status: string; payments?: { status: string }[]; mediations?: unknown[] }) {
-  if (order.status === "cancelled" || order.status === "invalid") return "La venta se canceló"
+  if (order.status === "cancelled" || order.status === "invalid" || order.status === "pending_cancel") return "La venta se canceló"
+  if (order.status === "partially_refunded") return "El pago se devolvió en parte"
   if (order.payments?.some((p) => p.status === "refunded" || p.status === "charged_back")) return "El pago se devolvió"
   if (order.mediations?.length) return "El comprador abrió un reclamo"
   return null
@@ -217,21 +211,57 @@ function messageGroups(codes: string[]) {
   return groups
 }
 
+const DAY = 86_400_000
+
 /**
- * Tarea diaria: entrega las ventas que quedaron sin código (no quedaban) y reintenta los mensajes que fallaron.
- * Además mantiene viva la sesión de Mercado Libre (la renovación dura 6 meses si se usa).
+ * Busca en Mercado Libre las ventas recientes de la publicación y procesa las que no estén al día: las que nunca
+ * avisó, las que cambiaron (canceladas o devueltas) y las que esperan códigos. Se puede repetir sin riesgo.
  */
-export async function retryMlDeliveries(client: MlClient, opts: Options = {}) {
-  const account = await db.mercadoLibreAccount.findUnique({ where: { id: "principal" }, select: { id: true } })
-  if (!account) return { skipped: "Mercado Libre no está conectado" }
-  await client.sellerId()
-  let processed = 0
-  let sent = 0
-  const waiting = await db.mlOrder.findMany({ where: { pendingUnits: { gt: 0 }, reviewReason: null }, select: { id: true }, take: 50 })
-  for (const o of waiting) {
-    await processMlOrder(o.id, client, opts)
-    processed++
+export async function reconcileMlSales(client: MlClient, opts: Options & { days?: number } = {}) {
+  const items = licenseItemIds()
+  if (!items.length) return { revisadas: 0, recuperadas: 0, errores: 0 }
+  const found = await client.searchOrders(new Date(Date.now() - (opts.days ?? 15) * DAY).toISOString())
+  const relevant = found.filter((o) => o.order_items?.some((i) => items.includes(String(i.item.id).toUpperCase())))
+  const ids = relevant.map((o) => String(o.id))
+  const known = new Map((await db.mlOrder.findMany({ where: { id: { in: ids } } })).map((o) => [o.id, o]))
+  const assigned = new Map(
+    (await db.activationCode.groupBy({ by: ["mlOrderId"], where: { mlOrderId: { in: ids }, mlUnit: { not: null } }, _count: true })).map((c) => [c.mlOrderId, c._count]),
+  )
+  let recuperadas = 0
+  let errores = 0
+  for (const order of relevant) {
+    const id = String(order.id)
+    const k = known.get(id)
+    const review = reviewReasonOf(order)
+    const upToDate =
+      k &&
+      k.status === order.status &&
+      k.pendingUnits === 0 &&
+      (!review || k.reviewReason === review) &&
+      (k.paid || order.status !== "paid") &&
+      (!k.paid || (assigned.get(id) ?? 0) >= k.units)
+    if (upToDate) continue
+    try {
+      const r = await processMlOrder(id, client, opts)
+      if (!k && r.result === "procesada") {
+        recuperadas++
+        await logLicense(db, { kind: "notificacion", mlOrderId: id, detail: `Venta ${id} encontrada en la revisión: Mercado Libre no había avisado` })
+      }
+    } catch (error) {
+      errores++
+      await logLicense(db, { kind: "error", mlOrderId: id, detail: `No se pudo procesar la venta ${id} en la revisión: ${error instanceof Error ? error.message : String(error)}` })
+    }
   }
+  return { revisadas: relevant.length, recuperadas, errores }
+}
+
+/** Reintenta lo pendiente: ventas sin avisar o sin código y mensajes que no salieron. */
+async function deliverPending(client: MlClient, opts: Options & { days?: number }) {
+  const revision = await reconcileMlSales(client, opts)
+  // Las que esperan códigos, aunque ya no aparezcan en la búsqueda por fecha.
+  const waiting = await db.mlOrder.findMany({ where: { pendingUnits: { gt: 0 }, reviewReason: null }, select: { id: true }, take: 50 })
+  for (const o of waiting) await processMlOrder(o.id, client, opts)
+  let sent = 0
   const unsent = await db.activationCode.findMany({
     where: { status: "RESERVED", sentAt: null, mlOrderId: { not: null }, sendAttempts: { lt: 30 } },
     select: { mlOrderId: true },
@@ -239,5 +269,33 @@ export async function retryMlDeliveries(client: MlClient, opts: Options = {}) {
     take: 50,
   })
   for (const c of unsent) sent += (await sendOrderCodes(c.mlOrderId!, client, opts)).sent
-  return { processed, sent }
+  return { ...revision, sent }
+}
+
+/**
+ * Tarea diaria (y botón del panel): revisa las ventas recientes y reintenta los mensajes. Además mantiene viva la
+ * sesión de Mercado Libre. Si no se puede consultar, queda registrado y avisa por correo (máximo uno cada 12 horas).
+ */
+export async function retryMlDeliveries(
+  client: MlClient,
+  opts: Options & { days?: number } = {},
+): Promise<{ skipped: string } | { error: string } | { revisadas: number; recuperadas: number; errores: number; sent: number }> {
+  const account = await db.mercadoLibreAccount.findUnique({ where: { id: "principal" }, select: { id: true } })
+  if (!account) return { skipped: "Mercado Libre no está conectado" }
+  // Los avisos son lo único que crece solo: se guardan 90 días. Canjes, envíos y anulaciones se conservan.
+  await db.licenseLog.deleteMany({ where: { kind: "notificacion", createdAt: { lt: new Date(Date.now() - 90 * DAY) } } })
+  try {
+    await client.sellerId()
+    return await deliverPending(client, opts)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    await logLicense(db, { kind: "conexion_error", detail: `No se pudo consultar Mercado Libre: ${message}` })
+    if (await allowAttempt("licencias:aviso-conexion", 1, 12 * 3_600_000)) {
+      await (opts.alert ?? alertAdmins)(
+        "Mercado Libre no responde a OrdenSimple",
+        `No se pudo consultar tu cuenta de Mercado Libre: ${message}. Mientras tanto, las ventas pueden quedar sin su código. Revisa el panel de administración, sección Códigos, y usa “Volver a conectar” si la conexión se cortó.`,
+      )
+    }
+    return { error: message }
+  }
 }

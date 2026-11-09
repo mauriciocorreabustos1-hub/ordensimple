@@ -1,14 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { DashboardPreview } from "@/components/landing/dashboard-preview"
+import { ClosingReceipt } from "@/components/landing/closing-receipt"
 import { PriceTag } from "@/components/landing/price-tag"
 import { FAQ_GROUPS } from "@/components/landing/content"
 import { Reveal } from "@/components/landing/reveal"
-import { HeroNotebook } from "@/components/landing/hero-notebook"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
-import { SocialSection } from "@/components/landing/social-section"
 import { BusinessFinder } from "@/components/landing/business-finder"
 import { Testimonials } from "@/components/landing/testimonials"
 import { TrustSection } from "@/components/landing/trust-section"
@@ -20,9 +18,7 @@ import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import {
   BeforeAfter,
-  BenefitsSection,
   Container,
-  CtaSection,
   FaqList,
   MoreLink,
   PricingCards,
@@ -37,7 +33,7 @@ export const metadata: Metadata = { alternates: { canonical: "/" } }
 // Se regenera cada 10 minutos para que el contador de personas esté al día.
 export const revalidate = 600
 
-const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 5)
+const TOP_FAQ = FAQ_GROUPS.flatMap((g) => g.items).slice(0, 4)
 
 export default async function LandingPage() {
   const users = await getUserCount()
@@ -46,35 +42,42 @@ export default async function LandingPage() {
       <StructuredData />
       <LegacyHashRedirect />
 
-      <section className="overflow-hidden border-b bg-accent/30">
-        <Container className="grid gap-x-14 gap-y-10 pt-12 pb-14 md:pt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:pb-20">
-          <h1 className="font-display text-[clamp(2.75rem,6.4vw,5.25rem)] leading-[0.98] font-semibold tracking-tight text-balance lg:col-span-2">
-            <span className="block">Deja el cuaderno.</span> <span className="block">Ten todo tu negocio bajo control.</span>
-          </h1>
-          <div className="space-y-6">
-            <p className="max-w-lg text-lg text-pretty text-muted-foreground">
-              Administra tus ventas, inventario, clientes, pedidos y caja desde un solo lugar, en el celular o el computador. Menos trabajo administrativo, más tiempo para hacer crecer tu negocio.
+      <section className="ruled-page">
+        <Container className="grid items-center gap-y-[var(--line)] pt-[calc(var(--line)*3)] pb-[calc(var(--line)*3)] lg:grid-cols-12 lg:gap-x-8">
+          <div className="space-y-[var(--line)] pl-5 sm:pl-8 lg:col-span-8">
+            <h1 className="font-display text-[2.75rem] leading-[48px] font-semibold tracking-tight sm:text-[3.6rem] sm:leading-[72px] lg:text-[clamp(4rem,5.9vw,5.1rem)] lg:leading-[84px]">
+              <span className="block">Deja el cuaderno.</span> <span className="block">Ten todo tu negocio bajo control.</span>
+            </h1>
+            <p className="max-w-xl text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">
+              Administra tus ventas, inventario, clientes, pedidos y caja desde un solo lugar, en el celular o el computador.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" asChild>
                 <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
+              <Button size="lg" variant="outline" className="h-12 bg-card px-6 text-base" asChild>
                 <Link href="/demo">Ver demostración</Link>
               </Button>
             </div>
-            {/* Cuántos somos, como número de atención: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
-            {users ? <TurnTicket users={users} /> : null}
-            <p className="text-sm text-muted-foreground">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
-            <HeroNotebook />
+            <p className="text-sm leading-[var(--line)] text-foreground/70">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
           </div>
-          <div className="relative pt-11 lg:-mr-24 xl:-mr-32">
-            <PriceTag className="absolute top-0 left-3 z-10 -rotate-3 sm:left-6">
+
+          <div className="relative pt-10 lg:col-span-4 lg:col-start-9">
+            <div className="print-in">
+              <ClosingReceipt />
+            </div>
+            <PriceTag className="absolute top-0 left-1 z-10 sm:left-6 lg:left-0" hole="bg-card">
               <span className="font-display text-3xl font-semibold">$0</span>
               <span className="text-sm font-medium">para empezar</span>
             </PriceTag>
-            <DashboardPreview />
           </div>
+
+          {/* Cuántos somos, como número de atención: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
+          {users ? (
+            <div className="pl-5 sm:pl-8 lg:col-span-8">
+              <TurnTicket users={users} />
+            </div>
+          ) : null}
         </Container>
       </section>
 
@@ -83,15 +86,15 @@ export default async function LandingPage() {
       <DayScrollStory />
 
       {/* OrdenSimple para PC: todo el negocio en el computador, con impresión directa. */}
-      <Section muted className="overflow-hidden">
+      <Section className="overflow-hidden border-t-0 bg-accent/50">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-6">
-            <p className="text-sm font-medium text-primary">Nuevo en Microsoft Store</p>
-            <SectionTitle
-              align="left"
-              title="Tu caja en el computador: vende, imprime y atiende al siguiente"
-              description="Instala OrdenSimple gratis desde Microsoft Store. Registras la venta y el comprobante sale impreso en el mismo segundo, en tu impresora de siempre. Sin pasos de más y sin clientes esperando en la fila."
-            />
+            <div className="max-w-2xl space-y-3">
+              <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">Tu caja en el computador: vende, imprime y atiende al siguiente</h2>
+              <p className="text-lg text-pretty text-muted-foreground">
+                Instala OrdenSimple gratis desde Microsoft Store. Registras la venta y el comprobante sale impreso en el mismo segundo, en tu impresora de siempre.
+              </p>
+            </div>
             <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
               {[
                 { title: "Imprime al instante", text: "Un clic y el comprobante, la cuenta o la comanda sale impresa, sin ventanas ni configuraciones." },
@@ -132,32 +135,13 @@ export default async function LandingPage() {
         <MoreLink href="/funciones">Ver todas las funciones</MoreLink>
       </Section>
 
-      <BenefitsSection />
-
       <BusinessFinder />
 
       <Testimonials />
 
       <TrustSection users={users} />
 
-      <Section>
-        <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
-          <div className="space-y-4">
-            <SectionTitle align="left" title="Empieza en 2 minutos" description="Sin instalar nada y sin tarjeta. Esto es todo lo que tienes que hacer." />
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <Button size="lg" className="h-11" asChild>
-                <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
-              </Button>
-              <Button size="lg" variant="outline" className="h-11" asChild>
-                <Link href="/como-funciona">Conoce cómo funciona</Link>
-              </Button>
-            </div>
-          </div>
-          <ReceiptSteps />
-        </div>
-      </Section>
-
-      <Section>
+      <Section muted>
         <SectionTitle animated eyebrow="Precios" title="Empieza gratis. Crece cuando lo necesites." />
         <div className="mt-12">
           <PricingCards compact />
@@ -165,7 +149,7 @@ export default async function LandingPage() {
         <MoreLink href="/precios">Comparar planes</MoreLink>
       </Section>
 
-      <Section muted>
+      <Section>
         <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] md:gap-12">
           <div className="space-y-4">
             <SectionTitle
@@ -181,9 +165,29 @@ export default async function LandingPage() {
         </div>
       </Section>
 
-      <SocialSection />
-
-      <CtaSection users={users} title="Hoy mismo puedes cerrar el cuaderno." />
+      {/* El cierre: la invitación y lo poco que hay que hacer para empezar. */}
+      <section className="bg-deep text-deep-foreground">
+        <Container className="grid items-center gap-12 py-16 md:grid-cols-2 md:gap-16 md:py-24">
+          <div className="space-y-4">
+            <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">Hoy mismo puedes cerrar el cuaderno.</h2>
+            <p className="text-lg text-pretty text-deep-foreground/75">Empieza en 2 minutos, sin instalar nada y sin tarjeta.</p>
+            {users && users > 1 ? (
+              <p className="text-deep-foreground/90">
+                Únete a las <span className="tabular font-semibold">{users.toLocaleString("es-CL")}</span> personas que ya lo usan.
+              </p>
+            ) : null}
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+              <Button size="lg" className="h-12 bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90" asChild>
+                <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 border-deep-foreground/40 bg-transparent px-6 text-base text-deep-foreground hover:bg-deep-foreground/10 hover:text-deep-foreground dark:bg-transparent" asChild>
+                <Link href="/como-funciona">Conoce cómo funciona</Link>
+              </Button>
+            </div>
+          </div>
+          <ReceiptSteps />
+        </Container>
+      </section>
     </>
   )
 }

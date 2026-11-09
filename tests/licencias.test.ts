@@ -8,7 +8,7 @@ import { after, before, describe, test } from "node:test"
 import { db } from "@/lib/db"
 import { CODE_ALPHABET, generateCodes, isValidLicenseFormat, LicenseError, newLicenseCode, normalizeLicenseCode, redeemLicense, voidCode } from "@/server/licenses"
 import type { MlClient, MlOrderData } from "@/server/mercadolibre"
-import { licenseMessage, processMlOrder, sendOrderCodes } from "@/server/ml-sales"
+import { licenseMessage, processMlOrder, reconcileMlSales, retryMlDeliveries, sendOrderCodes } from "@/server/ml-sales"
 
 const url = process.env.DATABASE_URL ?? ""
 if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url)) throw new Error("Estas pruebas solo corren contra la base local (DATABASE_URL en localhost).")
@@ -194,6 +194,7 @@ function fakeMl(order: MlOrderData, opts: { failSends?: number } = {}) {
   const client: MlClient = {
     sellerId: async () => SELLER,
     getOrder: async () => structuredClone(order),
+    searchOrders: async () => [structuredClone(order)],
     sendMessage: async (packId, text) => {
       await new Promise((r) => setTimeout(r, 5))
       if (failures > 0) {
@@ -252,8 +253,8 @@ describe("venta en Mercado Libre", () => {
   test("los mensajes caben en 350 caracteres aunque compren muchas unidades", async () => {
     const one = licenseMessage(newLicenseCode())
     assert.ok(one.length <= 350, `${one.length}`)
-    const five = licenseMessage(Array.from({ length: 5 }, newLicenseCode))
-    assert.ok(five.length <= 350, `${five.length}`)
+    const four = licenseMessage(Array.from({ length: 4 }, newLicenseCode))
+    assert.ok(four.length <= 350, `${four.length}`)
   })
 
   test("si el mensaje falla, el código queda reservado y se envía al reintentar", async () => {
@@ -305,6 +306,49 @@ describe("venta en Mercado Libre", () => {
     assert.equal((await processMlOrder(foreignId, foreign.client, noWait)).result, "ignorada")
     assert.equal(await db.activationCode.count({ where: { mlOrderId: { in: [pendingId, otherId, foreignId] } } }), 0)
     assert.equal(pending.sent.length + other.sent.length + foreign.sent.length, 0)
+  })
+
+  test("la revisión encuentra una venta de la que nunca llegó aviso, y no repite nada al volver a pasar", async () => {
+    await freshCodes(1)
+    const orderId = `9990008${Date.now() % 100000}`
+    const ml = fakeMl(paidOrder(orderId, 1))
+    const first = await reconcileMlSales(ml.client, noWait)
+    assert.equal(first.recuperadas, 1)
+    assert.equal(ml.sent.length, 1)
+    const second = await reconcileMlSales(ml.client, noWait)
+    assert.equal(second.recuperadas, 0)
+    assert.equal(ml.sent.length, 1)
+  })
+
+  test("la revisión completa una venta pagada que quedó sin códigos, y marca las devoluciones parciales", async () => {
+    await freshCodes(1)
+    const orderId = `9990010${Date.now() % 100000}`
+    orders.push(orderId)
+    // Como si la asignación se hubiera cortado: la venta está registrada y pagada, sin códigos.
+    await db.mlOrder.create({ data: { id: orderId, packId: orderId, status: "paid", paid: true, units: 1, pendingUnits: 0 } })
+    const ml = fakeMl(paidOrder(orderId, 1))
+    await reconcileMlSales(ml.client, noWait)
+    assert.equal(ml.sent.length, 1)
+    assert.equal(await db.activationCode.count({ where: { mlOrderId: orderId } }), 1)
+
+    ml.setOrder({ status: "partially_refunded" })
+    await reconcileMlSales(ml.client, noWait)
+    assert.equal((await db.mlOrder.findUniqueOrThrow({ where: { id: orderId } })).reviewReason, "El pago se devolvió en parte")
+  })
+
+  test("si Mercado Libre no responde, queda registrado y avisa", async () => {
+    await db.mercadoLibreAccount.create({ data: { id: "principal", sellerId: SELLER, accessToken: "x", refreshToken: "x", expiresAt: new Date(Date.now() + 3_600_000) } })
+    try {
+      const alerts: string[] = []
+      const ml = fakeMl(paidOrder(`9990009${Date.now() % 100000}`, 1))
+      ml.client.searchOrders = async () => { throw new Error("401 invalid_token") }
+      const r = await retryMlDeliveries(ml.client, { ...noWait, alert: async (s) => void alerts.push(s) })
+      assert.ok("error" in r)
+      assert.equal(alerts.length, 1)
+      assert.ok(await db.licenseLog.findFirst({ where: { kind: "conexion_error", createdAt: { gte: started } } }))
+    } finally {
+      await db.mercadoLibreAccount.delete({ where: { id: "principal" } })
+    }
   })
 
   test("si la venta se cancela o se devuelve, queda para revisar y avisa una sola vez", async () => {

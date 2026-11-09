@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { COMING_SOON, FEATURE_GROUPS, TOOLS } from "@/components/landing/content"
-import { CtaSection, FeatureGrid, MoreLink, PageHero, Section, SectionTitle } from "@/components/landing/sections"
+import { BenefitsSection, CtaSection, FeatureGrid, MoreLink, PageHero, Section, SectionTitle } from "@/components/landing/sections"
 
 export const metadata: Metadata = {
   title: "Funciones",
@@ -56,7 +56,9 @@ export default function FeaturesPage() {
         ) : null}
       </Section>
 
-      <Section>
+      <BenefitsSection />
+
+      <Section className="border-t-0">
         <SectionTitle
           eyebrow="Herramientas"
           title="Calculadoras que responden tus preguntas de todos los días"

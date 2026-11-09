@@ -15,7 +15,7 @@ export function StorePreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* La tienda en el celular del cliente */}
-      <div className="relative z-10 w-[80%] -rotate-1 overflow-hidden rounded-[1.75rem] border-4 border-foreground/90 bg-muted/40 shadow-xl sm:w-[66%]">
+      <div className="relative z-10 w-[80%] overflow-hidden rounded-[1.75rem] border-4 border-foreground/90 bg-muted/40 shadow-xl sm:w-[66%]">
         <div className="flex items-center gap-2.5 border-b bg-card px-3.5 py-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">AD</span>
           <div className="min-w-0 leading-tight">
@@ -59,7 +59,7 @@ export function StorePreview({ className }: { className?: string }) {
       </div>
 
       {/* El pedido que le llega al negocio por WhatsApp */}
-      <div className="relative z-20 -mt-16 ml-auto w-[74%] rotate-1 rounded-2xl border bg-[#e7f8ee] p-3 text-[12.5px] leading-snug text-[#10291c] shadow-2xl sm:-mt-24 sm:w-[56%] dark:bg-[#123824] dark:text-[#dff5e8]">
+      <div className="relative z-20 -mt-16 ml-auto w-[74%] rounded-2xl border bg-[#e7f8ee] p-3 text-[12.5px] leading-snug text-[#10291c] shadow-2xl sm:-mt-24 sm:w-[56%] dark:bg-[#123824] dark:text-[#dff5e8]">
         <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#128c4a] dark:text-[#4ade80]">
           <WhatsAppIcon className="size-3.5" />
           Nuevo mensaje

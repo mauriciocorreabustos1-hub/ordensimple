@@ -218,15 +218,40 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 
-/* Hoja de cuaderno: margen y líneas cada 28px (el alto de una línea de texto), corridas 14px para que
-   el texto quede apoyado en la línea. */
-.notebook {
-  --margin-line: color-mix(in oklch, var(--danger) 60%, transparent);
-  --rule-line: color-mix(in oklch, var(--border) 75%, transparent);
+/* La portada y los encabezados: papel con renglones muy suaves y una línea de margen alineada con el contenido, en el
+   verde de la marca. Los títulos usan múltiplos de --line para quedar apoyados en los renglones. */
+.ruled-page {
+  --line: 24px;
+  --margin-x: calc(max((100% - 72rem) / 2, 0px) + 0.5rem);
+  --rule-line: color-mix(in oklch, var(--primary) 9%, transparent);
+  --margin-line: color-mix(in oklch, var(--primary) 38%, transparent);
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card);
   background-image:
-    linear-gradient(to right, transparent 2.25rem, var(--margin-line) 2.25rem, var(--margin-line) calc(2.25rem + 2px), transparent calc(2.25rem + 2px)),
-    repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule-line) 27px 28px);
-  background-position: 0 0, 0 14px;
+    linear-gradient(to right, transparent var(--margin-x), var(--margin-line) var(--margin-x), var(--margin-line) calc(var(--margin-x) + 2px), transparent calc(var(--margin-x) + 2px)),
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--line) - 1px), var(--rule-line) calc(var(--line) - 1px) var(--line));
+  background-position: 0 0, 0 -6px;
+}
+@media (min-width: 64rem) {
+  .ruled-page {
+    --line: 28px;
+  }
+}
+
+/* Al entrar a la portada, la boleta sale impresa. Una sola vez y solo si la persona no pidió reducir el movimiento. */
+@keyframes imprimir {
+  from {
+    clip-path: inset(-80px -80px 100% -80px);
+  }
+  to {
+    clip-path: inset(-80px -80px -80px -80px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .print-in {
+    animation: imprimir 0.9s steps(16, end) 0.4s backwards;
+  }
 }
 
 /* Franja de rubros del inicio: se mueve media cinta, porque la lista va repetida. */

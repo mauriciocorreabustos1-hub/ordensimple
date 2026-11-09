@@ -36,13 +36,13 @@ export async function GET(request: Request) {
   const now = process.env.NODE_ENV !== "production" && ahora ? new Date(ahora) : new Date()
   // Primero reactivar los cobros pausados como regalo: es lo que más importa que no se salte.
   const cobrosReanudados = await step("reanudar cobros", () => resumeGiftPauses(now))
-  // Códigos del Pro permanente: ventas que quedaron sin código y mensajes que no se pudieron enviar.
-  const codigosMercadoLibre = await step("códigos de Mercado Libre", () => retryMlDeliveries(mercadoLibre))
-  const [bienvenida, avisos, verificacion, invitaciones] = await Promise.all([
+  const [bienvenida, avisos, verificacion, invitaciones, codigosMercadoLibre] = await Promise.all([
     step("bienvenida", () => sendOnboardingNudges(now)),
     step("avisos", () => sendBusinessAlerts(now)),
     step("confirmar correo", () => sendVerifyReminders(now)),
     step("invitaciones", () => processReferralRewards(now)),
+    // Ventas que quedaron sin código y mensajes que no salieron. En paralelo: si Mercado Libre tarda, no frena los correos.
+    step("códigos de Mercado Libre", () => retryMlDeliveries(mercadoLibre, { retryDelaysMs: [0, 2_000] })),
   ])
   return Response.json({ bienvenida, avisos, verificacion, invitaciones, cobrosReanudados, codigosMercadoLibre })
 }

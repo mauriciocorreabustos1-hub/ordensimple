@@ -139,6 +139,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       configured: lic.ml.configured,
       items: lic.ml.items,
       account: lic.ml.account ? { name: lic.ml.account.nickname ?? `vendedor ${lic.ml.account.sellerId}`, connectedBy: lic.ml.account.connectedBy, updatedLabel: ago(lic.ml.account.updatedAt, new Date()) } : null,
+      failure: lic.ml.lastFailure?.detail ?? null,
       notifyUrl: `${getAppUrl().startsWith("https://") ? getAppUrl() : "https://www.ordensimple.cl"}/api/mercadolibre/notificaciones`,
     },
     flash: mlFlash,
@@ -192,6 +193,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       tone: "warning",
       text: `${formatNumber(unverified.pending)} ${unverified.pending === 1 ? "cuenta" : "cuentas"} sin el enlace para confirmar su correo`,
     })
+  if (lic.ml.lastFailure) alerts.push({ href: "#licencias", tone: "danger", text: "Mercado Libre no responde: las ventas pueden quedar sin código" })
   const licenseAttention = lic.review.length + lic.waiting.length + lic.unsent.length
   if (licenseAttention)
     alerts.push({ href: "#licencias", tone: "danger", text: `${formatNumber(licenseAttention)} ${licenseAttention === 1 ? "venta o código" : "ventas o códigos"} del Pro permanente para revisar` })

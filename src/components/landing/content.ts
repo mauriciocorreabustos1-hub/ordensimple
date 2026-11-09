@@ -630,6 +630,10 @@ export const FAQ_GROUPS: FaqGroup[] = [
         q: "¿Es realmente gratis?",
         a: "Sí. El plan Gratis es para siempre y sin tarjeta: anotas tus ventas y gastos, hasta 20 productos, y ves cuánto te quedó cada día y cada mes. También ves tus reportes de este mes y el anterior, y usas las calculadoras de precio, metas y simulador, y llevas tu inventario con alertas de stock, tus recetas con su costo y precio, y tus clientes y el fiado con cobro por WhatsApp. También puedes cobrar con tarjeta enviando enlaces de pago con Mercado Pago (sin costo fijo: 1 % por pago, además de la comisión de Mercado Pago). El cierre de caja, los proveedores y el equipo son del plan Pro.",
       },
+      {
+        q: "Compré el Plan Pro permanente en Mercado Libre, ¿cómo lo activo?",
+        a: "Crea tu cuenta gratis desde la página web o el computador, entra a Tu plan, busca Canjear código e ingresa el código que te llegó por el chat de la compra. Tu cuenta queda en Pro sin vencimiento ni cobros mensuales. En las apps de celular esta opción no aparece.",
+      },
       BILLING_ENABLED
         ? {
             q: "¿Cuánto cuestan Pro y Empresa?",

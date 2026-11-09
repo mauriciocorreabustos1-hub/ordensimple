@@ -14,7 +14,7 @@ export function TrackingPreview({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* La página del cliente */}
-      <div className="relative z-10 mx-auto w-[78%] -rotate-1 rounded-[2rem] border-4 border-foreground/80 bg-card p-4 shadow-xl sm:w-[64%]">
+      <div className="relative z-10 mx-auto w-[78%] rounded-[2rem] border-4 border-foreground/80 bg-card p-4 shadow-xl sm:w-[64%]">
         <p className="text-xs text-muted-foreground">Pedido n.º 7NCKY · Sushi Kento</p>
         <p className="mt-1 flex items-center gap-2 font-display text-xl font-semibold">
           <PackageCheck className="size-6 text-primary" />
@@ -43,7 +43,7 @@ export function TrackingPreview({ className }: { className?: string }) {
       </div>
 
       {/* El aviso por WhatsApp */}
-      <div className="relative z-20 -mt-10 ml-auto w-[70%] rotate-2 rounded-2xl rounded-tr-sm bg-[#d9fdd3] p-3 text-sm text-[#111] shadow-2xl sm:w-[54%]">
+      <div className="relative z-20 -mt-10 ml-auto w-[70%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] p-3 text-sm text-[#111] shadow-2xl sm:w-[54%]">
         <p>
           🛵 Tu pedido <strong>n.º 7NCKY</strong> va en camino.
         </p>

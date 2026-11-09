@@ -10,7 +10,7 @@ export function TurnTicket({ users }: { users: number }) {
   return (
     <SignupLink
       inApp="/dashboard"
-      className="group inline-block w-fit -rotate-2 drop-shadow-lg transition-transform duration-200 hover:rotate-0 focus-visible:rotate-0 motion-reduce:transition-none"
+      className="group inline-block w-fit drop-shadow-lg"
       aria-label={`Ya somos ${users} personas usando OrdenSimple. Crea tu cuenta: serías el número ${next}.`}
     >
       {/* Muescas a los costados, como los tickets de la máquina de turnos (ver .ticket-notch). */}

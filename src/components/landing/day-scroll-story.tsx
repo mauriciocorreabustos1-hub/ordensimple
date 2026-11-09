@@ -225,7 +225,7 @@ export function DayScrollStory() {
           </div>
 
           {/* El escenario: en pantallas chicas el celular se corta abajo, para que el texto siempre se lea. */}
-          <div aria-hidden className="relative min-h-0 rounded-t-[2rem] bg-accent/70 max-lg:-mx-1 motion-reduce:h-[38rem] lg:h-[min(41rem,calc(100svh-7rem))] lg:rounded-[2rem]">
+          <div aria-hidden className="relative min-h-0 rounded-t-2xl bg-deep max-lg:-mx-1 motion-reduce:h-[38rem] lg:h-[min(41rem,calc(100svh-7rem))] lg:rounded-2xl">
             <div className="absolute inset-x-0 top-6 bottom-0 mx-auto w-[min(18.5rem,82%)] lg:bottom-6">
               <div className="flex h-full flex-col overflow-hidden rounded-t-[2rem] border-[6px] border-b-0 border-foreground/90 bg-background shadow-[0_30px_60px_-20px_rgba(0,70,50,0.45)] lg:rounded-b-[2rem] lg:border-b-[6px]">
                 <div className="flex items-center justify-between border-b bg-card px-3 py-2">

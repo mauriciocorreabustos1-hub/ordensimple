@@ -8,12 +8,12 @@ export function PromosPreview({ className }: { className?: string }) {
     <div className={cn("relative mx-auto w-full max-w-[34rem]", className)} aria-hidden>
       {/* Etiquetas de las promociones activas, sobre la esquina de la venta */}
       <div className="relative z-20 -mb-5 flex w-[92%] justify-end gap-2 pr-1 sm:w-[84%]">
-        <span className="-rotate-3 rounded-xl bg-rose-600 px-3 py-1.5 text-base font-bold text-white shadow-lg">2×1</span>
-        <span className="rotate-2 rounded-xl bg-primary px-3 py-1.5 text-base font-bold text-primary-foreground shadow-lg">−20 %</span>
+        <span className="rounded-xl bg-deep px-3 py-1.5 text-base font-bold text-white shadow-lg">2×1</span>
+        <span className="rounded-xl bg-primary px-3 py-1.5 text-base font-bold text-primary-foreground shadow-lg">−20 %</span>
       </div>
 
       {/* La venta con la promoción aplicada sola */}
-      <div className="relative z-10 w-[92%] rotate-1 rounded-2xl border bg-card p-4 shadow-xl sm:w-[84%] sm:p-5">
+      <div className="relative z-10 w-[92%] rounded-2xl border bg-card p-4 shadow-xl sm:w-[84%] sm:p-5">
         <p className="font-display text-lg font-semibold">Venta</p>
         <ul className="mt-3 space-y-2 text-sm">
           <li className="flex justify-between">
@@ -42,7 +42,7 @@ export function PromosPreview({ className }: { className?: string }) {
       </div>
 
       {/* Cupón de la tienda online */}
-      <div className="relative z-20 -mt-4 ml-auto w-[64%] -rotate-2 rounded-2xl border-2 border-dashed border-primary/50 bg-card p-3 shadow-2xl sm:w-[50%]">
+      <div className="relative z-20 -mt-4 ml-auto w-[64%] rounded-2xl border-2 border-dashed border-primary/50 bg-card p-3 shadow-2xl sm:w-[50%]">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
           <Ticket className="size-3.5" />
           Cupón de tu tienda online

@@ -1,7 +1,8 @@
 import "server-only"
-import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 import { getAppUrl } from "@/lib/app-url"
 import { db } from "@/lib/db"
+import { openSecret, sealSecret } from "@/server/secret-box"
 
 // Mercado Libre: la cuenta de vendedor de OrdenSimple, para entregar solo los códigos del Pro permanente.
 // Variables de entorno (Vercel):
@@ -30,26 +31,8 @@ export const mlRedirectUri = () => `${getAppUrl()}/api/mercadolibre/oauth`
 
 // ─── Cifrado de la sesión ───────────────────────────────────────────────────
 
-function key(purpose: string) {
-  const secret = process.env.BETTER_AUTH_SECRET
-  if (!secret) throw new Error("Falta BETTER_AUTH_SECRET")
-  return Buffer.from(hkdfSync("sha256", secret, "ordensimple", purpose, 32))
-}
-
-function seal(plain: string, purpose = "mercadolibre-tokens") {
-  const iv = randomBytes(12)
-  const cipher = createCipheriv("aes-256-gcm", key(purpose), iv)
-  const data = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()])
-  return `v1.${iv.toString("base64url")}.${cipher.getAuthTag().toString("base64url")}.${data.toString("base64url")}`
-}
-
-function open(stored: string, purpose = "mercadolibre-tokens") {
-  const [v, iv, tag, data] = stored.split(".")
-  if (v !== "v1" || !iv || !tag || !data) throw new Error("Dato cifrado inválido")
-  const decipher = createDecipheriv("aes-256-gcm", key(purpose), Buffer.from(iv, "base64url"))
-  decipher.setAuthTag(Buffer.from(tag, "base64url"))
-  return Buffer.concat([decipher.update(Buffer.from(data, "base64url")), decipher.final()]).toString("utf8")
-}
+const seal = (plain: string, purpose = "mercadolibre-tokens") => sealSecret(plain, purpose)
+const open = (stored: string, purpose = "mercadolibre-tokens") => openSecret(stored, purpose)
 
 // ─── Conexión (OAuth con PKCE) ──────────────────────────────────────────────
 
@@ -189,6 +172,8 @@ export type MlOrderData = {
 export type MlClient = {
   sellerId: () => Promise<string>
   getOrder: (orderId: string) => Promise<MlOrderData>
+  /** Ventas modificadas desde esa fecha (para encontrar las que no avisó Mercado Libre). */
+  searchOrders: (sinceIso: string) => Promise<MlOrderData[]>
   sendMessage: (packId: string, text: string) => Promise<void>
 }
 
@@ -203,6 +188,18 @@ function checkSent(m: SentMessage | null) {
 export const mercadoLibre: MlClient = {
   sellerId: async () => (await accessToken()).sellerId,
   getOrder: (orderId) => api<MlOrderData>(`/orders/${encodeURIComponent(orderId)}`),
+  searchOrders: async (sinceIso) => {
+    const { sellerId } = await accessToken()
+    const found: MlOrderData[] = []
+    // De a 50 y con tope: basta para las ventas recientes de una cuenta.
+    for (let offset = 0; offset < 1_000; offset += 50) {
+      const params = new URLSearchParams({ seller: sellerId, "order.date_last_updated.from": sinceIso, sort: "date_desc", limit: "50", offset: String(offset) })
+      const page = await api<{ results?: MlOrderData[]; paging?: { total?: number } }>(`/orders/search?${params}`)
+      found.push(...(page.results ?? []))
+      if (!page.results?.length || offset + 50 >= (page.paging?.total ?? 0)) break
+    }
+    return found
+  },
   /**
    * El vendedor no puede escribir primero libremente: se usa el motivo "Otro" (texto libre, 1 mensaje). Si la venta
    * no admite motivos (caso exceptuado o conversación ya abierta), se envía por la mensajería normal.

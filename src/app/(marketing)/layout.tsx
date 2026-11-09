@@ -42,27 +42,27 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <SmoothScroll />
       <SiteHeader />
       <main className="flex-1">{children}</main>
-      <footer className="border-t bg-muted/30">
-        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-4 gap-y-8 px-4 py-12 text-center sm:px-6 md:grid-cols-[2fr_1fr_1fr_1fr] md:text-left">
+      <footer className="bg-deep text-deep-foreground">
+        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-4 gap-y-8 border-t border-deep-foreground/15 px-4 py-12 text-center sm:px-6 md:grid-cols-[2fr_1fr_1fr_1fr] md:text-left">
           <div className="col-span-3 flex flex-col items-center space-y-3 md:col-span-1 md:items-start">
-            <Logo />
-            <p className="max-w-xs text-sm text-muted-foreground">
+            <Logo onDark />
+            <p className="max-w-xs text-sm text-deep-foreground/75">
               Administra tu negocio sin complicarte. Hecho en Chile para emprendedores y pymes.
             </p>
-            <div className="w-full max-w-xs space-y-2 pt-1 text-left">
-              <p className="text-center text-sm font-medium md:text-left">Síguenos</p>
+            <div className="w-full max-w-xs space-y-2 pt-1 text-left text-foreground">
+              <p className="text-center text-sm font-medium text-deep-foreground md:text-left">Síguenos</p>
               <SocialButtons />
-              <p className="pt-2 text-center text-sm font-medium md:text-left">¿Dudas? Escríbenos</p>
+              <p className="pt-2 text-center text-sm font-medium text-deep-foreground md:text-left">¿Dudas? Escríbenos</p>
               <WhatsAppButton />
             </div>
           </div>
           {FOOTER.map((col) => (
             <div key={col.title} className="space-y-2 text-sm">
               <p className="font-medium">{col.title}</p>
-              <ul className="space-y-1.5 text-muted-foreground">
+              <ul className="space-y-1.5 text-deep-foreground/75">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="hover:text-foreground">
+                    <Link href={l.href} className="hover:text-deep-foreground hover:underline">
                       {l.label}
                     </Link>
                   </li>
@@ -71,8 +71,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             </div>
           ))}
         </div>
-        <div className="border-t">
-          <p className="mx-auto max-w-6xl px-4 py-5 text-center text-xs text-muted-foreground sm:px-6 md:text-left">
+        <div className="border-t border-deep-foreground/15">
+          <p className="mx-auto max-w-6xl px-4 py-5 text-center text-xs text-deep-foreground/70 sm:px-6 md:text-left">
             © {new Date().getFullYear()} OrdenSimple. Todos los derechos reservados.
           </p>
         </div>

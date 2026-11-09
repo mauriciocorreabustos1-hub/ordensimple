@@ -21,12 +21,13 @@ export async function POST(request: Request) {
   const appOk = body && String(body.application_id ?? "") === (process.env.MERCADOLIBRE_CLIENT_ID ?? "-")
   if (!body || body.topic !== "orders_v2" || !orderId || !appOk) return new Response("ok")
 
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "sin-ip"
   after(async () => {
     try {
       const account = await db.mercadoLibreAccount.findUnique({ where: { id: "principal" }, select: { sellerId: true } })
       if (!account || String(body.user_id ?? "") !== account.sellerId) return
-      // Tope por si alguien envía avisos falsos; si se pasa, la revisión diaria recupera las ventas reales.
-      if (!(await allowAttempt("ml-avisos", 1_000, 60 * 60_000))) return
+      // Tope por conexión: quien envíe avisos falsos solo llena el suyo, no el de Mercado Libre.
+      if (!(await allowAttempt(`ml-avisos:${ip}`, 1_000, 60 * 60_000))) return
       const r = await processMlOrder(orderId, mercadoLibre)
       if (r.result === "ignorada") return
       // Solo se registra lo que Mercado Libre confirmó que es una venta de esta publicación.

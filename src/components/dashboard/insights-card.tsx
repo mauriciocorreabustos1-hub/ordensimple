@@ -27,7 +27,7 @@ export function InsightsCard({ insights, limit }: { insights: Insight[]; limit?:
             Aún no hay suficientes datos para darte consejos. Sigue registrando ventas y gastos.
           </p>
         ) : (
-          <ul className="grid gap-2">
+          <ul className="divide-y">
             {shown.map((tip) => {
               const t = TONE[tip.tone]
               const content = (
@@ -42,11 +42,11 @@ export function InsightsCard({ insights, limit }: { insights: Insight[]; limit?:
               return (
                 <li key={tip.id}>
                   {tip.href ? (
-                    <Link href={tip.href} className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted/50">
+                    <Link href={tip.href} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/50">
                       {content}
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-3 rounded-xl border p-3">{content}</div>
+                    <div className="flex items-center gap-3 py-3">{content}</div>
                   )}
                 </li>
               )

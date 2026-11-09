@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { CalendarDays, ShoppingBag, TrendingUp, Zap } from "lucide-react"
+import { CalendarDays, ShoppingBag, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ConfirmDelete } from "@/components/app/confirm-delete"
@@ -183,9 +183,9 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                     <span className="font-semibold">{dayLabel(g.key, g.date)}</span>
                     <span className="tabular text-muted-foreground">{daySummary(g, i)}</span>
                   </h3>
-                  <ul className="grid grid-cols-1 gap-2">
+                  <ul className="divide-y rounded-xl border bg-card">
                     {g.rows.map((s) => (
-                      <li key={s.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                      <li key={s.id} className="flex items-center gap-3 p-3">
                         <div className="min-w-0 flex-1 space-y-0.5">
                           <p className="flex items-baseline gap-2 text-sm">
                             <span className="min-w-0 flex-1 truncate font-medium" title={title(s)}>
@@ -225,7 +225,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
             </div>
 
             {/* Computador: tabla */}
-            <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+            <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-xs md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -247,17 +247,11 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                       <TableCell />
                     </TableRow>,
                     ...g.rows.map((s) => (
-                      <TableRow key={s.id}>
+                      <TableRow key={s.id} className="group">
                         <TableCell className="tabular pl-4 text-muted-foreground">{formatTime(s.date, ctx.timezone)}</TableCell>
                         <TableCell className="max-w-72">
                           <span className="flex items-center gap-2">
                             <span className="truncate">{title(s)}</span>
-                            {s.isQuick ? (
-                              <Badge variant="secondary" className="gap-1">
-                                <Zap className="size-3" />
-                                Rápida
-                              </Badge>
-                            ) : null}
                             {s.tip > 0 ? (
                               <Badge variant="outline" className="shrink-0" title="La propina va aparte del total de la venta">
                                 Propina {money(s.tip)}
@@ -289,10 +283,11 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
                             <span className="block text-xs text-muted-foreground">por {s.createdBy.name.split(" ")[0]}</span>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{s.customer?.name ?? "—"}</TableCell>
-                        <TableCell className={cn("tabular text-right font-medium", s.total < 0 && "text-danger")}>{money(s.total)}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.customer?.name ?? ""}</TableCell>
+                        <TableCell className={cn("tabular text-right font-semibold", s.total < 0 && "text-danger")}>{money(s.total)}</TableCell>
                         <TableCell className="pr-2">
-                            <div className="flex items-center justify-end gap-1">
+                            {/* Con mouse, las acciones se aclaran hasta pasar por la fila; en pantallas táctiles siempre se ven. */}
+                            <div className="flex items-center justify-end gap-1 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-fine:opacity-40">
                               <SaleReceiptButton saleId={s.id} />
                               {returnButton(s)}
                               {s.returnOfId ? null : editButton(s)}

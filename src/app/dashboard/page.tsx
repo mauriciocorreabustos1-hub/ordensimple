@@ -22,6 +22,7 @@ import { AccountLine } from "@/components/app/account-line"
 import { Explainer } from "@/components/app/explainer"
 import { HealthCard } from "@/components/dashboard/health-card"
 import { QuickButtons } from "@/components/dashboard/quick-buttons"
+import { TodayPanel } from "@/components/dashboard/today-panel"
 import { SalesExpensesChart } from "@/components/dashboard/sales-expenses-chart"
 import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { businessHealth, percentChange } from "@/lib/calculations"
@@ -229,7 +230,7 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             {greeting(now, ctx.timezone)}, {ctx.user.name.split(" ")[0]}
           </p>
-          <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          <h1 className="font-display flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-[2rem] md:leading-tight">
             {ctx.business.logoUpdatedAt ? (
               <BusinessLogo
                 businessId={ctx.businessId}
@@ -282,7 +283,7 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted-foreground">
           {greeting(now, ctx.timezone)}, {ctx.user.name.split(" ")[0]}
         </p>
-        <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl">
+        <h1 className="font-display flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-[2rem] md:leading-tight">
           {ctx.business.logoUpdatedAt ? (
             <BusinessLogo
               businessId={ctx.businessId}
@@ -295,12 +296,22 @@ export default async function DashboardPage() {
         </h1>
       </div>
 
+      <TodayPanel
+        resultLabel={data.today.profit >= 0 ? "Hoy te quedó (aprox.)" : "Hoy perdiste (aprox.)"}
+        result={money(Math.abs(data.today.profit))}
+        sales={money(data.today.sales)}
+        salesNote={data.today.salesCount === 1 ? "1 venta" : `${data.today.salesCount} ventas`}
+        expenses={money(data.today.expenses)}
+        empty={!data.today.sales && !data.today.expenses ? "Todavía no anotas ventas ni gastos. Cuando registres una venta, aquí verás cuánto te va quedando." : null}
+      />
+
+      <HealthCard health={health} />
+
       {firstSteps ? (
         <FirstSteps businessId={ctx.businessId} steps={firstSteps} fresh={Boolean(counts && now.getTime() - counts.createdAt.getTime() < 30 * 86_400_000)} />
       ) : null}
       <InstallCard />
 
-      <HealthCard health={health} />
 
       {PLANS_ENFORCED && ctx.business.plan === "FREE" && ctx.role === "OWNER" && PLANS.PRO.monthlyPrice ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-sm">
@@ -338,32 +349,13 @@ export default async function DashboardPage() {
         </Link>
       ) : null}
 
-      <QuickButtons />
         {agendaCard}
         {webOrdersBanner}
         {goalCard}
 
-      <section aria-labelledby="hoy" className="space-y-3" data-tour="cuenta-hoy">
-        <h2 id="hoy" className="text-base font-semibold">
-          Hoy
-        </h2>
-        <AccountLine
-          size={easy ? "lg" : "default"}
-          positive={data.today.profit >= 0}
-          empty={!data.today.sales && !data.today.expenses ? "Hoy todavía no anotas ventas ni gastos. Cuando registres una venta, aquí verás cuánto te va quedando." : null}
-          sales={{
-            label: "Vendiste",
-            value: money(data.today.sales),
-            sub: data.today.salesCount === 1 ? "1 venta" : `${data.today.salesCount} ventas`,
-          }}
-          expenses={{ label: "Gastaste", value: money(data.today.expenses) }}
-          result={{ label: data.today.profit >= 0 ? "Te quedó (aprox.)" : "Perdiste (aprox.)", value: money(Math.abs(data.today.profit)) }}
-        />
-      </section>
-
       {debts || thisMonth ? (
         <section aria-labelledby="cuentas" className="space-y-3">
-          <h2 id="cuentas" className="text-base font-semibold">
+          <h2 id="cuentas" className="font-display text-lg font-semibold tracking-tight">
             Tus cuentas de {currentMonth}
           </h2>
           <div
@@ -425,7 +417,7 @@ export default async function DashboardPage() {
       ) : (
         <>
           <section aria-labelledby="mes" className="space-y-3">
-            <h2 id="mes" className="text-base font-semibold">
+            <h2 id="mes" className="font-display text-lg font-semibold tracking-tight">
               Este mes ({currentMonth})
             </h2>
             <AccountLine
@@ -491,10 +483,10 @@ export default async function DashboardPage() {
           </div>
 
           <section aria-labelledby="comparar" className="space-y-3">
-            <h2 id="comparar" className="text-base font-semibold">
+            <h2 id="comparar" className="font-display text-lg font-semibold tracking-tight">
               Comparaciones
             </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={`grid gap-3 sm:grid-cols-2 ${STAT_GROUP}`}>
               <ComparisonCard
                 title="Esta semana vs. semana pasada"
                 note="Desde el lunes hasta hoy, comparado con los mismos días de la semana pasada."
@@ -539,7 +531,7 @@ function LinkCard({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 md:p-5"
+      className="group flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-accent md:p-5"
     >
       <div className="min-w-0 flex-1 space-y-1">
         <p className="flex items-center gap-2 text-sm text-muted-foreground">

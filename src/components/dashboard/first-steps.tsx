@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { CheckCircle2, Circle, Rocket, X } from "lucide-react"
+import { CheckCircle2, Circle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useQuickActions } from "@/components/app/quick-actions"
 import { cn } from "@/lib/utils"
@@ -57,11 +57,10 @@ export function FirstSteps({ businessId, steps, fresh = false }: { businessId: s
   }
 
   return (
-    <section aria-labelledby="primeros-pasos" className="space-y-3 rounded-2xl border border-primary/30 bg-accent/30 p-4">
+    <section aria-labelledby="primeros-pasos" className="space-y-3 rounded-2xl border bg-card p-4 shadow-xs md:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2 id="primeros-pasos" className="flex items-center gap-2 font-semibold">
-            <Rocket className="size-4 text-primary" />
+          <h2 id="primeros-pasos" className="font-display text-lg font-semibold tracking-tight">
             Primeros pasos
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -88,18 +87,18 @@ export function FirstSteps({ businessId, steps, fresh = false }: { businessId: s
       <div className="h-1.5 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(done / steps.length) * 100}%` }} />
       </div>
-      <ol className="grid gap-2 sm:grid-cols-2">
+      <ol className="grid gap-x-4 sm:grid-cols-2">
         {steps.map((s) => {
           const body = (
             <>
               {s.done ? <CheckCircle2 className="size-5 shrink-0 text-success" /> : <Circle className="size-5 shrink-0 text-muted-foreground" />}
               <span className="min-w-0">
-                <span className={cn("block text-sm font-medium", s.done && "text-muted-foreground line-through")}>{s.label}</span>
+                <span className={cn("block text-sm font-medium", s.done && "text-muted-foreground")}>{s.label}</span>
                 <span className={cn("block text-xs", s.done ? "text-success" : "text-muted-foreground")}>{s.done ? "¡Listo!" : s.hint}</span>
               </span>
             </>
           )
-          const cls = cn("flex h-full w-full items-center gap-3 rounded-xl border bg-card p-3 text-left", s.done ? "bg-card/60" : "transition-colors hover:border-primary/50")
+          const cls = cn("-mx-2 flex h-full w-[calc(100%+1rem)] items-center gap-3 rounded-lg px-2 py-2.5 text-left", !s.done && "transition-colors hover:bg-muted")
           return (
             // Si el último queda solo en su fila, ocupa todo el ancho.
             <li key={s.key} className="sm:[&:last-child:nth-child(odd)]:col-span-2">

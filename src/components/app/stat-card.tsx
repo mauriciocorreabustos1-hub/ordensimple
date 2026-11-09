@@ -4,11 +4,10 @@ import { formatPercent } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 
 /**
- * Para la grilla que agrupa varias StatCard: en el celular quedan juntas en una sola tarjeta con líneas entre
- * cada cifra (como las listas del iPhone), en vez de una caja por número. En pantallas grandes, cajas separadas.
+ * Para la grilla que agrupa varias cifras: quedan juntas en un solo bloque con líneas finas entre ellas, en vez de una
+ * caja por número. Las líneas son el fondo que asoma entre celdas (1 px), así sirven para cualquier número de columnas.
  */
-export const STAT_GROUP =
-  "max-sm:gap-0 max-sm:overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:bg-card max-sm:shadow-xs max-sm:*:rounded-none max-sm:*:border-x-0 max-sm:*:border-b-0 max-sm:*:shadow-none max-sm:*:first:border-t-0"
+export const STAT_GROUP = "gap-px! overflow-hidden rounded-2xl border bg-border shadow-xs *:rounded-none *:border-0 *:shadow-none"
 
 type Tone = "default" | "sales" | "expenses" | "profit" | "loss"
 

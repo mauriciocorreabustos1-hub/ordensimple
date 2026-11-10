@@ -5,6 +5,7 @@ import { Logo } from "@/components/app/logo"
 import { SmoothScroll } from "@/components/landing/smooth-scroll"
 import { SiteHeader } from "@/components/landing/site-header"
 import { CookieNotice } from "@/components/landing/cookie-notice"
+import { FreightGoAd } from "@/components/landing/freightgo-ad"
 
 const FOOTER = [
   {
@@ -43,6 +44,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <footer className="bg-deep text-deep-foreground">
+        <FreightGoAd />
         <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-4 gap-y-8 border-t border-deep-foreground/15 px-4 py-12 text-center sm:px-6 md:grid-cols-[2fr_1fr_1fr_1fr] md:text-left">
           <div className="col-span-3 flex flex-col items-center space-y-3 md:col-span-1 md:items-start">
             <Logo onDark />

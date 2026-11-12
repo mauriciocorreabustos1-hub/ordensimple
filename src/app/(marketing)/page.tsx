@@ -11,7 +11,7 @@ import { BusinessFinder } from "@/components/landing/business-finder"
 import { Testimonials } from "@/components/landing/testimonials"
 import { TrustSection } from "@/components/landing/trust-section"
 import { BusinessTypesLoop } from "@/components/landing/business-types-loop"
-import { DayScrollStory } from "@/components/landing/day-scroll-story"
+import { ProductShowcase } from "@/components/landing/product-showcase"
 import { DesktopPreview } from "@/components/landing/desktop-preview"
 import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { getUserCount } from "@/components/landing/user-count"
@@ -59,7 +59,20 @@ export default async function LandingPage() {
                 <Link href="/demo">Ver demostración</Link>
               </Button>
             </div>
-            <p className="text-sm leading-[var(--line)] text-foreground/70">El plan básico es gratis para siempre y no te pedimos tarjeta.</p>
+            {/* Tres cifras que responden lo primero que se pregunta. Solo cosas que la app cumple. */}
+            <dl className="grid max-w-xl grid-cols-3 divide-x border-y border-foreground/15">
+              {[
+                { label: "Cerrar la caja", value: "1 min", note: "sin contar a mano" },
+                { label: "Para empezar", value: "2 min", note: "sin instalar nada" },
+                { label: "Tarjeta", value: "Ninguna", note: "el plan Gratis no vence" },
+              ].map((s) => (
+                <div key={s.label} className="flex flex-col py-3 pr-3 pl-3 first:pl-0">
+                  <dt className="text-xs text-muted-foreground">{s.label}</dt>
+                  <dd className="tabular font-display text-2xl font-semibold tracking-tight sm:text-[1.7rem]">{s.value}</dd>
+                  <dd className="text-xs text-pretty text-muted-foreground">{s.note}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="relative pt-10 lg:col-span-4 lg:col-start-9">
@@ -83,7 +96,12 @@ export default async function LandingPage() {
 
       <BusinessTypesLoop />
 
-      <DayScrollStory />
+      <Section className="border-t-0">
+        <SectionTitle align="left" title="Así se ve OrdenSimple por dentro" description="Pantallas reales de la app, con los datos de ejemplo de un almacén." />
+        <div className="mt-10">
+          <ProductShowcase />
+        </div>
+      </Section>
 
       {/* OrdenSimple para PC: todo el negocio en el computador, con impresión directa. */}
       <Section className="overflow-hidden border-t-0 bg-accent/50">

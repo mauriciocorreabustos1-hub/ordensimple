@@ -18,6 +18,14 @@ const FEATURES = [
   { icon: RefreshCw, title: "Segura y siempre al día", text: "Verificada por Microsoft y se actualiza sola desde la tienda. Todo lo nuevo aparece sin reinstalar nada." },
 ]
 
+const REQUIREMENTS = [
+  { label: "Sistema", value: "Windows 10 u 11 de 64 bits" },
+  { label: "Instalación", value: "Desde Microsoft Store o con el instalador directo" },
+  { label: "Cuenta", value: "La misma de OrdenSimple, que puede ser la gratuita" },
+  { label: "Internet", value: "Para entrar a tu cuenta y mantener tus datos al día" },
+  { label: "Precio", value: "Gratis" },
+]
+
 export default function DownloadPage() {
   return (
     <>
@@ -40,6 +48,18 @@ export default function DownloadPage() {
                 <p className="text-sm text-muted-foreground">{f.text}</p>
               </div>
             ))}
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold tracking-tight">Lo que necesita tu computador</h2>
+            <dl className="border-t border-foreground/80">
+              {REQUIREMENTS.map((r) => (
+                <div key={r.label} className="grid gap-1 border-b py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                  <dt className="text-sm font-semibold">{r.label}</dt>
+                  <dd className="text-sm text-pretty text-muted-foreground">{r.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="space-y-3">

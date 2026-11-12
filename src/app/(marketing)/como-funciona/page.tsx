@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react"
 import { DashboardPreview } from "@/components/landing/dashboard-preview"
 import { TRANSLATIONS } from "@/components/landing/content"
 import { CtaSection, PageHero, Section, SectionTitle, StepsGrid } from "@/components/landing/sections"
+import { DayScrollStory } from "@/components/landing/day-scroll-story"
 
 export const metadata: Metadata = {
   title: "Cómo funciona",
@@ -36,6 +37,8 @@ export default function HowItWorksPage() {
         title="Empieza en 2 minutos, sin saber de contabilidad"
         description="OrdenSimple está pensado para usarse detrás del mostrador: rápido, desde el celular y con palabras que todos entienden."
       />
+
+      <DayScrollStory />
 
       <Section muted>
         <SectionTitle title="De cero a ordenado, con cronómetro" description="Esto es lo que toma empezar, minuto a minuto." />

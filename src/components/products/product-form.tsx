@@ -1,5 +1,8 @@
 "use client"
 
+import { SALE_UNIT_INFO, SALE_UNITS, type SaleUnit } from "@/lib/units"
+import { QuantityInput } from "@/components/app/quantity-input"
+import { cn } from "@/lib/utils"
 import * as React from "react"
 import { Loader2, Plus, X } from "lucide-react"
 import { toast } from "sonner"
@@ -23,6 +26,8 @@ export type ProductFormValues = {
   categoryName: string
   cost: number
   price: number
+  /** Por unidad ("u"), por kilo ("kg") o por metro ("m"). */
+  saleUnit: SaleUnit
   stock: number
   minStock: number
   trackStock: boolean
@@ -37,15 +42,12 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   categoryName: "",
   cost: 0,
   price: 0,
+  saleUnit: "u",
   stock: 0,
   minStock: 0,
   trackStock: true,
   active: true,
   expiresAt: "",
-}
-
-function intValue(v: string) {
-  return Math.max(0, Number(v.replace(/\D/g, "")) || 0)
 }
 
 export function ProductForm({
@@ -65,6 +67,10 @@ export function ProductForm({
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
   const [pending, startTransition] = React.useTransition()
   const set = <K extends keyof ProductFormValues>(k: K, value: ProductFormValues[K]) => setV((s) => ({ ...s, [k]: value }))
+  const per = SALE_UNIT_INFO[v.saleUnit].per
+  // Al pasar a "por unidad", el stock vuelve a enteros.
+  const setUnit = (u: SaleUnit) =>
+    setV((s) => ({ ...s, saleUnit: u, ...(u === "u" ? { stock: Math.round(s.stock), minStock: Math.round(s.minStock) } : {}) }))
   const [newCode, setNewCode] = React.useState("")
 
   /** Agrega un código a la lista (escaneado, escrito o desde un lector USB que termina con Enter). */
@@ -177,11 +183,30 @@ export function ProductForm({
           </div>
         </div>
       </Field>
+      <Field label="¿Cómo lo vendes?" hint={v.saleUnit === "u" ? undefined : `El precio es por ${per} y al vender escribes cuánto: ${SALE_UNIT_INFO[v.saleUnit].example} ${SALE_UNIT_INFO[v.saleUnit].short}.`}>
+        <div role="radiogroup" aria-label="Cómo se vende" className="grid grid-cols-3 gap-2">
+          {SALE_UNITS.map((u) => (
+            <button
+              key={u}
+              type="button"
+              role="radio"
+              aria-checked={v.saleUnit === u}
+              onClick={() => setUnit(u)}
+              className={cn(
+                "h-10 rounded-lg border px-2 text-sm font-medium transition-colors hover:border-primary/50",
+                v.saleUnit === u && "border-primary bg-accent text-accent-foreground ring-1 ring-primary",
+              )}
+            >
+              {SALE_UNIT_INFO[u].label}
+            </button>
+          ))}
+        </div>
+      </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="¿Cuánto te cuesta?" hint={rate ? `Lo que pagas al proveedor por unidad, con ${vat!.label}.` : "Lo que pagas al proveedor por unidad."} error={errors.cost}>
+        <Field label="¿Cuánto te cuesta?" hint={rate ? `Lo que pagas al proveedor por ${per}, con ${vat!.label}.` : `Lo que pagas al proveedor por ${per}.`} error={errors.cost}>
           <MoneyInput value={v.cost} onValueChange={(n) => set("cost", n)} currency={currency} aria-label="Costo" />
         </Field>
-        <Field label="¿A cuánto lo vendes?" hint={rate ? `Precio final al cliente, con ${vat!.label} incluido.` : undefined} error={errors.price}>
+        <Field label="¿A cuánto lo vendes?" hint={rate ? `Precio final al cliente por ${per}, con ${vat!.label} incluido.` : v.saleUnit === "u" ? undefined : `Precio por ${per}.`} error={errors.price}>
           <MoneyInput
             value={v.price}
             onValueChange={(n) => {
@@ -221,8 +246,8 @@ export function ProductForm({
 
       {v.price > 0 ? (
         profit > 0 ? (
-          <Explainer title={`Ganas ${money(profit)} por unidad · margen ${formatPercent(margin, 0)}`}>
-            Por cada unidad vendida ganas aproximadamente {money(profit)}
+          <Explainer title={`Ganas ${money(profit)} por ${per} · margen ${formatPercent(margin, 0)}`}>
+            Por cada {per} vendid{v.saleUnit === "u" ? "a" : "o"} ganas aproximadamente {money(profit)}
             {rate ? `, ya sin el ${vat!.label}, que se declara y paga cada mes` : ""}. El margen de {formatPercent(margin, 0)}{" "}
             significa que por cada {money(ref)} vendidos de este producto, unos {money(Math.round(ref * margin))} quedan
             antes de otros gastos.
@@ -237,17 +262,17 @@ export function ProductForm({
       <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
         <div>
           <p className="text-sm font-medium">Controlar stock</p>
-          <p className="text-xs text-muted-foreground">Descontamos unidades cada vez que lo vendes.</p>
+          <p className="text-xs text-muted-foreground">{v.saleUnit === "u" ? "Descontamos unidades cada vez que lo vendes." : `Descontamos los ${per}s que vendes.`}</p>
         </div>
         <Switch checked={v.trackStock} onCheckedChange={(c) => set("trackStock", c)} aria-label="Controlar stock" />
       </div>
       {v.trackStock ? (
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Stock actual" htmlFor="p-stock">
-            <Input id="p-stock" inputMode="numeric" value={v.stock} onChange={(e) => set("stock", intValue(e.target.value))} className="tabular h-10" />
+          <Field label="Stock actual" htmlFor="p-stock" error={errors.stock}>
+            <QuantityInput key={`s-${v.saleUnit}`} id="p-stock" unit={v.saleUnit} value={v.stock} onValueChange={(n) => set("stock", n)} />
           </Field>
           <Field label="Avisarme si quedan menos de" htmlFor="p-min">
-            <Input id="p-min" inputMode="numeric" value={v.minStock} onChange={(e) => set("minStock", intValue(e.target.value))} className="tabular h-10" />
+            <QuantityInput key={`m-${v.saleUnit}`} id="p-min" unit={v.saleUnit} value={v.minStock} onValueChange={(n) => set("minStock", n)} />
           </Field>
           <Field label="Próximo vencimiento" htmlFor="p-exp" optional hint="Te avisamos en Inventario cuando falten 7 días.">
             <Input id="p-exp" type="date" value={v.expiresAt} onChange={(e) => set("expiresAt", e.target.value)} className="h-10" />

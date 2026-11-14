@@ -1,6 +1,7 @@
 // El comprobante de una venta: productos, fecha y hora, sucursal y quién atendió.
 // No es una boleta tributaria (esa la emite el SII con su folio): por eso lo dice al pie.
 
+import { allowsDecimals, quantityText, SALE_UNIT_INFO, saleUnitOf } from "@/lib/units"
 import { formatMoney } from "@/lib/currency"
 import { Ticket } from "@/lib/ticket"
 
@@ -18,7 +19,7 @@ export type SaleReceiptData = {
   attendedBy: string | null
   customerName: string | null
   customerPhone: string | null
-  items: { description: string; quantity: number; unitPrice: number; subtotal: number }[]
+  items: { description: string; quantity: number; unitPrice: number; subtotal: number; /** "u", "kg" o "m". */ unit?: string }[]
   promoDiscount: number
   discount: number
   tip: number
@@ -45,8 +46,9 @@ export function saleReceiptTicket(d: SaleReceiptData) {
   if (d.customerName) t.row("Cliente", d.customerName)
   t.rule()
   for (const i of d.items) {
-    t.row(`${i.quantity} × ${i.description}`, money(i.subtotal))
-    if (i.quantity > 1) t.line(`  (${money(i.unitPrice)} c/u)`)
+    t.row(quantityText(i.quantity, i.unit, i.description), money(i.subtotal))
+    if (allowsDecimals(i.unit)) t.line(`  (${money(i.unitPrice)} el ${SALE_UNIT_INFO[saleUnitOf(i.unit)].per})`)
+    else if (i.quantity > 1) t.line(`  (${money(i.unitPrice)} c/u)`)
   }
   t.rule()
   if (d.promoDiscount > 0 || d.discount > 0) {
@@ -72,7 +74,7 @@ export function saleReceiptText(d: SaleReceiptData) {
     `${d.dateText}, ${d.timeText}`,
     d.attendedBy ? `Atendió: ${d.attendedBy}` : null,
     "",
-    ...d.items.map((i) => `${i.quantity} × ${i.description}: ${money(i.subtotal)}`),
+    ...d.items.map((i) => `${quantityText(i.quantity, i.unit, i.description)}: ${money(i.subtotal)}`),
     "",
     `Total: ${money(d.total)} (${d.paymentLabel})`,
     "",

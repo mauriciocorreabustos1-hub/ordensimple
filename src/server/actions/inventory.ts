@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { formatNumber } from "@/lib/currency"
 import { canUseFeature } from "@/lib/plans"
+import { formatQuantity, roundQuantity, validQuantity } from "@/lib/units"
 import { inventoryMovementSchema, type InventoryMovementInput } from "@/lib/validations"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -16,7 +17,7 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
   if (!parsed.success) return validationError(parsed.error)
   const { productId, type, quantity, reason } = parsed.data
 
-  if (type !== "ADJUSTMENT" && quantity < 1) return { ok: false, message: "Ingresa al menos 1 unidad." }
+  if (type !== "ADJUSTMENT" && quantity <= 0) return { ok: false, message: "Ingresa una cantidad mayor a 0." }
 
   try {
     assertCan(ctx, "inventory:manage")
@@ -29,6 +30,9 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
 
     const product = await db.product.findFirst({ where: { id: productId, businessId: ctx.businessId } })
     if (!product) return { ok: false, message: "Ese producto ya no existe. Recarga la página." }
+    if ((quantity > 0 || type !== "ADJUSTMENT") && !validQuantity(quantity, product.saleUnit)) {
+      return { ok: false, message: product.saleUnit === "u" ? "Este producto se cuenta por unidad: usa una cantidad entera." : "Usa hasta gramos (0,001 kg) o centímetros (0,01 m)." }
+    }
 
     let delta: number
     if (type === "IN") delta = quantity
@@ -36,11 +40,11 @@ export async function createInventoryMovement(input: InventoryMovementInput): Pr
       if (product.stock < quantity) {
         return {
           ok: false,
-          message: `Solo tienes ${formatNumber(Math.max(0, product.stock))} unidades registradas de ${product.name}.`,
+          message: `Solo tienes ${product.saleUnit === "u" ? `${formatNumber(Math.max(0, product.stock))} unidades` : formatQuantity(Math.max(0, product.stock), product.saleUnit)} registradas de ${product.name}.`,
         }
       }
       delta = -quantity
-    } else delta = quantity - product.stock
+    } else delta = roundQuantity(quantity - product.stock, product.saleUnit)
 
     if (delta === 0) return { ok: true, message: "El stock ya coincide con tu conteo" }
 

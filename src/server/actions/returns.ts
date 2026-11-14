@@ -1,5 +1,6 @@
 "use server"
 
+import { lineTotal, roundQuantity, validQuantity } from "@/lib/units"
 import { revalidatePath } from "next/cache"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import { after } from "next/server"
@@ -15,7 +16,7 @@ import { toActionError, validationError, type ActionResult } from "@/server/acti
 /** Los empleados piden devoluciones de ventas de los últimos 30 días; el dueño y los administradores, de cualquier fecha. */
 const EMPLOYEE_DAYS = 30
 
-type ReturnItem = { saleItemId: string; productId: string | null; description: string; quantity: number; unitPrice: number }
+type ReturnItem = { saleItemId: string; productId: string | null; description: string; quantity: number; unitPrice: number; unit?: string }
 
 function revalidate() {
   revalidatePath("/dashboard", "layout")
@@ -53,7 +54,7 @@ export type ReturnableSale = {
   ratio: number
   tooOld: boolean
   hasPending: boolean
-  items: { saleItemId: string; description: string; unitPrice: number; sold: number; available: number }[]
+  items: { saleItemId: string; description: string; unitPrice: number; sold: number; available: number; unit: string }[]
 }
 
 /** Lo que se puede devolver de una venta (para la ventana de devolución). */
@@ -82,7 +83,8 @@ export async function getReturnable(saleId: string): Promise<ActionResult<Return
           description: i.description,
           unitPrice: i.unitPrice,
           sold: i.quantity,
-          available: Math.max(0, i.quantity - (taken.get(i.id) ?? 0)),
+          available: Math.max(0, roundQuantity(i.quantity - (taken.get(i.id) ?? 0), i.unit)),
+          unit: i.unit,
         })),
       },
     }
@@ -113,7 +115,7 @@ async function assertAvailable(tx: Tx, saleId: string, items: ReturnItem[], excl
     const it = byId.get(i.saleItemId)
     if (!it || it.unitPrice !== i.unitPrice) throw new ReturnConflict("La venta cambió desde que se pidió la devolución. Pídela de nuevo.")
     asked.set(i.saleItemId, (asked.get(i.saleItemId) ?? 0) + i.quantity)
-    if (asked.get(i.saleItemId)! > it.quantity - (taken.get(i.saleItemId) ?? 0)) throw new ReturnConflict(`De “${i.description}” ya no se pueden devolver tantas unidades.`)
+    if (asked.get(i.saleItemId)! > it.quantity - (taken.get(i.saleItemId) ?? 0) + 1e-9) throw new ReturnConflict(`De “${i.description}” ya no se pueden devolver tantas unidades.`)
   }
 }
 
@@ -135,9 +137,10 @@ async function applyReturn(tx: Tx, ctx: BusinessContext, ret: { id: string; sale
           productId: i.productId,
           description: i.description,
           quantity: -i.quantity,
+          unit: byId.get(i.saleItemId)?.unit ?? "u",
           unitPrice: i.unitPrice,
           unitCost: byId.get(i.saleItemId)?.unitCost ?? 0,
-          subtotal: -i.quantity * i.unitPrice,
+          subtotal: -lineTotal(i.quantity, i.unitPrice),
         })),
       },
     },
@@ -192,10 +195,11 @@ export async function requestReturn(input: ReturnRequestInput): Promise<ActionRe
     for (const r of parsed.data.items) {
       const it = byId.get(r.saleItemId)
       if (!it) return { ok: false, message: "Uno de los productos no es de esta venta. Recarga la página." }
-      if (r.quantity > it.quantity - (taken.get(it.id) ?? 0)) return { ok: false, message: `De “${it.description}” no se pueden devolver tantas unidades.` }
-      items.push({ saleItemId: it.id, productId: it.productId, description: it.description, quantity: r.quantity, unitPrice: it.unitPrice })
+      if (!validQuantity(r.quantity, it.unit)) return { ok: false, message: it.unit === "u" ? `“${it.description}” se devuelve por unidad: usa una cantidad entera.` : `La cantidad de “${it.description}” no es válida.` }
+      if (r.quantity > it.quantity - (taken.get(it.id) ?? 0) + 1e-9) return { ok: false, message: `De “${it.description}” no se pueden devolver tantas unidades.` }
+      items.push({ saleItemId: it.id, productId: it.productId, description: it.description, quantity: r.quantity, unitPrice: it.unitPrice, unit: it.unit })
     }
-    const amount = Math.round(items.reduce((s, i) => s + i.quantity * i.unitPrice, 0) * ratio)
+    const amount = Math.round(items.reduce((s, i) => s + lineTotal(i.quantity, i.unitPrice), 0) * ratio)
     if (amount <= 0) return { ok: false, message: "No hay nada que devolver." }
 
     const base = {

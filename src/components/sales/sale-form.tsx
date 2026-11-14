@@ -1,5 +1,7 @@
 "use client"
 
+import { allowsDecimals, formatQuantity, lineTotal, SALE_UNIT_INFO, saleUnitOf, validQuantity } from "@/lib/units"
+import { QuantityInput } from "@/components/app/quantity-input"
 import * as React from "react"
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -25,7 +27,7 @@ import { DiscountField, type DiscountValue } from "@/components/sales/discount-f
 import { CashChange } from "@/components/sales/cash-change"
 import { earnedPart } from "@/lib/loyalty"
 
-export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[]; categoryId?: string | null }
+export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[]; categoryId?: string | null; /** "u", "kg" o "m". */ saleUnit?: string }
 
 type Line = { key: number; productId: string; description: string; quantity: number; unitPrice: number }
 
@@ -94,7 +96,7 @@ export function SaleForm({
   const offline = useOfflineSales()
   const byId = React.useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
-  const gross = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  const gross = lines.reduce((sum, l) => sum + lineTotal(l.quantity, l.unitPrice), 0)
   // Promociones vigentes (2×1, %, happy hour): se ven al tiro; al guardar, el servidor las vuelve a calcular.
   const rules = usePromotions()
   const promo = React.useMemo(
@@ -140,13 +142,13 @@ export function SaleForm({
       if (empty) return ls.map((l) => (l.key === empty.key ? { ...l, ...filled } : l))
       return [...ls, { ...newLine(), ...filled }]
     })
-    const stock = p.trackStock ? ` · quedan ${p.stock - inSale}` : ""
-    return { ok: true, message: `${p.name} ×${inSale} · ${formatMoney(p.price, currency)}${stock}` }
+    const stock = p.trackStock ? ` · quedan ${formatQuantity(p.stock - inSale, p.saleUnit)}` : ""
+    return { ok: true, message: `${p.name} ×${formatQuantity(inSale, p.saleUnit)} · ${formatMoney(p.price, currency)}${stock}` }
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    const invalid = lines.find((l) => !l.description.trim() || l.unitPrice <= 0 || l.quantity < 1)
+    const invalid = lines.find((l) => !l.description.trim() || l.unitPrice <= 0 || !validQuantity(l.quantity, byId.get(l.productId)?.saleUnit))
     if (invalid) {
       setError("Completa qué vendiste, la cantidad y el precio en cada línea.")
       return
@@ -264,6 +266,16 @@ export function SaleForm({
                 />
               ) : null}
               <div className="grid grid-cols-[auto_1fr] gap-3">
+                {/* Por kilo o por metro: se escribe la cantidad con decimales ("1,5 m"). Por unidad: más y menos. */}
+                {allowsDecimals(product?.saleUnit) ? (
+                  <QuantityInput
+                    unit={product?.saleUnit}
+                    value={line.quantity}
+                    onValueChange={(q) => update(line.key, { quantity: q })}
+                    aria-label={`Cantidad en ${SALE_UNIT_INFO[saleUnitOf(product?.saleUnit)].per}s`}
+                    className="w-32 [&_input]:bg-background"
+                  />
+                ) : (
                 <div className="flex h-10 items-center rounded-lg border bg-background">
                   <button
                     type="button"
@@ -289,11 +301,12 @@ export function SaleForm({
                     <Plus className="size-4" />
                   </button>
                 </div>
+                )}
                 <MoneyInput
                   value={line.unitPrice}
                   onValueChange={(v) => update(line.key, { unitPrice: v })}
                   currency={currency}
-                  aria-label="Precio unitario"
+                  aria-label={allowsDecimals(product?.saleUnit) ? `Precio por ${SALE_UNIT_INFO[saleUnitOf(product?.saleUnit)].per}` : "Precio unitario"}
                   // Los empleados no cambian el precio de un producto guardado: para cobrar menos, piden un descuento.
                   readOnly={!canApprove && Boolean(product)}
                   title={!canApprove && product ? "Para cobrar menos, agrega un descuento abajo" : undefined}
@@ -301,10 +314,11 @@ export function SaleForm({
                 />
               </div>
               {lowStock ? (
-                <p className="text-xs text-warning">Solo te quedan {product.stock} unidades registradas de este producto.</p>
+                <p className="text-xs text-warning">Solo te quedan {product.saleUnit && product.saleUnit !== "u" ? formatQuantity(product.stock, product.saleUnit) : `${product.stock} unidades`} registradas de este producto.</p>
               ) : product?.trackStock && !editing ? (
                 <p className="text-xs text-muted-foreground">
-                  En stock: {product.stock} · después de esta venta quedan {product.stock - line.quantity}
+                  En stock: {formatQuantity(product.stock, product.saleUnit)} · después de esta venta quedan {formatQuantity(product.stock - line.quantity, product.saleUnit)}
+                  {allowsDecimals(product.saleUnit) && line.quantity > 0 ? ` · ${formatMoney(lineTotal(line.quantity, line.unitPrice), currency)}` : ""}
                 </p>
               ) : null}
             </div>

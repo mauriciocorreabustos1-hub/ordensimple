@@ -36,7 +36,7 @@ export async function listSales(businessId: string, from: Date, to: Date, take: 
       orderBy: { date: "desc" },
       take,
       include: {
-        items: { select: { description: true, quantity: true, productId: true, unitPrice: true }, orderBy: { createdAt: "asc" } },
+        items: { select: { description: true, quantity: true, unit: true, productId: true, unitPrice: true }, orderBy: { createdAt: "asc" } },
         customer: { select: { name: true } },
         discountRequest: { select: { requestedByName: true, decidedByName: true, reason: true } },
         createdBy: { select: { id: true, name: true } },

@@ -24,6 +24,7 @@ import {
   fiadoBlocked,
   isDiscountUsed,
   lineData,
+  quantityError,
   MAX_TOTAL,
   priceBelowList,
   productsOnly,
@@ -159,7 +160,7 @@ export async function getSaleReceipt(id: string): Promise<ActionResult<SaleRecei
     const sale = await db.sale.findFirst({
       where: { id, businessId: ctx.businessId },
       include: {
-        items: { orderBy: { createdAt: "asc" }, select: { description: true, quantity: true, unitPrice: true, subtotal: true } },
+        items: { orderBy: { createdAt: "asc" }, select: { description: true, quantity: true, unit: true, unitPrice: true, subtotal: true } },
         customer: { select: { name: true, phone: true } },
         createdBy: { select: { name: true } },
       },
@@ -222,6 +223,8 @@ export async function createSale(input: SaleInput): Promise<ActionResult<{ saleI
     if (fiadoBlocked(ctx, paymentMethod)) return { ok: false, message: FIADO_PRO }
     if (await alreadySynced(ctx, clientId)) return { ok: true, message: "Venta guardada" }
     const lines = await buildLines(ctx, items)
+    const badQuantity = lines ? quantityError(lines) : null
+    if (badQuantity) return { ok: false, message: badQuantity }
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     const below = customItemsBlocked(ctx, lines) ?? priceBelowList(ctx, lines)
     if (below) return { ok: false, message: below }
@@ -290,6 +293,8 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
       return { ok: false, message: "Esta venta tiene una devolución esperando aprobación. Apruébala o recházala antes de editarla." }
     }
     const lines = await buildLines(ctx, items)
+    const badQuantity = lines ? quantityError(lines) : null
+    if (badQuantity) return { ok: false, message: badQuantity }
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
     // Las promociones se recalculan con los productos nuevos (según el momento de la venta).
     // Si la venta tenía un descuento aprobado, se mantiene.

@@ -7,6 +7,7 @@ import type { SaleInput } from "@/lib/validations"
 import type { BusinessContext } from "@/server/session"
 import { applyPromotions, type AppliedPromo, type PromoRule } from "@/lib/promotions"
 import { convert, isRecipeUnit } from "@/lib/recipes"
+import { lineTotal, saleUnitOf, validQuantity, type SaleUnit } from "@/lib/units"
 
 // Piezas comunes para guardar una venta: las usan las ventas y el cobro de comandas.
 
@@ -33,6 +34,8 @@ export type Line = {
   trackStock: boolean
   /** Precio de lista del producto (null si no es un producto guardado). */
   listPrice: number | null
+  /** Cómo se vende: por unidad, kilo o metro (lo escrito a mano, por unidad). */
+  unit: SaleUnit
 }
 
 /** Valida que los productos sean de este negocio y arma las líneas con su costo. */
@@ -51,9 +54,10 @@ export async function buildLines(ctx: BusinessContext, items: SaleInput["items"]
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       unitCost: product?.cost ?? 0,
-      subtotal: item.quantity * item.unitPrice,
+      subtotal: lineTotal(item.quantity, item.unitPrice),
       trackStock: product?.trackStock ?? false,
       listPrice: product?.price ?? null,
+      unit: saleUnitOf(product?.saleUnit),
     }
   })
 }
@@ -133,10 +137,20 @@ export function fiadoBlocked(ctx: BusinessContext, paymentMethod: string, previo
   return paymentMethod === "FIADO" && previous !== "FIADO" && !canUseFeature(ctx.business.plan, "customers")
 }
 
+/** Por unidad se vende en enteros; por kilo o metro, hasta gramos o centímetros. */
+export function quantityError(lines: Line[]) {
+  const bad = lines.find((l) => !validQuantity(l.quantity, l.unit))
+  if (!bad) return null
+  return bad.unit === "u"
+    ? `“${bad.description}” se vende por unidad: usa una cantidad entera.`
+    : `La cantidad de “${bad.description}” no es válida. Usa hasta ${bad.unit === "kg" ? "gramos (0,001 kg)" : "centímetros (0,01 m)"}.`
+}
+
 export const lineData = (l: Line) => ({
   productId: l.productId,
   description: l.description,
   quantity: l.quantity,
+  unit: l.unit,
   unitPrice: l.unitPrice,
   unitCost: l.unitCost,
   subtotal: l.subtotal,

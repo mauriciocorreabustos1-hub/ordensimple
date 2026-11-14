@@ -1,3 +1,4 @@
+import { formatQuantity, saleUnitOf } from "@/lib/units"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -35,7 +36,7 @@ function stockState(p: { trackStock: boolean; stock: number; minStock: number })
   return "ok"
 }
 
-function StockBadge({ state, stock }: { state: StockState; stock: number }) {
+function StockBadge({ state, stock, unit }: { state: StockState; stock: number; unit?: string }) {
   if (state === "untracked") return <span className="text-xs text-muted-foreground">Sin control</span>
   if (state === "out")
     return (
@@ -48,10 +49,10 @@ function StockBadge({ state, stock }: { state: StockState; stock: number }) {
     return (
       <Badge className="gap-1 border-warning/40 bg-warning/15 text-foreground">
         <AlertTriangle className="size-3 text-warning" />
-        {formatNumber(stock)} · bajo
+        {unit && unit !== "u" ? formatQuantity(stock, unit) : formatNumber(stock)} · bajo
       </Badge>
     )
-  return <span className="tabular text-sm">{formatNumber(stock)}</span>
+  return <span className="tabular text-sm">{unit && unit !== "u" ? formatQuantity(stock, unit) : formatNumber(stock)}</span>
 }
 
 export default async function ProductsPage() {
@@ -86,6 +87,7 @@ export default async function ProductsPage() {
     categoryName: p.category?.name ?? "",
     cost: p.cost,
     price: p.price,
+    saleUnit: saleUnitOf(p.saleUnit),
     stock: p.stock,
     minStock: p.minStock,
     trackStock: p.trackStock,
@@ -197,7 +199,7 @@ export default async function ProductsPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Stock</p>
-                      <StockBadge state={stockState(p)} stock={p.stock} />
+                      <StockBadge state={stockState(p)} stock={p.stock} unit={p.saleUnit} />
                     </div>
                   </div>
                 </li>
@@ -243,7 +245,7 @@ export default async function ProductsPage() {
                       </TableCell>
                       <TableCell className="tabular text-right">{formatPercent(marginRatio(p.price, p.cost), 0)}</TableCell>
                       <TableCell>
-                        <StockBadge state={stockState(p)} stock={p.stock} />
+                        <StockBadge state={stockState(p)} stock={p.stock} unit={p.saleUnit} />
                       </TableCell>
                       <TableCell>
                         <ActiveSwitch id={p.id} active={p.active} disabled={!canManage} />

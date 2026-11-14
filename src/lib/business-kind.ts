@@ -29,8 +29,9 @@ export function isServiceBusiness(type: string | null | undefined) {
   return SERVICE_TYPES.some((t) => type.includes(t)) || SERVICE_WORDS.test(type)
 }
 
-// Rubros escritos a mano que elaboran sus productos con receta (además de los de comida).
-const RECIPE_WORDS = /jab[oó]n|\bvelas?\b|cosm[eé]tic|crema|perfum|aromat|artesan|manualidad|resina|bisuter|reposter|chocolat|bomb[oó]n|mermelad|conserva|encurt|licor|destiler|kombucha|sales de ba[ñn]o/i
+// Rubros escritos a mano que elaboran sus productos con receta (además de los de comida), incluido lo textil:
+// telas por metro, hilo, botones… para saber cuánto cuesta cada prenda.
+const RECIPE_WORDS = /jab[oó]n|\bvelas?\b|cosm[eé]tic|crema|perfum|aromat|artesan|manualidad|resina|bisuter|reposter|chocolat|bomb[oó]n|mermelad|conserva|encurt|licor|destiler|kombucha|sales de ba[ñn]o|textil|costur|confecci[oó]n|\btelas?\b|bordad|tejid|sastre|tapicer|cortina|mercer[ií]a|modist|patronaj|uniforme/i
 
 /** Elabora sus productos con receta (comida, jabones, velas, cosmética, artesanía…): a ellos se les muestra Recetas en el menú. */
 export function makesRecipes(type: string | null | undefined) {

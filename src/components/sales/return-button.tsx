@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { formatDate } from "@/lib/dates"
 import { formatMoney } from "@/lib/currency"
 import { cn } from "@/lib/utils"
+import { allowsDecimals, formatQuantity, roundQuantity, SALE_UNIT_INFO, saleUnitOf } from "@/lib/units"
+import { QuantityInput } from "@/components/app/quantity-input"
 import { getReturnable, requestReturn, type ReturnableSale } from "@/server/actions/returns"
 
 const REASONS = ["Producto en mal estado", "Se equivocó de producto", "El cliente se arrepintió", "Cobro duplicado"]
@@ -96,15 +98,28 @@ export function ReturnButton({ saleId, currency, timezone, canApprove }: { saleI
               <ul className="divide-y rounded-xl border">
                 {data.items.map((i) => {
                   const q = qty[i.saleItemId] ?? 0
-                  const set = (n: number) => setQty((m) => ({ ...m, [i.saleItemId]: Math.max(0, Math.min(i.available, n)) }))
+                  const set = (n: number) => setQty((m) => ({ ...m, [i.saleItemId]: roundQuantity(Math.max(0, Math.min(i.available, n)), i.unit) }))
                   return (
                     <li key={i.saleItemId} className={cn("flex items-center gap-3 p-3", i.available === 0 && "opacity-50")}>
                       <span className="min-w-0 flex-1 text-sm leading-snug">
                         {i.description}
                         <span className="block text-xs text-muted-foreground">
-                          {money(i.unitPrice)} c/u · {i.available === i.sold ? `vendiste ${i.sold}` : `quedan ${i.available} de ${i.sold} por devolver`}
+                          {money(i.unitPrice)} {allowsDecimals(i.unit) ? `el ${SALE_UNIT_INFO[saleUnitOf(i.unit)].per}` : "c/u"} ·{" "}
+                          {i.available === i.sold
+                            ? `vendiste ${formatQuantity(i.sold, i.unit)}`
+                            : `quedan ${formatQuantity(i.available, i.unit)} de ${formatQuantity(i.sold, i.unit)} por devolver`}
                         </span>
                       </span>
+                      {allowsDecimals(i.unit) ? (
+                        <QuantityInput
+                          unit={i.unit}
+                          value={q}
+                          onValueChange={set}
+                          disabled={i.available === 0}
+                          aria-label={`Cuánto se devuelve de ${i.description}`}
+                          className="w-28"
+                        />
+                      ) : (
                       <div className="flex items-center rounded-lg border">
                         <button type="button" className="flex size-9 items-center justify-center disabled:opacity-40" aria-label="Uno menos" disabled={q <= 0} onClick={() => set(q - 1)}>
                           <Minus className="size-3.5" />
@@ -114,6 +129,7 @@ export function ReturnButton({ saleId, currency, timezone, canApprove }: { saleI
                           <Plus className="size-3.5" />
                         </button>
                       </div>
+                      )}
                     </li>
                   )
                 })}

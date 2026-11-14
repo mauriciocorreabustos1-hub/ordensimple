@@ -104,6 +104,7 @@ async function main() {
           stock: p.stock,
           minStock: p.minStock,
           trackStock: p.trackStock ?? true,
+          saleUnit: p.name.includes("(kg)") ? "kg" : "u",
         },
       }),
     )

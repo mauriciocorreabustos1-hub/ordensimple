@@ -1,18 +1,21 @@
 // Recetas: medidas, conversión entre ellas y el cálculo del costo y del precio de venta por unidad.
 // Lo usan la pantalla (para ver el resultado al tiro) y el servidor (al pasar el precio a un producto).
 
-export const RECIPE_UNITS = ["g", "kg", "ml", "l", "u"] as const
+export const RECIPE_UNITS = ["g", "kg", "ml", "l", "cm", "m", "u"] as const
 export type RecipeUnit = (typeof RECIPE_UNITS)[number]
 
-export const UNIT_LABEL: Record<RecipeUnit, string> = { g: "g", kg: "kg", ml: "mL", l: "L", u: "unid." }
-export const UNIT_NAME: Record<RecipeUnit, string> = { g: "Gramos (g)", kg: "Kilos (kg)", ml: "Mililitros (mL)", l: "Litros (L)", u: "Unidades" }
+export const UNIT_LABEL: Record<RecipeUnit, string> = { g: "g", kg: "kg", ml: "mL", l: "L", cm: "cm", m: "m", u: "unid." }
+export const UNIT_NAME: Record<RecipeUnit, string> = { g: "Gramos (g)", kg: "Kilos (kg)", ml: "Mililitros (mL)", l: "Litros (L)", cm: "Centímetros (cm)", m: "Metros (m)", u: "Unidades" }
 
-/** Cada medida en su unidad base: peso en gramos, volumen en mililitros, unidades como unidades. */
-const BASE: Record<RecipeUnit, { group: "peso" | "volumen" | "unidad"; factor: number }> = {
+/** Cada medida en su unidad base: peso en gramos, volumen en mililitros, largo en centímetros, unidades como unidades. */
+const BASE: Record<RecipeUnit, { group: "peso" | "volumen" | "largo" | "unidad"; factor: number }> = {
   g: { group: "peso", factor: 1 },
   kg: { group: "peso", factor: 1000 },
   ml: { group: "volumen", factor: 1 },
   l: { group: "volumen", factor: 1000 },
+  // Telas, cintas, elásticos, cables…
+  cm: { group: "largo", factor: 1 },
+  m: { group: "largo", factor: 100 },
   u: { group: "unidad", factor: 1 },
 }
 

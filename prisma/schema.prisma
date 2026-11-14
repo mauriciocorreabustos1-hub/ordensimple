@@ -354,8 +354,11 @@ model Product {
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   cost        Int       @default(0)
   price       Int       @default(0)
-  stock       Int       @default(0)
-  minStock    Int       @default(0)
+  /// Cómo se vende: "u" por unidad, "kg" por kilo o "m" por metro. En kilos y metros el precio es por kilo o
+  /// por metro, y el stock y las cantidades llevan decimales (1,5 m o 0,350 kg).
+  saleUnit    String    @default("u")
+  stock       Float     @default(0)
+  minStock    Float     @default(0)
   trackStock  Boolean   @default(true)
   /// Foto del producto (Vercel Blob, ya achicada en el celular). Se muestra en la tienda online, al vender y en Productos.
   imageUrl    String?
@@ -438,7 +441,10 @@ model SaleItem {
   productId   String?
   product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   description String
-  quantity    Int
+  /// Con decimales en productos por kilo o por metro.
+  quantity    Float
+  /// Cómo se vendió ("u", "kg" o "m"), copiado del producto al vender.
+  unit        String   @default("u")
   unitPrice   Int
   unitCost    Int      @default(0)
   subtotal    Int
@@ -548,8 +554,8 @@ model InventoryMovement {
   productId   String
   product     Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   type        InventoryMovementType
-  // Positivo suma stock, negativo resta.
-  quantity    Int
+  // Positivo suma stock, negativo resta. Con decimales en productos por kilo o por metro.
+  quantity    Float
   /// Costo unitario del producto al momento del movimiento (para valorizar la merma).
   unitCost    Int                   @default(0)
   reason      String?

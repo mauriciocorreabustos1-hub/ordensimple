@@ -1,3 +1,5 @@
+import { SALE_UNITS } from "@/lib/units"
+import { RECIPE_UNITS } from "@/lib/recipes"
 import { z } from "zod"
 import { CURRENCY_CODES } from "@/lib/currency"
 import { COUNTRIES } from "@/lib/constants"
@@ -120,10 +122,17 @@ export const categoryNameSchema = z.object({
 
 // ─── Ventas ─────────────────────────────────────────────────────────────────
 
+/** Cantidad con hasta 3 decimales (gramos): en productos por unidad, el servidor exige enteros. */
+const amountQuantity = z
+  .number()
+  .positive("La cantidad debe ser mayor a 0")
+  .max(100_000)
+  .refine((q) => Math.abs(Math.round(q * 1000) - q * 1000) < 1e-6, "Usa hasta 3 decimales")
+
 export const saleItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().trim().min(1, "Escribe qué vendiste").max(120),
-  quantity: z.number().int("Usa números enteros").min(1, "Mínimo 1").max(100_000),
+  quantity: amountQuantity,
   unitPrice: positiveMoney,
 })
 
@@ -187,8 +196,10 @@ export const productSchema = z.object({
   categoryName: optionalText(40),
   cost: money,
   price: positiveMoney,
-  stock: z.number().int("Usa números enteros").min(0).max(10_000_000),
-  minStock: z.number().int("Usa números enteros").min(0).max(10_000_000),
+  /** Por unidad, por kilo o por metro. En kilos y metros, el stock lleva decimales. */
+  saleUnit: z.enum(SALE_UNITS).default("u"),
+  stock: z.number().min(0).max(10_000_000),
+  minStock: z.number().min(0).max(10_000_000),
   trackStock: z.boolean(),
   active: z.boolean(),
   /** Próximo vencimiento (AAAA-MM-DD) o vacío. */
@@ -219,7 +230,7 @@ export const inventoryMovementSchema = z.object({
   productId: z.string().min(1, "Elige un producto"),
   type: z.enum(["IN", "OUT", "ADJUSTMENT", "WASTE"]),
   /** Entrada/salida: unidades que entran o salen. Ajuste: unidades contadas en total. */
-  quantity: z.number().int("Usa números enteros").min(0).max(10_000_000),
+  quantity: z.number().min(0).max(10_000_000),
   reason: optionalText(120),
 })
 export type InventoryMovementInput = z.input<typeof inventoryMovementSchema>
@@ -524,7 +535,7 @@ export type DiscountRequestInput = z.input<typeof discountRequestSchema>
 export const returnRequestSchema = z.object({
   saleId: z.string().min(1).max(64),
   items: z
-    .array(z.object({ saleItemId: z.string().min(1).max(64), quantity: z.number().int().min(1).max(100_000) }))
+    .array(z.object({ saleItemId: z.string().min(1).max(64), quantity: amountQuantity }))
     .min(1, "Elige qué productos se devuelven")
     .max(50)
     // Cada producto una sola vez (si se repitiera, podría devolverse más de lo vendido).
@@ -537,7 +548,7 @@ export type ReturnRequestInput = z.input<typeof returnRequestSchema>
 
 // ─── Recetas ────────────────────────────────────────────────────────────────
 
-const recipeUnit = z.enum(["g", "kg", "ml", "l", "u"], { error: "Elige la medida" })
+const recipeUnit = z.enum(RECIPE_UNITS, { error: "Elige la medida" })
 const quantity = z.number({ error: "Ingresa la cantidad" }).positive("Ingresa una cantidad mayor a 0").max(10_000_000, "Cantidad demasiado alta")
 
 export const recipeMaterialSchema = z.object({
@@ -567,7 +578,7 @@ export type RecipeInput = z.input<typeof recipeSchema>
 export const materialPurchaseSchema = z.object({
   /** Cuánto se compró, en `unit` (compatible con la medida del material). */
   quantity: z.number({ error: "Ingresa la cantidad" }).positive("Ingresa una cantidad mayor a 0").max(10_000_000),
-  unit: z.enum(["g", "kg", "ml", "l", "u"]),
+  unit: z.enum(RECIPE_UNITS),
   /** Lo que se pagó en total. */
   total: positiveMoney,
   /** Recalcular el precio del paquete con lo que se pagó. */

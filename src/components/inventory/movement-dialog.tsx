@@ -1,5 +1,6 @@
 "use client"
 
+import { allowsDecimals, formatQuantity, parseQuantity, SALE_UNIT_INFO, saleUnitOf } from "@/lib/units"
 import * as React from "react"
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardCheck, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -14,7 +15,7 @@ import { formatNumber } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { createInventoryMovement } from "@/server/actions/inventory"
 
-export type MovementProduct = { id: string; name: string; stock: number; trackStock: boolean; codes?: string[] }
+export type MovementProduct = { id: string; name: string; stock: number; trackStock: boolean; codes?: string[]; saleUnit?: string }
 type MovementType = "IN" | "OUT" | "ADJUSTMENT" | "WASTE"
 
 const TYPES: { value: MovementType; label: string; help: string; icon: typeof Plus }[] = [
@@ -53,7 +54,8 @@ export function MovementDialog({
   const [pending, startTransition] = React.useTransition()
 
   const product = products.find((p) => p.id === productId)
-  const qty = Number(quantity) || 0
+  const qty = quantity === "" ? 0 : (parseQuantity(quantity, product?.saleUnit) ?? 0)
+  const stockText = (n: number) => (allowsDecimals(product?.saleUnit) ? formatQuantity(n, product?.saleUnit) : `${formatNumber(n)} unidades`)
   const result = product
     ? type === "IN"
       ? product.stock + qty
@@ -72,7 +74,7 @@ export function MovementDialog({
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!productId) return toast.error("Elige un producto")
-    if (quantity === "" || (type !== "ADJUSTMENT" && qty < 1)) return toast.error("Ingresa la cantidad")
+    if (quantity === "" || (type !== "ADJUSTMENT" && qty <= 0)) return toast.error("Ingresa la cantidad")
     startTransition(async () => {
       const r = await createInventoryMovement({ productId, type, quantity: qty, reason })
       if (!r.ok) return void toast.error(r.message)
@@ -133,7 +135,7 @@ export function MovementDialog({
                 {products.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
-                    {p.trackStock ? ` · ${formatNumber(p.stock)} en stock` : " · sin control de stock"}
+                    {p.trackStock ? ` · ${p.saleUnit && p.saleUnit !== "u" ? formatQuantity(p.stock, p.saleUnit) : formatNumber(p.stock)} en stock` : " · sin control de stock"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -172,15 +174,20 @@ export function MovementDialog({
             </Field>
           ) : null}
           <div className="grid grid-cols-2 gap-3">
-            <Field label={type === "ADJUSTMENT" ? "¿Cuántas unidades contaste?" : "Cantidad"} htmlFor="mv-qty">
-              <Input
-                id="mv-qty"
-                inputMode="numeric"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
-                className="tabular h-10"
-                placeholder="0"
-              />
+            <Field label={type === "ADJUSTMENT" ? (allowsDecimals(product?.saleUnit) ? "¿Cuánto contaste?" : "¿Cuántas unidades contaste?") : "Cantidad"} htmlFor="mv-qty">
+              <div className="relative">
+                <Input
+                  id="mv-qty"
+                  inputMode={allowsDecimals(product?.saleUnit) ? "decimal" : "numeric"}
+                  value={quantity}
+                  onChange={(e) => setQuantity(allowsDecimals(product?.saleUnit) ? e.target.value.replace(/[^\d,.]/g, "").replace(".", ",") : e.target.value.replace(/\D/g, ""))}
+                  className="tabular h-10 pr-9"
+                  placeholder={allowsDecimals(product?.saleUnit) ? SALE_UNIT_INFO[saleUnitOf(product?.saleUnit)].example : "0"}
+                />
+                {allowsDecimals(product?.saleUnit) ? (
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">{SALE_UNIT_INFO[saleUnitOf(product?.saleUnit)].short}</span>
+                ) : null}
+              </div>
             </Field>
             <Field label="Motivo" htmlFor="mv-reason" optional>
               <Input id="mv-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={120} className="h-10" />
@@ -194,8 +201,8 @@ export function MovementDialog({
               )}
             >
               {result < 0
-                ? `No alcanza: solo tienes ${formatNumber(product.stock)} unidades.`
-                : `Stock de ${product.name}: pasa de ${formatNumber(product.trackStock ? product.stock : 0)} a ${formatNumber(result)} unidades`}
+                ? `No alcanza: solo tienes ${stockText(product.stock)}.`
+                : `Stock de ${product.name}: pasa de ${stockText(product.trackStock ? product.stock : 0)} a ${stockText(result)}`}
             </p>
           ) : null}
           {product && !product.trackStock ? (

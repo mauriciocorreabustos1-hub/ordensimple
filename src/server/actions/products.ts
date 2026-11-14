@@ -1,5 +1,6 @@
 "use server"
 
+import { roundQuantity } from "@/lib/units"
 import { revalidatePath } from "next/cache"
 import { zonedTimeToUtc } from "@/lib/dates"
 import { Prisma } from "@/generated/prisma/client"
@@ -65,6 +66,12 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   if (data.isService) Object.assign(data, { trackStock: false, stock: 0, minStock: 0, expiresAt: "", durationMin: data.durationMin ?? 30 })
   else data.durationMin = null
   const noun = data.isService ? "Servicio" : "Producto"
+  // Por unidad, el stock va en enteros; por kilo o metro, hasta gramos o centímetros.
+  if (data.saleUnit === "u" && (!Number.isInteger(data.stock) || !Number.isInteger(data.minStock))) {
+    return { ok: false, message: "Este producto se vende por unidad: el stock va en números enteros.", fieldErrors: { stock: ["Usa números enteros"] } }
+  }
+  data.stock = roundQuantity(data.stock, data.saleUnit)
+  data.minStock = roundQuantity(data.minStock, data.saleUnit)
 
   try {
     assertCan(ctx, "products:manage")
@@ -124,6 +131,12 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
   if (data.isService) Object.assign(data, { trackStock: false, stock: 0, minStock: 0, expiresAt: "", durationMin: data.durationMin ?? 30 })
   else data.durationMin = null
   const noun = data.isService ? "Servicio" : "Producto"
+  // Por unidad, el stock va en enteros; por kilo o metro, hasta gramos o centímetros.
+  if (data.saleUnit === "u" && (!Number.isInteger(data.stock) || !Number.isInteger(data.minStock))) {
+    return { ok: false, message: "Este producto se vende por unidad: el stock va en números enteros.", fieldErrors: { stock: ["Usa números enteros"] } }
+  }
+  data.stock = roundQuantity(data.stock, data.saleUnit)
+  data.minStock = roundQuantity(data.minStock, data.saleUnit)
 
   try {
     assertCan(ctx, "products:manage")
@@ -145,7 +158,7 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ac
           data: prepared.extra.map((code) => ({ businessId: ctx.businessId, productId: current.id, code })),
         })
       }
-      const diff = data.stock - current.stock
+      const diff = roundQuantity(data.stock - current.stock, data.saleUnit)
       if (data.trackStock && diff !== 0) {
         await tx.inventoryMovement.create({
           data: {

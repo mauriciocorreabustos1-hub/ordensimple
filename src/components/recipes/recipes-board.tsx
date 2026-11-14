@@ -538,7 +538,7 @@ function RecipeDialog({
   const byId = new Map(materials.map((m) => [m.id, m]))
   const firstUnit = (materialId: string): RecipeUnit => {
     const u = byId.get(materialId)?.unit
-    return u && isRecipeUnit(u) ? (u === "kg" ? "g" : u === "l" ? "ml" : u) : "u"
+    return u && isRecipeUnit(u) ? (u === "kg" ? "g" : u === "l" ? "ml" : u === "m" ? "cm" : u) : "u"
   }
   const [savedId, setSavedId] = React.useState(recipe?.id ?? null)
   const [name, setName] = React.useState(recipe?.name ?? "")
@@ -834,7 +834,7 @@ function RecipeDialog({
           onSaved={(id, unit) => {
             const key = newMaterialFor
             // La lista de materiales llega con el refresco; mientras tanto se deja elegido, en la medida chica (kg → g).
-            const small: RecipeUnit = unit === "kg" ? "g" : unit === "l" ? "ml" : unit
+            const small: RecipeUnit = unit === "kg" ? "g" : unit === "l" ? "ml" : unit === "m" ? "cm" : unit
             setLines((ls) => ls.map((l) => (l.key === key ? { ...l, materialId: id, unit: small } : l)))
             touch()
           }}

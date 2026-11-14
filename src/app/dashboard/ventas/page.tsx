@@ -1,3 +1,4 @@
+import { allowsDecimals, quantityText } from "@/lib/units"
 import type { Metadata } from "next"
 import { CalendarDays, ShoppingBag, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -25,12 +26,12 @@ import { requireBusiness } from "@/server/session"
 
 export const metadata: Metadata = { title: "Ventas" }
 
-function describe(items: { description: string; quantity: number }[]) {
+function describe(items: { description: string; quantity: number; unit?: string }[]) {
   const first = items[0]
   if (!first) return "Venta"
   // Las devoluciones traen cantidades en negativo.
   const q = Math.abs(first.quantity)
-  const text = q > 1 ? `${q} × ${first.description}` : first.description
+  const text = allowsDecimals(first.unit) || q > 1 ? quantityText(q, first.unit, first.description) : first.description
   return items.length > 1 ? `${text} y ${items.length - 1} más` : text
 }
 
@@ -61,7 +62,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/dashboard/
     canEdit
       ? db.product.findMany({
           where: { businessId: ctx.businessId },
-          select: { id: true, name: true, price: true, stock: true, trackStock: true },
+          select: { id: true, name: true, price: true, stock: true, trackStock: true, saleUnit: true },
           orderBy: { name: "asc" },
         })
       : Promise.resolve([]),

@@ -16,6 +16,14 @@ import { toActionError, validationError, type ActionResult } from "@/server/acti
 /** Los empleados piden devoluciones de ventas de los últimos 30 días; el dueño y los administradores, de cualquier fecha. */
 const EMPLOYEE_DAYS = 30
 
+/**
+ * Lo que vale devolver cierta cantidad, contando lo ya devuelto de esa línea: la diferencia entre el total con y sin
+ * esta devolución. Así, devolver de a poco (0,001 kg varias veces) nunca suma más que lo que se cobró por la línea.
+ */
+function refundValue(alreadyReturned: number, quantity: number, unitPrice: number) {
+  return lineTotal(alreadyReturned + quantity, unitPrice) - lineTotal(alreadyReturned, unitPrice)
+}
+
 type ReturnItem = { saleItemId: string; productId: string | null; description: string; quantity: number; unitPrice: number; unit?: string }
 
 function revalidate() {
@@ -199,7 +207,7 @@ export async function requestReturn(input: ReturnRequestInput): Promise<ActionRe
       if (r.quantity > it.quantity - (taken.get(it.id) ?? 0) + 1e-9) return { ok: false, message: `De “${it.description}” no se pueden devolver tantas unidades.` }
       items.push({ saleItemId: it.id, productId: it.productId, description: it.description, quantity: r.quantity, unitPrice: it.unitPrice, unit: it.unit })
     }
-    const amount = Math.round(items.reduce((s, i) => s + lineTotal(i.quantity, i.unitPrice), 0) * ratio)
+    const amount = Math.round(items.reduce((s, i) => s + refundValue(taken.get(i.saleItemId) ?? 0, i.quantity, i.unitPrice), 0) * ratio)
     if (amount <= 0) return { ok: false, message: "No hay nada que devolver." }
 
     const base = {

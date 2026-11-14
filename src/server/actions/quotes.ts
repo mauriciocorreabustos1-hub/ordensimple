@@ -14,7 +14,7 @@ import { canApproveDiscounts } from "@/lib/roles"
 import { idSchema, paymentMethod as paymentMethodSchema, quoteInfoSchema, quoteSchema, type QuoteInfoInput, type QuoteInput } from "@/lib/validations"
 import { businessManagers, sendPush } from "@/server/push"
 import { allowAttempt } from "@/server/rate-limit"
-import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, fiadoBlocked, lineData, MAX_TOTAL, priceBelowList, resolveCustomer } from "@/server/sale-core"
+import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, fiadoBlocked, lineData, MAX_TOTAL, priceBelowList, quantityError, resolveCustomer } from "@/server/sale-core"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
@@ -46,6 +46,9 @@ type Prepared = {
 async function prepare(ctx: BusinessContext, data: z.output<typeof quoteSchema>): Promise<{ error: string } | { data: Prepared }> {
   const lines = await buildLines(ctx, data.items)
   if (!lines) return { error: "Uno de los productos ya no existe. Recarga la página." }
+  // Por unidad, enteros; por kilo o metro, hasta gramos o centímetros (lo mismo que al vender).
+  const badQuantity = quantityError(lines)
+  if (badQuantity) return { error: badQuantity }
   // Mismas reglas que al vender: un empleado no inventa productos ni baja precios, y el descuento lo da el encargado.
   const blocked = customItemsBlocked(ctx, lines) ?? priceBelowList(ctx, lines)
   if (blocked) return { error: blocked.replace("vender", "cotizar").replace("cobrar", "cotizar") }
@@ -186,6 +189,8 @@ export async function sellQuote(id: string, paymentMethod: z.input<typeof paymen
       items.map((i) => ({ productId: i.productId && existing.has(i.productId) ? i.productId : undefined, description: i.description, quantity: i.quantity, unitPrice: i.unitPrice })),
     )
     if (!lines) return { ok: false, message: "Uno de los productos ya no existe. Recarga la página." }
+    const badQuantity = quantityError(lines)
+    if (badQuantity) return { ok: false, message: badQuantity }
     const label = `Cotización n.º ${quoteNumber(quote.number)}`
     await db.$transaction(async (tx) => {
       const customerId = quote.customerId ?? (await resolveCustomer(tx, ctx.businessId, quote.customerName))

@@ -1,4 +1,5 @@
-import { cardFeeFor, cardFeeRate, formatRate } from "@/lib/card-fees"
+import { cardFeeFor, cardFeeRate, formatRate, NO_CARD_FEES } from "@/lib/card-fees"
+import { canApproveDiscounts } from "@/lib/roles"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, HandCoins, Receipt, ShoppingBag } from "lucide-react"
@@ -47,7 +48,8 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
   const rows = PAYMENT_METHODS.map((m) => ({ ...m, ...(d.salesBy[m.value as PaymentMethod] ?? { total: 0, count: 0 }) }))
   const summaryLines = rows.filter((r) => r.total > 0).map((r) => `• ${r.label}: ${money(r.total)}`)
   // Comisión de la máquina de tarjetas: lo que descuenta de débito y crédito antes de depositar.
-  const fees = { debit: ctx.settings.cardFeeDebit, credit: ctx.settings.cardFeeCredit }
+  // Solo el dueño y los administradores ven la comisión de la máquina.
+  const fees = canApproveDiscounts(ctx.role) ? { debit: ctx.settings.cardFeeDebit, credit: ctx.settings.cardFeeCredit } : NO_CARD_FEES
   const feeOf = (r: { value: string; total: number }) => cardFeeFor(r.total, r.value, fees)
   const cardFeeTotal = rows.reduce((s, r) => s + feeOf(r), 0)
 

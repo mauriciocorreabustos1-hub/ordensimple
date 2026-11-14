@@ -1,3 +1,4 @@
+import { cardFeeFor, cardFeeRate, formatRate } from "@/lib/card-fees"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, HandCoins, Receipt, ShoppingBag } from "lucide-react"
@@ -45,6 +46,10 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
 
   const rows = PAYMENT_METHODS.map((m) => ({ ...m, ...(d.salesBy[m.value as PaymentMethod] ?? { total: 0, count: 0 }) }))
   const summaryLines = rows.filter((r) => r.total > 0).map((r) => `• ${r.label}: ${money(r.total)}`)
+  // Comisión de la máquina de tarjetas: lo que descuenta de débito y crédito antes de depositar.
+  const fees = { debit: ctx.settings.cardFeeDebit, credit: ctx.settings.cardFeeCredit }
+  const feeOf = (r: { value: string; total: number }) => cardFeeFor(r.total, r.value, fees)
+  const cardFeeTotal = rows.reduce((s, r) => s + feeOf(r), 0)
 
   return (
     <div className="space-y-6">
@@ -146,6 +151,11 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
                     {r.value === "FIADO" && r.total ? (
                       <span className="block text-xs text-muted-foreground">No entra dinero hoy: queda como deuda del cliente.</span>
                     ) : null}
+                    {feeOf(r) > 0 ? (
+                      <span className="block text-xs text-muted-foreground">
+                        La máquina cobra {formatRate(cardFeeRate(r.value, fees))} ({money(feeOf(r))}): te depositan {money(r.total - feeOf(r))}.
+                      </span>
+                    ) : null}
                   </span>
                   <span className={cn("tabular font-medium", !r.total && "text-muted-foreground")}>{money(r.total)}</span>
                 </li>
@@ -154,6 +164,15 @@ export default async function CashPage({ searchParams }: PageProps<"/dashboard/c
                 <span>Total vendido</span>
                 <span className="tabular">{money(d.salesTotal)}</span>
               </li>
+              {cardFeeTotal > 0 ? (
+                <li className="flex items-center justify-between gap-3 pt-2 text-sm">
+                  <span>
+                    Comisión de la máquina
+                    <span className="block text-xs text-muted-foreground">Estimada con la comisión anotada en Configuración, sección Impuestos y gastos.</span>
+                  </span>
+                  <span className="tabular font-medium">−{money(cardFeeTotal)}</span>
+                </li>
+              ) : null}
               {d.tipsTotal ? (
                 <li className="flex items-center justify-between gap-3 pt-2 text-sm">
                   <span>

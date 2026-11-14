@@ -1,5 +1,7 @@
 "use client"
 
+import { CardFeesProvider } from "@/components/sales/card-fee-note"
+import { NO_CARD_FEES, type CardFees } from "@/lib/card-fees"
 import * as React from "react"
 import type { PaymentMethod } from "@/generated/prisma/enums"
 import type { PromoRule } from "@/lib/promotions"
@@ -81,7 +83,10 @@ export function QuickActionsProvider({
   canApproveDiscounts = true,
   productsOnly = false,
   promotions = [],
+  cardFees = NO_CARD_FEES,
 }: {
+  /** Comisión de la máquina de tarjetas, para mostrar cuánto llega al cobrar con débito o crédito. */
+  cardFees?: CardFees
   /** Promociones activas (2×1, %, happy hour). */
   promotions?: PromoRule[]
   children: React.ReactNode
@@ -132,6 +137,7 @@ export function QuickActionsProvider({
       <DiscountRoleContext.Provider value={canApproveDiscounts}>
       <PromotionsContext.Provider value={promotions}>
       <SalesVatContext.Provider value={vat}>
+      <CardFeesProvider value={cardFees}>
       <LoyaltyActiveContext.Provider value={loyalty}>
       {children}
       <AppModal open={action === "sale"} onOpenChange={(o) => !o && close()} title="Registrar venta">
@@ -183,6 +189,7 @@ export function QuickActionsProvider({
       </AppModal>
       <SaleReceiptHost />
       </LoyaltyActiveContext.Provider>
+      </CardFeesProvider>
       </SalesVatContext.Provider>
       </PromotionsContext.Provider>
       </DiscountRoleContext.Provider>

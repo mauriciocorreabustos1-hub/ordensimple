@@ -69,6 +69,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         currency={ctx.currency}
         timezone={ctx.timezone}
         defaultPayment={ctx.settings.defaultPayment}
+        cardFees={{ debit: ctx.settings.cardFeeDebit, credit: ctx.settings.cardFeeCredit }}
         continuousScan={canUseFeature(ctx.business.plan, "fastScan")}
         fiado={canUseFeature(ctx.business.plan, "customers")}
         cashClose={canUseFeature(ctx.business.plan, "cashClose")}

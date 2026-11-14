@@ -13,6 +13,7 @@ import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { FiadoDays } from "@/components/settings/fiado-days"
+import { CardFeesSettings } from "@/components/settings/card-fees-settings"
 import { PushSettings } from "@/components/settings/push-settings"
 import { StoreSettings } from "@/components/settings/store-settings"
 import { BookingSettings } from "@/components/settings/booking-settings"
@@ -285,6 +286,19 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 </CardContent>
               </Card>
             ) : null}
+
+            <Card id="maquina" className="scroll-mt-20">
+              <CardHeader>
+                <CardTitle>Máquina de tarjetas</CardTitle>
+                <CardDescription>
+                  Lo que te descuenta tu máquina (Transbank, Getnet, SumUp, Mercado Pago u otra) por cada pago con débito o crédito. Lo
+                  restamos de tu ganancia en Inicio y Reportes, y en el cierre de caja ves cuánto te depositan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CardFeesSettings debit={ctx.settings.cardFeeDebit} credit={ctx.settings.cardFeeCredit} currency={ctx.currency} disabled={!canManage} />
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>

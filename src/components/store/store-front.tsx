@@ -16,7 +16,23 @@ import { payWebOrder } from "@/server/actions/online-payments"
 import { applyPromotions, promoActive, promoBadge, promoHint, type PromoRule } from "@/lib/promotions"
 import { ProductImage } from "@/components/products/product-image"
 
-export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null }
+export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null; description?: string | null }
+
+/** Descripción del producto: dos líneas y "Ver más" si es larga. */
+function ProductDescription({ text }: { text: string }) {
+  const [open, setOpen] = React.useState(false)
+  const long = text.length > 70 || text.includes("\n")
+  return (
+    <div className="mt-1 text-xs leading-snug text-muted-foreground">
+      <p className={cn("whitespace-pre-line", !open && "line-clamp-2")}>{text}</p>
+      {long ? (
+        <button type="button" onClick={() => setOpen((o) => !o)} className="mt-0.5 font-medium text-foreground underline-offset-2 hover:underline" aria-expanded={open}>
+          {open ? "Ver menos" : "Ver más"}
+        </button>
+      ) : null}
+    </div>
+  )
+}
 
 const CART_KEY = (slug: string) => `ordensimple-carro-${slug}`
 /** Pedidos hechos desde este teléfono, para volver a ver en qué van. */
@@ -117,7 +133,7 @@ export function StoreFront({
 
   const categories = [...new Set(products.map((p) => p.category).filter((c): c is string => Boolean(c)))]
   const q = query.trim().toLowerCase()
-  const shown = products.filter((p) => (!category || p.category === category) && (!q || p.name.toLowerCase().includes(q)))
+  const shown = products.filter((p) => (!category || p.category === category) && (!q || p.name.toLowerCase().includes(q) || Boolean(p.description?.toLowerCase().includes(q))))
   const lines = products.filter((p) => cart[p.id]).map((p) => ({ ...p, quantity: Math.min(cart[p.id], p.max) }))
   const count = lines.reduce((s, l) => s + l.quantity, 0)
   const gross = lines.reduce((s, l) => s + l.quantity * l.price, 0)
@@ -246,6 +262,7 @@ export function StoreFront({
                 <div className="flex flex-1 flex-col gap-2 p-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</p>
+                    {p.description ? <ProductDescription text={p.description} /> : null}
                     <p className="tabular mt-1 font-semibold">{money(p.price)}</p>
                     {hintOf(p) ? <p className="mt-1 text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</p> : null}
                   </div>
@@ -263,6 +280,7 @@ export function StoreFront({
                     {p.name}
                     {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
                   </p>
+                  {p.description ? <ProductDescription text={p.description} /> : null}
                   <p className="tabular mt-0.5 text-sm text-muted-foreground">{money(p.price)}</p>
                   {hintOf(p) ? <p className="mt-0.5 text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</p> : null}
                 </div>

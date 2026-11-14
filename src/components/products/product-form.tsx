@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Field } from "@/components/app/field"
+import { Textarea } from "@/components/ui/textarea"
 import { ScanButton } from "@/components/app/barcode-scanner"
 import { MoneyInput } from "@/components/app/money-input"
 import { Explainer } from "@/components/app/explainer"
@@ -24,6 +25,8 @@ export type ProductFormValues = {
   /** Todos sus códigos de barras: el primero es el principal. */
   codes: string[]
   categoryName: string
+  /** Descripción para la tienda online. */
+  description: string
   cost: number
   price: number
   /** Por unidad ("u"), por kilo ("kg") o por metro ("m"). */
@@ -40,6 +43,7 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   name: "",
   codes: [],
   categoryName: "",
+  description: "",
   cost: 0,
   price: 0,
   saleUnit: "u",
@@ -135,6 +139,17 @@ export function ProductForm({
           </datalist>
         </Field>
       </div>
+      <Field label="Descripción" htmlFor="p-desc" optional hint="Se muestra en tu tienda online: medidas, materiales, sabores o lo que el cliente quiera saber." error={errors.description}>
+        <Textarea
+          id="p-desc"
+          value={v.description}
+          onChange={(e) => set("description", e.target.value)}
+          placeholder="Ej: 100% algodón, 1,50 m de ancho. Ideal para poleras y sábanas."
+          rows={3}
+          maxLength={500}
+          className="resize-y"
+        />
+      </Field>
       <Field
         label="Códigos de barras"
         htmlFor="p-code"

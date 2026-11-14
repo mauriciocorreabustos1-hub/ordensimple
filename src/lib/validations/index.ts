@@ -1,4 +1,5 @@
 import { SALE_UNITS } from "@/lib/units"
+import { MAX_CARD_FEE } from "@/lib/card-fees"
 import { RECIPE_UNITS } from "@/lib/recipes"
 import { z } from "zod"
 import { CURRENCY_CODES } from "@/lib/currency"
@@ -110,6 +111,8 @@ export const preferencesSchema = z.object({
   chargesVat: z.boolean().optional(),
   vatDueDay: z.number().int().min(1).max(28).optional(),
   ppmRate: z.number().min(0).max(0.05).optional(),
+  cardFeeDebit: z.number().min(0).max(MAX_CARD_FEE, `Máximo ${MAX_CARD_FEE} %`).optional(),
+  cardFeeCredit: z.number().min(0).max(MAX_CARD_FEE, `Máximo ${MAX_CARD_FEE} %`).optional(),
   tableCount: z.number().int().min(0).max(200).optional(),
   employeesProductsOnly: z.boolean().optional(),
   tableExtras: z.array(z.string().trim().min(1).max(30, "Máximo 30 caracteres")).max(30, "Máximo 30 lugares").optional(),
@@ -194,6 +197,13 @@ export const productSchema = z.object({
   name: z.string().trim().min(2, "Escribe el nombre").max(100),
   sku: optionalText(120),
   categoryName: optionalText(40),
+  /** Descripción para la tienda online. Vacía la borra; si no viene, no se toca. */
+  description: z
+    .string()
+    .trim()
+    .max(500, "Máximo 500 caracteres")
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v || null)),
   cost: money,
   price: positiveMoney,
   /** Por unidad, por kilo o por metro. En kilos y metros, el stock lleva decimales. */

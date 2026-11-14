@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Field } from "@/components/app/field"
 import { MoneyInput } from "@/components/app/money-input"
 import { CashChange } from "@/components/sales/cash-change"
+import { CardFeeNote } from "@/components/sales/card-fee-note"
 import { PaymentChips } from "@/components/app/payment-chips"
 import { formatMoney } from "@/lib/currency"
 import { toDateKey } from "@/lib/dates"
@@ -104,6 +105,7 @@ export function QuickSaleForm({
         <PaymentChips value={paymentMethod} onChange={setPaymentMethod} />
       </Field>
       {!editing && paymentMethod === "CASH" ? <CashChange key={`vuelto-${round}`} total={amount} currency={currency} /> : null}
+      <CardFeeNote total={amount} method={paymentMethod} currency={currency} />
       {fiado || loyalty ? (
         <Field
           label={fiado ? "¿A quién le fiaste?" : "Cliente"}

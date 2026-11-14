@@ -81,6 +81,8 @@ export async function requireBusiness() {
     chargesVat: true,
     vatDueDay: 20,
     ppmRate: 0.00125,
+    cardFeeDebit: 0,
+    cardFeeCredit: 0,
     tableCount: 6,
     tableExtras: ["Para llevar", "Delivery"],
     employeesProductsOnly: true,

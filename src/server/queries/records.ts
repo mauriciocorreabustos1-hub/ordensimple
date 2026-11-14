@@ -1,4 +1,5 @@
 import "server-only"
+import { cardFeesBetween } from "@/server/queries/card-fees"
 import { db } from "@/lib/db"
 import { addDays, dateKeyToUtc, startOfDay, startOfMonth, toDateKey } from "@/lib/dates"
 import { totalsBetween } from "@/server/queries/aggregates"
@@ -68,7 +69,9 @@ export async function listExpenses(businessId: string, from: Date, to: Date, tak
 }
 
 /** Gastos agrupados por categoría en un rango, de mayor a menor. */
-export async function expensesByCategory(businessId: string, from: Date, to: Date) {
+/** Gastos por categoría. Con `cardFees`, suma una fila con la comisión de la máquina de tarjetas (Reportes). */
+export async function expensesByCategory(businessId: string, from: Date, to: Date, opts: { cardFees?: boolean } = {}) {
+  const fee = opts.cardFees ? await cardFeesBetween(businessId, from, to) : 0
   const groups = await db.expense.groupBy({
     by: ["categoryId"],
     where: { businessId, date: { gte: from, lt: to } },
@@ -85,5 +88,6 @@ export async function expensesByCategory(businessId: string, from: Date, to: Dat
       name: g.categoryId ? (names.get(g.categoryId) ?? "Sin categoría") : "Sin categoría",
       total: g._sum.amount ?? 0,
     }))
+    .concat(fee ? [{ id: "card-fees", name: "Comisión máquina de tarjetas", total: fee }] : [])
     .sort((a, b) => b.total - a.total)
 }

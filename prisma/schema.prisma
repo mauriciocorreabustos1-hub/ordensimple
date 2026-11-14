@@ -268,6 +268,10 @@ model BusinessSettings {
   chargesVat            Boolean       @default(true)
   /// Día del mes siguiente en que vence el pago del IVA (en Chile, F29: día 20 con documentos electrónicos, si no día 12).
   vatDueDay             Int           @default(20)
+  /// Comisión de la máquina de tarjetas (POS), en %: lo que descuenta de cada pago con débito y con crédito
+  /// (con IVA incluido). Se resta de la ganancia en Inicio y Reportes. 0 = no usa máquina o no la anotó.
+  cardFeeDebit          Float         @default(0)
+  cardFeeCredit         Float         @default(0)
   /// Tasa del pago provisional mensual (PPM) que va en el mismo F29, sobre las ventas sin IVA. 0 = no mostrarlo.
   /// Pro Pyme General 0,125% (rebaja transitoria 2025-2027, Ley 21.755); Pro Pyme Transparente 0,2%.
   ppmRate               Float         @default(0.00125)
@@ -360,6 +364,8 @@ model Product {
   stock       Float     @default(0)
   minStock    Float     @default(0)
   trackStock  Boolean   @default(true)
+  /// Descripción para la tienda online (medidas, materiales, sabores…). Null = sin descripción.
+  description String?
   /// Foto del producto (Vercel Blob, ya achicada en el celular). Se muestra en la tienda online, al vender y en Productos.
   imageUrl    String?
   /// Próximo vencimiento del stock (para avisar lo que está por vencer).

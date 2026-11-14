@@ -25,6 +25,7 @@ import { useCanApproveDiscounts, usePromotions } from "@/components/app/quick-ac
 import { applyPromotions } from "@/lib/promotions"
 import { DiscountField, type DiscountValue } from "@/components/sales/discount-field"
 import { CashChange } from "@/components/sales/cash-change"
+import { CardFeeNote } from "@/components/sales/card-fee-note"
 import { earnedPart } from "@/lib/loyalty"
 
 export type ProductOption = { id: string; name: string; price: number; stock: number; trackStock: boolean; codes?: string[]; categoryId?: string | null; /** "u", "kg" o "m". */ saleUnit?: string }
@@ -402,6 +403,7 @@ export function SaleForm({
         </div>
       </div>
       {!editing && paymentMethod === "CASH" ? <CashChange key={`vuelto-${discKey}`} total={total} currency={currency} /> : null}
+      <CardFeeNote total={total} method={paymentMethod} currency={currency} />
       <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : null}
         {editing ? "Guardar cambios" : fiado ? "Anotar fiado" : "Guardar venta"}

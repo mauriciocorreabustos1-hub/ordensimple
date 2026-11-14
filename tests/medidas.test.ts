@@ -1,4 +1,4 @@
-// Pruebas de las medidas: venta por unidad, kilo o metro, y recetas con centímetros y metros.
+// Pruebas de las medidas (venta por unidad, kilo o metro; recetas con centímetros y metros) y de la comisión de la máquina.
 // Correr con:  npm run test:medidas
 
 import assert from "node:assert/strict"
@@ -60,5 +60,18 @@ describe("rubros textiles ven Recetas", () => {
     for (const r of ["Textil", "Costura y arreglos", "Confección de ropa", "Venta de telas", "Bordados", "Tapicería", "Cortinas a medida"]) assert.equal(makesRecipes(r), true, r)
     assert.equal(makesRecipes("Almacén o minimarket"), false)
     assert.equal(makesRecipes("Estela"), false)
+  })
+})
+
+describe("comisión de la máquina de tarjetas", () => {
+  test("solo débito y crédito, en pesos enteros", async () => {
+    const { cardFeeFor, formatRate } = await import("../src/lib/card-fees")
+    const fees = { debit: 1.79, credit: 3.51 }
+    assert.equal(cardFeeFor(10000, "CREDIT", fees), 351)
+    assert.equal(cardFeeFor(10000, "DEBIT", fees), 179)
+    assert.equal(cardFeeFor(10000, "CASH", fees), 0)
+    assert.equal(cardFeeFor(10000, "TRANSFER", fees), 0)
+    assert.equal(cardFeeFor(-5000, "CREDIT", fees), 0)
+    assert.equal(formatRate(3.51), "3,51 %")
   })
 })

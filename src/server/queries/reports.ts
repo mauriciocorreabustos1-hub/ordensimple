@@ -34,7 +34,7 @@ export async function getReport(businessId: string, from: Date, to: Date, timezo
     totalsBetween(businessId, prevFrom, from),
     seriesBetween(businessId, from, to, timezone, "day"),
     productStats(businessId, from, to),
-    expensesByCategory(businessId, from, to),
+    expensesByCategory(businessId, from, to, { cardFees: true }),
     db.sale.groupBy({
       by: ["paymentMethod"],
       where: { businessId, date: { gte: from, lt: to } },

@@ -28,7 +28,7 @@ export async function getInsights(businessId: string, timezone: string, currency
     totalsBetween(businessId, from, to),
     totalsBetween(businessId, prevFrom, from),
     productStats(businessId, from, to),
-    expensesByCategory(businessId, from, to),
+    expensesByCategory(businessId, from, to, { cardFees: true }),
     getInventory(businessId, timezone, now),
   ])
 

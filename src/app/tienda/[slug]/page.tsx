@@ -5,6 +5,7 @@ import { cache } from "react"
 import { BusinessLogo } from "@/components/app/business-logo"
 import { StoreFront } from "@/components/store/store-front"
 import { db } from "@/lib/db"
+import { formatMoney } from "@/lib/currency"
 import { canUseFeature, effectivePlan } from "@/lib/plans"
 import { STORE_SLUG_RE } from "@/lib/store"
 import { activePromotions } from "@/server/sale-core"
@@ -37,10 +38,38 @@ const getStore = cache(async (slug: string) => {
   return b
 })
 
-export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">): Promise<Metadata> {
+/** El producto de un enlace directo (?p=…), si está a la venta en esa tienda. */
+async function sharedProduct(storeId: string, id: unknown) {
+  if (typeof id !== "string" || !/^[\w-]{8,40}$/.test(id)) return null
+  return db.product.findFirst({
+    where: { id, businessId: storeId, active: true, isService: false, price: { gt: 0 } },
+    select: { id: true, name: true, price: true, description: true, imageUrl: true },
+  })
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps<"/tienda/[slug]">): Promise<Metadata> {
   const { slug } = await params
   const store = await getStore(slug)
   if (!store) return { title: "Tienda no encontrada", robots: { index: false } }
+  // Enlace directo a un producto: al compartirlo en WhatsApp o redes se ve con su foto, nombre y precio.
+  const product = await sharedProduct(store.id, (await searchParams).p)
+  if (product) {
+    const price = formatMoney(product.price, store.currency)
+    const text = product.description ? `${price} · ${product.description.replace(/\s+/g, " ").slice(0, 150)}` : `${price} en ${store.name}. Haz tu pedido por WhatsApp.`
+    return {
+      title: { absolute: `${product.name} · ${store.name}` },
+      description: text,
+      alternates: { canonical: `/tienda/${slug}?p=${product.id}` },
+      openGraph: {
+        title: `${product.name} · ${price}`,
+        description: text,
+        siteName: store.name,
+        url: `/tienda/${slug}?p=${product.id}`,
+        ...(product.imageUrl ? { images: [{ url: product.imageUrl, alt: product.name }] } : {}),
+      },
+      twitter: { card: "summary", title: `${product.name} · ${price}`, description: text, ...(product.imageUrl ? { images: [product.imageUrl] } : {}) },
+    }
+  }
   const bookable = await getBookableBusiness(slug)
   const booking = bookable ? (await bookableServices(bookable.id)).length > 0 : false
   const description = store.storeMessage || (booking ? `Reserva tu hora en ${store.name} en un minuto.` : `Mira los productos de ${store.name} y haz tu pedido por WhatsApp.`)
@@ -53,7 +82,7 @@ export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">):
 
 export default async function StorePage({ params, searchParams }: PageProps<"/tienda/[slug]">) {
   const { slug } = await params
-  const { mesa } = await searchParams
+  const { mesa, p: openProduct } = await searchParams
   const store = await getStore(slug)
   if (!store) {
     // Si el negocio cambió la dirección de su tienda, los enlaces viejos llevan a la nueva.
@@ -103,6 +132,7 @@ export default async function StorePage({ params, searchParams }: PageProps<"/ti
   const table = typeof mesa === "string" && (await storeTables(store.id)).includes(mesa) ? mesa : null
   const storeFront = (
     <StoreFront
+      openProductId={typeof openProduct === "string" ? openProduct : null}
       table={table}
       payRule={payRule}
       promotions={promotions.filter((p) => p.online)}

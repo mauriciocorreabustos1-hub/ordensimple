@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket, X } from "lucide-react"
+import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, Share2, ShoppingBasket, X } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
@@ -53,8 +53,11 @@ function ProductSheet({
   badge,
   phone,
   onClose,
+  onShare,
   children,
 }: {
+  /** Copia o comparte el enlace directo a este producto. */
+  onShare: () => void
   /** Vista previa dentro del teléfono: siempre como hoja desde abajo y sin bloquear la página de atrás. */
   phone: boolean
   product: StoreProduct
@@ -98,6 +101,15 @@ function ProductSheet({
         >
           <X className="size-4" />
         </button>
+        <button
+          type="button"
+          onClick={onShare}
+          aria-label={`Compartir ${p.name}`}
+          title="Compartir"
+          className="absolute top-3 right-14 z-10 flex size-9 items-center justify-center rounded-full border bg-background/95 shadow-sm"
+        >
+          <Share2 className="size-4" />
+        </button>
         <div className="overflow-y-auto">
           {p.imageUrl ? (
             <div className="relative">
@@ -106,7 +118,7 @@ function ProductSheet({
             </div>
           ) : null}
           <div className="space-y-3 p-5">
-            <div className={cn(!p.imageUrl && "pr-10")}>
+            <div className={cn(!p.imageUrl && "pr-20")}>
               {p.category ? <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{p.category}</p> : null}
               <h2 id={titleId} className="mt-0.5 text-xl leading-tight font-semibold">
                 {p.name}
@@ -175,7 +187,10 @@ export function StoreFront({
   table = null,
   payRule = null,
   preview = false,
+  openProductId = null,
 }: {
+  /** Producto que viene en el enlace (?p=…): la tienda se abre con su ficha. */
+  openProductId?: string | null
   /** Vista previa en Configuración: se ve igual, pero no busca pedidos ni deja enviar uno. */
   preview?: boolean
   /** Qué cobra online el negocio al pedir (lo fija el dueño): todo, solo despachos, o nada. */
@@ -198,7 +213,54 @@ export function StoreFront({
   const [cart, setCart] = React.useState<Record<string, number>>({})
   const [checkout, setCheckout] = React.useState(false)
   /** Producto abierto en su ficha (foto grande y descripción completa). */
-  const [detail, setDetail] = React.useState<StoreProduct | null>(null)
+  const [detail, setDetail] = React.useState<StoreProduct | null>(() => products.find((p) => p.id === openProductId) ?? null)
+  // Enlace a un producto que ya no está a la venta (sin stock o desactivado): se avisa y se muestra la tienda.
+  React.useEffect(() => {
+    if (openProductId && !products.some((p) => p.id === openProductId)) toast.info("Ese producto ya no está disponible. Mira los demás.")
+    // Solo al abrir la página.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** La dirección de la página lleva el producto abierto, para que se pueda copiar o volver atrás. */
+  const setUrlProduct = (id: string | null) => {
+    if (preview) return
+    try {
+      const url = new URL(window.location.href)
+      if (id) url.searchParams.set("p", id)
+      else url.searchParams.delete("p")
+      window.history.replaceState(window.history.state, "", url)
+    } catch {}
+  }
+  const openDetail = (p: StoreProduct) => {
+    setDetail(p)
+    setUrlProduct(p.id)
+  }
+  const closeDetail = () => {
+    setDetail(null)
+    setUrlProduct(null)
+  }
+  /** En el celular abre el menú de compartir (WhatsApp, Instagram…); en el computador copia el enlace. */
+  async function shareProduct(p: StoreProduct) {
+    if (preview) return void toast.info("Cuando publiques tu tienda, aquí copias el enlace de este producto para compartirlo.")
+    const url = `${window.location.origin}/tienda/${slug}?p=${encodeURIComponent(p.id)}`
+    const text = `${p.name} · ${money(p.price)} en ${businessName}`
+    const phone = window.matchMedia?.("(pointer: coarse)").matches
+    if (phone && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: p.name, text, url })
+        return
+      } catch (error) {
+        // La persona cerró el menú: no hay nada que avisar.
+        if (error instanceof DOMException && error.name === "AbortError") return
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success("Enlace copiado. Pégalo en WhatsApp, Instagram o donde quieras.")
+    } catch {
+      toast.info(url, { description: "Copia este enlace para compartir el producto.", duration: 15000 })
+    }
+  }
   const [done, setDone] = React.useState<Done | null>(null)
   const [recent, setRecent] = React.useState<RecentOrder[]>([])
   React.useEffect(() => {
@@ -356,7 +418,7 @@ export function StoreFront({
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {shown.map((p) => (
               <li key={p.id} className="flex flex-col overflow-hidden rounded-2xl border bg-background">
-                <button type="button" onClick={() => setDetail(p)} className="flex flex-1 flex-col text-left" aria-label={`Ver ${p.name}`}>
+                <button type="button" onClick={() => openDetail(p)} className="flex flex-1 flex-col text-left" aria-label={`Ver ${p.name}`}>
                   <span className="relative block">
                     <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
                     {badgeOf(p) ? <span className="absolute top-2 left-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow">{badgeOf(p)}</span> : null}
@@ -376,7 +438,7 @@ export function StoreFront({
           <ul className="divide-y overflow-hidden rounded-2xl border bg-background">
             {shown.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-3">
-                <button type="button" onClick={() => setDetail(p)} className="block min-w-0 flex-1 text-left" aria-label={`Ver ${p.name}`}>
+                <button type="button" onClick={() => openDetail(p)} className="block min-w-0 flex-1 text-left" aria-label={`Ver ${p.name}`}>
                   <span className="block text-sm leading-tight font-medium">
                     {p.name}
                     {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
@@ -399,11 +461,12 @@ export function StoreFront({
           hint={hintOf(detail)}
           badge={badgeOf(detail)}
           phone={preview}
-          onClose={() => setDetail(null)}
+          onClose={closeDetail}
+          onShare={() => void shareProduct(detail)}
         >
           {quantity(detail, true)}
           {cart[detail.id] ? (
-            <Button size="lg" className="h-10" onClick={() => setDetail(null)}>
+            <Button size="lg" className="h-10" onClick={closeDetail}>
               Listo
             </Button>
           ) : null}

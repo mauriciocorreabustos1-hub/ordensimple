@@ -366,6 +366,9 @@ model Product {
   trackStock  Boolean   @default(true)
   /// Descripción para la tienda online (medidas, materiales, sabores…). Null = sin descripción.
   description String?
+  /// Usos y beneficios para la ficha de la tienda online (opcionales): un punto por línea.
+  uses        String?
+  benefits    String?
   /// Foto del producto (Vercel Blob, ya achicada en el celular). Se muestra en la tienda online, al vender y en Productos.
   imageUrl    String?
   /// Próximo vencimiento del stock (para avisar lo que está por vencer).

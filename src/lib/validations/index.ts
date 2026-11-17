@@ -193,17 +193,23 @@ export type ExpenseInput = z.input<typeof expenseSchema>
 
 // ─── Productos ──────────────────────────────────────────────────────────────
 
+/** Texto opcional para la tienda online (hasta 500 caracteres). Vacío lo borra; si no viene, no se toca. */
+const storeText = z
+  .string()
+  .trim()
+  .max(500, "Máximo 500 caracteres")
+  .optional()
+  .transform((v) => (v === undefined ? undefined : v || null))
+
 export const productSchema = z.object({
   name: z.string().trim().min(2, "Escribe el nombre").max(100),
   sku: optionalText(120),
   categoryName: optionalText(40),
   /** Descripción para la tienda online. Vacía la borra; si no viene, no se toca. */
-  description: z
-    .string()
-    .trim()
-    .max(500, "Máximo 500 caracteres")
-    .optional()
-    .transform((v) => (v === undefined ? undefined : v || null)),
+  description: storeText,
+  /** Usos y beneficios para la ficha de la tienda: un punto por línea. Opcionales. */
+  uses: storeText,
+  benefits: storeText,
   cost: money,
   price: positiveMoney,
   /** Por unidad, por kilo o por metro. En kilos y metros, el stock lleva decimales. */

@@ -86,6 +86,8 @@ export default async function ProductsPage() {
     codes: productCodes(p),
     categoryName: p.category?.name ?? "",
     description: p.description ?? "",
+    uses: p.uses ?? "",
+    benefits: p.benefits ?? "",
     cost: p.cost,
     price: p.price,
     saleUnit: saleUnitOf(p.saleUnit),

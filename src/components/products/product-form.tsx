@@ -27,6 +27,9 @@ export type ProductFormValues = {
   categoryName: string
   /** Descripción para la tienda online. */
   description: string
+  /** Usos y beneficios para la ficha de la tienda (opcionales, un punto por línea). */
+  uses: string
+  benefits: string
   cost: number
   price: number
   /** Por unidad ("u"), por kilo ("kg") o por metro ("m"). */
@@ -44,6 +47,8 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   codes: [],
   categoryName: "",
   description: "",
+  uses: "",
+  benefits: "",
   cost: 0,
   price: 0,
   saleUnit: "u",
@@ -69,6 +74,8 @@ export function ProductForm({
 }) {
   const [v, setV] = React.useState(initial)
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({})
+  // Usos y beneficios son opcionales: se muestran solo si ya tienen algo o si se piden.
+  const [showExtras, setShowExtras] = React.useState(Boolean(initial.uses || initial.benefits))
   const [pending, startTransition] = React.useTransition()
   const set = <K extends keyof ProductFormValues>(k: K, value: ProductFormValues[K]) => setV((s) => ({ ...s, [k]: value }))
   const per = SALE_UNIT_INFO[v.saleUnit].per
@@ -150,6 +157,37 @@ export function ProductForm({
           className="resize-y"
         />
       </Field>
+      {showExtras ? (
+        <div className="grid gap-3 rounded-xl border border-dashed p-3 sm:grid-cols-2">
+          <Field label="Usos" htmlFor="p-uses" optional hint="Uno por línea. Se ven en la ficha del producto en tu tienda." error={errors.uses}>
+            <Textarea
+              id="p-uses"
+              value={v.uses}
+              onChange={(e) => set("uses", e.target.value)}
+              placeholder={"Ej: Poleras y vestidos\nSábanas y fundas"}
+              rows={3}
+              maxLength={500}
+              className="resize-y"
+            />
+          </Field>
+          <Field label="Beneficios" htmlFor="p-benefits" optional hint="Uno por línea: lo que gana tu cliente al elegirlo." error={errors.benefits}>
+            <Textarea
+              id="p-benefits"
+              value={v.benefits}
+              onChange={(e) => set("benefits", e.target.value)}
+              placeholder={"Ej: Fresca y suave\nNo se encoge al lavar"}
+              rows={3}
+              maxLength={500}
+              className="resize-y"
+            />
+          </Field>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setShowExtras(true)} className="-mt-1 flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+          <Plus className="size-4" />
+          Agregar usos y beneficios (opcional)
+        </button>
+      )}
       <Field
         label="Códigos de barras"
         htmlFor="p-code"

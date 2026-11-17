@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket, X } from "lucide-react"
+import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket, X } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,30 @@ import { payWebOrder } from "@/server/actions/online-payments"
 import { applyPromotions, promoActive, promoBadge, promoHint, type PromoRule } from "@/lib/promotions"
 import { ProductImage } from "@/components/products/product-image"
 
-export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null; description?: string | null }
+export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null; description?: string | null; uses?: string | null; benefits?: string | null }
+
+/** "Usos" o "Beneficios" en la ficha: un punto por cada línea que escribió el negocio. */
+function SheetList({ title, text, marker }: { title: string; text: string; marker: "dot" | "check" }) {
+  const items = text.split("\n").map((l) => l.replace(/^[-•*·\s]+/, "").trim()).filter(Boolean)
+  if (!items.length) return null
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm font-semibold">{title}</p>
+      <ul className="space-y-1">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2 text-sm leading-snug text-muted-foreground">
+            {marker === "check" ? (
+              <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+            ) : (
+              <span aria-hidden className="mt-[0.45rem] size-1.5 shrink-0 rounded-full bg-primary" />
+            )}
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 /**
  * Ficha del producto: al tocarlo se abre con la foto grande, la descripción completa, el precio y los botones para
@@ -93,6 +116,8 @@ function ProductSheet({
             </div>
             {hint ? <p className="text-sm font-medium text-rose-700 dark:text-rose-400">🎁 {hint}</p> : null}
             {p.description ? <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">{p.description}</p> : null}
+            {p.uses ? <SheetList title="Usos" text={p.uses} marker="dot" /> : null}
+            {p.benefits ? <SheetList title="Beneficios" text={p.benefits} marker="check" /> : null}
             {p.max > 0 && p.max <= 5 ? <p className="text-xs font-medium text-warning">{p.max === 1 ? "Queda 1 unidad" : `Quedan ${p.max} unidades`}</p> : null}
           </div>
         </div>

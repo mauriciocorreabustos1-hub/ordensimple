@@ -13,7 +13,7 @@ export async function StorePreview({
 }) {
   const products = await db.product.findMany({
     where: { businessId: business.id, active: true, price: { gt: 0 }, isService: false, OR: [{ trackStock: false }, { stock: { gt: 0 } }] },
-    select: { id: true, name: true, description: true, price: true, stock: true, trackStock: true, imageUrl: true, categoryId: true, category: { select: { name: true } } },
+    select: { id: true, name: true, description: true, uses: true, benefits: true, price: true, stock: true, trackStock: true, imageUrl: true, categoryId: true, category: { select: { name: true } } },
     orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
     take: 60,
   })
@@ -49,6 +49,8 @@ export async function StorePreview({
                   imageUrl: p.imageUrl,
                   categoryId: p.categoryId,
                   description: p.description,
+        uses: p.uses,
+        benefits: p.benefits,
                 }))}
               />
             ) : (

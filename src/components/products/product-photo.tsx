@@ -35,7 +35,7 @@ export function ProductPhoto({
     if (!isImageFile(file)) return void toast.error("Elige una imagen (foto, PNG, JPG o HEIC).")
     startTransition(async () => {
       try {
-        const r = await uploadProductPhoto(productId, await shrinkImage(file, 800))
+        const r = await uploadProductPhoto(productId, await shrinkImage(file, 800, false, "webp", 560 * 1024))
         if (r.ok && r.data) {
           setUrl(r.data.url)
           toast.success(`Foto de ${name} guardada`)

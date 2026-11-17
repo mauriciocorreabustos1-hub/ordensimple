@@ -24,7 +24,14 @@ function loadImage(url: string) {
  * Achica una imagen en el navegador (por defecto a 256 px como máximo, sin perder la transparencia) y la entrega
  * como "data:image/webp;base64,…" lista para guardar. Así se suben archivos de pocos KB.
  */
-export async function shrinkImage(file: File, max = 256, square = false, format: "webp" | "jpeg" = "webp"): Promise<string> {
+export async function shrinkImage(
+  file: File,
+  max = 256,
+  square = false,
+  format: "webp" | "jpeg" = "webp",
+  /** Lo más que acepta el servidor para esa imagen (los envíos tienen un tope de 1 MB). */
+  maxBytes = 280 * 1024,
+): Promise<string> {
   let url = URL.createObjectURL(file)
   try {
     let img: HTMLImageElement
@@ -41,32 +48,50 @@ export async function shrinkImage(file: File, max = 256, square = false, format:
     }
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")!
-    const paint = () => {
-      // JPEG no tiene transparencia: lo transparente queda blanco en vez de negro.
-      if (format !== "jpeg") return
+    const draw = (limit: number) => {
+      if (square) {
+        // Recorte cuadrado al centro (fotos de perfil).
+        const side = Math.min(img.naturalWidth, img.naturalHeight)
+        const size = Math.min(limit, side)
+        canvas.width = size
+        canvas.height = size
+        ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size)
+      } else {
+        const scale = Math.min(1, limit / Math.max(img.naturalWidth, img.naturalHeight))
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      }
+    }
+    // JPEG no tiene transparencia: lo transparente queda blanco en vez de negro.
+    const toJpeg = (quality: number) => {
       ctx.globalCompositeOperation = "destination-over"
       ctx.fillStyle = "#fff"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.globalCompositeOperation = "source-over"
+      return canvas.toDataURL("image/jpeg", quality)
     }
-    if (square) {
-      // Recorte cuadrado al centro (fotos de perfil).
-      const side = Math.min(img.naturalWidth, img.naturalHeight)
-      const size = Math.min(max, side)
-      canvas.width = size
-      canvas.height = size
-      ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size)
-    } else {
-      const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight))
-      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
-      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    // Lo que pesa la imagen ya decodificada (el texto base64 ocupa 4/3).
+    const fits = (dataUrl: string) => ((dataUrl.length - dataUrl.indexOf(",") - 1) * 3) / 4 <= maxBytes
+
+    draw(max)
+    let out: string
+    if (format === "jpeg") out = toJpeg(0.86)
+    else {
+      const webp = canvas.toDataURL("image/webp", 0.9)
+      // Safari (iPhone y Mac) no genera WebP: entrega PNG, que en una foto puede pasar de 1 MB.
+      out = webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/png")
     }
-    paint()
-    if (format === "jpeg") return canvas.toDataURL("image/jpeg", 0.86)
-    const webp = canvas.toDataURL("image/webp", 0.9)
-    // Navegadores que no generan WebP devuelven PNG.
-    return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/png")
+    // Si pesa más de lo que acepta el servidor: JPEG con menos calidad y, si no alcanza, más chica.
+    let limit = max
+    for (let i = 0; !fits(out) && i < 6; i++) {
+      if (i > 0 && i % 2 === 0) {
+        limit = Math.max(64, Math.round(limit * 0.75))
+        draw(limit)
+      }
+      out = toJpeg(i % 2 === 0 ? 0.82 : 0.68)
+    }
+    return out
   } finally {
     URL.revokeObjectURL(url)
   }

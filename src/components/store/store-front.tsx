@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket } from "lucide-react"
+import { CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket, X } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
@@ -19,18 +19,87 @@ import { ProductImage } from "@/components/products/product-image"
 
 export type StoreProduct = { id: string; name: string; price: number; category: string | null; categoryId?: string | null; max: number; imageUrl?: string | null; description?: string | null }
 
-/** Descripción del producto: dos líneas y "Ver más" si es larga. */
-function ProductDescription({ text }: { text: string }) {
-  const [open, setOpen] = React.useState(false)
-  const long = text.length > 70 || text.includes("\n")
+/**
+ * Ficha del producto: al tocarlo se abre con la foto grande, la descripción completa, el precio y los botones para
+ * agregarlo. Es "fixed": en la tienda cubre la pantalla y en la vista previa de Configuración queda dentro del teléfono.
+ */
+function ProductSheet({
+  product: p,
+  price,
+  hint,
+  badge,
+  phone,
+  onClose,
+  children,
+}: {
+  /** Vista previa dentro del teléfono: siempre como hoja desde abajo y sin bloquear la página de atrás. */
+  phone: boolean
+  product: StoreProduct
+  price: string
+  hint: string | null
+  badge: string | null
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  const closeRef = React.useRef<HTMLButtonElement>(null)
+  const onEscape = React.useEffectEvent(onClose)
+  React.useEffect(() => {
+    closeRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onEscape()
+    }
+    window.addEventListener("keydown", onKey)
+    // Que la página de atrás no se desplace mientras la ficha está abierta.
+    const before = document.body.style.overflow
+    if (!phone) document.body.style.overflow = "hidden"
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      if (!phone) document.body.style.overflow = before
+    }
+  }, [phone])
+
+  const titleId = `ficha-${p.id}`
   return (
-    <div className="mt-1 text-xs leading-snug text-muted-foreground">
-      <p className={cn("whitespace-pre-line", !open && "line-clamp-2")}>{text}</p>
-      {long ? (
-        <button type="button" onClick={() => setOpen((o) => !o)} className="mt-0.5 font-medium text-foreground underline-offset-2 hover:underline" aria-expanded={open}>
-          {open ? "Ver menos" : "Ver más"}
+    <div className={cn("fixed inset-0 z-30 flex items-end justify-center", !phone && "sm:items-center sm:p-4")} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <button type="button" tabIndex={-1} aria-hidden className="absolute inset-0 cursor-default bg-black/50 animate-in fade-in" onClick={onClose} />
+      <div className={cn(
+          "relative flex max-h-[90%] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-background shadow-2xl animate-in slide-in-from-bottom-6",
+          !phone && "sm:rounded-3xl",
+        )}>
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full border bg-background/95 shadow-sm"
+        >
+          <X className="size-4" />
         </button>
-      ) : null}
+        <div className="overflow-y-auto">
+          {p.imageUrl ? (
+            <div className="relative">
+              <ProductImage name={p.name} url={p.imageUrl} sizes="large" className="aspect-square w-full rounded-none" />
+              {badge ? <span className="absolute top-3 left-3 rounded-full bg-rose-600 px-2.5 py-0.5 text-sm font-bold text-white shadow">{badge}</span> : null}
+            </div>
+          ) : null}
+          <div className="space-y-3 p-5">
+            <div className={cn(!p.imageUrl && "pr-10")}>
+              {p.category ? <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{p.category}</p> : null}
+              <h2 id={titleId} className="mt-0.5 text-xl leading-tight font-semibold">
+                {p.name}
+                {badge && !p.imageUrl ? <span className="ml-2 rounded-full bg-rose-600 px-2 py-0.5 align-middle text-xs font-bold text-white">{badge}</span> : null}
+              </h2>
+              <p className="tabular mt-1.5 text-lg font-semibold">{price}</p>
+            </div>
+            {hint ? <p className="text-sm font-medium text-rose-700 dark:text-rose-400">🎁 {hint}</p> : null}
+            {p.description ? <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">{p.description}</p> : null}
+            {p.max > 0 && p.max <= 5 ? <p className="text-xs font-medium text-warning">{p.max === 1 ? "Queda 1 unidad" : `Quedan ${p.max} unidades`}</p> : null}
+          </div>
+        </div>
+        <div className="flex gap-2 border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] *:flex-1">
+          {children}
+        </div>
+      </div>
     </div>
   )
 }
@@ -103,6 +172,8 @@ export function StoreFront({
   const [category, setCategory] = React.useState<string | null>(null)
   const [cart, setCart] = React.useState<Record<string, number>>({})
   const [checkout, setCheckout] = React.useState(false)
+  /** Producto abierto en su ficha (foto grande y descripción completa). */
+  const [detail, setDetail] = React.useState<StoreProduct | null>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [recent, setRecent] = React.useState<RecentOrder[]>([])
   React.useEffect(() => {
@@ -260,19 +331,19 @@ export function StoreFront({
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {shown.map((p) => (
               <li key={p.id} className="flex flex-col overflow-hidden rounded-2xl border bg-background">
-                <div className="relative">
-                  <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
-                  {badgeOf(p) ? <span className="absolute top-2 left-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow">{badgeOf(p)}</span> : null}
-                </div>
-                <div className="flex flex-1 flex-col gap-2 p-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</p>
-                    {p.description ? <ProductDescription text={p.description} /> : null}
-                    <p className="tabular mt-1 font-semibold">{money(p.price)}</p>
-                    {hintOf(p) ? <p className="mt-1 text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</p> : null}
-                  </div>
-                  {quantity(p, true)}
-                </div>
+                <button type="button" onClick={() => setDetail(p)} className="flex flex-1 flex-col text-left" aria-label={`Ver ${p.name}`}>
+                  <span className="relative block">
+                    <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
+                    {badgeOf(p) ? <span className="absolute top-2 left-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow">{badgeOf(p)}</span> : null}
+                  </span>
+                  <span className="block min-w-0 flex-1 px-2.5 pt-2.5">
+                    <span className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</span>
+                    {p.description ? <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{p.description}</span> : null}
+                    <span className="tabular mt-1 block font-semibold">{money(p.price)}</span>
+                    {hintOf(p) ? <span className="mt-1 block text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</span> : null}
+                  </span>
+                </button>
+                <div className="p-2.5">{quantity(p, true)}</div>
               </li>
             ))}
           </ul>
@@ -280,21 +351,39 @@ export function StoreFront({
           <ul className="divide-y overflow-hidden rounded-2xl border bg-background">
             {shown.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-tight font-medium">
+                <button type="button" onClick={() => setDetail(p)} className="block min-w-0 flex-1 text-left" aria-label={`Ver ${p.name}`}>
+                  <span className="block text-sm leading-tight font-medium">
                     {p.name}
                     {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
-                  </p>
-                  {p.description ? <ProductDescription text={p.description} /> : null}
-                  <p className="tabular mt-0.5 text-sm text-muted-foreground">{money(p.price)}</p>
-                  {hintOf(p) ? <p className="mt-0.5 text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</p> : null}
-                </div>
+                  </span>
+                  {p.description ? <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{p.description}</span> : null}
+                  <span className="tabular mt-0.5 block text-sm text-muted-foreground">{money(p.price)}</span>
+                  {hintOf(p) ? <span className="mt-0.5 block text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</span> : null}
+                </button>
                 {quantity(p, false)}
               </li>
             ))}
           </ul>
         )
       )}
+
+      {detail ? (
+        <ProductSheet
+          product={detail}
+          price={money(detail.price)}
+          hint={hintOf(detail)}
+          badge={badgeOf(detail)}
+          phone={preview}
+          onClose={() => setDetail(null)}
+        >
+          {quantity(detail, true)}
+          {cart[detail.id] ? (
+            <Button size="lg" className="h-10" onClick={() => setDetail(null)}>
+              Listo
+            </Button>
+          ) : null}
+        </ProductSheet>
+      ) : null}
 
       {count ? (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">

@@ -23,7 +23,8 @@ export async function uploadProductPhoto(productId: string, dataUrl: string): Pr
   if (!idSchema.safeParse(productId).success) return { ok: false, message: "Producto no encontrado." }
   const ctx = await requireBusiness()
   if (!photosConfigured()) return { ok: false, message: "Las fotos todavía no están activadas. Escríbenos y las activamos." }
-  const img = parseImageDataUrl(dataUrl, 600 * 1024)
+  // Las versiones nuevas la mandan bajo 560 KB; se acepta hasta 1,5 MB por si llega de un teléfono con la versión anterior.
+  const img = parseImageDataUrl(dataUrl, 1536 * 1024)
   if ("error" in img) return { ok: false, message: img.error! }
   try {
     assertCan(ctx, "products:manage")

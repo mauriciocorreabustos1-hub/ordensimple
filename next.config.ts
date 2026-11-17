@@ -40,6 +40,11 @@ const nextConfig: NextConfig = {
   // Cada publicación en Vercel tiene su identificador: si alguien tenía la app abierta con una versión anterior,
   // al navegar se recarga sola con la nueva (en vez de fallar al guardar). En local no hace nada.
   deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
+  experimental: {
+    // Las fotos llegan ya achicadas desde el teléfono (bajo 600 KB), pero un teléfono con la versión anterior abierta
+    // puede mandar una más pesada: con este margen llega al servidor y recibe un aviso claro en vez de fallar.
+    serverActions: { bodySizeLimit: "3mb" },
+  },
   // La dirección antigua de Vercel lleva al dominio propio (un solo origen para sesiones y buscadores).
   async redirects() {
     return [

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Camera, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { shrinkImage } from "@/lib/image-shrink"
+import { shrinkImage, IMAGE_ACCEPT, isImageFile } from "@/lib/image-shrink"
 import { cn } from "@/lib/utils"
 import { removeProductPhoto, uploadProductPhoto } from "@/server/actions/product-photo"
 import { ProductImage } from "@/components/products/product-image"
@@ -32,7 +32,7 @@ export function ProductPhoto({
 
   function pick(file: File | undefined) {
     if (!file) return
-    if (!file.type.startsWith("image/")) return void toast.error("Elige una imagen (foto, PNG o JPG).")
+    if (!isImageFile(file)) return void toast.error("Elige una imagen (foto, PNG, JPG o HEIC).")
     startTransition(async () => {
       try {
         const r = await uploadProductPhoto(productId, await shrinkImage(file, 800))
@@ -93,7 +93,7 @@ export function ProductPhoto({
           <Trash2 className="size-3" />
         </button>
       ) : null}
-      <input ref={input} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
+      <input ref={input} type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
     </div>
   )
 }

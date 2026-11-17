@@ -20,7 +20,7 @@ import {
   type PublishableField,
   type SocialKind,
 } from "@/lib/contact-card"
-import { shrinkImage } from "@/lib/image-shrink"
+import { shrinkImage, IMAGE_ACCEPT, isImageFile } from "@/lib/image-shrink"
 import { deleteContactCard, saveContactCard } from "@/server/actions/contact-card"
 
 type Values = {
@@ -144,7 +144,7 @@ export function ContactCardEditor({
 
   async function pickPhoto(file: File | undefined) {
     if (!file) return
-    if (!file.type.startsWith("image/")) return void toast.error("Elige una imagen JPG o PNG.")
+    if (!isImageFile(file)) return void toast.error("Elige una imagen JPG, PNG o HEIC.")
     try {
       const data = await shrinkImage(file, 512, true, "jpeg")
       setPhoto(data)
@@ -280,7 +280,7 @@ export function ContactCardEditor({
               </div>
             </div>
             <Switch checked={published.has("photo")} onCheckedChange={(on) => toggle("photo", on)} disabled={!photo} aria-label="Mostrar foto en la tarjeta" />
-            <input ref={photoInput} type="file" accept="image/png,image/jpeg" className="hidden" onChange={(e) => pickPhoto(e.target.files?.[0])} aria-label="Elegir foto" />
+            <input ref={photoInput} type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={(e) => pickPhoto(e.target.files?.[0])} aria-label="Elegir foto" />
           </div>
           {errors.photo?.[0] ? <p className="text-xs text-destructive">{errors.photo[0]}</p> : null}
           <div className="flex items-center justify-between gap-3">

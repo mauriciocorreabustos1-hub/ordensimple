@@ -5,7 +5,7 @@ import { ImagePlus, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BusinessLogo } from "@/components/app/business-logo"
-import { shrinkImage } from "@/lib/image-shrink"
+import { shrinkImage, IMAGE_ACCEPT, isImageFile } from "@/lib/image-shrink"
 import { removeBusinessLogo, uploadBusinessLogo } from "@/server/actions/logo"
 
 export function LogoUploader({
@@ -24,7 +24,7 @@ export function LogoUploader({
 
   function pick(file: File | undefined) {
     if (!file) return
-    if (!file.type.startsWith("image/")) return void toast.error("Elige una imagen (PNG, JPG o WebP).")
+    if (!isImageFile(file)) return void toast.error("Elige una imagen (PNG, JPG, WebP o HEIC).")
     startTransition(async () => {
       try {
         const r = await uploadBusinessLogo(await shrinkImage(file))
@@ -68,7 +68,7 @@ export function LogoUploader({
         </div>
         <p className="text-xs text-muted-foreground">PNG, JPG o WebP. Mejor si es cuadrado y con fondo blanco o transparente.</p>
       </div>
-      <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => pick(e.target.files?.[0])} aria-label="Elegir logo" />
+      <input ref={input} type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={(e) => pick(e.target.files?.[0])} aria-label="Elegir logo" />
     </div>
   )
 }

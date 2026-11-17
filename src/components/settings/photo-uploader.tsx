@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { initials } from "@/components/app/user-menu"
-import { shrinkImage } from "@/lib/image-shrink"
+import { shrinkImage, IMAGE_ACCEPT, isImageFile } from "@/lib/image-shrink"
 import { removeUserPhoto, uploadUserPhoto } from "@/server/actions/photo"
 
 /** Foto de perfil: se recorta cuadrada al centro y se achica en el navegador antes de subirla. */
@@ -16,7 +16,7 @@ export function PhotoUploader({ name, image }: { name: string; image: string | n
 
   function pick(file: File | undefined) {
     if (!file) return
-    if (!file.type.startsWith("image/")) return void toast.error("Elige una imagen (PNG, JPG o WebP).")
+    if (!isImageFile(file)) return void toast.error("Elige una imagen (PNG, JPG, WebP o HEIC).")
     startTransition(async () => {
       try {
         const r = await uploadUserPhoto(await shrinkImage(file, 256, true))
@@ -63,7 +63,7 @@ export function PhotoUploader({ name, image }: { name: string; image: string | n
         </div>
         <p className="text-xs text-muted-foreground">Tu foto se ve en tu perfil y la ve tu equipo. Se recorta cuadrada.</p>
       </div>
-      <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => pick(e.target.files?.[0])} aria-label="Elegir foto de perfil" />
+      <input ref={input} type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={(e) => pick(e.target.files?.[0])} aria-label="Elegir foto de perfil" />
     </div>
   )
 }

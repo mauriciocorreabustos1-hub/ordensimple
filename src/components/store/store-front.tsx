@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, ShoppingBasket } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
@@ -79,7 +80,10 @@ export function StoreFront({
   coupons = false,
   table = null,
   payRule = null,
+  preview = false,
 }: {
+  /** Vista previa en Configuración: se ve igual, pero no busca pedidos ni deja enviar uno. */
+  preview?: boolean
   /** Qué cobra online el negocio al pedir (lo fija el dueño): todo, solo despachos, o nada. */
   payRule?: "ALL" | "DELIVERY" | null
   /** Mesa desde la que abrieron la carta con el QR (el pedido se sirve en la mesa). */
@@ -102,6 +106,7 @@ export function StoreFront({
   const [done, setDone] = React.useState<Done | null>(null)
   const [recent, setRecent] = React.useState<RecentOrder[]>([])
   React.useEffect(() => {
+    if (preview) return
     const saved = readRecent(slug)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage solo existe en el navegador
     setRecent(saved)
@@ -114,7 +119,7 @@ export function StoreFront({
     return () => {
       alive = false
     }
-  }, [slug])
+  }, [slug, preview])
 
   // El carro se recuerda en este teléfono por si cierran la página sin querer.
   React.useEffect(() => {
@@ -303,7 +308,11 @@ export function StoreFront({
                 {promo.discount ? <span className="ml-2 text-sm font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
               </p>
             </div>
-            <Button size="lg" className="h-12" onClick={() => setCheckout(true)}>
+            <Button
+              size="lg"
+              className="h-12"
+              onClick={() => (preview ? toast.info("Esto es una vista previa. Cuando publiques tu tienda, aquí tus clientes envían el pedido.") : setCheckout(true))}
+            >
               <ShoppingBasket />
               Hacer pedido
             </Button>

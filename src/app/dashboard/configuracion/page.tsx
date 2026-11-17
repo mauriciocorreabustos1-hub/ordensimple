@@ -12,6 +12,7 @@ import { PhotoUploader } from "@/components/settings/photo-uploader"
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
+import { StorePreview } from "@/components/store/store-preview"
 import { FiadoDays } from "@/components/settings/fiado-days"
 import { CardFeesSettings } from "@/components/settings/card-fees-settings"
 import { PushSettings } from "@/components/settings/push-settings"
@@ -223,8 +224,23 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                     disabled={!canManage}
                   />
                 ) : (
-                  <ProUpsell title="La tienda online es parte del plan Pro" text="Publica tu catálogo y recibe pedidos por WhatsApp o pagados con tarjeta." />
+                  <ProUpsell
+                    title="Publicar tu tienda es parte del plan Pro"
+                    text="Ármala y mírala gratis. Con Pro la publicas con tu propia dirección para compartirla por WhatsApp y redes, y recibes pedidos por WhatsApp o pagados con tarjeta."
+                  />
                 )}
+              </CardContent>
+            </Card>
+            <Card id="vista-previa" className="scroll-mt-20">
+              <CardHeader>
+                <CardTitle>Vista previa</CardTitle>
+                <CardDescription>
+                  Así ven tu tienda tus clientes en el celular, con tus productos, fotos, precios y descripciones. Los cambios que hagas en
+                  Productos se ven aquí de inmediato.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StorePreview business={{ ...ctx.business, timezone: ctx.timezone }} />
               </CardContent>
             </Card>
             {hasServices ? (

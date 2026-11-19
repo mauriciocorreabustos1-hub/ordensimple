@@ -29,7 +29,7 @@ export default function PrivacyPage() {
     >
       <LegalSection n={1} title="Quién es responsable de tus datos">
         <p>
-          El responsable del tratamiento de los datos de tu cuenta es OrdenSimple. Puedes contactarnos para cualquier tema de
+          El responsable del tratamiento de los datos de tu cuenta es OrdenSimple, un producto de Orfex Group (www.orfex.cl). Puedes contactarnos para cualquier tema de
           privacidad en{" "}
           <a href={`mailto:${CONTACT}`} className="text-primary underline-offset-4 hover:underline">
             {CONTACT}

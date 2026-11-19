@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { MadeBy } from "@/components/landing/made-by"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Crown } from "lucide-react"
@@ -479,6 +480,9 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 />
               </CardContent>
             </Card>
+            <div className="flex justify-center pt-2">
+              <MadeBy />
+            </div>
             </>
           ) : null}
         </div>

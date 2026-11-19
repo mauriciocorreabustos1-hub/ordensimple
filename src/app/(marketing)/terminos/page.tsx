@@ -32,6 +32,13 @@ export default function TermsPage() {
           OrdenSimple es una herramienta en línea para que emprendedores y pequeñas empresas registren sus ventas, gastos,
           productos, inventario, clientes y proveedores, y obtengan resúmenes, cálculos y consejos sobre su negocio.
         </p>
+        <p>
+          OrdenSimple es un producto desarrollado por Orfex Group (
+          <a href="https://www.orfex.cl" target="_blank" rel="noopener" className="text-primary underline-offset-4 hover:underline">
+            www.orfex.cl
+          </a>
+          ).
+        </p>
       </LegalSection>
 
       <LegalSection n={2} title="Tu cuenta">

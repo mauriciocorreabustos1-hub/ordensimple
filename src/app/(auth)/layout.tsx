@@ -1,4 +1,5 @@
 import { Logo } from "@/components/app/logo"
+import { MadeBy } from "@/components/landing/made-by"
 import { ClosingReceipt } from "@/components/landing/closing-receipt"
 import { CookieNotice } from "@/components/landing/cookie-notice"
 
@@ -10,6 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="flex flex-1 items-center justify-center py-10">
           <div className="w-full max-w-sm">{children}</div>
         </div>
+        <MadeBy className="self-center lg:self-start" />
       </div>
 
       {/* Panel de marca: verde oscuro liso (el de las franjas de la portada) con el cierre de caja del día. */}

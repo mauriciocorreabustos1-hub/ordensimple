@@ -77,7 +77,12 @@ export function GuidePage({
     inLanguage: "es-CL",
     mainEntityOfPage: url,
     author: { "@type": "Organization", name: "OrdenSimple", url: getAppUrl() },
-    publisher: { "@type": "Organization", name: "OrdenSimple", logo: { "@type": "ImageObject", url: `${getAppUrl()}/pwa-icon/512` } },
+    publisher: {
+      "@type": "Organization",
+      name: "OrdenSimple",
+      logo: { "@type": "ImageObject", url: `${getAppUrl()}/pwa-icon/512` },
+      parentOrganization: { "@type": "Organization", name: "Orfex Group", url: "https://www.orfex.cl" },
+    },
   }
   return (
     <>

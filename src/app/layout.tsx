@@ -32,6 +32,10 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: "OrdenSimple",
+  // OrdenSimple es un producto de Orfex Group.
+  authors: [{ name: "Orfex Group", url: "https://www.orfex.cl" }],
+  creator: "Orfex Group",
+  publisher: "Orfex Group",
   // Código de Google Search Console (variable GOOGLE_SITE_VERIFICATION en Vercel).
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   appleWebApp: { capable: true, title: "OrdenSimple", statusBarStyle: "default" },

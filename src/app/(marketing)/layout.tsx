@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { MadeBy } from "@/components/landing/made-by"
 import { SocialButtons, WhatsAppButton } from "@/components/landing/social-links"
 import { WhatsAppFloat } from "@/components/landing/whatsapp-float"
 import { Logo } from "@/components/app/logo"
@@ -74,9 +75,12 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           ))}
         </div>
         <div className="border-t border-deep-foreground/15">
-          <p className="mx-auto max-w-6xl px-4 py-5 text-center text-xs text-deep-foreground/70 sm:px-6 md:text-left">
-            © {new Date().getFullYear()} OrdenSimple. Todos los derechos reservados.
-          </p>
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-5 pb-20 sm:px-6 md:flex-row md:justify-between md:pr-48 md:pb-5">
+            <p className="text-center text-xs text-deep-foreground/70 md:text-left">
+              © {new Date().getFullYear()} OrdenSimple, un producto de Orfex Group. Todos los derechos reservados.
+            </p>
+            <MadeBy onDark />
+          </div>
         </div>
       </footer>
       <WhatsAppFloat />

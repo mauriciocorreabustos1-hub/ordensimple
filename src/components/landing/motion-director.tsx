@@ -117,6 +117,39 @@ export function MotionDirector() {
           })
         })
 
+        /* Cronómetro de "Cómo funciona": la línea verde avanza con el scroll y cada minuto se enciende al llegar */
+        $$("[data-stopwatch]").forEach((ol) => {
+          const fill = ol.querySelector("[data-stopwatch-fill]")
+          if (fill) gsap.fromTo(fill, { scaleY: 0 }, { scaleY: 1, ease: "none", scrollTrigger: { trigger: ol, start: "top 60%", end: "bottom 60%", scrub: 0.4 } })
+          $$("li", ol).forEach((li) => {
+            gsap.fromTo(
+              li,
+              { opacity: 0.3 },
+              { opacity: 1, duration: 0.5, ease: "power2.out", scrollTrigger: { trigger: li, start: "top 62%", toggleActions: "play none none reverse" } },
+            )
+          })
+        })
+
+        /* Funciones: cada guion se dibuja a lápiz y su texto aparece detrás */
+        $$("[data-ticks]").forEach((ul) => {
+          const items = Array.from(ul.children)
+          const tl = gsap.timeline({ scrollTrigger: { trigger: ul, start: "top 85%", once: true } })
+          tl.from($$("[data-tick]", ul), { scaleX: 0, duration: 0.5, stagger: 0.07, ease: "power2.inOut" }).from(
+            items,
+            { autoAlpha: 0, x: -10, duration: 0.6, stagger: 0.07, ease: "power3.out", clearProps: "transform,opacity,visibility" },
+            0.15,
+          )
+        })
+
+        /* Tarjeta de cierre: entra como un ticket que te pasan por el mesón */
+        $$("[data-cta-card]").forEach((card) => {
+          gsap.fromTo(
+            card,
+            { y: 90, rotate: -4, scale: 0.94 },
+            { y: 0, rotate: 0, scale: 1, ease: "none", scrollTrigger: { trigger: card, start: "top bottom", end: "top 45%", scrub: 0.6 } },
+          )
+        })
+
         /* Pantallas de la app que se acercan al bajar */
         $$("[data-zoom]").forEach((el) => {
           gsap.fromTo(el, { scale: 0.88, y: 60 }, { scale: 1, y: 0, ease: "none", scrollTrigger: { trigger: el, start: "top 98%", end: "top 40%", scrub: 0.6 } })
@@ -244,7 +277,10 @@ export function MotionDirector() {
           return () => cleanups.forEach((fn) => fn())
         })
 
-        // Las letras cargan después: se recalculan las posiciones cuando están listas.
+        // Las animaciones se crearon por tipo, no en el orden de la página: se ordenan para que la sección fija
+        // (la frase grande) empuje bien a todo lo que viene debajo. Las letras cargan después: se recalcula al final.
+        ScrollTrigger.sort()
+        ScrollTrigger.refresh()
         void document.fonts?.ready.then(() => ScrollTrigger.refresh())
         return () => marqueeCleanups.forEach((fn) => fn())
       })

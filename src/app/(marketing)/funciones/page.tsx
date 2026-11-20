@@ -34,13 +34,13 @@ export default function FeaturesPage() {
           {FEATURE_GROUPS.map((g) => (
             <article key={g.id} id={g.id} className="grid scroll-mt-20 gap-5 border-b py-8 md:grid-cols-[17rem_1fr] md:gap-12 md:py-10">
               <div className="space-y-2">
-                <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">{g.title}</h2>
+                <h2 data-split className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">{g.title}</h2>
                 <p className="text-pretty text-muted-foreground">{g.description}</p>
               </div>
-              <ul className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
+              <ul data-ticks className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
                 {g.points.map((p) => (
                   <li key={p} className="flex gap-2.5 text-[15px] text-pretty">
-                    <span className="mt-[0.6rem] h-px w-3 shrink-0 bg-primary" aria-hidden />
+                    <span data-tick className="mt-[0.6rem] h-px w-3 shrink-0 origin-left bg-primary" aria-hidden />
                     {p}
                   </li>
                 ))}

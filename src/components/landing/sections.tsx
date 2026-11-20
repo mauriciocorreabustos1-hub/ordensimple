@@ -92,7 +92,7 @@ export function PageHero({
 
 export function FeatureGrid({ items, columns = 3 }: { items: Feature[]; columns?: 2 | 3 | 4 }) {
   return (
-    <div className={cn("grid gap-x-8 gap-y-6 sm:grid-cols-2", columns === 3 && "lg:grid-cols-3", columns === 4 && "lg:grid-cols-4")}>
+    <div data-stagger className={cn("grid gap-x-8 gap-y-6 sm:grid-cols-2", columns === 3 && "lg:grid-cols-3", columns === 4 && "lg:grid-cols-4")}>
       {items.map((f) => (
         <div key={f.title} className="flex gap-3 border-t pt-4">
           <f.icon className="mt-0.5 size-5 shrink-0 text-primary" />
@@ -213,7 +213,10 @@ const STOPWATCH = ["00:00", "00:30", "01:30", "01:50"]
 export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
   if (detailed) {
     return (
-      <ol className="max-w-3xl border-t border-foreground/80">
+      // data-stopwatch: al bajar, una línea verde avanza por el costado y cada minuto se enciende al llegar.
+      <ol data-stopwatch className="relative max-w-3xl border-t border-foreground/80 pl-5 sm:pl-8">
+        <span aria-hidden className="absolute top-0 bottom-0 left-0 w-0.5 bg-foreground/10" />
+        <span aria-hidden data-stopwatch-fill className="absolute top-0 bottom-0 left-0 w-0.5 origin-top bg-primary" />
         {STEPS.map((s, i) => (
           <li key={s.n} className="grid gap-2 border-b py-6 sm:grid-cols-[6.5rem_1fr] sm:gap-8 sm:py-8">
             <span className="tabular pt-1.5 font-mono text-sm text-muted-foreground">{STOPWATCH[i]}</span>
@@ -231,7 +234,7 @@ export function StepsGrid({ detailed = false }: { detailed?: boolean }) {
     )
   }
   return (
-    <ol className={cn("grid gap-x-8 gap-y-8 sm:grid-cols-2", !detailed && "lg:grid-cols-4")}>
+    <ol data-stagger className={cn("grid gap-x-8 gap-y-8 sm:grid-cols-2", !detailed && "lg:grid-cols-4")}>
       {STEPS.map((s) => (
         <li key={s.n} className="space-y-2 border-t-2 border-foreground/80 pt-4">
           <span className="font-display tabular block text-4xl font-semibold text-primary">{s.n.padStart(2, "0")}</span>
@@ -386,7 +389,7 @@ export function PricingComparison() {
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody data-stagger>
           {PLAN_COMPARISON.map((row) => (
             <tr key={row.label} className="border-b last:border-0">
               <td className="px-3 py-2.5 sm:px-5 sm:py-3">{row.label}</td>
@@ -430,17 +433,17 @@ export function CtaSection({
     // El cierre de la página: la invitación sobre el verde oscuro que sigue en el pie.
     <section className="bg-deep">
       <Container className="py-16 md:py-24">
-        <div className="mx-auto max-w-2xl rounded-2xl bg-card text-card-foreground shadow-2xl">
+        <div data-cta-card className="mx-auto max-w-2xl rounded-2xl bg-card text-card-foreground shadow-2xl">
           <div>
             <div className="space-y-4 px-6 py-10 text-center sm:px-12">
-              <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl sm:leading-[1.1]">{title}</h2>
+              <h2 data-split className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl sm:leading-[1.1]">{title}</h2>
               <p className="text-pretty text-muted-foreground">{text}</p>
               {users && users > 1 ? (
                 <p>
                   Únete a las <span className="tabular font-semibold">{users.toLocaleString("es-CL")}</span> personas que ya lo usan.
                 </p>
               ) : null}
-              <Button size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
+              <Button data-magnetic size="lg" className="h-12 w-full px-6 text-base sm:w-auto" asChild>
                 <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
               </Button>
               <p className="text-sm text-muted-foreground">Gratis para siempre, sin tarjeta.</p>

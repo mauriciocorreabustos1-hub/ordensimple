@@ -85,10 +85,21 @@ export function SiteHeader() {
   const loggedIn = Boolean(session)
   const isActive = (href: string) => pathname === href || (href !== "/" && pathname.startsWith(`${href}/`))
   const close = () => setOpen(false)
+  // Al bajar, el menú se hace más bajo y sólido para dejar más espacio al contenido; arriba del todo vuelve a ser como antes.
+  const [scrolled, setScrolled] = React.useState(false)
+  React.useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   return (
-    <header className="sticky top-safe z-40 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/70">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header
+      data-scrolled={scrolled || undefined}
+      className="sticky top-safe z-40 border-b bg-background/80 backdrop-blur transition-[background-color,box-shadow] duration-300 supports-backdrop-filter:bg-background/70 data-scrolled:bg-background/95 data-scrolled:shadow-[0_10px_30px_-22px_rgb(0_0_0/0.45)]"
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 transition-[height] duration-300 ease-out sm:px-6 in-data-scrolled:h-14 motion-reduce:transition-none">
         <Logo />
         <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Principal">
           <Link href="/funciones" aria-current={isActive("/funciones") ? "page" : undefined} className={cn(linkClass, isActive("/funciones") && "font-medium text-foreground")}>

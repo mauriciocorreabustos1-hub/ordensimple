@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Check, Minus, X } from "lucide-react"
+import { NotebookStrike } from "@/components/landing/notebook-strike"
+import { Check, Minus } from "lucide-react"
 import { BILLING_ENABLED } from "@/lib/plans"
 import { ONLINE_FEE_RATE } from "@/lib/online-payments"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -148,32 +149,9 @@ export function BenefitsSection() {
 }
 
 /** "El cuaderno vs. OrdenSimple": situaciones reales de un negocio de barrio, antes y después. */
+/** Hoja de cuaderno contra OrdenSimple: al bajar, cada problema se tacha a lápiz y su solución se marca. */
 export function BeforeAfter() {
-  // A la izquierda, una hoja de cuaderno de verdad (líneas y margen); a la derecha, lo mismo con OrdenSimple.
-  // Todo con alto de línea de 28px para que el texto quede sobre las líneas.
-  return (
-    <div className="overflow-hidden rounded-2xl border bg-card">
-      <div className="hidden grid-cols-2 border-b text-sm font-medium sm:grid">
-        <p className="bg-muted/40 py-3.5 pr-5 pl-12 leading-7 text-muted-foreground">Con el cuaderno</p>
-        <p className="border-l px-5 py-3.5 leading-7">Con OrdenSimple</p>
-      </div>
-      <ul>
-        {BEFORE_AFTER.map((row) => (
-          <li key={row.after} className="grid sm:grid-cols-2">
-            <p className="relative bg-muted/40 py-3.5 pr-5 pl-12 leading-7 text-pretty text-muted-foreground shadow-[inset_0_-1px_0_var(--border)]">
-              <X className="absolute top-[1.3rem] left-4 size-4 text-muted-foreground/70" aria-hidden />
-              <span className="sr-only">Antes: </span>
-              {row.before}
-            </p>
-            <p className="flex gap-2.5 px-5 py-3.5 leading-7 font-medium text-pretty shadow-[inset_0_-1px_0_var(--border)] sm:border-l">
-              <Check className="mt-1.5 size-4 shrink-0 text-primary" />
-              {row.after}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+  return <NotebookStrike rows={BEFORE_AFTER} />
 }
 
 /** "Empieza en 2 minutos" como un comprobante: cada paso con lo que tarda, y el total al final. */

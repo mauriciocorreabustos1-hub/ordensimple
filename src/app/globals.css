@@ -283,3 +283,18 @@ body:has([data-foco]) [data-app-chrome] {
     padding-left: 0;
   }
 }
+
+/* "Dejar el cuaderno": la raya de lápiz que tacha cada problema al bajar (la anima NotebookStrike con --strike).
+   En un texto de dos líneas, la raya recorre la primera y sigue en la segunda. Sin animación queda tachado. */
+@property --strike {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+.notebook-strike {
+  background: linear-gradient(
+      color-mix(in oklab, var(--foreground) 65%, transparent),
+      color-mix(in oklab, var(--foreground) 65%, transparent)
+    )
+    no-repeat 0 58% / var(--strike) 2px;
+}

@@ -34,7 +34,7 @@ export function TrustSection({ users }: { users?: number | null }) {
               Leer la política de privacidad
             </Link>
           </div>
-          <dl className="border-t border-foreground/80">
+          <dl data-stagger className="border-t border-foreground/80">
             {FACTS.map((f) => (
               <div key={f.title} className="grid gap-1 border-b py-4 sm:grid-cols-[12.5rem_minmax(0,1fr)] sm:gap-6">
                 <dt className="font-semibold text-pretty">{f.title}</dt>

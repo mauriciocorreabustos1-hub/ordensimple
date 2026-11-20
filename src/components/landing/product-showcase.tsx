@@ -87,7 +87,7 @@ export function ProductShowcase() {
 
       <div className="space-y-4">
         <h3 className="font-display text-xl font-semibold tracking-tight">Ficha</h3>
-        <dl className="border-t border-foreground/80">
+        <dl data-stagger className="border-t border-foreground/80">
           {SPECS.map((s) => (
             <div key={s.label} className="grid gap-1 border-b py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
               <dt className="text-sm font-semibold">{s.label}</dt>

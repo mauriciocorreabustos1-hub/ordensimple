@@ -18,7 +18,7 @@ export function TurnTicket({ users }: { users: number }) {
         <div className="flex flex-col justify-center border-r-2 border-dashed border-[#13201c]/20 py-3 pr-4 pl-5">
           <span className="font-mono text-[11px] text-[#5b6b66]">Su número</span>
           <span className="font-mono tabular text-4xl leading-none font-bold tracking-tight text-[#007653] sm:text-5xl">
-            N°{number}
+            N°<span data-count={next}>{number}</span>
           </span>
         </div>
         <div className="flex max-w-[13rem] flex-col justify-center gap-0.5 py-3 pr-5 pl-4 text-sm">

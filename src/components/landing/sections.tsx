@@ -260,7 +260,7 @@ export function PricingCards({ compact = false }: { compact?: boolean }) {
   const MAX = 6
   return (
     <div>
-      <div className="mx-auto grid max-w-xl gap-6 lg:max-w-none lg:grid-cols-3 lg:items-start lg:gap-4">
+      <div data-stagger className="mx-auto grid max-w-xl gap-6 lg:max-w-none lg:grid-cols-3 lg:items-start lg:gap-4">
         {Object.values(PLANS).map((plan) => {
           const featured = plan.id === "PRO"
           const quiet = featured ? "text-deep-foreground/80" : "text-muted-foreground"

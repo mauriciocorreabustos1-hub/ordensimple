@@ -15,6 +15,7 @@ import { DesktopPreview } from "@/components/landing/desktop-preview"
 import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
+import { Manifesto } from "@/components/landing/manifesto"
 import {
   BeforeAfter,
   Container,
@@ -105,9 +106,11 @@ export default async function LandingPage() {
 
       <BusinessTypesLoop />
 
+      <Manifesto />
+
       <Section className="border-t-0">
         <SectionTitle align="left" title="Así se ve OrdenSimple por dentro" description="Pantallas reales de la app, con los datos de ejemplo de un almacén." />
-        <div className="mt-10">
+        <div data-zoom className="mt-10">
           <ProductShowcase />
         </div>
       </Section>

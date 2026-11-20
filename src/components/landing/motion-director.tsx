@@ -99,6 +99,49 @@ export function MotionDirector() {
           gsap.from(words, { opacity: 0.18, stagger: 0.12, ease: "none", scrollTrigger: { trigger: el, start: "top 82%", end: "bottom 50%", scrub: 0.6 } })
         })
 
+        /* La frase grande: cada palabra pasa a tinta y un círculo a lápiz encierra la idea.
+           En computador la sección queda fija mientras se escribe. */
+        $$("[data-manifesto]").forEach((sec) => {
+          const text = sec.querySelector<HTMLElement>("[data-manifesto-text]")
+          if (!text) return
+          const words = SplitText.create(text, { type: "words" }).words
+          const circle = sec.querySelector("[data-manifesto-circle] path")
+          gsap.matchMedia().add({ desk: "(min-width: 1024px)", mob: "(max-width: 1023px)" }, (c) => {
+            const tl = gsap.timeline({
+              scrollTrigger: c.conditions?.desk
+                ? { trigger: sec, start: "top top", end: "+=130%", pin: true, scrub: 0.6, anticipatePin: 1 }
+                : { trigger: text, start: "top 80%", end: "bottom 40%", scrub: 0.6 },
+            })
+            tl.from(words, { opacity: 0.12, y: 6, stagger: 0.1, ease: "none" })
+            if (circle) tl.fromTo(circle, { strokeDashoffset: 1, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: 1.2, ease: "power1.inOut" })
+          })
+        })
+
+        /* Pantallas de la app que se acercan al bajar */
+        $$("[data-zoom]").forEach((el) => {
+          gsap.fromTo(el, { scale: 0.88, y: 60 }, { scale: 1, y: 0, ease: "none", scrollTrigger: { trigger: el, start: "top 98%", end: "top 40%", scrub: 0.6 } })
+        })
+
+        /* Número de atención que gira como la máquina de turnos */
+        $$("[data-count]").forEach((el) => {
+          const end = Number(el.dataset.count)
+          if (!Number.isFinite(end) || end <= 0) return
+          const fmt = (n: number) => (end < 1000 ? String(n).padStart(3, "0") : n.toLocaleString("es-CL"))
+          const o = { v: 0 }
+          gsap.to(o, {
+            v: end,
+            duration: 1.8,
+            delay: 0.9,
+            ease: "power3.out",
+            onUpdate: () => {
+              el.textContent = fmt(Math.round(o.v))
+            },
+            onComplete: () => {
+              el.textContent = fmt(end)
+            },
+          })
+        })
+
         /* Imagen que se endereza en 3D */
         $$("[data-tilt]").forEach((el) => {
           gsap.fromTo(

@@ -57,11 +57,39 @@ export function MotionDirector() {
         const hero = document.querySelector<HTMLElement>("[data-hero]")
         if (hero) {
           gsap.matchMedia().add("(min-width: 1024px)", () => {
+            // Se parte desde cero: si no, GSAP toma como base la posición a mitad de la entrada CSS y la deja pegada.
+            gsap.set($$("[data-hero-float], [data-hero-art], [data-hero-tag], [data-hero-notice], [data-hero-copy], [data-hero-glow]", hero), { x: 0, y: 0 })
             gsap
               .timeline({ scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true } })
               .fromTo($$("[data-hero-art]", hero), { yPercent: 0, rotate: 0 }, { yPercent: -14, rotate: -2, ease: "none" }, 0)
               .fromTo($$("[data-hero-tag]", hero), { yPercent: 0, rotate: 0 }, { rotate: 18, yPercent: 40, ease: "none" }, 0)
               .fromTo($$("[data-hero-copy]", hero), { yPercent: 0, opacity: 1 }, { yPercent: -8, opacity: 0.35, ease: "none" }, 0)
+              .fromTo($$("[data-hero-notice]", hero).slice(0, 1), { yPercent: 0 }, { yPercent: -220, ease: "none" }, 0)
+              .fromTo($$("[data-hero-notice]", hero).slice(1), { yPercent: 0 }, { yPercent: 160, ease: "none" }, 0)
+              .fromTo($$("[data-hero-glow]", hero), { scale: 1, opacity: 1 }, { scale: 1.5, opacity: 0.4, ease: "none" }, 0)
+          })
+          /* Con mouse: el comprobante, la etiqueta y los avisos se mueven a distinta profundidad */
+          gsap.matchMedia().add("(min-width: 1024px) and (hover: hover) and (pointer: fine)", () => {
+            const layers = $$("[data-hero-float]", hero).map((el) => ({
+              depth: Number(el.dataset.heroFloat) || 1,
+              x: gsap.quickTo(el, "x", { duration: 0.9, ease: "power3" }),
+              y: gsap.quickTo(el, "y", { duration: 0.9, ease: "power3" }),
+            }))
+            const move = (e: PointerEvent) => {
+              const dx = e.clientX / innerWidth - 0.5
+              const dy = e.clientY / innerHeight - 0.5
+              layers.forEach((l) => {
+                l.x(dx * 14 * l.depth)
+                l.y(dy * 14 * l.depth)
+              })
+            }
+            const leave = () => layers.forEach((l) => (l.x(0), l.y(0)))
+            hero.addEventListener("pointermove", move)
+            hero.addEventListener("pointerleave", leave)
+            return () => {
+              hero.removeEventListener("pointermove", move)
+              hero.removeEventListener("pointerleave", leave)
+            }
           })
         }
 

@@ -42,10 +42,10 @@ const FOOTER = [
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* Antes de pintar: si el equipo permite movimiento, la portada espera a su animación de entrada (sin parpadeo). */}
+      {/* Antes de pintar: marca si el equipo permite movimiento y, la primera vez en la portada, muestra la pantalla de entrada. */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("motion")`,
+          __html: `if(!matchMedia("(prefers-reduced-motion: reduce)").matches){var d=document.documentElement;d.classList.add("motion");try{if(location.pathname==="/"&&!sessionStorage.getItem("ordensimple-intro")){sessionStorage.setItem("ordensimple-intro","1");d.classList.add("intro");setTimeout(function(){d.classList.remove("intro")},3000)}}catch(e){}}`,
         }}
       />
       <SmoothScroll />

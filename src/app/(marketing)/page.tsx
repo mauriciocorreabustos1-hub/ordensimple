@@ -16,6 +16,8 @@ import { MsStoreBadge } from "@/components/landing/ms-store-badge"
 import { getUserCount } from "@/components/landing/user-count"
 import { TurnTicket } from "@/components/landing/turn-ticket"
 import { Manifesto } from "@/components/landing/manifesto"
+import { HeroNotices } from "@/components/landing/hero-notices"
+import { IntroLoader } from "@/components/landing/intro-loader"
 import {
   BeforeAfter,
   Container,
@@ -42,7 +44,9 @@ export default async function LandingPage() {
       <StructuredData />
       <LegacyHashRedirect />
 
-      <section data-hero className="ruled-page">
+      <IntroLoader />
+
+      <section data-hero className="ruled-page overflow-x-clip">
         <Container className="grid items-center gap-y-[var(--line)] pt-[calc(var(--line)*3)] pb-[calc(var(--line)*3)] lg:grid-cols-12 lg:gap-x-8">
           <div data-hero-copy className="space-y-[var(--line)] pl-5 sm:pl-8 lg:col-span-8">
             <h1 data-hero-title className="font-display text-[2.75rem] leading-[48px] font-semibold tracking-tight sm:text-[3.6rem] sm:leading-[72px] lg:text-[clamp(4rem,5.9vw,5.1rem)] lg:leading-[84px]">
@@ -81,13 +85,16 @@ export default async function LandingPage() {
             </dl>
           </div>
 
-          <div className="relative pt-10 lg:col-span-4 lg:col-start-9">
-            <div data-hero-art>
+          <div className="relative isolate pt-10 lg:col-span-4 lg:col-start-9">
+            {/* Brillo verde detrás del comprobante */}
+            <div data-hero-glow aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 -z-10 -mt-[15rem] -ml-[15rem] size-[30rem] rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklch,var(--primary)_22%,transparent),transparent)]" />
+            <div data-hero-art data-hero-float="0.8">
               <div className="print-in">
                 <ClosingReceipt />
               </div>
             </div>
-            <div data-hero-tag className="absolute top-0 left-1 z-10 origin-left sm:left-6 lg:left-0">
+            <HeroNotices />
+            <div data-hero-tag data-hero-float="2.6" className="absolute top-0 left-1 z-30 origin-left sm:left-6 lg:left-0">
               <PriceTag hole="bg-card">
                 <span className="font-display text-3xl font-semibold">$0</span>
                 <span className="text-sm font-medium">para empezar</span>

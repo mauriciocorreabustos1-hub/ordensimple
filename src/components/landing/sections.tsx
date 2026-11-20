@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { PLANS } from "@/lib/plans"
 import { cn } from "@/lib/utils"
 import { BEFORE_AFTER, PLAN_COMPARISON, RECEIPT_STEPS, STEPS, type FaqGroup, type Feature } from "@/components/landing/content"
-import { AnimatedTitle } from "@/components/landing/animated-title"
 import { PriceTag } from "@/components/landing/price-tag"
 import { SignupLink } from "@/components/landing/signup-link"
 
@@ -38,7 +37,6 @@ export function SectionTitle({
   title,
   description,
   align = "left",
-  animated,
 }: {
   /** Ya no se muestra (quedaba con cara de plantilla); se mantiene para no tocar cada página. */
   eyebrow?: string
@@ -51,12 +49,15 @@ export function SectionTitle({
   const titleClass = "font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]"
   return (
     <div className={cn("max-w-2xl space-y-3", align === "center" && "mx-auto text-center")}>
-      {animated ? (
-        <AnimatedTitle text={title} align={align} className={titleClass} />
-      ) : (
-        <h2 className={titleClass}>{title}</h2>
-      )}
-      {description ? <p className="text-lg text-pretty text-muted-foreground">{description}</p> : null}
+      {/* Todos los títulos entran línea por línea (MotionDirector); "animated" queda por compatibilidad. */}
+      <h2 data-split className={titleClass}>
+        {title}
+      </h2>
+      {description ? (
+        <p data-up className="text-lg text-pretty text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -72,13 +73,17 @@ export function PageHero({
   description: string
 }) {
   return (
-    <section className="ruled-page">
+    <section data-hero className="ruled-page">
       <Container className="pt-[calc(var(--line)*2)] pb-[calc(var(--line)*2)]">
-        <div className="max-w-4xl space-y-[var(--line)] pl-5 sm:pl-8">
-          <h1 className="font-display text-[2.5rem] leading-[48px] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[72px] lg:text-[4.1rem] lg:leading-[84px]">
-            {title}
+        <div data-hero-copy className="max-w-4xl space-y-[var(--line)] pl-5 sm:pl-8">
+          <h1 data-hero-title className="font-display text-[2.5rem] leading-[48px] font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[72px] lg:text-[4.1rem] lg:leading-[84px]">
+            <span className="hero-slot">
+              <span className="hero-line">{title}</span>
+            </span>
           </h1>
-          <p className="max-w-2xl text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">{description}</p>
+          <p data-hero-item className="max-w-2xl [--d:0.35s] text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">
+            {description}
+          </p>
         </div>
       </Container>
     </section>
@@ -158,14 +163,14 @@ export function BeforeAfter() {
 export function ReceiptSteps() {
   return (
     <div className="mx-auto w-full max-w-sm drop-shadow-2xl">
-      <div className="receipt-edge bg-card px-6 pt-7 pb-10 font-mono text-sm text-card-foreground">
+      <div data-receipt className="receipt-edge bg-card px-6 pt-7 pb-10 font-mono text-sm text-card-foreground">
         <div className="space-y-1 text-center">
           <p className="text-base font-semibold">OrdenSimple</p>
           <p className="text-xs text-muted-foreground">Comprobante de inicio · N° 000001</p>
         </div>
         <ol className="my-5 space-y-4 border-y border-dashed border-foreground/25 py-5">
           {RECEIPT_STEPS.map((s, i) => (
-            <li key={s.what}>
+            <li key={s.what} data-receipt-row>
               <p className="flex items-baseline">
                 <span className="mr-2 text-muted-foreground">{i + 1}</span>
                 <span className="font-medium">{s.what}</span>
@@ -181,12 +186,22 @@ export function ReceiptSteps() {
             <span>Total</span>
             <span>2 min</span>
           </p>
-          <p className="flex justify-between">
+          <p data-receipt-row className="flex justify-between">
             <span>Te cobramos</span>
             <span className="tabular font-semibold text-primary">$0</span>
           </p>
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">¡Gracias por su preferencia!</p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          ¡Gracias por su preferencia!
+          {/* Timbre que cae al final de la impresión. */}
+          <span
+            data-receipt-stamp
+            aria-hidden
+            className="mx-auto mt-4 block w-fit rotate-[-8deg] rounded-md border-2 border-primary px-3 py-0.5 font-sans text-base font-bold tracking-wide text-primary [.motion_&]:opacity-0"
+          >
+            GRATIS
+          </span>
+        </p>
       </div>
     </div>
   )

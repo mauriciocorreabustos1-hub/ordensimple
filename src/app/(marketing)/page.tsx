@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { ClosingReceipt } from "@/components/landing/closing-receipt"
 import { PriceTag } from "@/components/landing/price-tag"
 import { FAQ_GROUPS } from "@/components/landing/content"
-import { Reveal } from "@/components/landing/reveal"
 import { LegacyHashRedirect } from "@/components/landing/legacy-hash-redirect"
 import { StructuredData } from "@/components/landing/structured-data"
 import { BusinessFinder } from "@/components/landing/business-finder"
@@ -42,25 +41,31 @@ export default async function LandingPage() {
       <StructuredData />
       <LegacyHashRedirect />
 
-      <section className="ruled-page">
+      <section data-hero className="ruled-page">
         <Container className="grid items-center gap-y-[var(--line)] pt-[calc(var(--line)*3)] pb-[calc(var(--line)*3)] lg:grid-cols-12 lg:gap-x-8">
-          <div className="space-y-[var(--line)] pl-5 sm:pl-8 lg:col-span-8">
-            <h1 className="font-display text-[2.75rem] leading-[48px] font-semibold tracking-tight sm:text-[3.6rem] sm:leading-[72px] lg:text-[clamp(4rem,5.9vw,5.1rem)] lg:leading-[84px]">
-              <span className="block">Deja el cuaderno.</span> <span className="block">Ten todo tu negocio bajo control.</span>
+          <div data-hero-copy className="space-y-[var(--line)] pl-5 sm:pl-8 lg:col-span-8">
+            <h1 data-hero-title className="font-display text-[2.75rem] leading-[48px] font-semibold tracking-tight sm:text-[3.6rem] sm:leading-[72px] lg:text-[clamp(4rem,5.9vw,5.1rem)] lg:leading-[84px]">
+              {/* Cada frase sube desde una ranura (la entrada es CSS: no espera a que cargue nada). */}
+              <span className="hero-slot">
+                <span className="hero-line">Deja el cuaderno.</span>
+              </span>{" "}
+              <span className="hero-slot">
+                <span className="hero-line [--d:0.12s]">Ten todo tu negocio bajo control.</span>
+              </span>
             </h1>
-            <p className="max-w-xl text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">
+            <p data-hero-item className="max-w-xl [--d:0.45s] text-pretty text-foreground/80 leading-[var(--line)] lg:text-lg">
               Administra tus ventas, inventario, clientes, pedidos y caja desde un solo lugar, en el celular o el computador.
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" className="h-12 px-6 text-base" asChild>
+            <div data-hero-item className="flex flex-col gap-3 [--d:0.55s] sm:flex-row">
+              <Button data-magnetic size="lg" className="h-12 px-6 text-base" asChild>
                 <SignupLink loggedInLabel="Ir a mi negocio">Comenzar gratis</SignupLink>
               </Button>
-              <Button size="lg" variant="outline" className="h-12 bg-card px-6 text-base" asChild>
+              <Button data-magnetic size="lg" variant="outline" className="h-12 bg-card px-6 text-base" asChild>
                 <Link href="/demo">Ver demostración</Link>
               </Button>
             </div>
             {/* Tres cifras que responden lo primero que se pregunta. Solo cosas que la app cumple. */}
-            <dl className="grid max-w-xl grid-cols-3 divide-x border-y border-foreground/15">
+            <dl data-hero-item className="grid max-w-xl [--d:0.65s] grid-cols-3 divide-x border-y border-foreground/15">
               {[
                 { label: "Cerrar la caja", value: "1 min", note: "sin contar a mano" },
                 { label: "Para empezar", value: "2 min", note: "sin instalar nada" },
@@ -76,18 +81,22 @@ export default async function LandingPage() {
           </div>
 
           <div className="relative pt-10 lg:col-span-4 lg:col-start-9">
-            <div className="print-in">
-              <ClosingReceipt />
+            <div data-hero-art>
+              <div className="print-in">
+                <ClosingReceipt />
+              </div>
             </div>
-            <PriceTag className="absolute top-0 left-1 z-10 sm:left-6 lg:left-0" hole="bg-card">
-              <span className="font-display text-3xl font-semibold">$0</span>
-              <span className="text-sm font-medium">para empezar</span>
-            </PriceTag>
+            <div data-hero-tag className="absolute top-0 left-1 z-10 origin-left sm:left-6 lg:left-0">
+              <PriceTag hole="bg-card">
+                <span className="font-display text-3xl font-semibold">$0</span>
+                <span className="text-sm font-medium">para empezar</span>
+              </PriceTag>
+            </div>
           </div>
 
           {/* Cuántos somos, como número de atención: se actualiza solo cada 10 minutos (ver revalidate arriba). */}
           {users ? (
-            <div className="pl-5 sm:pl-8 lg:col-span-8">
+            <div data-hero-item className="pl-5 [--d:0.75s] sm:pl-8 lg:col-span-8">
               <TurnTicket users={users} />
             </div>
           ) : null}
@@ -108,12 +117,14 @@ export default async function LandingPage() {
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-6">
             <div className="max-w-2xl space-y-3">
-              <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">Tu caja en el computador: vende, imprime y atiende al siguiente</h2>
+              <h2 data-split className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">
+                Tu caja en el computador: vende, imprime y atiende al siguiente
+              </h2>
               <p className="text-lg text-pretty text-muted-foreground">
                 Instala OrdenSimple gratis desde Microsoft Store. Registras la venta y el comprobante sale impreso en el mismo segundo, en tu impresora de siempre.
               </p>
             </div>
-            <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+            <dl data-stagger className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
               {[
                 { title: "Imprime al instante", text: "Un clic y el comprobante, la cuenta o la comanda sale impresa, sin ventanas ni configuraciones." },
                 { title: "Cocina sin gritos", text: "La comanda llega impresa a la cocina con letra grande, y suena un aviso en el celular." },
@@ -134,9 +145,9 @@ export default async function LandingPage() {
             </div>
             <p className="text-sm text-muted-foreground">Gratis para Windows 10 y 11. Funciona con impresoras térmicas, USB y de red.</p>
           </div>
-          <Reveal>
+          <div data-tilt>
             <DesktopPreview />
-          </Reveal>
+          </div>
         </div>
       </Section>
 
@@ -184,10 +195,12 @@ export default async function LandingPage() {
       </Section>
 
       {/* El cierre: la invitación y lo poco que hay que hacer para empezar. */}
-      <section className="bg-deep text-deep-foreground">
+      <section className="overflow-x-clip bg-deep text-deep-foreground">
         <Container className="grid items-center gap-12 py-16 md:grid-cols-2 md:gap-16 md:py-24">
           <div className="space-y-4">
-            <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">Hoy mismo puedes cerrar el cuaderno.</h2>
+            <h2 data-words className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-[3.25rem] sm:leading-[1.04]">
+              Hoy mismo puedes cerrar el cuaderno.
+            </h2>
             <p className="text-lg text-pretty text-deep-foreground/75">Empieza en 2 minutos, sin instalar nada y sin tarjeta.</p>
             {users && users > 1 ? (
               <p className="text-deep-foreground/90">
@@ -195,7 +208,7 @@ export default async function LandingPage() {
               </p>
             ) : null}
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <Button size="lg" className="h-12 bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90" asChild>
+              <Button data-magnetic size="lg" className="h-12 bg-deep-foreground px-6 text-base text-deep hover:bg-deep-foreground/90" asChild>
                 <SignupLink loggedInLabel="Ir a mi negocio">Crear mi cuenta gratis</SignupLink>
               </Button>
               <Button size="lg" variant="outline" className="h-12 border-deep-foreground/40 bg-transparent px-6 text-base text-deep-foreground hover:bg-deep-foreground/10 hover:text-deep-foreground dark:bg-transparent" asChild>

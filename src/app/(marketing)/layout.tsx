@@ -7,6 +7,7 @@ import { SmoothScroll } from "@/components/landing/smooth-scroll"
 import { SiteHeader } from "@/components/landing/site-header"
 import { CookieNotice } from "@/components/landing/cookie-notice"
 import { FreightGoAd } from "@/components/landing/freightgo-ad"
+import { MotionDirector } from "@/components/landing/motion-director"
 
 const FOOTER = [
   {
@@ -41,7 +42,15 @@ const FOOTER = [
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
+      {/* Antes de pintar: si el equipo permite movimiento, la portada espera a su animación de entrada (sin parpadeo). */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("motion")`,
+        }}
+      />
       <SmoothScroll />
+      <MotionDirector />
+      <div data-progress aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-primary motion-reduce:hidden" />
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <footer className="bg-deep text-deep-foreground">
@@ -73,6 +82,16 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               </ul>
             </div>
           ))}
+        </div>
+        {/* La palabra grande del pie: letra por letra al llegar; con el mouse, las letras se levantan. */}
+        <div className="mx-auto max-w-6xl overflow-hidden px-4 sm:px-6" aria-hidden>
+          <p data-footer-word className="flex justify-between pb-[0.12em] font-display text-[length:min(15vw,11.25rem)] leading-none font-semibold tracking-tight text-deep-foreground/90 select-none">
+            {"OrdenSimple".split("").map((ch, i) => (
+              <span key={i} className="inline-block">
+                {ch}
+              </span>
+            ))}
+          </p>
         </div>
         <div className="border-t border-deep-foreground/15">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-5 pb-20 sm:px-6 md:flex-row md:justify-between md:pr-48 md:pb-5">

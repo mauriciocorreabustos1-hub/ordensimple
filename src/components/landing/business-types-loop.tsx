@@ -27,7 +27,7 @@ function Row({ hidden }: { hidden?: boolean }) {
 export function BusinessTypesLoop() {
   return (
     <section aria-label="Negocios que pueden usar OrdenSimple" className="group overflow-hidden bg-deep py-4">
-      <div className="flex w-max animate-[rubros_55s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:flex-wrap">
+      <div data-marquee className="flex w-max animate-[rubros_55s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:flex-wrap">
         <Row />
         <Row hidden />
       </div>

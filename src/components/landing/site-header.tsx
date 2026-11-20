@@ -96,8 +96,9 @@ export function SiteHeader() {
 
   return (
     <header
+      data-site-header
       data-scrolled={scrolled || undefined}
-      className="sticky top-safe z-40 border-b bg-background/80 backdrop-blur transition-[background-color,box-shadow] duration-300 supports-backdrop-filter:bg-background/70 data-scrolled:bg-background/95 data-scrolled:shadow-[0_10px_30px_-22px_rgb(0_0_0/0.45)]"
+      className="sticky top-safe z-40 border-b bg-background/80 backdrop-blur transition-[background-color,box-shadow,translate] duration-300 data-hidden:-translate-y-full supports-backdrop-filter:bg-background/70 data-scrolled:bg-background/95 data-scrolled:shadow-[0_10px_30px_-22px_rgb(0_0_0/0.45)]"
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 transition-[height] duration-300 ease-out sm:px-6 in-data-scrolled:h-14 motion-reduce:transition-none">
         <Logo />

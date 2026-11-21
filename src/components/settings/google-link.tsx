@@ -146,7 +146,7 @@ export function GoogleLink({
       ) : null}
       {linked && twoFactor ? (
         <p className="text-xs text-muted-foreground">
-          Como tienes activada la verificación en dos pasos, para entrar se te pedirá tu contraseña y tu código, no Google.
+          Como tienes activada la verificación en dos pasos, después de elegir tu cuenta de Google se te pedirá tu código.
         </p>
       ) : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

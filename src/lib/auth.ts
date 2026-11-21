@@ -3,7 +3,9 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { nextCookies } from "better-auth/next-js"
 import { twoFactor } from "better-auth/plugins"
-import { APIError, createAuthEndpoint } from "better-auth/api"
+import { APIError, createAuthEndpoint, createAuthMiddleware } from "better-auth/api"
+import { deleteSessionCookie } from "better-auth/cookies"
+import { generateRandomString } from "better-auth/crypto"
 import type { BetterAuthPlugin } from "better-auth"
 import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
@@ -82,20 +84,6 @@ export const auth = betterAuth({
           })
           if (user && !user.emailVerified && user.accounts.length > 0) {
             throw new APIError("FORBIDDEN", { code: "GOOGLE_EMAIL_NOT_CONFIRMED", message: "Correo sin confirmar" })
-          }
-        },
-      },
-    },
-    session: {
-      create: {
-        // Quien activó la verificación en dos pasos entra con su contraseña y su código: Google no se la salta.
-        before: async (session, context) => {
-          // Cualquier ingreso por Google (la vuelta desde su página o el inicio del ingreso social).
-          const path = context?.path ?? ""
-          if (!path.startsWith("/callback/") && !path.startsWith("/sign-in/social")) return
-          const user = await db.user.findUnique({ where: { id: session.userId }, select: { twoFactorEnabled: true } })
-          if (user?.twoFactorEnabled) {
-            throw new APIError("FORBIDDEN", { code: "GOOGLE_TWO_FACTOR", message: "Cuenta con verificación en dos pasos" })
           }
         },
       },
@@ -181,11 +169,53 @@ export const auth = betterAuth({
       backupCodeOptions: { amount: 8 },
     }),
     twoFactorMethod(),
+    googleTwoFactor(),
     nextCookies(),
   ],
 })
 
 export type AuthSession = typeof auth.$Infer.Session
+
+/**
+ * Entrar con Google no se salta la verificación en dos pasos: si la cuenta la tiene activada, al volver de
+ * Google no queda la sesión abierta. Se pide el código en /verificar, igual que después de la contraseña
+ * (mismo paso pendiente y misma cookie firmada que usa el plugin de dos pasos; ahí se crea la sesión).
+ */
+function googleTwoFactor() {
+  return {
+    id: "google-dos-pasos",
+    hooks: {
+      after: [
+        {
+          matcher: (context) => context.path?.startsWith("/callback/") ?? false,
+          handler: createAuthMiddleware(async (ctx) => {
+            const data = ctx.context.newSession
+            if (!data || !(data.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) return
+            deleteSessionCookie(ctx, true)
+            await ctx.context.internalAdapter.deleteSession(data.session.token)
+            ctx.context.setNewSession(null)
+            const maxAge = 600
+            const identifier = `2fa-${generateRandomString(20)}`
+            const expiresAt = new Date(Date.now() + maxAge * 1000)
+            await ctx.context.internalAdapter.createVerificationValue({ value: data.user.id, identifier, expiresAt })
+            await ctx.context.internalAdapter.createVerificationValue({ value: "0", identifier: `2fa-attempts-${identifier}`, expiresAt })
+            const cookie = ctx.context.createAuthCookie("two_factor", { maxAge })
+            await ctx.setSignedCookie(cookie.name, identifier, ctx.context.secret, cookie.attributes)
+            // A dónde iba (la dirección a la que Google lo devolvía), solo si es una página de este sitio.
+            const returned = ctx.context.returned as { headers?: Headers } | Response | undefined
+            const location = returned instanceof Response ? returned.headers.get("location") : returned?.headers?.get?.("location")
+            let next = "/dashboard"
+            try {
+              const url = new URL(location ?? "", ctx.context.baseURL)
+              if (url.origin === new URL(ctx.context.baseURL).origin) next = url.pathname + url.search
+            } catch {}
+            throw ctx.redirect(`/verificar?${new URLSearchParams({ next })}`)
+          }),
+        },
+      ],
+    },
+  } satisfies BetterAuthPlugin
+}
 
 /**
  * Durante el segundo paso (antes de tener sesión) dice qué método usa la cuenta, para que /verificar

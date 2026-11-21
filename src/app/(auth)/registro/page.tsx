@@ -6,6 +6,8 @@ import { safeNext } from "@/lib/auth-errors"
 import { formatMoney } from "@/lib/currency"
 import { BILLING_ENABLED, checkoutPath, parsePlanChoice, PLAN_OF_CHOICE, PLANS } from "@/lib/plans"
 import { getSession } from "@/server/session"
+import { GoogleButton, OrDivider } from "@/components/auth/google-button"
+import { showGoogle } from "@/server/google-auth"
 import { cookies } from "next/headers"
 import { Gift } from "lucide-react"
 import { REFERRAL_COOKIE } from "@/lib/referrals"
@@ -26,6 +28,9 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
   const special = next ? null : await findSpecialLink(inviteCode)
   const [referrer, program] = special ? [null, null] : await Promise.all([findReferrerByCode(inviteCode), getReferralProgram()])
   const invitedBy = referrer && program?.enabled && !next ? referrer : null
+  const google = await showGoogle()
+  // A dónde va después de registrarse con Google: lo mismo que con el formulario.
+  const afterSignup = next || (choice ? `/onboarding?plan=${choice}` : "/onboarding")
 
   return (
     <div className="space-y-6">
@@ -80,6 +85,12 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registr
             Cambiar
           </Link>
         </div>
+      ) : null}
+      {google ? (
+        <>
+          <GoogleButton callbackURL={next || (choice ? checkoutPath(choice) : "/dashboard")} newUserCallbackURL={afterSignup} />
+          <OrDivider label="o crea tu cuenta con tu correo" />
+        </>
       ) : null}
       <RegisterForm
         next={next || (choice ? `/onboarding?plan=${choice}` : undefined)}

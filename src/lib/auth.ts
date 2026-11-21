@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { nextCookies } from "better-auth/next-js"
 import { twoFactor } from "better-auth/plugins"
-import { createAuthEndpoint } from "better-auth/api"
+import { APIError, createAuthEndpoint } from "better-auth/api"
 import type { BetterAuthPlugin } from "better-auth"
 import { getAppUrl, getTrustedOrigins } from "@/lib/app-url"
 import { db } from "@/lib/db"
@@ -11,6 +11,9 @@ import { sendEmail } from "@/lib/email"
 import { parseOrigin } from "@/lib/signup-source"
 import { parseReferralCookie } from "@/lib/referrals"
 import { resetPasswordEmail, twoFactorCodeEmail, verifyEmail, welcomeEmail } from "@/lib/email-templates"
+
+/** "Continuar con Google" se muestra solo cuando están las dos claves de Google (se cargan en Vercel). */
+export const GOOGLE_ENABLED = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
 
 export const auth = betterAuth({
   appName: "OrdenSimple",
@@ -45,7 +48,52 @@ export const auth = betterAuth({
       }).catch((error) => console.error("[email] No se pudo enviar la confirmación:", error))
     },
   },
+  socialProviders: GOOGLE_ENABLED
+    ? {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID as string,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+          // Si hay varias cuentas de Google en el equipo, deja elegir con cuál entrar.
+          prompt: "select_account",
+          // La foto de Google no se guarda: la app solo muestra fotos subidas a OrdenSimple.
+          mapProfileToUser: () => ({ image: undefined }),
+        },
+      }
+    : undefined,
+  account: {
+    // Quien ya tenía cuenta con su correo puede entrar con el Google de ese mismo correo (Google lo verifica).
+    accountLinking: { enabled: true, trustedProviders: ["google"] },
+  },
   databaseHooks: {
+    account: {
+      create: {
+        // Seguridad: si alguien creó una cuenta con este correo y nunca lo confirmó, no se une a Google.
+        // Así nadie puede registrar el correo de otra persona con una contraseña suya y esperar a que esa
+        // persona entre con Google para quedar con acceso.
+        before: async (account) => {
+          if (account.providerId !== "google") return
+          const user = await db.user.findUnique({
+            where: { id: account.userId },
+            select: { emailVerified: true, accounts: { where: { providerId: "credential" }, select: { id: true } } },
+          })
+          if (user && !user.emailVerified && user.accounts.length > 0) {
+            throw new APIError("FORBIDDEN", { code: "GOOGLE_EMAIL_NOT_CONFIRMED", message: "Correo sin confirmar" })
+          }
+        },
+      },
+    },
+    session: {
+      create: {
+        // Quien activó la verificación en dos pasos entra con su contraseña y su código: Google no se la salta.
+        before: async (session, context) => {
+          if (!context?.path?.startsWith("/callback/")) return
+          const user = await db.user.findUnique({ where: { id: session.userId }, select: { twoFactorEnabled: true } })
+          if (user?.twoFactorEnabled) {
+            throw new APIError("FORBIDDEN", { code: "GOOGLE_TWO_FACTOR", message: "Cuenta con verificación en dos pasos" })
+          }
+        },
+      },
+    },
     user: {
       create: {
         // Registrarse implica aceptar los términos: se guarda la fecha como respaldo.
@@ -54,6 +102,14 @@ export const auth = betterAuth({
           const cookie = context?.headers?.get("cookie") ?? context?.request?.headers.get("cookie")
           // Si llegó con un enlace de "Invita a un amigo", se guarda el código (se usa al crear su negocio).
           return { data: { ...user, termsAcceptedAt: new Date(), ...(parseOrigin(cookie) ?? {}), invitedByCode: parseReferralCookie(cookie) } }
+        },
+        // Quien se registra con Google ya tiene el correo confirmado: recibe la bienvenida sin enlace de confirmación.
+        // (Con correo y contraseña la bienvenida sale desde emailVerification, con el enlace adentro.)
+        after: async (user) => {
+          if (!user.emailVerified) return
+          await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name }) }).catch((error) =>
+            console.error("[email] No se pudo enviar la bienvenida:", error),
+          )
         },
       },
     },

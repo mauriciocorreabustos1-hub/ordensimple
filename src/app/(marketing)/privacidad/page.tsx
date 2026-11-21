@@ -42,7 +42,9 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Datos de tu cuenta:</strong> nombre, correo electrónico y contraseña. La contraseña se almacena de forma segura
-            mediante un sistema de protección criptográfica; nadie, ni siquiera nosotros, puede verla.
+            mediante un sistema de protección criptográfica; nadie, ni siquiera nosotros, puede verla. Si entras con Google,
+            Google nos entrega solo tu nombre y tu correo confirmado; no recibimos tu contraseña de Google ni accedemos a tu
+            correo, tus contactos ni tus archivos.
           </li>
           <li>
             <strong>Datos de tu negocio:</strong> nombre, rubro, país, moneda y la información que registras (ventas, gastos,

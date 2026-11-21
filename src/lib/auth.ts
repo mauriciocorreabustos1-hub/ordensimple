@@ -187,7 +187,9 @@ function googleTwoFactor() {
     hooks: {
       after: [
         {
-          matcher: (context) => context.path?.startsWith("/callback/") ?? false,
+          // La vuelta desde Google y el ingreso social directo (este último ya está apagado con disableIdTokenSignIn,
+          // pero si alguna vez se encendiera, también pasaría por aquí).
+          matcher: (context) => !!context.path && (context.path.startsWith("/callback/") || context.path.startsWith("/sign-in/social")),
           handler: createAuthMiddleware(async (ctx) => {
             const data = ctx.context.newSession
             if (!data || !(data.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) return

@@ -55,14 +55,18 @@ export const auth = betterAuth({
           clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
           // Si hay varias cuentas de Google en el equipo, deja elegir con cuál entrar.
           prompt: "select_account",
+          // Solo se entra por la página de Google (con su vuelta a /callback). El ingreso directo con un "token" de
+          // Google queda apagado: no se usa y sería otro camino que revisar.
+          disableIdTokenSignIn: true,
           // La foto de Google no se guarda: la app solo muestra fotos subidas a OrdenSimple.
           mapProfileToUser: () => ({ image: undefined }),
         },
       }
     : undefined,
   account: {
-    // Quien ya tenía cuenta con su correo puede entrar con el Google de ese mismo correo (Google lo verifica).
-    accountLinking: { enabled: true, trustedProviders: ["google"] },
+    // Quien ya tenía cuenta con su correo puede entrar con el Google de ese mismo correo, siempre que Google diga
+    // que ese correo está confirmado (no se marca a Google como "de confianza" para no saltarse esa revisión).
+    accountLinking: { enabled: true },
   },
   databaseHooks: {
     account: {
@@ -86,7 +90,9 @@ export const auth = betterAuth({
       create: {
         // Quien activó la verificación en dos pasos entra con su contraseña y su código: Google no se la salta.
         before: async (session, context) => {
-          if (!context?.path?.startsWith("/callback/")) return
+          // Cualquier ingreso por Google (la vuelta desde su página o el inicio del ingreso social).
+          const path = context?.path ?? ""
+          if (!path.startsWith("/callback/") && !path.startsWith("/sign-in/social")) return
           const user = await db.user.findUnique({ where: { id: session.userId }, select: { twoFactorEnabled: true } })
           if (user?.twoFactorEnabled) {
             throw new APIError("FORBIDDEN", { code: "GOOGLE_TWO_FACTOR", message: "Cuenta con verificación en dos pasos" })

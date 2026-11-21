@@ -11,6 +11,9 @@ import { BusinessForm } from "@/components/settings/business-form"
 import { LogoUploader } from "@/components/settings/logo-uploader"
 import { PhotoUploader } from "@/components/settings/photo-uploader"
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
+import { GoogleLink } from "@/components/settings/google-link"
+import { GOOGLE_ENABLED } from "@/lib/auth"
+import { headers } from "next/headers"
 import { isAdmin } from "@/server/admin"
 import { ExpenseCategories } from "@/components/settings/expense-categories"
 import { StorePreview } from "@/components/store/store-preview"
@@ -98,6 +101,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
           orderBy: { createdAt: "asc" },
         })
       : []
+  // Tu cuenta: con qué entra la persona (contraseña y/o Google), para "Vincular con Google".
+  const signInMethods =
+    section === "cuenta" && GOOGLE_ENABLED
+      ? await db.account.findMany({ where: { userId: ctx.user.id }, select: { id: true, providerId: true } })
+      : []
+  const googleAccount = signInMethods.find((a) => a.providerId === "google")
+  const inDesktopApp = ((await headers()).get("user-agent") ?? "").includes("OrdenSimpleDesktop")
   const members = access.length
     ? [
         ...currentMembers,
@@ -470,6 +480,22 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
               </CardHeader>
               <CardContent className="space-y-6">
                 <PhotoUploader name={ctx.user.name} image={ctx.user.image ?? null} />
+                {GOOGLE_ENABLED ? (
+                  <GoogleLink
+                    googleAccountId={googleAccount?.id ?? null}
+                    hasPassword={signInMethods.some((a) => a.providerId === "credential")}
+                    emailVerified={ctx.user.emailVerified}
+                    twoFactor={twoFactor.enabled}
+                    inDesktopApp={inDesktopApp}
+                    status={
+                      params.google === "vinculado"
+                        ? { ok: true }
+                        : typeof params.error === "string"
+                          ? { error: params.error }
+                          : undefined
+                    }
+                  />
+                ) : null}
                 <AccountSection
                   email={ctx.user.email}
                   ownedBusinesses={owned.map((o) => ({

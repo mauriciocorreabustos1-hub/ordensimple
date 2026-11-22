@@ -34,6 +34,9 @@ export async function POST(request: Request) {
   const ua = request.headers.get("user-agent") ?? ""
   if (isBot(ua)) return noContent()
   if (!allowedOrigin(request.headers.get("origin"))) return new Response(null, { status: 403 })
+  // Los navegadores siempre avisan desde dónde se envía; si dice que viene de otro sitio, no se cuenta.
+  const site = request.headers.get("sec-fetch-site")
+  if (site && site !== "same-origin" && site !== "same-site") return new Response(null, { status: 403 })
   const raw = await request.text()
   if (raw.length > 2000) return new Response(null, { status: 413 })
   let body: z.infer<typeof schema>
@@ -55,6 +58,10 @@ export async function POST(request: Request) {
   const day = new Date().toISOString().slice(0, 10)
   const visitor = createHash("sha256").update(`${ip}|${ua}|${day}|${process.env.BETTER_AUTH_SECRET ?? "links"}`).digest("base64url").slice(0, 22)
 
+  // Dos límites: por visitante y por conexión (quien cambie el navegador que informa para inflar las cifras igual queda
+  // frenado). La conexión se guarda solo como huella, nunca la IP.
+  const conn = createHash("sha256").update(`${ip}|${day}|${process.env.BETTER_AUTH_SECRET ?? "links"}`).digest("base64url").slice(0, 22)
+  if (!(await allowAttempt(`links-ip:${conn}`, 300, 10 * 60_000))) return noContent()
   if (!(await allowAttempt(`links:${visitor}`, 120, 10 * 60_000))) return noContent()
   if (body.kind === "VIEW") {
     const recent = await db.linkEvent.findFirst({

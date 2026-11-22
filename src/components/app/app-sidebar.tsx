@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Logo } from "@/components/app/logo"
@@ -29,11 +30,13 @@ export function NavLinks({
   showPro?: boolean
 }) {
   const pathname = usePathname()
+  // La barra lateral y el menú del celular pueden estar a la vez en la página: cada uno con sus propios id.
+  const idBase = React.useId()
   return (
     <nav className="space-y-4" aria-label="Principal">
-      {groupNav(navItemsFor(role, profile)).map(({ group, items }) => (
-        <div key={group} role="group" aria-labelledby={`menu-grupo-${group}`}>
-          <p id={`menu-grupo-${group}`} className="px-3 pb-1 text-xs font-medium text-muted-foreground/90">
+      {groupNav(navItemsFor(role, profile)).map(({ group, items }, i) => (
+        <div key={group} role="group" aria-labelledby={`${idBase}-${i}`}>
+          <p id={`${idBase}-${i}`} className="px-3 pb-1 text-xs font-medium text-muted-foreground/90">
             {group}
           </p>
           <div className="grid gap-px">

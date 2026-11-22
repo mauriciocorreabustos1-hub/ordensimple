@@ -30,7 +30,7 @@ export async function updateStoreSettings(input: StoreSettingsInput): Promise<Ac
   const ctx = await requireBusiness()
   const parsed = storeSettingsSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
-  const { enabled, slug, whatsapp, message } = parsed.data
+  const { enabled, slug, whatsapp, title, message } = parsed.data
   try {
     assertCan(ctx, "settings:manage")
     if (!canUseFeature(ctx.business.plan, "store")) return { ok: false, message: PRO_ONLY }
@@ -49,7 +49,7 @@ export async function updateStoreSettings(input: StoreSettingsInput): Promise<Ac
     const old = current && current !== slug ? [...ctx.business.storeOldSlugs.filter((s) => s !== current && s !== slug), current] : undefined
     await db.business.update({
       where: { id: ctx.businessId },
-      data: { storeEnabled: enabled, storeSlug: slug, storeWhatsapp: whatsapp, storeMessage: message ?? null, ...(old ? { storeOldSlugs: old } : {}) },
+      data: { storeEnabled: enabled, storeSlug: slug, storeWhatsapp: whatsapp, storeTitle: title ?? null, storeMessage: message ?? null, ...(old ? { storeOldSlugs: old } : {}) },
     })
   } catch (error) {
     return toActionError(error)

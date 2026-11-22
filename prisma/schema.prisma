@@ -180,6 +180,8 @@ model Business {
   /// Direcciones que tuvo antes: nadie más las puede tomar y los enlaces viejos llevan a la nueva.
   storeOldSlugs       String[]  @default([])
   storeWhatsapp       String?
+  /// Título de la franja de bienvenida de la tienda (ej.: "Pide desde tu casa"). Null: el texto por defecto.
+  storeTitle          String?
   storeMessage        String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt

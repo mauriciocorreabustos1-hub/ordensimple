@@ -17,6 +17,7 @@ export function StoreSettings({
   enabled: initialEnabled,
   slug: initialSlug,
   whatsapp: initialWhatsapp,
+  title: initialTitle,
   message: initialMessage,
   appUrl,
   disabled,
@@ -25,6 +26,7 @@ export function StoreSettings({
   enabled: boolean
   slug: string | null
   whatsapp: string | null
+  title: string | null
   message: string | null
   appUrl: string
   disabled?: boolean
@@ -32,6 +34,7 @@ export function StoreSettings({
   const [enabled, setEnabled] = React.useState(initialEnabled)
   const [slug, setSlug] = React.useState(initialSlug ?? storeSlugFrom(businessName))
   const [whatsapp, setWhatsapp] = React.useState(initialWhatsapp ?? "")
+  const [title, setTitle] = React.useState(initialTitle ?? "")
   const [message, setMessage] = React.useState(initialMessage ?? "")
   const [saved, setSaved] = React.useState(initialSlug)
   const [pending, startTransition] = React.useTransition()
@@ -39,7 +42,7 @@ export function StoreSettings({
 
   function save(nextEnabled = enabled) {
     startTransition(async () => {
-      const r = await updateStoreSettings({ enabled: nextEnabled, slug, whatsapp, message })
+      const r = await updateStoreSettings({ enabled: nextEnabled, slug, whatsapp, title, message })
       if (!r.ok) {
         setEnabled(initialEnabled)
         return void toast.error(r.message)
@@ -60,9 +63,14 @@ export function StoreSettings({
           <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" disabled={disabled} placeholder="+56 9 1234 5678" />
         </Field>
       </div>
-      <Field label="Mensaje para tus clientes" optional hint="Horario, comunas de despacho, cómo pagar…">
-        <Input value={message} onChange={(e) => setMessage(e.target.value)} maxLength={200} disabled={disabled} placeholder="Ej.: Despacho en Maipú de 10:00 a 20:00. Pagas al recibir." />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Título de bienvenida" optional hint="El texto grande arriba de tu tienda. Si lo dejas vacío dice “Pide desde tu casa”.">
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={60} disabled={disabled} placeholder="Ej.: Pan calentito a tu puerta" />
+        </Field>
+        <Field label="Mensaje para tus clientes" optional hint="Va debajo del título: horario, comunas de despacho, cómo pagar…">
+          <Input value={message} onChange={(e) => setMessage(e.target.value)} maxLength={200} disabled={disabled} placeholder="Ej.: Despacho en Maipú de 10:00 a 20:00. Pagas al recibir." />
+        </Field>
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
         <label htmlFor="store-enabled" className="space-y-0.5">
           <span className="block text-sm font-medium">{enabled ? "Tu tienda está publicada" : "Publicar mi tienda"}</span>

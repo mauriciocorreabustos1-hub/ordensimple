@@ -9,7 +9,7 @@ import { db } from "@/lib/db"
 export async function StorePreview({
   business,
 }: {
-  business: { id: string; name: string; currency: string; timezone: string; storeMessage: string | null; logoUpdatedAt: Date | null }
+  business: { id: string; name: string; currency: string; timezone: string; storeTitle: string | null; storeMessage: string | null; logoUpdatedAt: Date | null }
 }) {
   const products = await db.product.findMany({
     where: { businessId: business.id, active: true, price: { gt: 0 }, isService: false, OR: [{ trackStock: false }, { stock: { gt: 0 } }] },
@@ -22,14 +22,21 @@ export async function StorePreview({
     <div className="mx-auto w-full max-w-[380px]">
       {/* El transform hace que la barra del carro (fixed) quede dentro del teléfono y no sobre la página. */}
       <div className="overflow-hidden rounded-[2.25rem] border-[10px] border-foreground/85 bg-background shadow-xl [transform:translateZ(0)]">
-        <div className="h-[600px] overflow-y-auto bg-muted/30" aria-label="Vista previa de tu tienda online">
-          <header className="border-b bg-background">
-            <div className="flex items-center gap-3 px-4 py-4">
+        <div className="h-[600px] overflow-y-auto bg-muted dark:bg-background" aria-label="Vista previa de tu tienda online">
+          <header className="space-y-3 px-4 pt-4">
+            <div className="flex items-center gap-3">
               <BusinessLogo businessId={business.id} name={business.name} logoUpdatedAt={business.logoUpdatedAt} className="size-11 rounded-xl border" />
               <div className="min-w-0">
-                <p className="truncate text-lg font-semibold tracking-tight">{business.name}</p>
-                <p className="text-xs text-muted-foreground">{business.storeMessage || "Elige tus productos y envía tu pedido por WhatsApp."}</p>
+                <p className="truncate text-lg font-bold tracking-tight">{business.name}</p>
+                <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                  <span aria-hidden className="size-1.5 rounded-full bg-primary" />
+                  Despacho y retiro en el local
+                </p>
               </div>
+            </div>
+            <div className="rounded-2xl bg-[oklch(0.33_0.08_163)] px-4 py-3.5 text-white">
+              <p className="text-lg leading-tight font-bold text-balance">{business.storeTitle || "Pide desde tu casa"}</p>
+              <p className="mt-0.5 text-sm font-medium text-pretty text-[oklch(0.88_0.12_160)]">{business.storeMessage || "Te confirmamos por WhatsApp."}</p>
             </div>
           </header>
           <div className="space-y-6 px-4 pt-4 pb-28">

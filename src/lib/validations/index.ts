@@ -478,6 +478,7 @@ export const storeSettingsSchema = z.object({
     .trim()
     .transform((v) => v.replace(/[^\d+]/g, ""))
     .refine((v) => v.replace(/\D/g, "").length >= 8 && v.replace(/\D/g, "").length <= 15, "Escribe un número de WhatsApp válido"),
+  title: optionalText(60),
   message: optionalText(200),
 })
 export type StoreSettingsInput = z.input<typeof storeSettingsSchema>

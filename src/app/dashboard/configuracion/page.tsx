@@ -230,6 +230,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                     enabled={ctx.business.storeEnabled}
                     slug={ctx.business.storeSlug}
                     whatsapp={ctx.business.storeWhatsapp}
+                    title={ctx.business.storeTitle}
                     message={ctx.business.storeMessage}
                     appUrl={getAppUrl()}
                     disabled={!canManage}

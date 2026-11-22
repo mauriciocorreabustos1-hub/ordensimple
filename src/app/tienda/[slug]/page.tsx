@@ -29,6 +29,7 @@ const getStore = cache(async (slug: string) => {
       planExpiresAt: true,
       storeEnabled: true,
       storeWhatsapp: true,
+      storeTitle: true,
       storeMessage: true,
       logoUpdatedAt: true,
       timezone: true,
@@ -172,7 +173,7 @@ export default async function StorePage({ params, searchParams }: PageProps<"/ti
         {/* Franja de bienvenida: el mensaje del negocio, o qué se hace en esta página. */}
         <div className="rounded-3xl bg-[oklch(0.33_0.08_163)] px-6 py-5 text-white">
           <p className="text-2xl leading-tight font-bold text-balance">
-            {table ? "Pide desde tu mesa" : canBook && !products.length ? "Reserva tu hora" : "Pide desde tu casa"}
+            {table ? "Pide desde tu mesa" : store.storeTitle || (canBook && !products.length ? "Reserva tu hora" : "Pide desde tu casa")}
           </p>
           <p className="mt-1 font-medium text-pretty text-[oklch(0.88_0.12_160)]">
             {store.storeMessage || (canBook && !products.length ? "Elige el servicio y la hora en un minuto." : "Te confirmamos por WhatsApp.")}

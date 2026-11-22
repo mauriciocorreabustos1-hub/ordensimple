@@ -170,11 +170,11 @@ export default async function StorePage({ params, searchParams }: PageProps<"/ti
           </div>
         </div>
         {/* Franja de bienvenida: el mensaje del negocio, o qué se hace en esta página. */}
-        <div className="rounded-3xl bg-[oklch(0.24_0.04_165)] px-6 py-5 text-white">
+        <div className="rounded-3xl bg-[oklch(0.33_0.08_163)] px-6 py-5 text-white">
           <p className="text-2xl leading-tight font-bold text-balance">
             {table ? "Pide desde tu mesa" : canBook && !products.length ? "Reserva tu hora" : "Pide desde tu casa"}
           </p>
-          <p className="mt-1 font-medium text-pretty text-[oklch(0.8_0.15_160)]">
+          <p className="mt-1 font-medium text-pretty text-[oklch(0.88_0.12_160)]">
             {store.storeMessage || (canBook && !products.length ? "Elige el servicio y la hora en un minuto." : "Te confirmamos por WhatsApp.")}
           </p>
         </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, Share2, ShoppingBasket, X } from "lucide-react"
+import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, Share2, ShoppingBag, ShoppingBasket, X } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
@@ -360,10 +360,10 @@ export function StoreFront({
   }
 
   /** En las tarjetas: un "+" verde; al agregar, cambia a − cantidad +. */
-  const compact = (p: StoreProduct) => {
+  const compact = (p: StoreProduct, inline = false) => {
     const n = cart[p.id] ?? 0
     return n ? (
-      <div className="flex basis-full items-center justify-between rounded-xl bg-primary text-primary-foreground">
+      <div className={cn("flex items-center rounded-xl bg-primary text-primary-foreground", !inline && "basis-full justify-between")}>
         <button type="button" className="flex size-9 items-center justify-center" aria-label={`Uno menos de ${p.name}`} onClick={() => set(p, n - 1)}>
           <Minus className="size-4" />
         </button>
@@ -431,7 +431,7 @@ export function StoreFront({
                 aria-pressed={category === c}
                 className={cn(
                   "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  category === c ? "bg-foreground text-background" : "bg-foreground/[0.06] hover:bg-foreground/10",
+                  category === c ? "bg-[oklch(0.33_0.08_163)] text-white" : "bg-foreground/[0.06] hover:bg-foreground/10",
                 )}
               >
                 {c ?? "Todo"}
@@ -444,13 +444,37 @@ export function StoreFront({
       {shown.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">No encontramos “{query}”.</p>
       ) : (
+        !withPhotos ? (
+          <ul className="space-y-2">
+            {shown.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 rounded-2xl border border-foreground/5 bg-background py-3 pr-3 pl-4 shadow-[0_1px_3px_oklch(0_0_0/0.04)] dark:bg-muted/60">
+                <button type="button" onClick={() => openDetail(p)} className="block min-w-0 flex-1 text-left" aria-label={`Ver ${p.name}`}>
+                  <span className="block leading-tight font-medium">
+                    {p.name}
+                    {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
+                  </span>
+                  {p.description ? <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{p.description}</span> : null}
+                  <span className="tabular mt-1 block text-lg font-bold tracking-tight">{money(p.price)}</span>
+                  {hintOf(p) ? <span className="mt-0.5 block text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</span> : null}
+                </button>
+                <div className="shrink-0">{compact(p, true)}</div>
+              </li>
+            ))}
+          </ul>
+        ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {shown.map((p) => (
             <li key={p.id} className="flex flex-col rounded-3xl border border-foreground/5 bg-background p-2.5 dark:bg-muted/60 shadow-[0_1px_3px_oklch(0_0_0/0.04)]">
               <button type="button" onClick={() => openDetail(p)} className="flex flex-1 flex-col text-left" aria-label={`Ver ${p.name}`}>
                 {withPhotos ? (
                   <span className="relative mb-2.5 block">
-                    <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-[5/4] w-full rounded-2xl" />
+                    {p.imageUrl ? (
+                      <ProductImage name={p.name} url={p.imageUrl} sizes="large" className="aspect-[5/4] w-full rounded-2xl" />
+                    ) : (
+                      <span aria-hidden className="flex aspect-[5/4] w-full items-center justify-center rounded-2xl bg-muted text-foreground/15">
+                        <ShoppingBag className="size-10" strokeWidth={1.5} />
+                      </span>
+                    )}
                     {badgeOf(p) ? <span className="absolute top-2 left-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow">{badgeOf(p)}</span> : null}
                   </span>
                 ) : badgeOf(p) ? (
@@ -469,6 +493,7 @@ export function StoreFront({
             </li>
           ))}
         </ul>
+        )
       )}
 
       {detail ? (
@@ -492,7 +517,7 @@ export function StoreFront({
 
       {count ? (
         <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-3xl bg-[oklch(0.24_0.04_165)] py-2.5 pr-2.5 pl-5 text-white shadow-lg shadow-black/15">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-3xl bg-[oklch(0.33_0.08_163)] py-2.5 pr-2.5 pl-5 text-white shadow-lg shadow-black/15">
             <div className="min-w-0 flex-1">
               <p className="text-xs text-white/65">
                 {count} {count === 1 ? "producto" : "productos"}

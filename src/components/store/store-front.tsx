@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, Share2, ShoppingBag, ShoppingBasket, X } from "lucide-react"
+import { Check, CheckCircle2, CreditCard, Loader2, Minus, PackageSearch, Plus, Search, Share2, ShoppingBag, ShoppingBasket, Store, Truck, X } from "lucide-react"
 import { AppModal } from "@/components/app/app-modal"
 import { WhatsAppIcon } from "@/components/landing/social-links"
 import { Button } from "@/components/ui/button"
@@ -716,14 +716,23 @@ function Checkout({
           </Button>
         </div>
       ) : (
-        <form onSubmit={submit} className="space-y-4">
-          <ul className="space-y-1 rounded-xl bg-muted/50 p-3 text-sm">
+        <form onSubmit={submit} className="space-y-5">
+          <ul className="space-y-2.5 rounded-2xl border border-foreground/5 bg-muted/60 p-4 text-sm">
             {lines.map((l) => (
-              <li key={l.id} className="flex justify-between gap-3">
-                <span className="min-w-0">
-                  {l.quantity} × {l.name}
+              <li key={l.id} className="flex items-center gap-3">
+                {l.imageUrl ? (
+                  <ProductImage name={l.name} url={l.imageUrl} className="size-10 shrink-0 rounded-xl" />
+                ) : lines.some((x) => x.imageUrl) ? (
+                  // Si otras líneas tienen foto, un cuadro neutro mantiene todo alineado.
+                  <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background text-foreground/20">
+                    <ShoppingBag className="size-4" />
+                  </span>
+                ) : null}
+                <span className="tabular flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-primary/12 px-1.5 text-xs font-bold text-primary">
+                  {l.quantity}
                 </span>
-                <span className="tabular shrink-0">{money(l.quantity * l.price)}</span>
+                <span className="min-w-0 flex-1 leading-snug">{l.name}</span>
+                <span className="tabular shrink-0 font-medium">{money(l.quantity * l.price)}</span>
               </li>
             ))}
             {/* Si las promociones cambiaron, se muestran las que valen ahora (las calculó el servidor). */}
@@ -739,11 +748,11 @@ function Checkout({
                 <span className="tabular shrink-0">−{money(changed ? (changed.coupon?.amount ?? 0) : couponOff)}</span>
               </li>
             ) : null}
-            <li className="flex justify-between border-t pt-2 text-base font-semibold">
-              <span>Total</span>
-              <span className="tabular">
+            <li className="flex items-baseline justify-between border-t-2 border-dashed border-foreground/10 pt-3">
+              <span className="font-semibold">Total</span>
+              <span className="tabular text-2xl font-bold tracking-tight">
                 {money(changed ? changed.total : final)}
-                {(changed ? changed.total : final) < gross ? <span className="ml-2 text-xs font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
+                {(changed ? changed.total : final) < gross ? <span className="ml-2 text-sm font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
               </span>
             </li>
           </ul>
@@ -797,49 +806,38 @@ function Checkout({
               {couponMsg ? <p className="text-xs text-destructive">{couponMsg}</p> : couponOff ? <p className="text-xs text-emerald-700 dark:text-emerald-400">¡Cupón aplicado!</p> : null}
             </div>
           ) : null}
-          <div className="space-y-1.5">
-            <label htmlFor="store-name" className="text-sm font-medium">
-              Tu nombre
-            </label>
-            <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={60} autoComplete="name" className="h-11" />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="store-phone" className="text-sm font-medium">
-              Tu teléfono <span className="font-normal text-muted-foreground">(opcional)</span>
-            </label>
-            <Input id="store-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} inputMode="tel" autoComplete="tel" className="h-11" />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="store-email" className="text-sm font-medium">
-              Tu correo <span className="font-normal text-muted-foreground">(opcional)</span>
-            </label>
-            <Input id="store-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="email" inputMode="email" className="h-11" />
-            <p className="text-xs text-muted-foreground">Te enviamos la confirmación y el enlace para ver en qué va tu pedido.</p>
-          </div>
           {table ? (
-            <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary">🍽️ Tu pedido es para {table}: te lo llevamos a la mesa.</p>
+            <p className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary">🍽️ Tu pedido es para {table}: te lo llevamos a la mesa.</p>
           ) : (
-          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Entrega">
-            {[
-              { v: false, label: "Retiro en el local" },
-              { v: true, label: "Despacho" },
-            ].map((o) => (
-              <button
-                key={o.label}
-                type="button"
-                role="radio"
-                aria-checked={delivery === o.v}
-                onClick={() => setDelivery(o.v)}
-                className={cn("rounded-lg py-2 text-sm font-medium", delivery === o.v ? "bg-background shadow-sm" : "text-muted-foreground")}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+            <fieldset>
+              <legend className="mb-2 text-sm font-semibold">¿Cómo lo quieres recibir?</legend>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Entrega">
+                {[
+                  { v: false, label: "Retiro en el local", sub: "Pasas a buscarlo", Icon: Store },
+                  { v: true, label: "Despacho", sub: "Te lo llevamos", Icon: Truck },
+                ].map((o) => (
+                  <button
+                    key={o.label}
+                    type="button"
+                    role="radio"
+                    aria-checked={delivery === o.v}
+                    onClick={() => setDelivery(o.v)}
+                    className={cn(
+                      "flex flex-col items-start gap-1.5 rounded-2xl border-2 p-3 text-left transition-colors",
+                      delivery === o.v ? "border-primary bg-primary/[0.07]" : "border-foreground/10 hover:border-foreground/20",
+                    )}
+                  >
+                    <o.Icon className={cn("size-5", delivery === o.v ? "text-primary" : "text-muted-foreground")} />
+                    <span className="text-sm leading-tight font-semibold">{o.label}</span>
+                    <span className="text-xs text-muted-foreground">{o.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           )}
           <div className="space-y-1.5">
             <label htmlFor="store-note" className="text-sm font-medium">
-              {delivery ? "Dirección y comentarios" : "Comentarios"} {delivery ? null : <span className="font-normal text-muted-foreground">(opcional)</span>}
+              {delivery ? "Dirección de despacho" : "Comentarios"} {delivery ? null : <span className="font-normal text-muted-foreground">(opcional)</span>}
             </label>
             <Textarea
               id="store-note"
@@ -847,11 +845,41 @@ function Checkout({
               onChange={(e) => setNote(e.target.value)}
               maxLength={300}
               rows={2}
-              placeholder={delivery ? "Calle, número, depto, comuna" : table ? "Ej.: sin cebolla, la bebida bien fría" : "Ej.: paso a las 18:00"}
+              className="rounded-xl"
+              placeholder={delivery ? "Calle, número, depto y comuna. Si quieres, un comentario." : table ? "Ej.: sin cebolla, la bebida bien fría" : "Ej.: paso a las 18:00"}
             />
           </div>
+          <fieldset className="space-y-3">
+            <legend className="mb-2 text-sm font-semibold">Tus datos</legend>
+            <div className="space-y-1.5">
+              <label htmlFor="store-name" className="text-sm font-medium">
+                Nombre
+              </label>
+              <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={60} autoComplete="name" className="h-11 rounded-xl" />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="store-phone" className="text-sm font-medium">
+                  Teléfono <span className="font-normal text-muted-foreground">(opcional)</span>
+                </label>
+                <Input id="store-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} inputMode="tel" autoComplete="tel" className="h-11 rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="store-email" className="text-sm font-medium">
+                  Correo <span className="font-normal text-muted-foreground">(opcional)</span>
+                </label>
+                <Input id="store-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="email" inputMode="email" className="h-11 rounded-xl" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Con tu correo te enviamos la confirmación y el enlace para ver en qué va tu pedido.</p>
+          </fieldset>
           {paying ? (
-            <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">💳 {businessName} cobra {payRule === "DELIVERY" ? "los despachos" : "los pedidos"} al pedir: pagas ahora con tarjeta o Mercado Pago.</p>
+            <p className="flex gap-2.5 rounded-xl bg-primary/[0.07] px-3.5 py-3 text-sm text-pretty">
+              <CreditCard className="mt-0.5 size-4 shrink-0 text-primary" />
+              <span>
+                {businessName} cobra {payRule === "DELIVERY" ? "los despachos" : "los pedidos"} al pedir. Pagas ahora con tarjeta o Mercado Pago.
+              </span>
+            </p>
           ) : null}
           {/* Campo trampa para robots (las personas no lo ven). */}
           <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
@@ -861,12 +889,12 @@ function Checkout({
             </p>
           ) : null}
           {paying ? (
-            <Button type="submit" size="lg" className="h-12 w-full" disabled={pending}>
+            <Button type="submit" size="lg" className="h-13 w-full rounded-2xl bg-[oklch(0.33_0.08_163)] text-base font-bold text-white hover:bg-[oklch(0.3_0.08_163)]" disabled={pending}>
               {pending ? <Loader2 className="animate-spin" /> : <CreditCard className="size-5" />}
               Pagar {money(changed ? changed.total : final)}
             </Button>
           ) : (
-            <Button type="submit" size="lg" className="h-12 w-full bg-[#25D366] text-white hover:bg-[#1fb757]" disabled={pending}>
+            <Button type="submit" size="lg" className="h-13 w-full rounded-2xl bg-[#25D366] text-base font-bold text-white hover:bg-[#1fb757]" disabled={pending}>
               {pending ? <Loader2 className="animate-spin" /> : <WhatsAppIcon className="size-5" />}
               Enviar pedido por WhatsApp
             </Button>

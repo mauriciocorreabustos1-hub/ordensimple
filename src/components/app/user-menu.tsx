@@ -46,12 +46,13 @@ export function useSignOut() {
 }
 
 /** Botón "Cerrar sesión" para usar fuera del menú de perfil. */
-export function SignOutButton({ className, compact = false }: { className?: string; compact?: boolean }) {
+export function SignOutButton({ className, compact = false, iconOnly = false }: { className?: string; compact?: boolean; iconOnly?: boolean }) {
   const signOut = useSignOut()
   const [pending, setPending] = React.useState(false)
   return (
     <button
       type="button"
+      title={iconOnly ? "Cerrar sesión" : undefined}
       disabled={pending}
       onClick={async () => {
         setPending(true)
@@ -65,7 +66,9 @@ export function SignOutButton({ className, compact = false }: { className?: stri
       )}
     >
       <LogOut className="size-4" />
-      {compact ? (
+      {iconOnly ? (
+        <span className="sr-only">Cerrar sesión</span>
+      ) : compact ? (
         <>
           <span className="sm:hidden">Salir</span>
           <span className="hidden sm:inline">Cerrar sesión</span>

@@ -99,6 +99,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           businesses={businesses}
           isAdmin={isAdmin}
           profile={profile}
+          showPro={ctx.business.plan === "FREE"}
         />
         </div>
         <div data-app-content className="min-h-dvh bg-background lg:pl-64">
@@ -114,7 +115,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           </main>
         </div>
         <div data-app-chrome>
-          <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} profile={profile} />
+          <MobileNav userName={ctx.user.name} userEmail={ctx.user.email} role={ctx.role} profile={profile} showPro={ctx.business.plan === "FREE"} />
         </div>
         {/* Tutorial de bienvenida: se abre solo la primera vez que la persona entra a la app. */}
         <WelcomeTour show={!(ctx.user as { welcomeTourAt?: Date | null }).welcomeTourAt} />

@@ -32,30 +32,63 @@ export function NavLinks({
   const pathname = usePathname()
   // La barra lateral y el menú del celular pueden estar a la vez en la página: cada uno con sus propios id.
   const idBase = React.useId()
+  const groups = groupNav(navItemsFor(role, profile))
+  const activeHref = groups.flatMap((g) => g.items).find((i) => isActive(pathname, i.href))?.href ?? null
+  // Al tocar una sección la pestaña se mueve al tiro, sin esperar a que cargue la página nueva.
+  const [clicked, setClicked] = React.useState<{ href: string; from: string } | null>(null)
+  const current = clicked && clicked.from === pathname ? clicked.href : activeHref
+  const navRef = React.useRef<HTMLElement>(null)
+  const tabRef = React.useRef<HTMLSpanElement>(null)
+
+  // La pestaña es una sola y se desliza de una sección a otra, como una ficha que cambias de lugar.
+  React.useLayoutEffect(() => {
+    const nav = navRef.current
+    const el = tabRef.current
+    if (!tab || !nav || !el) return
+    const link = current ? nav.querySelector<HTMLElement>(`[data-href="${current}"]`) : null
+    if (!link) return void (el.style.opacity = "0")
+    const first = el.dataset.ready !== "1"
+    el.style.transition = first ? "none" : ""
+    el.style.transform = `translate(${link.offsetLeft}px, ${link.offsetTop}px)`
+    el.style.width = `${link.offsetWidth + 12}px`
+    el.style.height = `${link.offsetHeight}px`
+    el.style.opacity = "1"
+    el.dataset.ready = "1"
+  }, [current, tab])
+
   return (
-    <nav className="space-y-4" aria-label="Principal">
-      {groupNav(navItemsFor(role, profile)).map(({ group, items }, i) => (
+    <nav ref={navRef} className="relative space-y-4" aria-label="Principal">
+      {tab ? (
+        <span
+          ref={tabRef}
+          aria-hidden
+          className="pointer-events-none absolute top-0 left-0 rounded-l-lg bg-background opacity-0 shadow-[0_1px_2px_rgb(0_40_30/0.06)] transition-[transform,height] duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)] before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-primary motion-reduce:transition-none"
+        />
+      ) : null}
+      {groups.map(({ group, items }, i) => (
         <div key={group} role="group" aria-labelledby={`${idBase}-${i}`}>
           <p id={`${idBase}-${i}`} className="px-3 pb-1 text-xs font-medium text-muted-foreground/90">
             {group}
           </p>
           <div className="grid gap-px">
             {items.map((item) => {
-              const active = isActive(pathname, item.href)
+              const active = tab ? item.href === current : isActive(pathname, item.href)
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={onNavigate}
+                  data-href={item.href}
+                  onClick={() => {
+                    if (tab) setClicked({ href: item.href, from: pathname })
+                    onNavigate?.()
+                  }}
                   data-tour={`menu-${item.href.split("/").pop()}`}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm text-sidebar-foreground/85 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     active && !tab && "bg-sidebar-accent font-semibold text-sidebar-accent-foreground",
-                    // La pestaña: llega hasta el borde y se funde con la página; la raya verde marca dónde estás.
-                    active &&
-                      tab &&
-                      "-mr-3 rounded-r-none bg-background font-semibold text-foreground shadow-[0_1px_2px_rgb(0_40_30/0.06)] before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-primary hover:bg-background hover:text-foreground",
+                    // La pestaña (el fondo que se desliza) llega hasta el borde y se funde con la página.
+                    active && tab && "font-semibold text-foreground hover:bg-transparent hover:text-foreground",
                   )}
                 >
                   <item.icon className={cn("size-[18px] shrink-0", active ? "text-primary" : "text-muted-foreground")} />

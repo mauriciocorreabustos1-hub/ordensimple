@@ -111,7 +111,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             {ctx.user.emailVerified ? null : <EmailVerifyBanner email={ctx.user.email} />}
             <EmailConfirmedToast />
             <OfflineSalesBar businessId={ctx.businessId} currency={ctx.currency} />
-            {children}
+            {/* data-page: cada pantalla entra suave al abrirla (ver globals.css). */}
+            <div data-page>{children}</div>
           </main>
         </div>
         <div data-app-chrome>

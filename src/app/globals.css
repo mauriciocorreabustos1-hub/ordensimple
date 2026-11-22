@@ -457,3 +457,61 @@ body:has([data-foco]) [data-app-chrome] {
     }
   }
 }
+
+/* ---------- Movimiento dentro de la app (panel) ----------
+   Corto y sin estorbar: la app se usa todo el día. Con "reducir movimiento" no se anima nada.
+   - [data-page] > *: cada pantalla entra suave al abrirla (el elemento de la página es nuevo en cada navegación).
+   - [data-enter] > *: las partes de la pantalla entran en cascada (el Inicio).
+   - [data-reveal]: lo que está más abajo sube al ir apareciendo con el scroll (el avance va con el scroll).
+   - [data-print=run]: la boleta sale impresa (lo activa PrintIn al aparecer). */
+@keyframes app-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes app-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+  }
+}
+@keyframes app-imprimir {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-10px);
+  }
+  to {
+    clip-path: inset(-60px -60px -60px -60px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-page] > :not([data-enter]) {
+    animation: app-entrar 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  [data-enter] > * {
+    animation: app-entrar 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(min(var(--n, 0), 6) * 55ms);
+  }
+  [data-enter] > :nth-child(2) { --n: 1; }
+  [data-enter] > :nth-child(3) { --n: 2; }
+  [data-enter] > :nth-child(4) { --n: 3; }
+  [data-enter] > :nth-child(5) { --n: 4; }
+  [data-enter] > :nth-child(6) { --n: 5; }
+  [data-enter] > :nth-child(n + 7) { --n: 6; }
+
+  @supports (animation-timeline: view()) {
+    [data-reveal] {
+      animation: app-aparecer linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+
+  [data-print="wait"] {
+    clip-path: inset(0 0 100% 0);
+  }
+  [data-print="run"] {
+    animation: app-imprimir 0.9s steps(14, end) both;
+  }
+}

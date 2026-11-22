@@ -273,7 +273,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-enter>
       <Suspense>
         <WelcomeToast />
       </Suspense>
@@ -464,10 +464,16 @@ export default async function DashboardPage() {
         </p>
       ) : (
         <>
-          {showTips ? <InsightsCard insights={insights} limit={4} /> : null}
+          {showTips ? (
+            <div>
+              <div data-reveal>
+                <InsightsCard insights={insights} limit={4} />
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
+            <Card data-reveal>
               <CardHeader>
                 <CardTitle>Últimos 7 días</CardTitle>
                 <CardDescription>Lo que vendiste y gastaste cada día.</CardDescription>
@@ -476,7 +482,7 @@ export default async function DashboardPage() {
                 <SalesExpensesChart data={data.last7} currency={ctx.currency} caption="Ventas y gastos de cada uno de los últimos 7 días" />
               </CardContent>
             </Card>
-            <Card>
+            <Card data-reveal>
               <CardHeader>
                 <CardTitle>Últimos 6 meses</CardTitle>
                 <CardDescription>Cómo ha evolucionado tu negocio mes a mes.</CardDescription>
@@ -538,7 +544,7 @@ function LinkCard({
   tone: string
 }) {
   return (
-    <Link href={href} className="group flex flex-col rounded-2xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+    <Link href={href} data-reveal className="group flex flex-col rounded-2xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
       <span className="relative top-px inline-flex w-fit items-center gap-1.5 rounded-t-xl border border-b-0 bg-card px-3.5 pt-2 pb-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:bg-accent">
         <Icon className={`size-3.5 ${tone}`} />
         {label}
@@ -572,7 +578,7 @@ function ComparisonCard({
   money: (n: number) => string
 }) {
   return (
-    <div className="space-y-3 rounded-2xl border bg-card p-4 md:p-5">
+    <div data-reveal className="space-y-3 rounded-2xl border bg-card p-4 md:p-5">
       <p className="font-medium">{title}</p>
       <div className="flex flex-wrap gap-x-4 gap-y-3 *:min-w-fit *:flex-1">
         <div className="space-y-1">

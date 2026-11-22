@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/app/count-up"
 import { QuickButtons } from "@/components/dashboard/quick-buttons"
 
 /**
@@ -29,7 +30,9 @@ export function TodayPanel({
           <p className="max-w-lg text-lg text-pretty">{empty}</p>
         ) : (
           <>
-            <p className="tabular font-display text-5xl font-semibold tracking-tight md:text-6xl">{result}</p>
+            <p className="tabular font-display text-5xl font-semibold tracking-tight md:text-6xl">
+              <CountUp value={result} duration={1100} />
+            </p>
             <dl className="flex flex-wrap gap-x-8 gap-y-1 pt-3 text-sm">
               <div className="flex items-baseline gap-2">
                 <dt className="text-deep-foreground/75">Vendiste</dt>

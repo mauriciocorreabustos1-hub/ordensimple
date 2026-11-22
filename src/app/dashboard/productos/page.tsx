@@ -116,7 +116,7 @@ export default async function ProductsPage() {
               <Button variant="outline" size="lg" className="h-10 px-4" asChild>
                 <Link href="/dashboard/productos/importar">
                   <FileUp />
-                  Importar productos
+                  Importar
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="h-10 px-4" asChild>

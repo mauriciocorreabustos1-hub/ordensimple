@@ -9,10 +9,10 @@ const STYLES = {
   empty: { icon: CircleDashed, iconColor: "text-muted-foreground" },
 } as const
 
-export function HealthCard({ health }: { health: Health }) {
+export function HealthCard({ health, className }: { health: Health; className?: string }) {
   const s = STYLES[health.status]
   return (
-    <section aria-label="¿Cómo va tu negocio?" className="flex items-start gap-2.5 rounded-xl border bg-card px-4 py-3 text-sm">
+    <section aria-label="¿Cómo va tu negocio?" className={cn("flex items-start gap-2.5 rounded-xl border bg-card px-4 py-3 text-sm", className)}>
       <s.icon className={cn("mt-0.5 size-4 shrink-0", s.iconColor)} aria-hidden />
       <p className="text-pretty">
         <strong className="font-semibold">{health.title}.</strong> <span className="text-muted-foreground">{health.message}</span>

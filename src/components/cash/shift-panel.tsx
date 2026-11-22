@@ -122,17 +122,16 @@ function OpenForm({ lastCounted, currency }: { lastCounted: number | null; curre
   }
   return (
     <form onSubmit={submit} className="flex flex-wrap items-end gap-3 rounded-xl bg-muted/50 p-4">
-      <Field
-        label="¿Con cuánto efectivo empiezas el turno?"
-        hint={lastCounted !== null ? "Te pusimos lo que se contó al cerrar el turno anterior." : "El sencillo que hay en la caja."}
-        className="min-w-0 flex-1 basis-56"
-      >
+      <Field label="¿Con cuánto efectivo empiezas el turno?" className="min-w-0 flex-1 basis-56">
         <MoneyInput value={opening} onValueChange={setOpening} currency={currency} aria-label="Efectivo al abrir el turno" className="[&_input]:bg-background" />
       </Field>
-      <Button type="submit" disabled={pending} className="max-sm:w-full">
+      <Button type="submit" disabled={pending} className="h-10 px-4 max-sm:w-full">
         {pending ? <Loader2 className="animate-spin" /> : <LockOpen />}
         Abrir turno
       </Button>
+      <p className="-mt-1 basis-full text-xs text-muted-foreground">
+        {lastCounted !== null ? "Te pusimos lo que se contó al cerrar el turno anterior." : "El sencillo que hay en la caja."}
+      </p>
     </form>
   )
 }

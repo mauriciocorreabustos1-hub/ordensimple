@@ -305,7 +305,32 @@ export default async function DashboardPage() {
         empty={!data.today.sales && !data.today.expenses ? "Todavía no anotas ventas ni gastos. Cuando registres una venta, aquí verás cuánto te va quedando." : null}
       />
 
-      <HealthCard health={health} />
+      {/* Cómo va el negocio y lo que hay que atender, juntos en un solo recuadro. */}
+      <div className="divide-y overflow-hidden rounded-xl border bg-card">
+        <HealthCard health={health} className="rounded-none border-x-0 border-t-0 bg-transparent last:border-b-0" />
+        {daysWithoutSales !== null && daysWithoutSales >= 3 ? (
+          <div className="flex items-center gap-2.5 px-4 py-3 text-sm">
+            <CalendarClock className="size-4 shrink-0 text-warning" />
+            No has registrado ventas durante {daysWithoutSales} días. Si vendiste, anótalo para que tus números estén al día.
+          </div>
+        ) : null}
+
+        {payables.length ? (
+          <Link
+            href="/dashboard/proveedores#pagos"
+            className={`flex items-center gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-accent/40 ${overduePayables ? "bg-danger/5" : ""}`}
+          >
+            <CalendarClock className={`size-4 shrink-0 ${overduePayables ? "text-danger" : "text-warning"}`} />
+            <span className="flex-1">
+              {overduePayables
+                ? `Tienes ${overduePayables} pago${overduePayables === 1 ? "" : "s"} a proveedores atrasado${overduePayables === 1 ? "" : "s"}.`
+                : `Esta semana vence${payables.length === 1 ? "" : "n"} ${payables.length} pago${payables.length === 1 ? "" : "s"} a proveedores.`}{" "}
+              Total: <strong className="tabular">{money(payablesTotal)}</strong>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        ) : null}
+      </div>
 
       {firstSteps ? (
         <FirstSteps businessId={ctx.businessId} steps={firstSteps} fresh={Boolean(counts && now.getTime() - counts.createdAt.getTime() < 30 * 86_400_000)} />
@@ -326,28 +351,6 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
-      {daysWithoutSales !== null && daysWithoutSales >= 3 ? (
-        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm">
-          <CalendarClock className="size-4 shrink-0 text-warning" />
-          No has registrado ventas durante {daysWithoutSales} días. Si vendiste, anótalo para que tus números estén al día.
-        </div>
-      ) : null}
-
-      {payables.length ? (
-        <Link
-          href="/dashboard/proveedores#pagos"
-          className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors hover:bg-accent/40 ${overduePayables ? "border-danger/40 bg-danger/5" : "bg-card"}`}
-        >
-          <CalendarClock className={`size-4 shrink-0 ${overduePayables ? "text-danger" : "text-warning"}`} />
-          <span className="flex-1">
-            {overduePayables
-              ? `Tienes ${overduePayables} pago${overduePayables === 1 ? "" : "s"} a proveedores atrasado${overduePayables === 1 ? "" : "s"}.`
-              : `Esta semana vence${payables.length === 1 ? "" : "n"} ${payables.length} pago${payables.length === 1 ? "" : "s"} a proveedores.`}{" "}
-            Total: <strong className="tabular">{money(payablesTotal)}</strong>
-          </span>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        </Link>
-      ) : null}
 
         {agendaCard}
         {webOrdersBanner}
@@ -447,10 +450,14 @@ export default async function DashboardPage() {
                 ),
               }}
             />
-            {monthMargin !== null && monthMargin > 0 ? (
+            {(monthMargin !== null && monthMargin > 0) || thisMonth ? (
               <Explainer title="En palabras simples">
-                Este mes, por cada {money(ref)} que vendes, aproximadamente {money(Math.round(ref * monthMargin))} te quedan como ganancia
-                después de tus gastos registrados.
+                {monthMargin !== null && monthMargin > 0
+                  ? `Este mes, por cada ${money(ref)} que vendes, aproximadamente ${money(Math.round(ref * monthMargin))} te quedan después de tus gastos registrados. `
+                  : null}
+                {thisMonth
+                  ? `“${data.month.profit >= 0 ? "Te quedó" : "Perdiste"}” es lo que vendiste menos lo que gastaste. La ${thisMonth.s.profit >= 0 ? "utilidad" : "pérdida"} del mes, más arriba, además descuenta lo que te costó la mercadería${chargesVat ? ` y el ${vat!.label}` : ""}: por eso las cifras son distintas.`
+                  : null}
               </Explainer>
             ) : null}
           </section>

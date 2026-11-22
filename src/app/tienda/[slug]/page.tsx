@@ -157,16 +157,26 @@ export default async function StorePage({ params, searchParams }: PageProps<"/ti
   )
 
   return (
-    <div className="min-h-dvh bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4">
-          <BusinessLogo businessId={store.id} name={store.name} logoUpdatedAt={store.logoUpdatedAt} className="size-12 rounded-xl border" />
+    <div className="min-h-dvh bg-muted dark:bg-background">
+      <header className="mx-auto max-w-3xl space-y-4 px-4 pt-5">
+        <div className="flex items-center gap-3">
+          <BusinessLogo businessId={store.id} name={store.name} logoUpdatedAt={store.logoUpdatedAt} className="size-14 rounded-2xl border" />
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight">{store.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {store.storeMessage || (canBook ? "Reserva tu hora en un minuto." : "Elige tus productos y envía tu pedido por WhatsApp.")}
+            <h1 className="truncate text-2xl font-bold tracking-tight">{store.name}</h1>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-primary">
+              <span aria-hidden className="size-2 rounded-full bg-primary" />
+              {table ? `Pedido para ${table}` : canBook && !products.length ? "Reservas en línea" : "Despacho y retiro en el local"}
             </p>
           </div>
+        </div>
+        {/* Franja de bienvenida: el mensaje del negocio, o qué se hace en esta página. */}
+        <div className="rounded-3xl bg-[oklch(0.24_0.04_165)] px-6 py-5 text-white">
+          <p className="text-2xl leading-tight font-bold text-balance">
+            {table ? "Pide desde tu mesa" : canBook && !products.length ? "Reserva tu hora" : "Pide desde tu casa"}
+          </p>
+          <p className="mt-1 font-medium text-pretty text-[oklch(0.8_0.15_160)]">
+            {store.storeMessage || (canBook && !products.length ? "Elige el servicio y la hora en un minuto." : "Te confirmamos por WhatsApp.")}
+          </p>
         </div>
       </header>
       <main className="mx-auto max-w-3xl space-y-6 px-4 pt-4 pb-36">

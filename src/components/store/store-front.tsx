@@ -359,6 +359,37 @@ export function StoreFront({
     )
   }
 
+  /** En las tarjetas: un "+" verde; al agregar, cambia a − cantidad +. */
+  const compact = (p: StoreProduct) => {
+    const n = cart[p.id] ?? 0
+    return n ? (
+      <div className="flex basis-full items-center justify-between rounded-xl bg-primary text-primary-foreground">
+        <button type="button" className="flex size-9 items-center justify-center" aria-label={`Uno menos de ${p.name}`} onClick={() => set(p, n - 1)}>
+          <Minus className="size-4" />
+        </button>
+        <span className="tabular min-w-5 text-center text-sm font-bold">{n}</span>
+        <button
+          type="button"
+          className="flex size-9 items-center justify-center disabled:opacity-40"
+          aria-label={`Uno más de ${p.name}`}
+          onClick={() => set(p, n + 1)}
+          disabled={n >= p.max}
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+    ) : (
+      <button
+        type="button"
+        onClick={() => set(p, 1)}
+        aria-label={`Agregar ${p.name}`}
+        className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform hover:bg-primary/90 active:scale-90"
+      >
+        <Plus className="size-4" strokeWidth={2.75} />
+      </button>
+    )
+  }
+
   if (!products.length) {
     return <p className="rounded-xl border bg-background p-6 text-center text-sm text-muted-foreground">Por ahora no hay productos publicados. Vuelve pronto.</p>
   }
@@ -385,10 +416,10 @@ export function StoreFront({
       {table ? (
         <p className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary">🍽️ Estás en {table}. Elige lo que quieras y envía tu pedido: te lo llevamos a la mesa.</p>
       ) : null}
-      <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-muted/30 px-4 pt-1 pb-3 backdrop-blur">
+      <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-muted/95 px-4 pt-2 pb-3 backdrop-blur dark:bg-background/95">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar productos" className="h-11 bg-background pl-9" aria-label="Buscar productos" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar productos" className="h-11 rounded-2xl border-transparent bg-background pl-9 shadow-[0_1px_3px_oklch(0_0_0/0.05)]" aria-label="Buscar productos" />
         </div>
         {categories.length > 1 ? (
           <div className="flex gap-1.5 overflow-x-auto pb-1">
@@ -399,8 +430,8 @@ export function StoreFront({
                 onClick={() => setCategory(c)}
                 aria-pressed={category === c}
                 className={cn(
-                  "shrink-0 rounded-full border px-3 py-1 text-sm",
-                  category === c ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted",
+                  "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                  category === c ? "bg-foreground text-background" : "bg-foreground/[0.06] hover:bg-foreground/10",
                 )}
               >
                 {c ?? "Todo"}
@@ -413,45 +444,31 @@ export function StoreFront({
       {shown.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">No encontramos “{query}”.</p>
       ) : (
-        withPhotos ? (
-          // Con fotos: tarjetas, como una vitrina.
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {shown.map((p) => (
-              <li key={p.id} className="flex flex-col overflow-hidden rounded-2xl border bg-background">
-                <button type="button" onClick={() => openDetail(p)} className="flex flex-1 flex-col text-left" aria-label={`Ver ${p.name}`}>
-                  <span className="relative block">
-                    <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-square w-full rounded-none" />
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {shown.map((p) => (
+            <li key={p.id} className="flex flex-col rounded-3xl border border-foreground/5 bg-background p-2.5 dark:bg-muted/60 shadow-[0_1px_3px_oklch(0_0_0/0.04)]">
+              <button type="button" onClick={() => openDetail(p)} className="flex flex-1 flex-col text-left" aria-label={`Ver ${p.name}`}>
+                {withPhotos ? (
+                  <span className="relative mb-2.5 block">
+                    <ProductImage name={p.name} url={p.imageUrl ?? null} sizes="large" className="aspect-[5/4] w-full rounded-2xl" />
                     {badgeOf(p) ? <span className="absolute top-2 left-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow">{badgeOf(p)}</span> : null}
                   </span>
-                  <span className="block min-w-0 flex-1 px-2.5 pt-2.5">
-                    <span className="line-clamp-2 text-sm leading-tight font-medium">{p.name}</span>
-                    {p.description ? <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{p.description}</span> : null}
-                    <span className="tabular mt-1 block font-semibold">{money(p.price)}</span>
-                    {hintOf(p) ? <span className="mt-1 block text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</span> : null}
-                  </span>
-                </button>
-                <div className="p-2.5">{quantity(p, true)}</div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="divide-y overflow-hidden rounded-2xl border bg-background">
-            {shown.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 p-3">
-                <button type="button" onClick={() => openDetail(p)} className="block min-w-0 flex-1 text-left" aria-label={`Ver ${p.name}`}>
-                  <span className="block text-sm leading-tight font-medium">
-                    {p.name}
-                    {badgeOf(p) ? <span className="ml-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{badgeOf(p)}</span> : null}
-                  </span>
+                ) : badgeOf(p) ? (
+                  <span className="mb-1.5 self-start rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white">{badgeOf(p)}</span>
+                ) : null}
+                <span className={cn("block min-w-0 flex-1 px-1", !withPhotos && "pt-1")}>
+                  <span className="line-clamp-2 leading-tight font-medium">{p.name}</span>
                   {p.description ? <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{p.description}</span> : null}
-                  <span className="tabular mt-0.5 block text-sm text-muted-foreground">{money(p.price)}</span>
-                  {hintOf(p) ? <span className="mt-0.5 block text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</span> : null}
-                </button>
-                {quantity(p, false)}
-              </li>
-            ))}
-          </ul>
-        )
+                  {hintOf(p) ? <span className="mt-1 block text-xs font-medium text-rose-700 dark:text-rose-400">🎁 {hintOf(p)}</span> : null}
+                </span>
+              </button>
+              <div className="mt-2.5 flex min-h-9 flex-wrap items-center justify-between gap-x-1 gap-y-2 pl-1">
+                <span className="tabular truncate text-lg font-bold tracking-tight">{money(p.price)}</span>
+                {compact(p)}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       {detail ? (
@@ -474,20 +491,20 @@ export function StoreFront({
       ) : null}
 
       {count ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
-          <div className="mx-auto flex max-w-3xl items-center gap-3">
+        <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-3xl bg-[oklch(0.24_0.04_165)] py-2.5 pr-2.5 pl-5 text-white shadow-lg shadow-black/15">
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/65">
                 {count} {count === 1 ? "producto" : "productos"}
               </p>
-              <p className="tabular text-lg font-semibold">
+              <p className="tabular text-xl font-bold tracking-tight">
                 {money(total)}
-                {promo.discount ? <span className="ml-2 text-sm font-normal text-muted-foreground line-through">{money(gross)}</span> : null}
+                {promo.discount ? <span className="ml-2 text-sm font-normal text-white/60 line-through">{money(gross)}</span> : null}
               </p>
             </div>
             <Button
               size="lg"
-              className="h-12"
+              className="h-12 rounded-2xl bg-[oklch(0.8_0.15_160)] px-5 font-bold text-[oklch(0.2_0.04_165)] hover:bg-[oklch(0.84_0.15_160)]"
               onClick={() => (preview ? toast.info("Esto es una vista previa. Cuando publiques tu tienda, aquí tus clientes envían el pedido.") : setCheckout(true))}
             >
               <ShoppingBasket />

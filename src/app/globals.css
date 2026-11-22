@@ -239,6 +239,20 @@ body::before {
   }
 }
 
+/* Hoja de cuaderno dentro de la app (Consejos): renglones cada --line y la línea de margen en el verde de la marca.
+   El texto usa el mismo interlineado para quedar escrito sobre los renglones. */
+.notebook-lines {
+  --line: 28px;
+  --margin-x: 40px;
+  --rule-line: color-mix(in oklch, var(--primary) 14%, transparent);
+  --margin-line: color-mix(in oklch, var(--primary) 40%, transparent);
+  background-image:
+    linear-gradient(to right, transparent var(--margin-x), var(--margin-line) var(--margin-x), var(--margin-line) calc(var(--margin-x) + 2px), transparent calc(var(--margin-x) + 2px)),
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--line) - 1px), var(--rule-line) calc(var(--line) - 1px) var(--line));
+  /* Cada consejo empieza medio renglón más abajo (py-3.5): así el texto se apoya en la línea y no queda tachado. */
+  background-position: 0 0, 0 calc(var(--line) / 2);
+}
+
 /* Al entrar a la portada, la boleta sale impresa. Una sola vez y solo si la persona no pidió reducir el movimiento. */
 @keyframes imprimir {
   from {

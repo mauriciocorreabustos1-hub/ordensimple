@@ -18,8 +18,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { InstallCard } from "@/components/app/install-app"
 import { StatCard, ChangeBadge, DiffBadge, STAT_GROUP } from "@/components/app/stat-card"
-import { AccountLine } from "@/components/app/account-line"
-import { Explainer } from "@/components/app/explainer"
+import { MonthReceipt } from "@/components/dashboard/month-receipt"
 import { HealthCard } from "@/components/dashboard/health-card"
 import { QuickButtons } from "@/components/dashboard/quick-buttons"
 import { TodayPanel } from "@/components/dashboard/today-panel"
@@ -356,59 +355,105 @@ export default async function DashboardPage() {
         {webOrdersBanner}
         {goalCard}
 
-      {debts || thisMonth ? (
-        <section aria-labelledby="cuentas" className="space-y-3">
-          <h2 id="cuentas" className="font-display text-lg font-semibold tracking-tight">
-            Tus cuentas de {currentMonth}
-          </h2>
-          <div
-            className={`grid gap-3 ${STAT_GROUP} ${[debts, thisMonth, chargesVat && thisMonth].filter(Boolean).length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
-          >
-            {debts ? (
-              <LinkCard
-                href="/dashboard/clientes?segmento=deben"
-                icon={NotebookPen}
-                label="Te deben (fiado)"
-                value={money(debts.total)}
-                tone="text-warning"
-                hint={
-                  debts.count === 0
-                    ? "Nadie te debe"
-                    : debts.count === 1
-                      ? "1 cliente con deuda · ver quién"
-                      : `${debts.count} clientes con deuda · ver quiénes`
-                }
-              />
-            ) : null}
-            {thisMonth ? (
-              <LinkCard
-                href="/dashboard/resultados"
-                icon={thisMonth.s.profit >= 0 ? PiggyBank : TrendingDown}
-                label={thisMonth.s.profit >= 0 ? "Utilidad del mes" : "Pérdida del mes"}
-                value={money(Math.abs(thisMonth.s.profit))}
-                tone={thisMonth.s.profit >= 0 ? "text-success" : "text-danger"}
-                hint={`Descontando lo que te costó lo vendido${chargesVat ? ` y sin ${vat!.label}` : ""} · ver estado de resultados`}
-              />
-            ) : null}
-            {chargesVat && thisMonth ? (
-              <LinkCard
-                href="/dashboard/resultados"
-                icon={Landmark}
-                label={ppm > 0 || withholding > 0 ? "F29 a pagar (aprox.)" : `${vat!.label} a pagar (aprox.)`}
-                value={money(f29)}
-                tone="text-primary"
-                hint={
-                  f29 > 0
-                    ? `${ppm > 0 || withholding > 0 ? `${vat!.label} ${money(thisMonth.vatToPay)}${ppm > 0 ? ` + PPM ${money(ppm)}` : ""}${withholding > 0 ? ` + retención ${money(withholding)}` : ""} · ` : ""}Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
-                    : thisMonth.carryOut > 0
-                      ? `Por ahora no te toca pagar: tienes ${money(thisMonth.carryOut)} a favor`
-                      : "Este mes, por ahora, no te toca pagar"
-                }
-              />
-            ) : null}
-          </div>
-        </section>
+      {/* Lo que te deben, la utilidad y el impuesto: como fichas de archivador, cada una con su pestaña. */}
+      {(() => {
+        const hasCuentas = Boolean(debts || thisMonth)
+        const cuentas = hasCuentas ? (
+          <section aria-labelledby="cuentas" className="space-y-3">
+            <h2 id="cuentas" className="font-display text-lg font-semibold tracking-tight">
+              Tus cuentas de {currentMonth}
+            </h2>
+            <div className={easy ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-1"}>
+      {debts ? (
+        <LinkCard
+          href="/dashboard/clientes?segmento=deben"
+          icon={NotebookPen}
+          label="Te deben (fiado)"
+          value={money(debts.total)}
+          tone="text-warning"
+          hint={
+            debts.count === 0
+              ? "Nadie te debe"
+              : debts.count === 1
+                ? "1 cliente con deuda · ver quién"
+                : `${debts.count} clientes con deuda · ver quiénes`
+          }
+        />
       ) : null}
+      {thisMonth ? (
+        <LinkCard
+          href="/dashboard/resultados"
+          icon={thisMonth.s.profit >= 0 ? PiggyBank : TrendingDown}
+          label={thisMonth.s.profit >= 0 ? "Utilidad del mes" : "Pérdida del mes"}
+          value={money(Math.abs(thisMonth.s.profit))}
+          tone={thisMonth.s.profit >= 0 ? "text-success" : "text-danger"}
+          hint={`Descontando lo que te costó lo vendido${chargesVat ? ` y sin ${vat!.label}` : ""} · ver estado de resultados`}
+        />
+      ) : null}
+      {chargesVat && thisMonth ? (
+        <LinkCard
+          href="/dashboard/resultados"
+          icon={Landmark}
+          label={ppm > 0 || withholding > 0 ? "F29 a pagar (aprox.)" : `${vat!.label} a pagar (aprox.)`}
+          value={money(f29)}
+          tone="text-primary"
+          hint={
+            f29 > 0
+              ? `${ppm > 0 || withholding > 0 ? `${vat!.label} ${money(thisMonth.vatToPay)}${ppm > 0 ? ` + PPM ${money(ppm)}` : ""}${withholding > 0 ? ` + retención ${money(withholding)}` : ""} · ` : ""}Vence el ${formatDueDate(vatDue, ctx.timezone)} · faltan ${vatDaysLeft} días`
+              : thisMonth.carryOut > 0
+                ? `Por ahora no te toca pagar: tienes ${money(thisMonth.carryOut)} a favor`
+                : "Este mes, por ahora, no te toca pagar"
+          }
+        />
+      ) : null}
+            </div>
+          </section>
+        ) : null
+        if (easy) return cuentas
+        return (
+          <div className={`grid items-start gap-x-8 gap-y-8 ${hasCuentas ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]" : ""}`}>
+            <MonthReceipt
+              title={`La cuenta de ${currentMonth}`}
+              subtitle={`${ctx.business.name} · del 1 al ${today.day}`}
+              positive={data.month.profit >= 0}
+              empty={!data.month.sales && !data.month.expenses ? "Este mes todavía no hay ventas ni gastos anotados. Cuando registres el primero, aquí verás la cuenta." : null}
+              lines={[
+                {
+                  label: "Vendiste",
+                  value: money(data.month.sales),
+                  note: <ChangeBadge change={percentChange(data.month.sales, data.prevMonth.sales)} label="vs. mismas fechas del mes pasado" />,
+                },
+                {
+                  label: "Gastaste",
+                  value: money(data.month.expenses),
+                  minus: true,
+                  note: (
+                    <ChangeBadge change={percentChange(data.month.expenses, data.prevMonth.expenses)} label="vs. mismas fechas del mes pasado" invert />
+                  ),
+                },
+              ]}
+              result={{
+                label: data.month.profit >= 0 ? "Te quedó" : "Perdiste",
+                value: money(Math.abs(data.month.profit)),
+                note: <DiffBadge current={data.month.profit} previous={data.prevMonth.profit} money={money} label="vs. mismas fechas del mes pasado" />,
+              }}
+              footnote={
+                (monthMargin !== null && monthMargin > 0) || thisMonth ? (
+                  <>
+                    {monthMargin !== null && monthMargin > 0
+                      ? `Por cada ${money(ref)} que vendes, unos ${money(Math.round(ref * monthMargin))} te quedan después de tus gastos. `
+                      : null}
+                    {thisMonth
+                      ? `“${data.month.profit >= 0 ? "Te quedó" : "Perdiste"}” es lo vendido menos lo gastado; la ${thisMonth.s.profit >= 0 ? "utilidad" : "pérdida"} del mes además descuenta lo que te costó la mercadería${chargesVat ? ` y el ${vat!.label}` : ""}, por eso son cifras distintas.`
+                      : null}
+                  </>
+                ) : null
+              }
+            />
+            {cuentas}
+          </div>
+        )
+      })()}
 
       {easy ? (
         <p className="text-center text-sm text-muted-foreground">
@@ -419,49 +464,6 @@ export default async function DashboardPage() {
         </p>
       ) : (
         <>
-          <section aria-labelledby="mes" className="space-y-3">
-            <h2 id="mes" className="font-display text-lg font-semibold tracking-tight">
-              Este mes ({currentMonth})
-            </h2>
-            <AccountLine
-              positive={data.month.profit >= 0}
-              empty={!data.month.sales && !data.month.expenses ? "Este mes todavía no hay ventas ni gastos anotados." : null}
-              sales={{
-                label: "Vendiste",
-                value: money(data.month.sales),
-                sub: <ChangeBadge change={percentChange(data.month.sales, data.prevMonth.sales)} label="vs. mismas fechas del mes pasado" />,
-              }}
-              expenses={{
-                label: "Gastaste",
-                value: money(data.month.expenses),
-                sub: (
-                  <ChangeBadge
-                    change={percentChange(data.month.expenses, data.prevMonth.expenses)}
-                    label="vs. mismas fechas del mes pasado"
-                    invert
-                  />
-                ),
-              }}
-              result={{
-                label: data.month.profit >= 0 ? "Te quedó" : "Perdiste",
-                value: money(Math.abs(data.month.profit)),
-                sub: (
-                  <DiffBadge current={data.month.profit} previous={data.prevMonth.profit} money={money} label="vs. mismas fechas del mes pasado" />
-                ),
-              }}
-            />
-            {(monthMargin !== null && monthMargin > 0) || thisMonth ? (
-              <Explainer title="En palabras simples">
-                {monthMargin !== null && monthMargin > 0
-                  ? `Este mes, por cada ${money(ref)} que vendes, aproximadamente ${money(Math.round(ref * monthMargin))} te quedan después de tus gastos registrados. `
-                  : null}
-                {thisMonth
-                  ? `“${data.month.profit >= 0 ? "Te quedó" : "Perdiste"}” es lo que vendiste menos lo que gastaste. La ${thisMonth.s.profit >= 0 ? "utilidad" : "pérdida"} del mes, más arriba, además descuenta lo que te costó la mercadería${chargesVat ? ` y el ${vat!.label}` : ""}: por eso las cifras son distintas.`
-                  : null}
-              </Explainer>
-            ) : null}
-          </section>
-
           {showTips ? <InsightsCard insights={insights} limit={4} /> : null}
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -536,19 +538,18 @@ function LinkCard({
   tone: string
 }) {
   return (
-    <Link
-      href={href}
-      className="group flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-accent md:p-5"
-    >
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Icon className={`size-4 ${tone}`} />
-          {label}
-        </p>
-        <p className="tabular text-2xl font-semibold tracking-tight">{value}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    <Link href={href} className="group flex flex-col rounded-2xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+      <span className="relative top-px inline-flex w-fit items-center gap-1.5 rounded-t-xl border border-b-0 bg-card px-3.5 pt-2 pb-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:bg-accent">
+        <Icon className={`size-3.5 ${tone}`} />
+        {label}
+      </span>
+      <span className="flex flex-1 items-center gap-3 rounded-2xl rounded-tl-none border bg-card px-4 py-3.5 shadow-xs transition-colors group-hover:bg-accent">
+        <span className="min-w-0 flex-1 space-y-0.5">
+          <span className="tabular block text-2xl font-semibold tracking-tight">{value}</span>
+          <span className="block text-xs text-pretty text-muted-foreground">{hint}</span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+      </span>
     </Link>
   )
 }

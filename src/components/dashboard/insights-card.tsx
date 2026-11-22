@@ -5,9 +5,9 @@ import type { Insight } from "@/server/queries/insights"
 import { cn } from "@/lib/utils"
 
 const TONE = {
-  good: { icon: TrendingUp, cls: "text-success bg-success/10" },
-  warning: { icon: AlertTriangle, cls: "text-warning bg-warning/15" },
-  info: { icon: Info, cls: "text-chart-3 bg-chart-3/10" },
+  good: { icon: TrendingUp, cls: "text-success" },
+  warning: { icon: AlertTriangle, cls: "text-warning" },
+  info: { icon: Info, cls: "text-primary" },
 } as const
 
 export function InsightsCard({ insights, limit }: { insights: Insight[]; limit?: number }) {
@@ -27,26 +27,27 @@ export function InsightsCard({ insights, limit }: { insights: Insight[]; limit?:
             Aún no hay suficientes datos para darte consejos. Sigue registrando ventas y gastos.
           </p>
         ) : (
-          <ul className="divide-y">
+          // Una hoja de cuaderno: cada consejo escrito sobre los renglones, con su ícono en el margen.
+          <ul className="notebook-lines">
             {shown.map((tip) => {
               const t = TONE[tip.tone]
               const content = (
                 <>
-                  <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", t.cls)}>
+                  <span className={cn("flex h-7 w-8 shrink-0 items-center justify-center", t.cls)}>
                     <t.icon className="size-4" />
                   </span>
-                  <span className="flex-1 text-sm">{tip.text}</span>
-                  {tip.href ? <ChevronRight className="size-4 shrink-0 text-muted-foreground" /> : null}
+                  <span className="flex-1 text-sm leading-7 text-pretty">{tip.text}</span>
+                  {tip.href ? <ChevronRight className="mt-1.5 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" /> : null}
                 </>
               )
               return (
                 <li key={tip.id}>
                   {tip.href ? (
-                    <Link href={tip.href} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/50">
+                    <Link href={tip.href} className="group flex items-start gap-4 py-3.5 pr-1 transition-colors hover:bg-primary/[0.04]">
                       {content}
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-3 py-3">{content}</div>
+                    <div className="flex items-start gap-4 py-3.5 pr-1">{content}</div>
                   )}
                 </li>
               )

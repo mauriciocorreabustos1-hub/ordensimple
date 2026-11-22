@@ -214,6 +214,8 @@ model Business {
   invitations       Invitation[]
   subscriptions     Subscription[]
   contactCards      ContactCard[]
+  /// OrdenSimple Links: la página de enlaces del negocio (una por negocio).
+  linkPage          LinkPage?
   referralsMade     Referral[]               @relation("ReferralReferrer")
   referredBy        Referral?                @relation("ReferralReferred")
   specialLinkUses   SpecialLinkUse[]
@@ -1834,4 +1836,72 @@ model ContactCard {
 
   @@index([businessId])
   @@map("contact_card")
+}
+
+/// OrdenSimple Links: página pública de enlaces del negocio, en /l/<slug> (y en links.ordensimple.cl/<slug>).
+/// El contenido (perfil, diseño y bloques) se guarda como JSON validado con zod en src/lib/links.ts: así se
+/// pueden sumar bloques nuevos sin cambiar la base de datos. Los productos, reservas y la tienda no se copian:
+/// se leen en vivo al mostrar la página.
+model LinkPage {
+  id            String    @id @default(cuid())
+  businessId    String    @unique
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  slug          String    @unique
+  /// Nombres que tuvo antes: nadie más los puede tomar y los enlaces y QR viejos llevan al nuevo.
+  oldSlugs      String[]  @default([])
+  /// Publicada: se ve en internet. Apagada: la dirección responde como si no existiera.
+  published     Boolean   @default(false)
+  /// Lo que se está editando (se guarda solo mientras editas).
+  draft         Json
+  /// Lo que ve el público: copia del borrador al publicar.
+  live          Json?
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  images LinkImage[]
+  events LinkEvent[]
+
+  @@map("link_page")
+}
+
+/// Fotos de la página de enlaces (perfil, portada, fondo e imágenes de bloques), ya achicadas en el celular.
+model LinkImage {
+  id        String   @id @default(cuid())
+  pageId    String
+  page      LinkPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  data      Bytes
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([pageId])
+  @@map("link_image")
+}
+
+enum LinkEventKind {
+  VIEW
+  CLICK
+}
+
+/// Visitas y clics reales de la página de enlaces. No se guarda la IP ni se usan cookies: `visitor` es una
+/// huella anónima que cambia cada día (sirve para estimar visitantes únicos y para frenar abusos).
+model LinkEvent {
+  id        String        @id @default(cuid())
+  pageId    String
+  page      LinkPage      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  kind      LinkEventKind
+  /// Bloque tocado (solo en los clics).
+  blockId   String?
+  visitor   String
+  /// De dónde llegó: instagram, whatsapp, qr, google… o directo.
+  source    String?
+  /// mobile, tablet o desktop.
+  device    String?
+  /// País (código de 2 letras) según el servidor de Vercel; null si no se sabe.
+  country   String?
+  createdAt DateTime      @default(now())
+
+  @@index([pageId, createdAt])
+  @@index([pageId, visitor, createdAt])
+  @@map("link_event")
 }

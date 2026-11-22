@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Política de privacidad"
-      updated="21 de octubre de 2026"
+      updated="22 de noviembre de 2026"
       intro={
         <p>
           Esta política explica qué datos personales recopila OrdenSimple, para qué los usa, con quién los comparte y cómo
@@ -75,6 +75,12 @@ export default function PrivacyPage() {
               Cookies
             </a>
             ).
+          </li>
+          <li>
+            <strong>Visitas a páginas de OrdenSimple Links:</strong> cuando visitas la página de enlaces de un negocio, contamos la
+            visita y los botones que tocas, de dónde llegaste (por ejemplo, Instagram o un código QR), el tipo de equipo y el país
+            aproximado. No usamos cookies ni guardamos tu dirección IP: solo una huella anónima que cambia cada día, para no contar
+            dos veces la misma visita y frenar abusos. El negocio ve estos números sumados, nunca quién eres.
           </li>
           <li>
             <strong>Estadísticas de visitas:</strong> medimos de forma agregada qué páginas se visitan, desde qué país y tipo

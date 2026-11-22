@@ -28,6 +28,7 @@ import {
   Vault,
   type LucideIcon,
   BookOpen,
+  Link2,
 } from "lucide-react"
 import type { Role } from "@/generated/prisma/enums"
 import { can, type Permission } from "@/lib/roles"
@@ -62,6 +63,7 @@ export const NAV_ITEMS: NavItem[] = [
   { group: "Comercial", href: "/dashboard/comandas", label: "Comandas", icon: ClipboardList, pro: true, food: true },
   { group: "Comercial", href: "/dashboard/cocina", label: "Cocina", icon: ChefHat, pro: true, food: true },
   { group: "Comercial", href: "/dashboard/pedidos", label: "Pedidos web", icon: Globe, pro: true },
+  { group: "Comercial", href: "/dashboard/links", label: "Links", icon: Link2, permission: "settings:manage" },
   { group: "Comercial", href: "/dashboard/cotizaciones", label: "Cotizaciones", icon: FileText, pro: true },
   { group: "Clientes y proveedores", href: "/dashboard/fidelidad", label: "Fidelidad", icon: Stamp, pro: true },
   { group: "Comercial", href: "/dashboard/cobros", label: "Cobros online", icon: CreditCard },

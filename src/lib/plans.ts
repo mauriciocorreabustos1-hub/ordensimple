@@ -37,6 +37,8 @@ export type PlanFeature =
   | "quotes"
   /** Tarjetas de fidelidad con sellos o puntos. */
   | "loyalty"
+  /** OrdenSimple Links avanzado: plantillas y bloques premium, diseño avanzado y estadísticas completas. */
+  | "linksPro"
   | "multiUser"
   | "branches"
 
@@ -105,7 +107,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 3,
     maxProducts: null,
     maxMembers: 21, // tú + 20 trabajadores
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "loyalty"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "loyalty", "linksPro"],
     highlights: [
       "Todo lo de Gratis, y además:",
       "Tienda online con fotos: pedidos por WhatsApp o pagados con tarjeta",
@@ -139,7 +141,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxBusinesses: 10,
     maxProducts: null,
     maxMembers: 1000, // en la práctica, sin límite
-    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "loyalty", "multiUser", "branches"],
+    features: ["inventory", "customers", "suppliers", "tools", "reports", "tips", "results", "exports", "cashClose", "cashflow", "cashflowPlus", "waste", "history", "fastScan", "balance", "comandas", "store", "agenda", "promos", "quotes", "loyalty", "linksPro", "multiUser", "branches"],
     highlights: [
       "Todo lo de Pro",
       "Trabajadores sin límite",

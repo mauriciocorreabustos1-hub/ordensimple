@@ -5,6 +5,7 @@ import type { NextConfig } from "next"
 // de tarjeta y pagos) y Vercel (estadísticas de visitas).
 const MP = "https://*.mercadopago.com https://*.mercadopago.cl https://*.mercadolibre.com https://*.mercadolibre.cl https://*.mercadolivre.com https://*.mlstatic.com"
 const dev = process.env.NODE_ENV !== "production"
+const LINKS_HOST = process.env.LINKS_HOST?.trim() || "links.ordensimple.cl"
 const csp = [
   "default-src 'self'",
   // 'unsafe-inline': Next.js escribe pequeños scripts en la página. 'wasm-unsafe-eval': lector de códigos en iPhone.
@@ -15,7 +16,8 @@ const csp = [
   "font-src 'self' data:",
   "media-src 'self' blob:",
   `connect-src 'self' ${MP} https://api.mercadopago.com https://vitals.vercel-insights.com`,
-  `frame-src ${MP}`,
+  // Videos de las páginas de enlaces (solo se cargan cuando la persona toca el video).
+  `frame-src ${MP} https://www.youtube-nocookie.com https://player.vimeo.com`,
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -48,6 +50,8 @@ const nextConfig: NextConfig = {
   // La dirección antigua de Vercel lleva al dominio propio (un solo origen para sesiones y buscadores).
   async redirects() {
     return [
+      // La portada del subdominio de enlaces lleva al sitio principal.
+      { source: "/", has: [{ type: "host", value: LINKS_HOST }], destination: "https://www.ordensimple.cl/", permanent: false },
       {
         source: "/:path*",
         has: [{ type: "host", value: "ordensimple.vercel.app" }],
@@ -55,6 +59,15 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
     ]
+  },
+  // OrdenSimple Links con dirección corta: links.ordensimple.cl/minombre muestra la página /l/minombre.
+  // Necesita que el dominio esté agregado al proyecto en Vercel (el DNS ya apunta con el comodín *.ordensimple.cl).
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/:slug([a-z0-9][a-z0-9-]{1,28}[a-z0-9])", has: [{ type: "host", value: LINKS_HOST }], destination: "/l/:slug" },
+      ],
+    }
   },
   async headers() {
     // Archivos que no cambian (el nombre lleva la versión) o casi nunca: el navegador los guarda y no los vuelve a bajar.

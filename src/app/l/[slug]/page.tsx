@@ -10,6 +10,12 @@ import { getPublicLinkPage, linkPublicUrl, movedLinkSlug } from "@/server/links"
 // muchas personas, y los precios y fotos de los productos se ponen al día solos.
 export const revalidate = 300
 
+// Sin páginas armadas de antemano: cada una se arma la primera vez que alguien la visita y queda guardada.
+// (Sin esto, Next la arma de nuevo en cada visita y consulta la base de datos cada vez.)
+export async function generateStaticParams() {
+  return []
+}
+
 export async function generateMetadata({ params }: PageProps<"/l/[slug]">): Promise<Metadata> {
   const { slug } = await params
   const page = await getPublicLinkPage(slug)

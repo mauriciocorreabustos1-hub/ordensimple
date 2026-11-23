@@ -154,16 +154,44 @@ export function BlockList({
   const [adding, setAdding] = React.useState(false)
   const [armed, setArmed] = React.useState<string | null>(null)
   const [dragging, setDragging] = React.useState<string | null>(null)
-  const listRef = React.useRef<HTMLOListElement>(null)
 
-  const update = (id: string, next: LinkBlock) => onChange(blocks.map((b) => (b.id === id ? next : b)))
-  const move = (from: number, to: number) => {
-    if (to < 0 || to >= blocks.length || from === to) return
-    const next = [...blocks]
-    const [item] = next.splice(from, 1)
-    next.splice(to, 0, item)
-    onChange(next)
-  }
+  // Las acciones leen siempre la lista más reciente, pero no cambian entre una tecla y otra: así cada fila se
+  // vuelve a dibujar solo cuando cambia su propio bloque (escribir no redibuja toda la lista).
+  const latest = React.useRef({ blocks, onChange, setOpenId })
+  React.useLayoutEffect(() => {
+    latest.current = { blocks, onChange, setOpenId }
+  })
+  const actions = React.useMemo<RowActions>(() => {
+    const move = (from: number, to: number) => {
+      const { blocks, onChange } = latest.current
+      if (from < 0 || to < 0 || to >= blocks.length || from === to) return
+      const next = [...blocks]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
+      onChange(next)
+    }
+    return {
+      update: (id, next) => latest.current.onChange(latest.current.blocks.map((b) => (b.id === id ? next : b))),
+      move,
+      duplicate: (i) => {
+        const { blocks, onChange } = latest.current
+        if (blocks.length >= MAX_BLOCKS) return
+        const next = [...blocks]
+        next.splice(i + 1, 0, { ...structuredClone(blocks[i]), id: newBlockId() })
+        onChange(next)
+      },
+      remove: (id) => latest.current.onChange(latest.current.blocks.filter((x) => x.id !== id)),
+      toggle: (id, open) => latest.current.setOpenId(open ? null : id),
+      arm: setArmed,
+      dragStart: setDragging,
+      dragOver: (overIndex, dragId) => move(latest.current.blocks.findIndex((x) => x.id === dragId), overIndex),
+      dragEnd: () => {
+        setDragging(null)
+        setArmed(null)
+      },
+    }
+  }, [])
+
   const add = (type: LinkBlockType) => {
     const block = emptyBlock(type, defaults)
     onChange([...blocks, block])
@@ -177,118 +205,23 @@ export function BlockList({
   return (
     <div className="space-y-3">
       {blocks.length ? (
-        <ol ref={listRef} className="space-y-2" aria-label="Bloques de tu página, en orden">
-          {blocks.map((b, i) => {
-            const open = openId === b.id
-            const problem = b.demo ? "De ejemplo: cámbialo con tus datos o bórralo" : blockProblem(b)
-            const scheduled = b.startsAt || b.endsAt
-            return (
-              <li
-                key={b.id}
-                id={`blk-${b.id}`}
-                draggable={armed === b.id}
-                onDragStart={(e) => {
-                  setDragging(b.id)
-                  e.dataTransfer.effectAllowed = "move"
-                  e.dataTransfer.setData("text/plain", b.id)
-                }}
-                onDragOver={(e) => {
-                  if (!dragging || dragging === b.id) return
-                  e.preventDefault()
-                  const from = blocks.findIndex((x) => x.id === dragging)
-                  move(from, i)
-                }}
-                onDragEnd={() => {
-                  setDragging(null)
-                  setArmed(null)
-                }}
-                className={cn(
-                  "rounded-xl border bg-card transition-shadow",
-                  open && "shadow-[0_6px_20px_-12px_rgb(0_40_30/0.35)] ring-1 ring-primary/25",
-                  dragging === b.id && "opacity-50",
-                  b.hidden && "bg-muted/40",
-                )}
-              >
-                <div className="flex items-center gap-1 py-1.5 pr-1.5 pl-1">
-                  <button
-                    type="button"
-                    aria-label="Arrastra para mover"
-                    title="Arrastra para mover"
-                    onPointerDown={() => setArmed(b.id)}
-                    onPointerUp={() => setArmed(null)}
-                    className="hidden h-9 w-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-muted active:cursor-grabbing sm:grid"
-                  >
-                    <GripVertical className="size-4" />
-                  </button>
-                  <button type="button" onClick={() => setOpenId(open ? null : b.id)} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1.5 py-1 text-left">
-                    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", b.hidden ? "bg-muted text-muted-foreground" : "bg-primary/[0.09] text-primary")}>
-                      <TypeIcon type={b.type} className="size-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5 text-[13px] font-semibold">
-                        {BLOCK_INFO[b.type].label}
-                        {BLOCK_INFO[b.type].pro && !pro ? <ProTag /> : null}
-                        {b.hidden ? <span className="text-[11px] font-normal text-muted-foreground">Oculto</span> : null}
-                        {scheduled && !b.hidden ? <CalendarClock className="size-3.5 text-muted-foreground" aria-label="Con fechas" /> : null}
-                      </span>
-                      <span className={cn("block truncate text-xs", problem && !b.hidden ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
-                        {problem && !b.hidden ? problem : summary(b, products)}
-                      </span>
-                    </span>
-                    <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
-                  </button>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => update(b.id, { ...b, hidden: !b.hidden })} aria-label={b.hidden ? "Mostrar bloque" : "Ocultar bloque"} title={b.hidden ? "Mostrar" : "Ocultar"}>
-                    {b.hidden ? <EyeOff /> : <Eye />}
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="ghost" size="icon" aria-label="Más acciones del bloque">
-                        <MoreHorizontal />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem disabled={i === 0} onClick={() => move(i, i - 1)}>
-                        <ArrowUp /> Subir
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled={i === blocks.length - 1} onClick={() => move(i, i + 1)}>
-                        <ArrowDown /> Bajar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={blocks.length >= MAX_BLOCKS}
-                        onClick={() => {
-                          const copy = { ...structuredClone(b), id: newBlockId() }
-                          const next = [...blocks]
-                          next.splice(i + 1, 0, copy)
-                          onChange(next)
-                        }}
-                      >
-                        <Copy /> Duplicar
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onClick={() => onChange(blocks.filter((x) => x.id !== b.id))}>
-                        <Trash2 /> Borrar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                {/* En el celular no se puede arrastrar: subir y bajar quedan a mano. */}
-                <div className="flex gap-1 px-2 pb-1.5 sm:hidden">
-                  <Button type="button" variant="ghost" size="xs" disabled={i === 0} onClick={() => move(i, i - 1)}>
-                    <ArrowUp /> Subir
-                  </Button>
-                  <Button type="button" variant="ghost" size="xs" disabled={i === blocks.length - 1} onClick={() => move(i, i + 1)}>
-                    <ArrowDown /> Bajar
-                  </Button>
-                </div>
-                {open ? (
-                  <div className="space-y-4 border-t px-4 pt-4 pb-4">
-                    <BlockForm block={b} onChange={(next) => update(b.id, next)} ctx={{ products, bookingUrl, storeUrl }} />
-                    <Schedule block={b} onChange={(next) => update(b.id, next)} />
-                  </div>
-                ) : null}
-              </li>
-            )
-          })}
+        <ol className="space-y-2" aria-label="Bloques de tu página, en orden">
+          {blocks.map((b, i) => (
+            <BlockRow
+              key={b.id}
+              block={b}
+              index={i}
+              count={blocks.length}
+              open={openId === b.id}
+              armed={armed === b.id}
+              dragging={dragging}
+              pro={pro}
+              products={products}
+              bookingUrl={bookingUrl}
+              storeUrl={storeUrl}
+              actions={actions}
+            />
+          ))}
         </ol>
       ) : (
         <div className="rounded-xl border border-dashed px-6 py-10 text-center">
@@ -316,6 +249,143 @@ export function BlockList({
     </div>
   )
 }
+
+type RowActions = {
+  update: (id: string, next: LinkBlock) => void
+  move: (from: number, to: number) => void
+  duplicate: (index: number) => void
+  remove: (id: string) => void
+  toggle: (id: string, open: boolean) => void
+  arm: (id: string | null) => void
+  dragStart: (id: string) => void
+  dragOver: (overIndex: number, dragId: string) => void
+  dragEnd: () => void
+}
+
+/** Una fila de la lista. Memorizada: solo se redibuja si cambia su bloque, su posición o si está abierta. */
+const BlockRow = React.memo(function BlockRow({
+  block: b,
+  index: i,
+  count,
+  open,
+  armed,
+  dragging,
+  pro,
+  products,
+  bookingUrl,
+  storeUrl,
+  actions,
+}: {
+  block: LinkBlock
+  index: number
+  count: number
+  open: boolean
+  armed: boolean
+  dragging: string | null
+  pro: boolean
+  products: EditorProduct[]
+  bookingUrl: string | null
+  storeUrl: string | null
+  actions: RowActions
+}) {
+  const problem = b.demo ? "De ejemplo: cámbialo con tus datos o bórralo" : blockProblem(b)
+  const scheduled = b.startsAt || b.endsAt
+  const ctx = React.useMemo(() => ({ products, bookingUrl, storeUrl }), [products, bookingUrl, storeUrl])
+  const onChange = React.useCallback((next: LinkBlock) => actions.update(b.id, next), [actions, b.id])
+  return (
+    <li
+      id={`blk-${b.id}`}
+      draggable={armed}
+      onDragStart={(e) => {
+        actions.dragStart(b.id)
+        e.dataTransfer.effectAllowed = "move"
+        e.dataTransfer.setData("text/plain", b.id)
+      }}
+      onDragOver={(e) => {
+        if (!dragging || dragging === b.id) return
+        e.preventDefault()
+        actions.dragOver(i, dragging)
+      }}
+      onDragEnd={actions.dragEnd}
+      className={cn(
+        "rounded-xl border bg-card transition-shadow",
+        open && "shadow-[0_6px_20px_-12px_rgb(0_40_30/0.35)] ring-1 ring-primary/25",
+        dragging === b.id && "opacity-50",
+        b.hidden && "bg-muted/40",
+      )}
+    >
+      <div className="flex items-center gap-1 py-1.5 pr-1.5 pl-1">
+        <button
+          type="button"
+          aria-label="Arrastra para mover"
+          title="Arrastra para mover"
+          onPointerDown={() => actions.arm(b.id)}
+          onPointerUp={() => actions.arm(null)}
+          className="hidden h-9 w-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground hover:bg-muted active:cursor-grabbing sm:grid"
+        >
+          <GripVertical className="size-4" />
+        </button>
+        <button type="button" onClick={() => actions.toggle(b.id, open)} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1.5 py-1 text-left">
+          <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", b.hidden ? "bg-muted text-muted-foreground" : "bg-primary/[0.09] text-primary")}>
+            <TypeIcon type={b.type} className="size-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold">
+              {BLOCK_INFO[b.type].label}
+              {BLOCK_INFO[b.type].pro && !pro ? <ProTag /> : null}
+              {b.hidden ? <span className="text-[11px] font-normal text-muted-foreground">Oculto</span> : null}
+              {scheduled && !b.hidden ? <CalendarClock className="size-3.5 text-muted-foreground" aria-label="Con fechas" /> : null}
+            </span>
+            <span className={cn("block truncate text-xs", problem && !b.hidden ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
+              {problem && !b.hidden ? problem : summary(b, products)}
+            </span>
+          </span>
+          <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+        </button>
+        <Button type="button" variant="ghost" size="icon" onClick={() => actions.update(b.id, { ...b, hidden: !b.hidden })} aria-label={b.hidden ? "Mostrar bloque" : "Ocultar bloque"} title={b.hidden ? "Mostrar" : "Ocultar"}>
+          {b.hidden ? <EyeOff /> : <Eye />}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" aria-label="Más acciones del bloque">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={i === 0} onClick={() => actions.move(i, i - 1)}>
+              <ArrowUp /> Subir
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={i === count - 1} onClick={() => actions.move(i, i + 1)}>
+              <ArrowDown /> Bajar
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={count >= MAX_BLOCKS} onClick={() => actions.duplicate(i)}>
+              <Copy /> Duplicar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => actions.remove(b.id)}>
+              <Trash2 /> Borrar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {/* En el celular no se puede arrastrar: subir y bajar quedan a mano. */}
+      <div className="flex gap-1 px-2 pb-1.5 sm:hidden">
+        <Button type="button" variant="ghost" size="xs" disabled={i === 0} onClick={() => actions.move(i, i - 1)}>
+          <ArrowUp /> Subir
+        </Button>
+        <Button type="button" variant="ghost" size="xs" disabled={i === count - 1} onClick={() => actions.move(i, i + 1)}>
+          <ArrowDown /> Bajar
+        </Button>
+      </div>
+      {open ? (
+        <div className="space-y-4 border-t px-4 pt-4 pb-4">
+          <BlockForm block={b} onChange={onChange} ctx={ctx} />
+          <Schedule block={b} onChange={onChange} />
+        </div>
+      ) : null}
+    </li>
+  )
+})
 
 function BlockPicker({ onPick, pro, bookingUrl, hasProducts }: { onPick: (t: LinkBlockType) => void; pro: boolean; bookingUrl: string | null; hasProducts: boolean }) {
   const groups: { title: string; types: LinkBlockType[] }[] = [

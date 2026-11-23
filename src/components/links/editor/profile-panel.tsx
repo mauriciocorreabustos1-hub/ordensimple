@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { Switch } from "@/components/ui/switch"
 import { ImageField, ProTag, TextField } from "@/components/links/editor/fields"
 import { normalizePhone } from "@/lib/contact-card"
@@ -7,8 +8,13 @@ import type { LinkContent } from "@/lib/links"
 
 export function ProfilePanel({ content, onChange, hasLogo, pro }: { content: LinkContent; onChange: (c: LinkContent) => void; hasLogo: boolean; pro: boolean }) {
   const p = content.profile
-  const set = (patch: Partial<LinkContent["profile"]>) => onChange({ ...content, profile: { ...p, ...patch } })
-  const seo = (patch: Partial<LinkContent["seo"]>) => onChange({ ...content, seo: { ...content.seo, ...patch } })
+  // Siempre sobre el contenido más reciente: los campos memorizados pueden conservar una versión anterior de estas funciones.
+  const latest = React.useRef(content)
+  React.useLayoutEffect(() => {
+    latest.current = content
+  })
+  const set = (patch: Partial<LinkContent["profile"]>) => onChange({ ...latest.current, profile: { ...latest.current.profile, ...patch } })
+  const seo = (patch: Partial<LinkContent["seo"]>) => onChange({ ...latest.current, seo: { ...latest.current.seo, ...patch } })
 
   return (
     <div className="space-y-7">

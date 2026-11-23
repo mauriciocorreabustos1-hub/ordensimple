@@ -36,7 +36,11 @@ export function Field({
   )
 }
 
-export function TextField({
+/**
+ * Campo de texto. Memorizado: solo se redibuja si cambia su valor o su texto (no por escribir en el campo de al lado).
+ * `onChange` no se compara: quien lo usa debe leer siempre el dato más reciente (ver BlockForm).
+ */
+export const TextField = React.memo(function TextField({
   label,
   value,
   onChange,
@@ -62,6 +66,12 @@ export function TextField({
   className?: string
 }) {
   const id = React.useId()
+  // El área de texto no es "controlada": si React reescribe su contenido en cada letra, el navegador recalcula los
+  // estilos de toda la página (lo más pesado al escribir en un celular). Solo se pone al día si cambia desde afuera.
+  const area = React.useRef<HTMLTextAreaElement>(null)
+  React.useLayoutEffect(() => {
+    if (area.current && area.current.value !== value) area.current.value = value
+  }, [value])
   const counter = value.length > max * 0.7 ? `${value.length}/${max}` : null
   return (
     <div className={cn("space-y-1.5", className)}>
@@ -72,14 +82,14 @@ export function TextField({
         {counter ? <span className={cn("text-[11px] tabular-nums", value.length >= max ? "text-danger" : "text-muted-foreground")}>{counter}</span> : null}
       </div>
       {multiline ? (
-        <Textarea id={id} value={value} maxLength={max} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} rows={3} className="resize-y" aria-invalid={Boolean(error)} />
+        <Textarea ref={area} id={id} defaultValue={value} maxLength={max} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} rows={3} className="resize-y" aria-invalid={Boolean(error)} />
       ) : (
         <Input id={id} type={type} inputMode={inputMode} value={value} maxLength={max} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(error)} />
       )}
       {error ? <p className="text-xs text-danger">{error}</p> : hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   )
-}
+}, (a, b) => a.label === b.label && a.value === b.value && a.max === b.max && a.placeholder === b.placeholder && a.hint === b.hint && a.error === b.error && a.type === b.type && a.inputMode === b.inputMode && a.multiline === b.multiline && a.className === b.className)
 
 /** Botones de opción (una sola elegida), como las pestañas de una carpeta. */
 export function Segmented<T extends string>({

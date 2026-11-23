@@ -25,7 +25,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "compartir", label: "Compartir" },
 ]
 
-type SaveState = "saved" | "saving" | "offline" | "error"
+/** dirty: hay cambios que se guardarán en un momento (sin animación: un ícono girando mientras escribes obliga al navegador a redibujar toda la página en cada cuadro). */
+type SaveState = "saved" | "dirty" | "saving" | "offline" | "error"
 
 export function LinksEditor(props: {
   initial: LinkContent
@@ -80,7 +81,7 @@ export function LinksEditor(props: {
         if (r.ok) {
           savedJson.current = json
           ok = true
-          setSave(JSON.stringify(latest.current) === json ? "saved" : "saving")
+          setSave(JSON.stringify(latest.current) === json ? "saved" : "dirty")
         } else {
           setSave("error")
           toast.error(r.message)
@@ -105,7 +106,7 @@ export function LinksEditor(props: {
       latest.current = next
       setContent(next)
       setPending(true)
-      setSave((s) => (s === "offline" ? s : "saving"))
+      setSave((s) => (s === "offline" ? s : "dirty"))
       schedule()
     },
     [schedule],
@@ -179,90 +180,44 @@ export function LinksEditor(props: {
   }
 
   const publicUrl = `${props.publicPrefix}${slug}`
-  const view: LinkViewData = {
-    content,
-    logoUrl: props.logoUrl,
-    bookingUrl: props.bookingUrl,
-    today: props.today,
-    preview: true,
-    products: Object.fromEntries(
-      content.blocks.flatMap((b) =>
-        b.type === "products" ? [[b.id, b.productIds.flatMap((id) => props.products.filter((p) => p.id === id).map((p) => ({ ...p, href: null })))]] : [],
-      ),
-    ),
-  }
+  const wide = useWide()
+  const previewProps = { content, logoUrl: props.logoUrl, bookingUrl: props.bookingUrl, today: props.today, products: props.products }
+  const setBlocks = React.useCallback((blocks: LinkContent["blocks"]) => update({ ...latest.current, blocks }), [update])
+
+  const actions = React.useRef({ publish, unpublish, discard })
+  React.useLayoutEffect(() => {
+    actions.current = { publish, unpublish, discard }
+  })
+  const onPublish = React.useCallback(() => actions.current.publish(), [])
+  const onUnpublish = React.useCallback(() => actions.current.unpublish(), [])
+  const onDiscard = React.useCallback(() => actions.current.discard(), [])
+  const onTheme = React.useCallback((theme: LinkContent["theme"]) => update({ ...latest.current, theme }), [update])
 
   const status = !published ? { label: "Sin publicar", tone: "muted" } : pending ? { label: "Publicada, con cambios sin publicar", tone: "warn" } : { label: "Publicada", tone: "ok" }
 
   return (
     <div className="space-y-5">
-      {/* Barra de estado: si está publicada, si se guardó y las acciones principales. */}
-      <div className="sticky top-14 z-20 -mx-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-background/90 px-4 py-2.5 backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
-          <span className="inline-flex items-center gap-1.5 font-medium">
-            <span className={cn("size-2 rounded-full", status.tone === "ok" ? "bg-success" : status.tone === "warn" ? "bg-amber-500" : "bg-muted-foreground/50")} />
-            {status.label}
-          </span>
-          <SaveIndicator state={save} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          {published ? (
-            <Button variant="ghost" size="sm" asChild>
-              <a href={publicUrl} target="_blank" rel="noopener">
-                <ExternalLink /> <span className="max-sm:sr-only">Ver página</span>
-              </a>
-            </Button>
-          ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Más opciones de publicación">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled={!published || !pending || busy} onClick={discard}>
-                <RotateCcw /> Descartar cambios sin publicar
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!published || busy} onClick={unpublish}>
-                <EyeOff /> Dejar de publicar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button onClick={publish} disabled={busy || (published && !pending)} className="h-9 px-3.5">
-            {busy ? <Loader2 className="animate-spin" /> : <Upload />}
-            {published ? (pending ? "Publicar cambios" : "Al día") : "Publicar"}
-          </Button>
-        </div>
-      </div>
+      <StatusBar
+        label={status.label}
+        tone={status.tone}
+        save={save}
+        published={published}
+        pending={pending}
+        busy={busy}
+        publicUrl={publicUrl}
+        onPublish={onPublish}
+        onUnpublish={onUnpublish}
+        onDiscard={onDiscard}
+      />
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-w-0">
-          {/* Pestañas de archivador: la abierta queda pegada a la hoja de abajo. */}
-          <div role="tablist" aria-label="Partes del editor" className="flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                role="tab"
-                type="button"
-                id={`tab-${t.id}`}
-                aria-selected={tab === t.id}
-                aria-controls={`panel-${t.id}`}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "relative top-px shrink-0 rounded-t-xl border border-b-0 px-3 pt-2 pb-2 text-sm font-medium transition-colors sm:px-4",
-                  tab === t.id ? "z-10 bg-card text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-                {t.id === "bloques" ? <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{content.blocks.length}</span> : null}
-              </button>
-            ))}
-          </div>
+          <TabBar tab={tab} setTab={setTab} count={content.blocks.length} />
           <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="rounded-2xl rounded-tl-none border bg-card p-4 sm:p-5" data-enter>
             {tab === "bloques" ? (
               <BlockList
                 blocks={content.blocks}
-                onChange={(blocks) => update({ ...content, blocks })}
+                onChange={setBlocks}
                 products={props.products}
                 bookingUrl={props.bookingUrl}
                 storeUrl={props.storeUrl}
@@ -274,7 +229,7 @@ export function LinksEditor(props: {
             ) : tab === "diseno" ? (
               <DesignPanel
                 theme={content.theme}
-                onChange={(theme) => update({ ...content, theme })}
+                onChange={onTheme}
                 pro={props.pro}
                 canSuggest={content.blocks.length + 5 <= MAX_BLOCKS}
                 onSuggestBlocks={(id) => {
@@ -305,9 +260,7 @@ export function LinksEditor(props: {
 
         {/* Vista previa en un celular, siempre a la vista en pantallas grandes. */}
         <aside className="sticky top-16 hidden lg:block" aria-label="Vista previa">
-          <PhoneFrame>
-            <LinkPageView data={view} />
-          </PhoneFrame>
+          <PhoneFrame>{wide ? <Preview {...previewProps} /> : null}</PhoneFrame>
           <p className="mt-3 text-center text-xs text-muted-foreground">Vista previa. Los cambios se ven aquí al tiro y en internet cuando publicas.</p>
         </aside>
       </div>
@@ -324,7 +277,7 @@ export function LinksEditor(props: {
             </DialogTitle>
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <LinkPageView data={view} className="min-h-full" />
+            {previewOpen ? <Preview {...previewProps} /> : null}
           </div>
         </DialogContent>
       </Dialog>
@@ -360,6 +313,12 @@ export function LinksEditor(props: {
 }
 
 function SaveIndicator({ state }: { state: SaveState }) {
+  if (state === "dirty")
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-foreground" role="status">
+        <span aria-hidden className="size-1.5 rounded-full bg-amber-500" /> Cambios por guardar
+      </span>
+    )
   if (state === "saving")
     return (
       <span className="inline-flex items-center gap-1 text-muted-foreground" role="status">
@@ -390,3 +349,137 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
+
+/** ¿Pantalla grande (donde la vista previa queda siempre a la vista)? */
+function useWide() {
+  return React.useSyncExternalStore(
+    (cb) => {
+      const m = matchMedia("(min-width: 1024px)")
+      m.addEventListener("change", cb)
+      return () => m.removeEventListener("change", cb)
+    },
+    () => matchMedia("(min-width: 1024px)").matches,
+    () => false,
+  )
+}
+
+type StatusBarProps = {
+  label: string
+  tone: string
+  save: SaveState
+  published: boolean
+  pending: boolean
+  busy: boolean
+  publicUrl: string
+  onPublish: () => void
+  onUnpublish: () => void
+  onDiscard: () => void
+}
+
+/** Barra de estado: si está publicada, si se guardó y las acciones principales. No se redibuja al escribir. */
+const StatusBar = React.memo(function StatusBar({ label, tone, save, published, pending, busy, publicUrl, onPublish, onUnpublish, onDiscard }: StatusBarProps) {
+  return (
+    <div className="sticky top-14 z-20 -mx-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-background/90 px-4 py-2.5 backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:px-8">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+        <span className="inline-flex items-center gap-1.5 font-medium">
+          <span className={cn("size-2 rounded-full", tone === "ok" ? "bg-success" : tone === "warn" ? "bg-amber-500" : "bg-muted-foreground/50")} />
+          {label}
+        </span>
+        <SaveIndicator state={save} />
+      </div>
+      <div className="flex items-center gap-1.5">
+        {published ? (
+          <Button variant="ghost" size="sm" asChild>
+            <a href={publicUrl} target="_blank" rel="noopener">
+              <ExternalLink /> <span className="max-sm:sr-only">Ver página</span>
+            </a>
+          </Button>
+        ) : null}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Más opciones de publicación">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={!published || !pending || busy} onClick={onDiscard}>
+              <RotateCcw /> Descartar cambios sin publicar
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!published || busy} onClick={onUnpublish}>
+              <EyeOff /> Dejar de publicar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button onClick={onPublish} disabled={busy || (published && !pending)} className="h-9 px-3.5">
+          {busy ? <Loader2 className="animate-spin" /> : <Upload />}
+          {published ? (pending ? "Publicar cambios" : "Al día") : "Publicar"}
+        </Button>
+      </div>
+    </div>
+  )
+})
+
+/** Pestañas de archivador: la abierta queda pegada a la hoja de abajo. */
+const TabBar = React.memo(function TabBar({ tab, setTab, count }: { tab: Tab; setTab: (t: Tab) => void; count: number }) {
+  return (
+    <div role="tablist" aria-label="Partes del editor" className="flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          role="tab"
+          type="button"
+          id={`tab-${t.id}`}
+          aria-selected={tab === t.id}
+          aria-controls={`panel-${t.id}`}
+          onClick={() => setTab(t.id)}
+          className={cn(
+            "relative top-px shrink-0 rounded-t-xl border border-b-0 px-3 pt-2 pb-2 text-sm font-medium transition-colors sm:px-4",
+            tab === t.id ? "z-10 bg-card text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {t.label}
+          {t.id === "bloques" ? <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{count}</span> : null}
+        </button>
+      ))}
+    </div>
+  )
+})
+
+/**
+ * La vista previa, en segundo plano: lo que escribes aparece al tiro y el celular dibujado se pone al día apenas haces
+ * una pausa. Solo esta parte se vuelve a dibujar, no todo el editor.
+ */
+const Preview = React.memo(function Preview({
+  content,
+  logoUrl,
+  bookingUrl,
+  today,
+  products,
+}: {
+  content: LinkContent
+  logoUrl: string | null
+  bookingUrl: string | null
+  today: string
+  products: EditorProduct[]
+}) {
+  // Se pone al día cuando paras de escribir un instante (no letra por letra): así no compite con lo que escribes.
+  const [deferred, setDeferred] = React.useState(content)
+  React.useEffect(() => {
+    if (content === deferred) return
+    const t = setTimeout(() => setDeferred(content), 180)
+    return () => clearTimeout(t)
+  }, [content, deferred])
+  return React.useMemo(() => {
+    const data: LinkViewData = {
+      content: deferred,
+      logoUrl,
+      bookingUrl,
+      today,
+      preview: true,
+      products: Object.fromEntries(
+        deferred.blocks.flatMap((b) => (b.type === "products" ? [[b.id, b.productIds.flatMap((id) => products.filter((p) => p.id === id).map((p) => ({ ...p, href: null })))]] : [])),
+      ),
+    }
+    return <LinkPageView data={data} className="min-h-full" />
+  }, [deferred, logoUrl, bookingUrl, today, products])
+})

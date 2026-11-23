@@ -23,7 +23,12 @@ const emailError = (v: string) => (v && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
 
 export function BlockForm({ block, onChange, ctx }: { block: LinkBlock; onChange: (b: LinkBlock) => void; ctx: Ctx }) {
   // Al tocar cualquier campo, el bloque deja de ser "de ejemplo".
-  const set = (patch: Record<string, unknown>) => onChange({ ...block, ...patch, demo: false } as LinkBlock)
+  // Siempre sobre el bloque más reciente: los campos memorizados pueden conservar una versión anterior de esta función.
+  const latest = React.useRef(block)
+  React.useLayoutEffect(() => {
+    latest.current = block
+  })
+  const set = (patch: Record<string, unknown>) => onChange({ ...latest.current, ...patch, demo: false } as LinkBlock)
 
   switch (block.type) {
     case "link":
@@ -213,6 +218,10 @@ function HighlightSwitch({ block, onChange }: { block: LinkBlock; onChange: (p: 
 
 function SocialsForm({ block, onChange }: { block: Extract<LinkBlock, { type: "socials" }>; onChange: (items: { kind: (typeof LINK_SOCIAL_KINDS)[number]; handle: string }[]) => void }) {
   const missing = LINK_SOCIAL_KINDS.filter((k) => !block.items.some((i) => i.kind === k))
+  const latest = React.useRef(block.items)
+  React.useLayoutEffect(() => {
+    latest.current = block.items
+  })
   return (
     <div className="space-y-3">
       {block.items.map((item, i) => (
@@ -227,7 +236,7 @@ function SocialsForm({ block, onChange }: { block: Extract<LinkBlock, { type: "s
             max={200}
             placeholder="@usuario o el enlace a tu perfil"
             error={item.handle && !normalizeLinkSocial(item.kind, item.handle) ? `Escribe tu usuario de ${LINK_SOCIALS[item.kind].label} o el enlace a tu perfil` : null}
-            onChange={(handle) => onChange(block.items.map((x, j) => (j === i ? { ...x, handle } : x)))}
+            onChange={(handle) => onChange(latest.current.map((x, j) => (j === i ? { ...x, handle } : x)))}
           />
           <Button type="button" variant="ghost" size="icon" className="mb-0.5" aria-label={`Quitar ${LINK_SOCIALS[item.kind].label}`} onClick={() => onChange(block.items.filter((_, j) => j !== i))}>
             <Trash2 />

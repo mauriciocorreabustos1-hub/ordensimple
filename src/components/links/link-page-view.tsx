@@ -95,7 +95,7 @@ function palette(theme: LinkTheme) {
   // El borde y el texto de los botones de contorno usan el color principal solo si se distingue del fondo.
   const line = contrast(theme.accent, bgColor) >= 3 ? theme.accent : text
   const background = image
-    ? `linear-gradient(${theme.bg.overlay === "dark" ? "rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.7)" : "rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.78)"}), url(${imageSrc(theme.bg.image!)}) center / cover`
+    ? `linear-gradient(${theme.bg.overlay === "dark" ? "rgb(0 0 0 / 0.62), rgb(0 0 0 / 0.78)" : "rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.85)"}), url(${imageSrc(theme.bg.image!)}) center / cover`
     : theme.bg.kind === "gradient"
       ? `linear-gradient(${theme.bg.angle}deg, ${theme.bg.color}, ${theme.bg.color2})`
       : theme.bg.color
@@ -106,6 +106,10 @@ export function linkPageStyle(theme: LinkTheme): CSSProperties {
   const p = palette(theme)
   return {
     "--lk-text": p.text,
+    "--lk-sheet": p.bgColor,
+    // Superficies (botones suaves, tarjetas): casi transparentes sobre un color; más sólidas sobre una foto, para que se lean.
+    "--lk-soft": theme.bg.kind === "image" ? `color-mix(in oklab, ${p.bgColor} 62%, transparent)` : `color-mix(in oklab, ${p.text} 10%, transparent)`,
+    "--lk-surface": theme.bg.kind === "image" ? `color-mix(in oklab, ${p.bgColor} 70%, transparent)` : `color-mix(in oklab, ${p.text} 6%, transparent)`,
     "--lk-accent": theme.accent,
     "--lk-accent-text": p.accentText,
     "--lk-line": p.line,
@@ -127,7 +131,7 @@ function buttonClass(theme: LinkTheme, highlight?: boolean) {
     "lk-btn relative flex min-h-[3.25rem] w-full items-center gap-3 rounded-[var(--lk-radius)] px-4 py-3 text-[0.95em] font-semibold no-underline transition-transform duration-150 active:scale-[0.98] motion-reduce:transition-none [box-shadow:var(--lk-shadow)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--lk-text)]",
     style === "fill" && "bg-[var(--lk-accent)] text-[var(--lk-accent-text)] hover:brightness-[1.06]",
     style === "outline" && "border-2 border-[var(--lk-line)] text-[var(--lk-line)] hover:bg-[color-mix(in_oklab,var(--lk-line)_8%,transparent)]",
-    style === "soft" && "bg-[color-mix(in_oklab,var(--lk-text)_10%,transparent)] text-[var(--lk-text)] hover:bg-[color-mix(in_oklab,var(--lk-text)_15%,transparent)]",
+    style === "soft" && "bg-[var(--lk-soft)] text-[var(--lk-text)] hover:brightness-110",
     style === "hard" &&
       "w-[calc(100%-4px)] border-2 border-[var(--lk-text)] bg-[var(--lk-accent)] text-[var(--lk-accent-text)] [box-shadow:4px_4px_0_var(--lk-text)] hover:-translate-x-px hover:-translate-y-px active:translate-x-0.5 active:translate-y-0.5 active:[box-shadow:1px_1px_0_var(--lk-text)]",
     theme.align === "center" ? "justify-center text-center" : "text-left",
@@ -219,7 +223,7 @@ function BlockView({ block, data }: { block: LinkBlock; data: LinkViewData }) {
                 data-lk={block.id}
                 aria-label={s.label}
                 title={s.label}
-                className="grid size-11 place-items-center rounded-full bg-[color-mix(in_oklab,var(--lk-text)_10%,transparent)] transition-colors hover:bg-[color-mix(in_oklab,var(--lk-text)_18%,transparent)]"
+                className="grid size-11 place-items-center rounded-full bg-[var(--lk-soft)] transition-[filter] hover:brightness-110"
                 {...external(s.url)}
               >
                 <SocialIcon kind={s.kind} className="size-5" />
@@ -256,7 +260,7 @@ function BlockView({ block, data }: { block: LinkBlock; data: LinkViewData }) {
     }
     case "location":
       return (
-        <a href={mapsUrl(block.address)} data-lk={block.id} {...external("https://")} className="lk-card flex items-start gap-3 rounded-[var(--lk-card-radius)] border border-current/15 p-4 text-left no-underline [box-shadow:var(--lk-shadow)] transition-colors hover:bg-[color-mix(in_oklab,var(--lk-text)_6%,transparent)]">
+        <a href={mapsUrl(block.address)} data-lk={block.id} {...external("https://")} className="lk-card flex items-start gap-3 rounded-[var(--lk-card-radius)] border border-current/15 bg-[var(--lk-surface)] p-4 text-left no-underline [box-shadow:var(--lk-shadow)] transition-colors hover:bg-[color-mix(in_oklab,var(--lk-text)_6%,transparent)]">
           <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--lk-accent)] text-[var(--lk-accent-text)]">
             <MapPin aria-hidden className="size-5" />
           </span>
@@ -305,7 +309,7 @@ function BlockView({ block, data }: { block: LinkBlock; data: LinkViewData }) {
                   </>
                 )
               const cls = cn(
-                "lk-card block overflow-hidden rounded-[var(--lk-card-radius)] bg-[color-mix(in_oklab,var(--lk-text)_6%,transparent)] no-underline [box-shadow:var(--lk-shadow)]",
+                "lk-card block overflow-hidden rounded-[var(--lk-card-radius)] bg-[var(--lk-surface)] no-underline [box-shadow:var(--lk-shadow)]",
                 block.layout === "list" && "flex items-center gap-3 p-2 pr-4",
               )
               return (
@@ -346,7 +350,7 @@ function BlockView({ block, data }: { block: LinkBlock; data: LinkViewData }) {
       const until = block.until ? new Date(`${block.until}T12:00:00`).toLocaleDateString("es-CL", { day: "numeric", month: "long" }) : null
       return (
         // El cupón: borde punteado, como un vale de papel.
-        <div className="lk-card relative rounded-[var(--lk-card-radius)] border-2 border-dashed border-[var(--lk-line)] p-4 text-left [box-shadow:var(--lk-shadow)]">
+        <div className="lk-card relative rounded-[var(--lk-card-radius)] border-2 border-dashed border-[var(--lk-line)] bg-[var(--lk-surface)] p-4 text-left [box-shadow:var(--lk-shadow)]">
           <p className="flex items-center gap-1.5 text-[0.78em] font-semibold opacity-80">
             <Tag aria-hidden className="size-3.5" />
             Promoción{until ? ` · hasta el ${until}` : ""}
@@ -426,7 +430,10 @@ function Header({ data }: { data: LinkViewData }) {
         <img
           src={imageSrc(profile.cover)}
           alt=""
-          className={cn("-mx-5 w-[calc(100%+2.5rem)] max-w-none object-cover", coverTall ? "aspect-[16/9]" : "aspect-[3/1] rounded-b-[var(--lk-card-radius)]")}
+          className={cn(
+            "-mx-5 w-[calc(100%+2.5rem)] max-w-none object-cover @3xl:-mx-10 @3xl:w-[calc(100%+5rem)]",
+            coverTall ? "aspect-[16/9]" : "aspect-[3/1] rounded-b-[var(--lk-card-radius)]",
+          )}
         />
       ) : null}
       <div className={cn(left ? "flex items-end gap-4" : "space-y-3", profile.cover && !left && "-mt-14")}>
@@ -471,9 +478,20 @@ function Header({ data }: { data: LinkViewData }) {
 export function LinkPageView({ data, className }: { data: LinkViewData; className?: string }) {
   const { content } = data
   const blocks = content.blocks.filter((b) => (data.preview ? !b.hidden : isBlockLive(b, data.today)))
+  const photo = content.theme.bg.kind === "image" && Boolean(content.theme.bg.image)
   return (
-    <div className={cn("min-h-full w-full", className)} style={linkPageStyle(content.theme)}>
-      <div className="mx-auto flex min-h-full w-full max-w-[34rem] flex-col px-5 pt-0 pb-8">
+    // En pantallas anchas (según el ancho de la página, no de la pantalla: la vista previa del editor sigue como celular)
+    // el contenido va centrado sobre una lámina; con foto de fondo, una lámina de vidrio para que se lea sobre la foto.
+    <div className={cn("@container flex min-h-full w-full flex-col", className)} style={linkPageStyle(content.theme)}>
+      <div className="mx-auto flex w-full max-w-[34rem] flex-1 flex-col px-5 pt-0 pb-8 @3xl:max-w-[38rem] @3xl:justify-center @3xl:py-14">
+        <div
+          className={cn(
+            "@3xl:overflow-hidden @3xl:rounded-[32px] @3xl:px-10 @3xl:pb-10",
+            photo
+              ? "@3xl:border @3xl:border-white/10 @3xl:bg-[color-mix(in_oklab,var(--lk-sheet)_58%,transparent)] @3xl:backdrop-blur-xl @3xl:[box-shadow:0_40px_90px_-40px_rgb(0_0_0/0.55)]"
+              : "@3xl:border @3xl:border-current/10 @3xl:bg-[color-mix(in_oklab,var(--lk-text)_4%,transparent)] @3xl:[box-shadow:0_24px_60px_-36px_rgb(0_0_0/0.22)]",
+          )}
+        >
         <div className={cn(!content.profile.cover && "pt-10")}>
           <Header data={data} />
         </div>
@@ -493,8 +511,9 @@ export function LinkPageView({ data, className }: { data: LinkViewData; classNam
             )
           })}
         </main>
+        </div>
         {content.branding ? (
-          <p className="mt-auto pt-10 text-center text-[12px] opacity-70">
+          <p className="mt-auto pt-10 text-center text-[12px] opacity-70 @3xl:mt-0 @3xl:pt-6">
             <a href="https://www.ordensimple.cl/?utm_source=links" target="_blank" rel="noopener" className="font-sans font-medium underline-offset-2 hover:underline">
               Hecho con OrdenSimple
             </a>

@@ -110,7 +110,7 @@ export function DesignPanel({
         />
         {theme.bg.kind === "image" ? (
           <div className="space-y-3">
-            <ImageField label="Foto de fondo" value={theme.bg.image} onChange={(image) => setBg({ image })} max={1400} />
+            <ImageField label="Foto de fondo" value={theme.bg.image} onChange={(image) => setBg({ image })} max={1920} />
             <Field label="Para que se lea el texto" hint="Ponemos un velo sobre la foto y el texto queda blanco o negro.">
               <Segmented label="Velo sobre la foto" value={theme.bg.overlay} onChange={(overlay) => setBg({ overlay })} options={[{ value: "dark", label: "Oscurecer" }, { value: "light", label: "Aclarar" }]} />
             </Field>

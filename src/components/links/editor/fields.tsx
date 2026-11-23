@@ -129,6 +129,9 @@ export function Segmented<T extends string>({
 
 export function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const [text, setText] = React.useState(value)
+  const pending = React.useRef(value)
+  const frame = React.useRef(0)
+  React.useEffect(() => () => cancelAnimationFrame(frame.current), [])
   // Si el color cambia desde afuera (una plantilla, "Arreglar"), el texto se pone al día.
   const [prev, setPrev] = React.useState(value)
   if (prev !== value) {
@@ -142,7 +145,16 @@ export function ColorField({ label, value, onChange }: { label: string; value: s
         <input
           type="color"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            // Al arrastrar, el navegador avisa decenas de veces por segundo: se pasa un solo cambio por cuadro.
+            pending.current = e.target.value
+            setText(e.target.value)
+            if (frame.current) return
+            frame.current = requestAnimationFrame(() => {
+              frame.current = 0
+              onChange(pending.current)
+            })
+          }}
           aria-label={`${label}: elegir color`}
           className="size-7 shrink-0 cursor-pointer rounded-md border-0 bg-transparent p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border [&::-webkit-color-swatch]:border-black/10 [&::-webkit-color-swatch-wrapper]:p-0"
         />

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 const RADIUS_PX = { none: 0, sm: 3, md: 6, full: 99 }
 
 /** Miniatura de una plantilla: el fondo, la foto, el nombre y tres botones con su estilo real. */
-function TemplateThumb({ theme }: { theme: Omit<LinkTheme, "template"> }) {
+const TemplateThumb = React.memo(function TemplateThumb({ theme }: { theme: Omit<LinkTheme, "template"> }) {
   const bg = theme.bg.kind === "gradient" ? `linear-gradient(${theme.bg.angle}deg, ${theme.bg.color}, ${theme.bg.color2})` : theme.bg.color
   const r = RADIUS_PX[theme.radius]
   const left = theme.align === "left" || theme.header === "left"
@@ -39,7 +39,7 @@ function TemplateThumb({ theme }: { theme: Omit<LinkTheme, "template"> }) {
       </span>
     </span>
   )
-}
+})
 
 export function DesignPanel({
   theme,

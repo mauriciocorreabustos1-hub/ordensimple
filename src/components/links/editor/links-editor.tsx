@@ -462,11 +462,17 @@ const Preview = React.memo(function Preview({
   today: string
   products: EditorProduct[]
 }) {
-  // Se pone al día cuando paras de escribir un instante (no letra por letra): así no compite con lo que escribes.
+  // Se pone al día como máximo unas 7 veces por segundo: sigue el movimiento mientras arrastras un color o escribes,
+  // sin redibujar el celular completo en cada letra o en cada paso del selector.
   const [deferred, setDeferred] = React.useState(content)
+  const lastShown = React.useRef(0)
   React.useEffect(() => {
     if (content === deferred) return
-    const t = setTimeout(() => setDeferred(content), 180)
+    const wait = Math.max(0, 140 - (performance.now() - lastShown.current))
+    const t = setTimeout(() => {
+      lastShown.current = performance.now()
+      setDeferred(content)
+    }, wait)
     return () => clearTimeout(t)
   }, [content, deferred])
   return React.useMemo(() => {

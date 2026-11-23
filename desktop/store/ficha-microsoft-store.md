@@ -1,8 +1,8 @@
 # Ficha de OrdenSimple en Microsoft Store
 
-Última actualización: envío 3 (6 de noviembre de 2026), solo la ficha, con el mismo paquete de la versión 1.0.0.
+Última actualización: envío 4 (22 de noviembre de 2026), solo la ficha y una captura nueva (`07-links.png`), con el mismo paquete de la versión 1.0.0. La app abre www.ordensimple.cl, así que OrdenSimple Links ya está dentro de la app instalada: no hace falta un paquete nuevo.
 
-Copiar en Partner Center (Apps y juegos, OrdenSimple, envío nuevo). Las capturas están en `capturas/` (1920 x 1080).
+Copiar en Partner Center (Apps y juegos, OrdenSimple, envío nuevo). Las capturas están en `capturas/` (1920 x 1080); en el envío 4 se suma `07-links.png`.
 
 ## Precios y disponibilidad
 - **Precio:** Gratis.
@@ -47,6 +47,10 @@ PARA TU LOCAL
 - Comandas por mesa, pantalla de cocina y cuenta separada por persona.
 - Tienda online, agenda, cotizaciones, promociones y tarjetas de fidelidad.
 
+TU PÁGINA DE ENLACES
+- OrdenSimple Links: una página con tu WhatsApp, tus redes, tu tienda, tus reservas y tus productos con el precio al día, para poner en Instagram y TikTok.
+- Diseños listos para elegir, código QR para tu mostrador y estadísticas de visitas y clics.
+
 Empieza gratis. Usa la misma cuenta en el computador, el celular y la web.
 
 - **Características del producto (una por línea):**
@@ -55,9 +59,11 @@ Empieza gratis. Usa la misma cuenta en el computador, el celular y la web.
   - Ventas, caja, inventario, fiado y reportes
   - Importa tus productos desde Excel o CSV
   - Comandas por mesa y pantalla de cocina
+  - Tu página de enlaces con QR y estadísticas (OrdenSimple Links)
   - Gratis, con tu misma cuenta, y se actualiza sola
-- **Palabras clave:** ventas, caja, inventario, boletas, pyme, punto de venta, fiado
-- **Notas de la versión:** Ahora puedes importar todos tus productos desde un archivo Excel o CSV. Y si recién empiezas, una guía te ayuda a configurar tu negocio y a practicar una venta.
+- **Palabras clave:** ventas, caja, inventario, boletas, pyme, punto de venta, fiado (si se puede una más: link en bio)
+- **Notas de la versión:** Nuevo: OrdenSimple Links. Arma en minutos una página con tu WhatsApp, tus redes, tu tienda, tus reservas y tus productos, con su propio código QR y estadísticas de visitas y clics. Elige un diseño, publícala y ponla en tu biografía de Instagram o TikTok.
+- **Envío 3 (6 de noviembre de 2026):** Ahora puedes importar todos tus productos desde un archivo Excel o CSV. Y si recién empiezas, una guía te ayuda a configurar tu negocio y a practicar una venta.
 - **Versión anterior (30 de octubre de 2026):** Primera versión de OrdenSimple para PC.
 
 ## Opciones de envío (notas para la certificación, en inglés)

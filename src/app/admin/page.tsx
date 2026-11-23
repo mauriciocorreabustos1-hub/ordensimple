@@ -49,6 +49,8 @@ import {
   type AdminUserRow,
 } from "@/server/queries/admin"
 import { AUDIENCES, getAudienceCounts, listCampaigns, type Audience } from "@/server/queries/campaigns"
+import { EXPIRED_COOLDOWN_DAYS, listExpiredPlans } from "@/server/queries/expired-plans"
+import { ExpiredPlans, type ExpiredRow } from "@/components/admin/expired-plans"
 
 const TZ = "America/Santiago"
 
@@ -77,6 +79,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const licenseFilter = (LICENSE_FILTERS.some((f) => f.value === params.codigos) ? params.codigos : "todos") as LicenseFilter
   const licenseQ = typeof params.codigo === "string" ? params.codigo.trim().slice(0, 60) : ""
   const mlFlash = typeof params.ml === "string" ? params.ml.slice(0, 20) : null
+  // Desde "Qué revisar": abre el correo a los planes vencidos (recordatorio u oferta) con todos los elegibles marcados.
+  const expiredOpen = params.vencidos === "aviso" || params.vencidos === "oferta" ? params.vencidos : null
   const me = await requireAdmin()
   const [adminEmails, admins] = await Promise.all([adminEmailSet(), listAdmins()])
   const adminRows: AdminRow[] = admins.map((a) => ({
@@ -107,7 +111,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     countUnverified(),
     getReferralAdmin(),
   ])
-  const specialLinks = await getSpecialLinksAdmin()
+  const [specialLinks, expired] = await Promise.all([getSpecialLinksAdmin(), listExpiredPlans()])
   const lic = await getLicenseAdmin({ filter: licenseFilter, q: licenseQ })
   const when = (d: Date | null) => (d ? formatDateTime(d, TZ) : null)
   const licenseRow = (c: (typeof lic.codes)[number]): LicenseCodeRow => ({
@@ -175,6 +179,25 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     paying: l.paying,
   }))
   const maxSignups = Math.max(1, ...stats.signupsByDay.map((d) => d.count))
+  const expiredRows: ExpiredRow[] = expired.map((e) => {
+    const days = Math.floor((now.getTime() - e.expiredAt.getTime()) / 86_400_000)
+    const saleDays = e.lastSaleAt ? (now.getTime() - e.lastSaleAt.getTime()) / 86_400_000 : null
+    return {
+      id: e.id,
+      name: e.name,
+      planName: PLANS[e.plan].name,
+      expiredLabel: longDate(e.expiredAt),
+      expiredAgo: ago(e.expiredAt, now),
+      expiredDays: days,
+      owner: e.owner ? { id: e.owner.id, name: e.owner.name, email: e.owner.email, optIn: e.owner.marketingOptIn } : null,
+      activity: e.lastSaleAt ? `Última venta ${ago(e.lastSaleAt, now)}` : e.sales ? "Sin ventas recientes" : "Nunca registró ventas",
+      active: saleDays !== null && saleDays <= 14,
+      lastNotice: e.lastNotice ? { label: ago(e.lastNotice.at, now), kind: e.lastNotice.kind, coupon: e.lastNotice.coupon } : null,
+      cooling: Boolean(e.lastNotice && now.getTime() - e.lastNotice.at.getTime() < EXPIRED_COOLDOWN_DAYS * 86_400_000),
+    }
+  })
+  const expiredSelling = expiredRows.filter((r) => r.active).length
+  const activeCoupons = coupons.filter((cp) => cp.active && !(cp.expiresAt && cp.expiresAt <= now)).map((cp) => ({ code: cp.code, summary: couponSummary(cp) }))
 
   const pageHref = (p: number) =>
     `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(activity !== "todos" ? { actividad: activity } : {}), ...(role !== "todos" ? { rol: role } : {}), pagina: String(p) })}#usuarios`
@@ -182,7 +205,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...(a !== "todos" ? { actividad: a } : {}), ...(r !== "todos" ? { rol: r } : {}) })}#usuarios`
 
   // Lo que conviene mirar primero, arriba del panel.
-  const alerts: { href: string; tone: "danger" | "warning"; text: string }[] = []
+  const alerts: { href: string; tone: "danger" | "warning"; text: string; hint?: string; actions?: { href: string; label: string }[] }[] = []
   if (errors.last24)
     alerts.push({ href: "#errores", tone: "danger", text: `${formatNumber(errors.last24)} ${errors.last24 === 1 ? "error" : "errores"} en las últimas 24 horas` })
   if (!mpAccount.ok) alerts.push({ href: "#cobros", tone: "danger", text: `Mercado Pago no está conectado: ${mpAccount.reason}` })
@@ -200,7 +223,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   else if (lic.counts.available < 5)
     alerts.push({ href: "#licencias", tone: "warning", text: lic.counts.available ? `Quedan ${lic.counts.available} códigos del Pro permanente` : "No quedan códigos del Pro permanente" })
   if (planCounts.expired)
-    alerts.push({ href: "#usuarios", tone: "warning", text: `${formatNumber(planCounts.expired)} ${planCounts.expired === 1 ? "plan vencido" : "planes vencidos"}` })
+    alerts.push({
+      href: "#vencidos",
+      tone: "warning",
+      text: `${formatNumber(planCounts.expired)} ${planCounts.expired === 1 ? "plan vencido" : "planes vencidos"}`,
+      hint: expiredSelling ? `${formatNumber(expiredSelling)} siguen vendiendo: son los más fáciles de recuperar` : "Recuérdales o regálales unos días para que vuelvan",
+      actions: [
+        { href: "/admin?vencidos=aviso#vencidos", label: "Recordar" },
+        { href: "/admin?vencidos=oferta#vencidos", label: "Ofrecer descuento" },
+      ],
+    })
 
 
   const signups14 = stats.signupsByDay.reduce((n, d) => n + d.count, 0)
@@ -254,14 +286,24 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                   <div className="space-y-3">
                     <h3 className="font-semibold">Qué revisar</h3>
                     {alerts.length ? (
-                      <ul className="divide-y overflow-hidden rounded-xl border">
+                      <ul className="divide-y overflow-hidden rounded-xl border bg-card">
                         {alerts.map((a) => (
-                          <li key={a.href + a.text}>
-                            <a href={a.href} className="flex min-h-12 items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/60">
-                              <span className={cn("size-2 shrink-0 rounded-full", a.tone === "danger" ? "bg-danger" : "bg-warning")} aria-hidden />
-                              <span className="flex-1">{a.text}</span>
-                              <span className="text-xs text-muted-foreground">Ver</span>
+                          <li key={a.href + a.text} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 text-sm">
+                            <span className={cn("size-2 shrink-0 rounded-full", a.tone === "danger" ? "bg-danger" : "bg-warning")} aria-hidden />
+                            <a href={a.href} className="min-w-0 flex-1 hover:underline">
+                              <span className="block font-medium">{a.text}</span>
+                              {a.hint ? <span className="block text-xs text-muted-foreground">{a.hint}</span> : null}
                             </a>
+                            <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:pl-5">
+                              {a.actions?.map((x) => (
+                                <Button key={x.href} variant="outline" size="sm" asChild>
+                                  <a href={x.href}>{x.label}</a>
+                                </Button>
+                              ))}
+                              <Button variant="ghost" size="sm" asChild>
+                                <a href={a.href}>Ver</a>
+                              </Button>
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -372,136 +414,167 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                     const seen = lastSeen(u, now)
                     const act = b ? usage.get(b.id) : undefined
                     const lastSaleDays = act?.lastSaleAt ? (now.getTime() - act.lastSaleAt.getTime()) / 86_400_000 : null
+                    const status =
+                      lastSaleDays !== null && lastSaleDays <= 7
+                        ? { label: "Usando la app", cls: "bg-success/12 text-success", dot: "bg-success" }
+                        : lastSaleDays !== null
+                          ? { label: `Sin vender hace ${Math.floor(lastSaleDays)} días`, cls: "bg-warning/12 text-warning", dot: "bg-warning" }
+                          : { label: b ? "Sin ventas aún" : "Sin negocio", cls: "bg-muted text-muted-foreground", dot: "bg-muted-foreground/50" }
+                    const initials = u.name
+                      .trim()
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((w) => w[0])
+                      .join("")
+                      .toUpperCase()
                     return (
-                      <div key={u.id} className="grid gap-x-6 gap-y-3 rounded-xl border bg-card p-4 @2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] @2xl:items-start @6xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)_auto] @6xl:items-center">
-                        <div className="min-w-0">
-                          <Link href={`/admin/usuarios/${u.id}`} className="block truncate font-medium hover:text-primary hover:underline">
-                            {u.name}
-                          </Link>
-                          <p className="truncate text-sm text-muted-foreground">{u.email}</p>
-                          {u._count.adminNotes ? (
-                            <Link href={`/admin/usuarios/${u.id}#notas`} className="mt-1 inline-flex items-center gap-1 text-xs text-warning hover:underline">
-                              <NotebookPen className="size-3.5" />
-                              {u._count.adminNotes} {u._count.adminNotes === 1 ? "nota" : "notas"}
-                            </Link>
-                          ) : null}
+                      <article key={u.id} className="overflow-hidden rounded-xl border bg-card">
+                        <div className="grid gap-x-6 gap-y-3 p-4 @3xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)_auto] @3xl:items-start">
+                          {/* La persona */}
+                          <div className="flex min-w-0 items-start gap-3">
+                            <span
+                              aria-hidden
+                              className={cn(
+                                "grid size-10 shrink-0 place-items-center rounded-full text-sm font-semibold",
+                                lastSaleDays !== null && lastSaleDays <= 7 ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {initials || "?"}
+                            </span>
+                            <div className="min-w-0">
+                              <Link href={`/admin/usuarios/${u.id}`} className="block truncate font-semibold hover:text-primary hover:underline">
+                                {u.name}
+                              </Link>
+                              <p className="truncate text-sm text-muted-foreground">{u.email}</p>
+                              {u._count.adminNotes ? (
+                                <Link href={`/admin/usuarios/${u.id}#notas`} className="mt-1 inline-flex items-center gap-1 text-xs text-warning hover:underline">
+                                  <NotebookPen className="size-3.5" />
+                                  {u._count.adminNotes} {u._count.adminNotes === 1 ? "nota" : "notas"}
+                                </Link>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {/* El negocio */}
+                          <div className="min-w-0 space-y-1.5 text-sm">
+                            {b ? (
+                              <>
+                                <p className="flex flex-wrap items-center gap-1.5">
+                                  <span className="truncate font-medium">{b.name}</span>
+                                  <Badge variant={effectivePlan(b, now) === "FREE" ? "secondary" : "default"}>{PLANS[effectivePlan(b, now)].name}</Badge>
+                                  <Badge variant="outline" className={m.role === "OWNER" ? "border-primary/40 text-primary" : m.role === "ADMIN" ? "border-warning/40" : undefined}>
+                                    {ROLE_LABEL[m.role]}
+                                  </Badge>
+                                </p>
+                                {b.plan !== "FREE" && b.planExpiresAt ? (
+                                  <p className={cn("text-xs", b.planExpiresAt > now ? "text-muted-foreground" : "font-medium text-warning")}>
+                                    {b.planExpiresAt > now
+                                      ? `${PLANS[b.plan].name} hasta el ${longDate(b.planExpiresAt)}`
+                                      : `Su plan ${PLANS[b.plan].name} venció el ${longDate(b.planExpiresAt)}`}
+                                    {b.planExpiresAt <= now ? (
+                                      <a href="#vencidos" className="ml-1.5 font-normal text-primary hover:underline">
+                                        Recordarle
+                                      </a>
+                                    ) : null}
+                                  </p>
+                                ) : null}
+                                <ul className="flex flex-wrap gap-1.5 text-xs" aria-label="Uso del negocio">
+                                  {[
+                                    b.type ?? "Sin rubro",
+                                    `${formatNumber(b._count.sales)} ${b._count.sales === 1 ? "venta" : "ventas"}`,
+                                    `${formatNumber(b._count.expenses)} ${b._count.expenses === 1 ? "gasto" : "gastos"}`,
+                                    `${formatNumber(b._count.products)} productos`,
+                                    `${formatNumber(b._count.members)} ${b._count.members === 1 ? "persona" : "personas"}`,
+                                  ].map((t, i) => (
+                                    <li key={i} className="max-w-full truncate rounded-md bg-muted px-2 py-0.5 tabular-nums">
+                                      {t}
+                                    </li>
+                                  ))}
+                                  {b.discountPercent ? <li className="rounded-md bg-primary/10 px-2 py-0.5 text-primary">Descuento {b.discountPercent}%</li> : null}
+                                  {b.extraProducts || b.extraMembers ? (
+                                    <li className="rounded-md bg-primary/10 px-2 py-0.5 text-primary">
+                                      Cupos extra: {[b.extraProducts ? `+${b.extraProducts} productos` : null, b.extraMembers ? `+${b.extraMembers} trabajadores` : null].filter(Boolean).join(" y ")}
+                                    </li>
+                                  ) : null}
+                                </ul>
+                                {act?.lastSaleAt ? (
+                                  <p className="text-xs text-muted-foreground" title={formatDateTime(act.lastSaleAt, TZ)}>
+                                    Última venta <span className="text-foreground">{ago(act.lastSaleAt, now)}</span>
+                                    {act.sales30
+                                      ? `. En 30 días: ${formatNumber(act.sales30)} ventas por ${clp(act.total30)}, en ${act.days30} ${act.days30 === 1 ? "día" : "días"} distintos`
+                                      : ". Sin ventas en 30 días"}
+                                  </p>
+                                ) : null}
+                                {act?.bestProduct ? (
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    Producto estrella (90 días): <span className="text-foreground">{act.bestProduct.name}</span>, {formatNumber(act.bestProduct.qty)} u. por{" "}
+                                    {clp(act.bestProduct.revenue)}
+                                  </p>
+                                ) : null}
+                              </>
+                            ) : (
+                              <p className="text-muted-foreground">Sin negocio (no terminó la configuración)</p>
+                            )}
+                            {u.memberships.length > 1 ? <p className="text-xs text-muted-foreground">Tiene {u.memberships.length - 1} negocio(s) más</p> : null}
+                          </div>
+
+                          {/* Estado */}
+                          <p className={cn("inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium @3xl:justify-self-end", status.cls)}>
+                            <span className={cn("size-1.5 rounded-full", status.dot)} aria-hidden />
+                            {status.label}
+                          </p>
                         </div>
-                        <div className="min-w-0 text-sm">
-                          {b ? (
-                            <>
-                              <p className="flex flex-wrap items-center gap-1.5">
-                                <span className="truncate">{b.name}</span>
-                                <Badge variant={effectivePlan(b, now) === "FREE" ? "secondary" : "default"}>
-                                  {PLANS[effectivePlan(b, now)].name}
-                                </Badge>
-                                <Badge variant="outline" className={m.role === "OWNER" ? "border-primary/40 text-primary" : m.role === "ADMIN" ? "border-warning/40" : undefined}>
-                                  {ROLE_LABEL[m.role]}
-                                </Badge>
-                              </p>
-                              {b.plan !== "FREE" && b.planExpiresAt ? (
-                                <p className="text-xs text-muted-foreground">
-                                  {b.planExpiresAt > now
-                                    ? `${PLANS[b.plan].name} hasta el ${longDate(b.planExpiresAt)}`
-                                    : `Su plan ${PLANS[b.plan].name} venció el ${longDate(b.planExpiresAt)}`}
-                                </p>
-                              ) : null}
-                              {b.discountPercent ? (
-                                <p className="text-xs text-muted-foreground">Descuento guardado: {b.discountPercent}%</p>
-                              ) : null}
-                              {b.extraProducts || b.extraMembers ? (
-                                <p className="text-xs text-muted-foreground">
-                                  Cupos extra:{" "}
-                                  {[b.extraProducts ? `+${b.extraProducts} productos` : null, b.extraMembers ? `+${b.extraMembers} trabajadores` : null]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                                </p>
-                              ) : null}
-                              <p className="text-xs text-muted-foreground">
-                                {b.type ?? "Sin rubro"} · {formatNumber(b._count.sales)} ventas · {formatNumber(b._count.expenses)} gastos ·{" "}
-                                {formatNumber(b._count.products)} productos · {formatNumber(b._count.members)} {b._count.members === 1 ? "persona" : "personas"}
-                              </p>
-                              {act?.lastSaleAt ? (
-                                <p className="text-xs text-muted-foreground" title={formatDateTime(act.lastSaleAt, TZ)}>
-                                  Última venta: <span className="text-foreground">{ago(act.lastSaleAt, now)}</span>
-                                  {act.sales30
-                                    ? ` · 30 días: ${formatNumber(act.sales30)} ventas por ${clp(act.total30)}, en ${act.days30} ${act.days30 === 1 ? "día" : "días"} distintos`
-                                    : " · sin ventas en 30 días"}
-                                </p>
-                              ) : null}
-                              {act?.bestProduct ? (
-                                <p className="truncate text-xs text-muted-foreground">
-                                  Producto estrella (90 días): <span className="text-foreground">{act.bestProduct.name}</span> ·{" "}
-                                  {formatNumber(act.bestProduct.qty)} u. · {clp(act.bestProduct.revenue)}
-                                </p>
-                              ) : null}
-                            </>
-                          ) : (
-                            <p className="text-muted-foreground">Sin negocio (no terminó la configuración)</p>
-                          )}
-                          {u.memberships.length > 1 ? (
-                            <p className="text-xs text-muted-foreground">+{u.memberships.length - 1} negocio(s) más</p>
-                          ) : null}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          <p>Registro: {formatDate(u.createdAt, TZ)}</p>
-                          <p className="capitalize">Llegó por: {originLabel(u)}</p>
-                          <p title={seen?.title}>
-                            Última vez activo:{" "}
+
+                        {/* Pie: los datos de la cuenta, como el pie de una boleta, y las acciones. */}
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-dashed bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+                          <span>Registro {formatDate(u.createdAt, TZ)}</span>
+                          <span className="first-letter:uppercase">Llegó por {originLabel(u)}</span>
+                          <span title={seen?.title}>
+                            Activo{" "}
                             <span className={seen && seen.days < 1 ? "font-medium text-success" : seen && seen.days > 14 ? "text-warning" : "text-foreground"}>
                               {seen?.label ?? "nunca"}
                             </span>
-                          </p>
-                          {device(u.sessions[0]?.userAgent) ? <p>Desde: {device(u.sessions[0]?.userAgent)}</p> : null}
+                          </span>
+                          {device(u.sessions[0]?.userAgent) ? <span>{device(u.sessions[0]?.userAgent)}</span> : null}
+                          <span className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+                            {b && m.role === "OWNER" ? (
+                              <PlanDialog
+                                businessId={b.id}
+                                businessName={b.name}
+                                currentPlan={effectivePlan(b, now)}
+                                expiresLabel={b.planExpiresAt && b.planExpiresAt > now ? longDate(b.planExpiresAt) : null}
+                              />
+                            ) : null}
+                            {b && m.role === "OWNER" ? (
+                              <ExtrasDialog
+                                businessId={b.id}
+                                businessName={b.name}
+                                planName={PLANS[effectivePlan(b, now)].name}
+                                baseProducts={PLANS[effectivePlan(b, now)].maxProducts}
+                                baseMembers={PLANS[effectivePlan(b, now)].maxMembers - 1}
+                                extraProducts={b.extraProducts}
+                                extraMembers={b.extraMembers}
+                              />
+                            ) : null}
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/admin?para=${u.id}#correo-directo`} aria-label={`Escribirle a ${u.name}`}>
+                                <Mail />
+                                Escribirle
+                              </Link>
+                            </Button>
+                            {adminEmails.has(u.email.toLowerCase()) ? null : (
+                              <DeleteUserDialog
+                                userId={u.id}
+                                name={u.name}
+                                email={u.email}
+                                ownedBusinesses={u.memberships
+                                  .filter((x) => x.role === "OWNER")
+                                  .map((x) => ({ name: x.business.name, sales: x.business._count.sales, others: x.business._count.members - 1 }))}
+                              />
+                            )}
+                          </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 @2xl:justify-end">
-                          {b && m.role === "OWNER" ? (
-                            <PlanDialog
-                              businessId={b.id}
-                              businessName={b.name}
-                              currentPlan={effectivePlan(b, now)}
-                              expiresLabel={b.planExpiresAt && b.planExpiresAt > now ? longDate(b.planExpiresAt) : null}
-                            />
-                          ) : null}
-                          {b && m.role === "OWNER" ? (
-                            <ExtrasDialog
-                              businessId={b.id}
-                              businessName={b.name}
-                              planName={PLANS[effectivePlan(b, now)].name}
-                              baseProducts={PLANS[effectivePlan(b, now)].maxProducts}
-                              baseMembers={PLANS[effectivePlan(b, now)].maxMembers - 1}
-                              extraProducts={b.extraProducts}
-                              extraMembers={b.extraMembers}
-                            />
-                          ) : null}
-                          {lastSaleDays !== null && lastSaleDays <= 7 ? (
-                            <Badge className="bg-success/15 text-success">Usando la app</Badge>
-                          ) : lastSaleDays !== null ? (
-                            <Badge variant="outline" className="border-warning/40 text-warning">
-                              Sin vender hace {Math.floor(lastSaleDays)} días
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">
-                              Sin ventas aún
-                            </Badge>
-                          )}
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/admin?para=${u.id}#correo-directo`} aria-label={`Escribirle a ${u.name}`}>
-                              <Mail />
-                              Escribirle
-                            </Link>
-                          </Button>
-                          {adminEmails.has(u.email.toLowerCase()) ? null : (
-                            <DeleteUserDialog
-                              userId={u.id}
-                              name={u.name}
-                              email={u.email}
-                              ownedBusinesses={u.memberships
-                                .filter((x) => x.role === "OWNER")
-                                .map((x) => ({ name: x.business.name, sales: x.business._count.sales, others: x.business._count.members - 1 }))}
-                            />
-                          )}
-                        </div>
-                      </div>
+                      </article>
                     )
                   })}
                 </div>
@@ -625,9 +698,24 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             id: "planes",
             label: "Planes y cobros",
             title: "Planes y cobros",
-            description: "Mercado Pago, códigos de descuento, invitaciones y enlaces con días gratis.",
+            description: "Planes vencidos, Mercado Pago, códigos de descuento, invitaciones y enlaces con días gratis.",
+            count: expiredRows.length || undefined,
+            tone: "warning",
             content: (
               <div key="planes" className="space-y-10">
+            <div id="vencidos" className="scroll-mt-32 lg:scroll-mt-24 space-y-4">
+              <div className="space-y-1">
+                <h3 className="flex items-center gap-2 text-base font-semibold">
+                  <Crown className="size-5 text-warning" />
+                  Planes vencidos
+                  {expiredRows.length ? <span className="font-normal text-muted-foreground">({formatNumber(expiredRows.length)})</span> : null}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Negocios que tuvieron Pro o Empresa y ya no. Recuérdales, ofréceles un código de descuento o regálales unos días.
+                </p>
+              </div>
+              <ExpiredPlans key={expiredOpen ?? "lista"} rows={expiredRows} coupons={activeCoupons} autoOpen={expiredOpen} />
+            </div>
             <div id="cobros" className="scroll-mt-32 lg:scroll-mt-24 space-y-3">
               <h3 className="flex items-center gap-2 text-base font-semibold">
                 <Crown className="size-5 text-muted-foreground" />

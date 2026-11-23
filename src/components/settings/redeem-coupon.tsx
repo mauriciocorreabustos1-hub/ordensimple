@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { redeemCoupon } from "@/server/actions/plan"
 
 /** "Canjear código" en Tu plan: códigos de activación del Pro permanente (OS-PRO-...) y cupones de descuento. */
-export function RedeemCoupon() {
-  const [code, setCode] = React.useState("")
+export function RedeemCoupon({ initialCode = "" }: { initialCode?: string }) {
+  // Llega escrito desde el enlace de un correo con oferta (Tu plan?codigo=…#canjear).
+  const [code, setCode] = React.useState(initialCode)
   const [error, setError] = React.useState<string | undefined>()
   const [pending, startTransition] = React.useTransition()
 

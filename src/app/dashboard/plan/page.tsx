@@ -158,7 +158,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/dashboard/p
             <CardDescription>Si compraste el Plan Pro permanente, ingresa aquí tu código de activación. También sirve para los códigos de descuento.</CardDescription>
           </CardHeader>
           <CardContent>
-            <RedeemCoupon />
+            <RedeemCoupon initialCode={typeof params.codigo === "string" ? params.codigo.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40) : ""} />
           </CardContent>
         </Card>
       )}

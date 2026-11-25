@@ -12,6 +12,7 @@
     "test:medidas": "node --conditions=react-server --import tsx --test tests/medidas.test.ts",
     "test:tarjetas": "node --conditions=react-server --import tsx --test tests/tarjetas.test.ts",
     "test:links": "node --conditions=react-server --import tsx --test tests/links.test.ts",
+    "test:planes": "node --conditions=react-server --import tsx --test tests/planes.test.ts",
     "postinstall": "prisma generate && node scripts/copy-wasm.mjs",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

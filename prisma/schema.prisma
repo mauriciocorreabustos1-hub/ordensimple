@@ -236,6 +236,8 @@ model Business {
   logoUpdatedAt     DateTime?
   /// Código para el enlace "Invita a un amigo" (se crea la primera vez que se abre esa página).
   referralCode      String?                  @unique
+  /// Último aviso de que el plan vence ("2026-11-30:5" = 5 días antes, ":0" = el día que vence), para no repetirlo.
+  planNoticeKey     String?
 
   @@map("business")
 }

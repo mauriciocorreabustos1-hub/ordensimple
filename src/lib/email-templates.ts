@@ -187,6 +187,55 @@ export function planGiftEmail({
   }
 }
 
+/**
+ * El plan está por vencer (5 días antes) o vence hoy. Es un aviso de la cuenta, no una promoción: dice qué se pausa,
+ * que los datos quedan guardados y cómo seguir.
+ */
+export function planEndingEmail({
+  name,
+  planName,
+  businessName,
+  endsLabel,
+  daysLeft,
+  url,
+}: {
+  name: string
+  planName: string
+  businessName: string
+  /** "el lunes 30 de noviembre" */
+  endsLabel: string
+  daysLeft: number
+  url: string
+}) {
+  const first = name.split(" ")[0] || name
+  const today = daysLeft <= 0
+  const when = today ? "hoy" : daysLeft === 1 ? "mañana" : `en ${daysLeft} días`
+  const subject = today ? `Tu plan ${planName} vence hoy` : `Tu plan ${planName} vence ${when}`
+  const paused = "la tienda online, el cierre de caja, los reportes de cualquier fecha, los proveedores y el resto de las funciones " + planName
+  return {
+    subject,
+    html: layout({
+      preview: `El plan ${planName} de ${businessName} vence ${endsLabel}. Tus datos quedan guardados.`,
+      body: [
+        h1(`${escapeHtml(first)}, tu plan ${escapeHtml(planName)} vence ${when}`),
+        p(`El plan <strong>${escapeHtml(planName)}</strong> de <strong>${escapeHtml(businessName)}</strong> termina ${escapeHtml(endsLabel)}. Desde ese momento ${escapeHtml(paused)} quedan en pausa.`),
+        p("No se borra nada: tus ventas, productos, clientes y reportes siguen guardados, y puedes volver cuando quieras."),
+        button(url, `Seguir con ${escapeHtml(planName)}`),
+        small("Si ya lo renovaste, no tienes que hacer nada."),
+      ].join(""),
+    }),
+    text: `Hola, ${first}:
+
+El plan ${planName} de ${businessName} termina ${endsLabel}. Desde ese momento ${paused} quedan en pausa.
+
+No se borra nada: tus datos siguen guardados.
+
+Seguir con ${planName}: ${url}
+
+Si ya lo renovaste, no tienes que hacer nada.`,
+  }
+}
+
 /** "Invita a un amigo": quien invitó ganó días de plan. */
 export function referralRewardEmail({
   name,

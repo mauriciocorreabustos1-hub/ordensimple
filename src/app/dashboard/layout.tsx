@@ -17,10 +17,15 @@ import { canApproveDiscounts } from "@/lib/roles"
 import { vatInfo } from "@/lib/vat"
 import { isAdmin as checkAdmin } from "@/server/admin"
 import { requireBusiness } from "@/server/session"
+import { can } from "@/lib/roles"
+import { planBannerFor } from "@/server/plan-reminders"
+import { PlanEndingBanner } from "@/components/app/plan-ending-banner"
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const ctx = await requireBusiness()
   const isAdmin = await checkAdmin(ctx.user.email)
+  // El plan está por vencer o venció hace poco: lo ve quien puede contratar.
+  const planBanner = can(ctx.role, "settings:manage") ? await planBannerFor(ctx.businessId, ctx.timezone) : null
 
   const [products, categories, customers, memberships, suppliers, teamSize, promotions] = await Promise.all([
     db.product.findMany({
@@ -111,6 +116,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             {ctx.user.emailVerified ? null : <EmailVerifyBanner email={ctx.user.email} />}
             <EmailConfirmedToast />
             <OfflineSalesBar businessId={ctx.businessId} currency={ctx.currency} />
+            {planBanner ? <PlanEndingBanner {...planBanner} /> : null}
             {/* data-page: cada pantalla entra suave al abrirla (ver globals.css). */}
             <div data-page>{children}</div>
           </main>

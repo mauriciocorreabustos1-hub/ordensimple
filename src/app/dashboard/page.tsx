@@ -43,6 +43,7 @@ import { can } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
 import { db } from "@/lib/db"
 import { FirstSteps, type FirstStep } from "@/components/dashboard/first-steps"
+import { LinksPromo } from "@/components/dashboard/links-promo"
 import { BusinessLogo } from "@/components/app/business-logo"
 
 export const metadata: Metadata = { title: "Inicio" }
@@ -52,6 +53,8 @@ export default async function DashboardPage() {
   const now = new Date()
   // Los empleados ven solo lo de hoy para registrar; las ganancias y comparaciones son del dueño.
   const showFinances = can(ctx.role, "finances:view")
+  // Novedad de Links: solo a quien puede crear la página y todavía no la tiene.
+  const showLinksPromo = can(ctx.role, "settings:manage") && !(await db.linkPage.findUnique({ where: { businessId: ctx.businessId }, select: { id: true } }))
   const showTips = showFinances && !ctx.settings.easyMode && canUseFeature(ctx.business.plan, "tips")
   // Lo que te deben, el IVA del mes y la utilidad (estado de resultados) para el dueño o administrador.
   const showMoneyBox = showFinances && !ctx.settings.easyMode
@@ -334,6 +337,7 @@ export default async function DashboardPage() {
       {firstSteps ? (
         <FirstSteps businessId={ctx.businessId} steps={firstSteps} fresh={Boolean(counts && now.getTime() - counts.createdAt.getTime() < 30 * 86_400_000)} />
       ) : null}
+      {showLinksPromo ? <LinksPromo businessId={ctx.businessId} /> : null}
       <InstallCard />
 
 

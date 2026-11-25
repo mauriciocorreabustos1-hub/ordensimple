@@ -481,6 +481,42 @@ export function nudgeEmail({
   }
 }
 
+/**
+ * Recordatorio que manda el equipo desde el panel para que anoten (o vuelvan a anotar) sus ventas. Es un consejo, como la
+ * serie de bienvenida: trae el enlace para no recibir más consejos.
+ */
+export function reminderEmail({
+  name,
+  subject,
+  body,
+  buttonLabel,
+  buttonUrl,
+  unsubscribeUrl,
+}: {
+  name: string
+  subject: string
+  body: string
+  buttonLabel: string
+  buttonUrl: string
+  unsubscribeUrl: string
+}) {
+  const first = name.split(" ")[0] || name
+  const personalize = (s: string) => s.replaceAll("{nombre}", first)
+  const paragraphs = personalize(body)
+    .split(/\n\s*\n/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+  return {
+    subject: personalize(subject),
+    html: layout({
+      preview: paragraphs[0]?.slice(0, 120) ?? subject,
+      body: [...paragraphs.map((para) => p(escapeHtml(para).replace(/\n/g, "<br>"))), button(buttonUrl, escapeHtml(buttonLabel))].join(""),
+      footer: `Recibes este correo porque tienes una cuenta en OrdenSimple. <a href="${unsubscribeUrl}" style="color:${MUTED};">No quiero recibir más consejos</a>.`,
+    }),
+    text: [...paragraphs, `${buttonLabel}: ${buttonUrl}`, `---\nPara no recibir más consejos: ${unsubscribeUrl}`].join("\n\n"),
+  }
+}
+
 // ─── Avisos del negocio (se activan o desactivan en Configuración) ──────────
 
 function alertFooter() {

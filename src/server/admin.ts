@@ -33,7 +33,10 @@ export async function listAdmins() {
   const byEmail = new Map(users.map((u) => [u.email.toLowerCase(), u]))
   return [
     ...ownerEmails().map((email) => ({ email, owner: true as const, addedAt: null, user: byEmail.get(email) ?? null })),
-    ...added.map((a) => ({ email: a.email, owner: false as const, addedAt: a.createdAt, user: byEmail.get(a.email) ?? null })),
+    // Quien ya es dueño del panel no se repite como administrador agregado.
+    ...added
+      .filter((a) => !ownerEmails().includes(a.email.toLowerCase()))
+      .map((a) => ({ email: a.email, owner: false as const, addedAt: a.createdAt, user: byEmail.get(a.email) ?? null })),
   ]
 }
 

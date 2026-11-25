@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BarChart3, Download, Gift, Link2, MailCheck, Megaphone, NotebookPen, Bug, CheckCircle2, Crown, Mail, Search, TicketPercent, ShieldCheck } from "lucide-react"
+import { BarChart3, BellRing, Download, Gift, Link2, MailCheck, Megaphone, NotebookPen, Bug, CheckCircle2, Crown, Mail, Search, TicketPercent, ShieldCheck } from "lucide-react"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { ClearErrorsButton } from "@/components/admin/clear-errors-button"
 import { CampaignComposer } from "@/components/admin/campaign-composer"
@@ -51,6 +51,8 @@ import {
 import { AUDIENCES, getAudienceCounts, listCampaigns, type Audience } from "@/server/queries/campaigns"
 import { EXPIRED_COOLDOWN_DAYS, listExpiredPlans } from "@/server/queries/expired-plans"
 import { ExpiredPlans, type ExpiredRow } from "@/components/admin/expired-plans"
+import { getReminderSegments, REMINDER_SEGMENT_KEYS, REMINDER_SEGMENTS, type ReminderSegment } from "@/server/queries/sales-reminders"
+import { RemindUserButton, SalesReminders, type SegmentCard } from "@/components/admin/sales-reminders"
 
 const TZ = "America/Santiago"
 
@@ -81,6 +83,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const mlFlash = typeof params.ml === "string" ? params.ml.slice(0, 20) : null
   // Desde "Qué revisar": abre el correo a los planes vencidos (recordatorio u oferta) con todos los elegibles marcados.
   const expiredOpen = params.vencidos === "aviso" || params.vencidos === "oferta" ? params.vencidos : null
+  // Desde "Qué revisar": abre el recordatorio para anotar ventas de ese grupo.
+  const reminderOpen = (REMINDER_SEGMENT_KEYS as string[]).includes(String(params.recordar)) ? (params.recordar as ReminderSegment) : null
   const me = await requireAdmin()
   const [adminEmails, admins] = await Promise.all([adminEmailSet(), listAdmins()])
   const adminRows: AdminRow[] = admins.map((a) => ({
@@ -111,7 +115,15 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     countUnverified(),
     getReferralAdmin(),
   ])
-  const [specialLinks, expired] = await Promise.all([getSpecialLinksAdmin(), listExpiredPlans()])
+  const [specialLinks, expired, reminders] = await Promise.all([getSpecialLinksAdmin(), listExpiredPlans(), getReminderSegments()])
+  const reminderCards: SegmentCard[] = REMINDER_SEGMENT_KEYS.map((key) => ({
+    key,
+    label: REMINDER_SEGMENTS[key].label,
+    hint: REMINDER_SEGMENTS[key].hint,
+    count: reminders[key].people.length,
+    sample: reminders[key].people.slice(0, 3).map((x) => x.name),
+    skipped: reminders[key].skipped,
+  }))
   const lic = await getLicenseAdmin({ filter: licenseFilter, q: licenseQ })
   const when = (d: Date | null) => (d ? formatDateTime(d, TZ) : null)
   const licenseRow = (c: (typeof lic.codes)[number]): LicenseCodeRow => ({
@@ -222,6 +234,14 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
     alerts.push({ href: "#licencias", tone: "danger", text: `${formatNumber(licenseAttention)} ${licenseAttention === 1 ? "venta o código" : "ventas o códigos"} del Pro permanente para revisar` })
   else if (lic.counts.available < 5)
     alerts.push({ href: "#licencias", tone: "warning", text: lic.counts.available ? `Quedan ${lic.counts.available} códigos del Pro permanente` : "No quedan códigos del Pro permanente" })
+  if (reminders.primera.people.length)
+    alerts.push({
+      href: "#recordar-ventas",
+      tone: "warning",
+      text: `${formatNumber(reminders.primera.people.length)} ${reminders.primera.people.length === 1 ? "negocio nunca anotó una venta" : "negocios nunca anotaron una venta"}`,
+      hint: "Un recordatorio con el botón que abre Registrar venta suele bastar para que partan",
+      actions: [{ href: "/admin?recordar=primera#recordar-ventas", label: "Recordar" }],
+    })
   if (planCounts.expired)
     alerts.push({
       href: "#vencidos",
@@ -420,6 +440,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         : lastSaleDays !== null
                           ? { label: `Sin vender hace ${Math.floor(lastSaleDays)} días`, cls: "bg-warning/12 text-warning", dot: "bg-warning" }
                           : { label: b ? "Sin ventas aún" : "Sin negocio", cls: "bg-muted text-muted-foreground", dot: "bg-muted-foreground/50" }
+                    // Qué recordatorio le sirve: configurar el negocio, la primera venta o volver a anotar.
+                    const reminderFor: ReminderSegment | null = !b
+                      ? "configurar"
+                      : m.role !== "OWNER"
+                        ? null
+                        : b._count.sales === 0
+                          ? "primera"
+                          : lastSaleDays !== null && lastSaleDays >= 14
+                            ? "volver"
+                            : null
                     const initials = u.name
                       .trim()
                       .split(/\s+/)
@@ -537,6 +567,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                           </span>
                           {device(u.sessions[0]?.userAgent) ? <span>{device(u.sessions[0]?.userAgent)}</span> : null}
                           <span className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+                            {reminderFor ? <RemindUserButton userId={u.id} name={u.name} segment={reminderFor} /> : null}
                             {b && m.role === "OWNER" ? (
                               <PlanDialog
                                 businessId={b.id}
@@ -860,6 +891,18 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             tone: "warning",
             content: (
               <div key="correos" className="space-y-10">
+            <div id="recordar-ventas" className="scroll-mt-32 lg:scroll-mt-24 space-y-4">
+              <div className="space-y-1">
+                <h3 className="flex items-center gap-2 text-base font-semibold">
+                  <BellRing className="size-5 text-primary" />
+                  Recordar que anoten ventas
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Para quienes se registraron y no partieron, o dejaron de anotar. El botón del correo abre directo Registrar venta.
+                </p>
+              </div>
+              <SalesReminders key={reminderOpen ?? "lista"} segments={reminderCards} autoOpen={reminderOpen} />
+            </div>
             <Card id="confirmar-correos" className="scroll-mt-32 lg:scroll-mt-24">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

@@ -127,6 +127,16 @@ export function QuickActionsProvider({
     }),
     [],
   )
+  // Desde un correo: /dashboard?registrar=venta (o gasto) abre el formulario apenas carga, y se limpia la dirección.
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const wanted = params.get("registrar")
+    if (wanted !== "venta" && wanted !== "gasto") return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAction(wanted === "venta" ? "sale" : "expense")
+    params.delete("registrar")
+    history.replaceState(null, "", `${location.pathname}${params.size ? `?${params}` : ""}${location.hash}`)
+  }, [])
   const close = () => setAction(null)
   const flags = React.useMemo(() => ({ fiado, cashClose }), [fiado, cashClose])
 

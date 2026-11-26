@@ -1,5 +1,7 @@
 import "server-only"
+import { lookup as dnsLookup, type LookupAddress } from "node:dns"
 import { lookup } from "node:dns/promises"
+import { request as httpsRequest } from "node:https"
 import { after } from "next/server"
 import { db } from "@/lib/db"
 import { isPrivateIp, signWebhook, wantsEvent, webhookUrlProblem, type WebhookEvent } from "@/lib/api-v1"
@@ -31,24 +33,54 @@ export async function checkWebhookTarget(url: string): Promise<string | null> {
 export async function deliverWebhook(url: string, secret: string, event: string, body: string): Promise<{ status: number; error: string | null }> {
   const problem = await checkWebhookTarget(url)
   if (problem) return { status: 0, error: problem }
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      redirect: "manual",
-      signal: AbortSignal.timeout(8_000),
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "OrdenSimple-Webhooks/1",
-        "X-OrdenSimple-Evento": event,
-        "X-OrdenSimple-Firma": signWebhook(body, secret),
+  const u = new URL(url)
+  return new Promise((resolve) => {
+    let done = false
+    const finish = (r: { status: number; error: string | null }) => {
+      if (!done) {
+        done = true
+        resolve(r)
+      }
+    }
+    // La IP se vuelve a revisar al conectar (no solo antes): así un dominio que cambia de IP entre medio
+    // (DNS rebinding) tampoco puede llevar a la red interna. No se siguen redirecciones.
+    const req = httpsRequest(
+      {
+        hostname: u.hostname,
+        port: 443,
+        path: u.pathname + u.search,
+        method: "POST",
+        servername: u.hostname,
+        timeout: 8_000,
+        lookup: (host, opts, cb) =>
+          dnsLookup(host, { all: true }, (err, addrs) => {
+            if (err) return cb(err, "", 4)
+            const list = addrs as LookupAddress[]
+            if (!list.length || list.some((a) => isPrivateIp(a.address))) return cb(new Error("PRIVATE_IP"), "", 4)
+            if ((opts as { all?: boolean }).all) return (cb as unknown as (e: null, a: LookupAddress[]) => void)(null, list)
+            cb(null, list[0].address, list[0].family)
+          }),
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          "User-Agent": "OrdenSimple-Webhooks/1",
+          "X-OrdenSimple-Evento": event,
+          "X-OrdenSimple-Firma": signWebhook(body, secret),
+        },
       },
-      body,
+      (res) => {
+        res.resume()
+        const status = res.statusCode ?? 0
+        finish({ status, error: status >= 200 && status < 300 ? null : `Respondió ${status}` })
+      },
+    )
+    req.on("timeout", () => {
+      req.destroy()
+      finish({ status: 0, error: "No respondió en 8 segundos" })
     })
-    await res.body?.cancel().catch(() => {})
-    return { status: res.status, error: res.ok ? null : `Respondió ${res.status}` }
-  } catch (error) {
-    return { status: 0, error: error instanceof Error && error.name === "TimeoutError" ? "No respondió en 8 segundos" : "No se pudo conectar" }
-  }
+    req.on("error", (e) => finish({ status: 0, error: e.message === "PRIVATE_IP" ? "Esa dirección lleva a una red interna." : "No se pudo conectar" }))
+    req.end(body)
+  })
 }
 
 async function dispatch(businessId: string, event: WebhookEvent, target: Target) {

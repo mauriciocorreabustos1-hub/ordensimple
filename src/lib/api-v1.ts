@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes } from "node:crypto"
+import { BlockList, isIPv4, isIPv6 } from "node:net"
 
 // API pública v1 (la que usa OrdenCRM). Lógica pura, sin base de datos, para poder probarla.
 // Contrato: pagina-ordencrm/ordensimple-api/openapi.yaml
@@ -65,21 +66,23 @@ export function webhookUrlProblem(raw: string): string | null {
 
 /** IP privada, local o reservada: un webhook nunca puede apuntar a la red interna. */
 export function isPrivateIp(ip: string) {
-  if (ip.includes(":")) {
-    const v = ip.toLowerCase()
-    if (v.startsWith("::ffff:")) return isPrivateIp(v.slice(7))
-    return v === "::1" || v === "::" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80") || v.startsWith("ff")
-  }
-  const [a, b] = ip.split(".").map(Number)
-  return (
-    a === 0 || a === 10 || a === 127 || a >= 224 ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 198 && (b === 18 || b === 19))
-  )
+  if (isIPv4(ip)) return BLOCKED_V4.check(ip, "ipv4")
+  // IPv6: solo se permite el rango público (2000::/3), sin los reservados. Así quedan fuera también las formas
+  // que llevan una IPv4 adentro (::ffff:…, 64:ff9b::…, 2002::…), que podrían apuntar a la red interna.
+  if (isIPv6(ip)) return !GLOBAL_V6.check(ip, "ipv6") || BLOCKED_V6.check(ip, "ipv6")
+  return true
 }
+
+const BLOCKED_V4 = new BlockList()
+for (const [net, bits] of [
+  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12],
+  ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.88.99.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15],
+  ["198.51.100.0", 24], ["203.0.113.0", 24], ["224.0.0.0", 4], ["240.0.0.0", 4],
+] as const) BLOCKED_V4.addSubnet(net, bits, "ipv4")
+const GLOBAL_V6 = new BlockList()
+GLOBAL_V6.addSubnet("2000::", 3, "ipv6")
+const BLOCKED_V6 = new BlockList()
+for (const [net, bits] of [["2001::", 23], ["2001:db8::", 32], ["2002::", 16], ["3fff::", 20]] as const) BLOCKED_V6.addSubnet(net, bits, "ipv6")
 
 // ─── Paginación y filtros ───────────────────────────────────────────────────
 

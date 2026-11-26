@@ -144,8 +144,8 @@ export function ApiKeys({ keys }: { keys: ApiKeyRow[] }) {
           <DialogHeader>
             <DialogTitle>Copia tu clave ahora</DialogTitle>
             <DialogDescription>
-              Por seguridad, es la única vez que la mostramos completa. Pégala en la otra app y no la compartas: da acceso de lectura a tus clientes, ventas y
-              productos.
+              Por seguridad, es la única vez que la mostramos completa. Pégala en la otra app y no la compartas: permite leer tus clientes, ventas y
+              productos, y pedir avisos cuando cambien.
             </DialogDescription>
           </DialogHeader>
           {created ? <CopyLine value={created} label="Copiar la clave" /> : null}
@@ -159,7 +159,7 @@ export function ApiKeys({ keys }: { keys: ApiKeyRow[] }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>¿Revocar la clave “{revoking?.name}”?</DialogTitle>
-            <DialogDescription>Las apps que la usan dejan de recibir tus datos de inmediato. No se puede deshacer, pero puedes crear otra.</DialogDescription>
+            <DialogDescription>Las apps que la usan dejan de recibir tus datos de inmediato y se eliminan los avisos que crearon. No se puede deshacer, pero puedes crear otra.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRevoking(null)}>

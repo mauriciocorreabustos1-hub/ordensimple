@@ -1953,6 +1953,8 @@ model Webhook {
   lastError   String?
   /// Entregas fallidas seguidas: a las 50 se pausa.
   failCount   Int       @default(0)
+  /// Si lo creó una app con su clave (por la API): al revocar esa clave, el aviso se elimina. Null: lo creó el negocio.
+  apiKeyId    String?
   createdAt   DateTime  @default(now())
 
   @@index([businessId])

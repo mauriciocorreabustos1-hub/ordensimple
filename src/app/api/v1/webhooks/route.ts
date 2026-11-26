@@ -38,7 +38,7 @@ export const POST = apiRoute(async (a, request) => {
   }
   const secreto = parsed.data.secreto ?? newWebhookSecret()
   const h = await db.webhook.create({
-    data: { businessId: a.businessId, url: parsed.data.url.trim(), events: [...new Set(parsed.data.eventos)], secret: sealSecret(secreto, WEBHOOK_SECRET_PURPOSE) },
+    data: { businessId: a.businessId, apiKeyId: a.keyId, url: parsed.data.url.trim(), events: [...new Set(parsed.data.eventos)], secret: sealSecret(secreto, WEBHOOK_SECRET_PURPOSE) },
   })
   return jsonResponse({ data: { ...hookOut(h), secreto } }, 201)
 })

@@ -109,7 +109,7 @@ describe("webhooks", () => {
     assert.ok(webhookUrlProblem("javascript:alert(1)"))
   })
   test("IPs internas (por si un dominio apunta a la red interna)", () => {
-    for (const ip of ["10.0.0.1", "127.0.0.1", "192.168.1.5", "172.16.0.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "fd00::1", "::ffff:10.0.0.1"]) {
+    for (const ip of ["10.0.0.1", "127.0.0.1", "192.168.1.5", "172.16.0.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "fd00::1", "::ffff:10.0.0.1", "::ffff:a00:1", "64:ff9b::a00:1", "2002:a00:1::", "fe80::1", "febf::1", "fec0::1", "ff02::1", "2001:db8::1", "198.51.100.7", "240.0.0.1", "no-es-ip"]) {
       assert.ok(isPrivateIp(ip), ip)
     }
     for (const ip of ["8.8.8.8", "104.18.2.3", "172.32.0.1", "2606:4700::1111"]) assert.equal(isPrivateIp(ip), false, ip)

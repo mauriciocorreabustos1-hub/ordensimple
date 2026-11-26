@@ -40,11 +40,13 @@ export async function revokeApiKey(id: string): Promise<ActionResult> {
     assertCan(ctx, "settings:manage")
     const r = await db.apiKey.updateMany({ where: { id, businessId: ctx.businessId, revokedAt: null }, data: { revokedAt: new Date() } })
     if (!r.count) return { ok: false, message: "Clave no encontrada." }
+    // Los avisos que esa app creó con su clave dejan de enviarse.
+    await db.webhook.deleteMany({ where: { businessId: ctx.businessId, apiKeyId: id } })
   } catch (error) {
     return toActionError(error)
   }
   revalidatePath(PATH)
-  return { ok: true, message: "Clave revocada. Las apps que la usaban dejan de tener acceso." }
+  return { ok: true, message: "Clave revocada. Las apps que la usaban dejan de tener acceso y sus avisos se eliminan." }
 }
 
 const webhookSchema = z.object({

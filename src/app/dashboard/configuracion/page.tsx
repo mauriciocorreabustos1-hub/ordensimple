@@ -481,7 +481,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
                 <Card id="claves" className="scroll-mt-20">
                   <CardHeader>
                     <CardTitle>Claves de API</CardTitle>
-                    <CardDescription>Cada clave da acceso de lectura a los datos de este negocio. Si una se filtra, revócala y crea otra.</CardDescription>
+                    <CardDescription>Cada clave permite leer los datos de este negocio y pedir avisos cuando cambien; nunca modificar nada. Si una se filtra, revócala y crea otra.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ApiKeys

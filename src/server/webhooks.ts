@@ -39,9 +39,15 @@ export async function deliverWebhook(url: string, secret: string, event: string,
     const finish = (r: { status: number; error: string | null }) => {
       if (!done) {
         done = true
+        clearTimeout(deadline)
         resolve(r)
       }
     }
+    // Límite total de 8 segundos (aunque la otra app mande la respuesta de a poco).
+    const deadline = setTimeout(() => {
+      req.destroy()
+      finish({ status: 0, error: "No respondió en 8 segundos" })
+    }, 8_000)
     // La IP se vuelve a revisar al conectar (no solo antes): así un dominio que cambia de IP entre medio
     // (DNS rebinding) tampoco puede llevar a la red interna. No se siguen redirecciones.
     const req = httpsRequest(
@@ -69,8 +75,9 @@ export async function deliverWebhook(url: string, secret: string, event: string,
         },
       },
       (res) => {
-        res.resume()
+        // Solo importa el código: no se lee la respuesta y se corta la conexión.
         const status = res.statusCode ?? 0
+        res.destroy()
         finish({ status, error: status >= 200 && status < 300 ? null : `Respondió ${status}` })
       },
     )
@@ -84,8 +91,16 @@ export async function deliverWebhook(url: string, secret: string, event: string,
 }
 
 async function dispatch(businessId: string, event: WebhookEvent, target: Target) {
-  const hooks = await db.webhook.findMany({ where: { businessId, active: true }, select: { id: true, url: true, events: true, secret: true, failCount: true } })
-  const wanted = hooks.filter((h) => wantsEvent(h.events, event))
+  const hooks = await db.webhook.findMany({
+    where: { businessId, active: true },
+    select: { id: true, url: true, events: true, secret: true, failCount: true, apiKeyId: true },
+  })
+  // Los que creó una app con una clave que ya se revocó no se envían (por si se crearon justo al revocarla).
+  const keyIds = [...new Set(hooks.map((h) => h.apiKeyId).filter((k): k is string => Boolean(k)))]
+  const liveKeys = keyIds.length
+    ? new Set((await db.apiKey.findMany({ where: { id: { in: keyIds }, revokedAt: null }, select: { id: true } })).map((k) => k.id))
+    : new Set<string>()
+  const wanted = hooks.filter((h) => (!h.apiKeyId || liveKeys.has(h.apiKeyId)) && wantsEvent(h.events, event))
   if (!wanted.length) return
   const body = JSON.stringify({
     evento: event,

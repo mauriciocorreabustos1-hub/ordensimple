@@ -42,6 +42,8 @@ import { getAppUrl } from "@/lib/app-url"
 import { canUseFeature, memberLimit, PLANS } from "@/lib/plans"
 import { can, ROLE_LABEL } from "@/lib/roles"
 import { requireBusiness } from "@/server/session"
+import { ApiAddress, ApiKeys, Webhooks } from "@/components/settings/integrations-section"
+import { MAX_WEBHOOKS } from "@/lib/api-events"
 
 export const metadata: Metadata = { title: "Configuración" }
 
@@ -117,6 +119,15 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
   const branchesOf = (userId: string) =>
     access.length ? access.filter((a) => a.userId === userId).map((a) => a.businessId) : [ctx.businessId]
   const hasRecords = records.some((n) => n > 0)
+  // Integraciones: claves de la API y avisos (webhooks).
+  const [apiKeys, webhooks] =
+    section === "integraciones" && canManage
+      ? await Promise.all([
+          db.apiKey.findMany({ where: { businessId: ctx.businessId, revokedAt: null }, orderBy: { createdAt: "asc" } }),
+          db.webhook.findMany({ where: { businessId: ctx.businessId }, orderBy: { createdAt: "asc" } }),
+        ])
+      : [[], []]
+  const shortDate = (d: Date) => formatDate(d, ctx.timezone, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 
   return (
     <div className="space-y-6">
@@ -443,6 +454,72 @@ export default async function SettingsPage({ searchParams }: PageProps<"/dashboa
               </CardContent>
             </Card>
             </>
+          ) : null}
+          {section === "integraciones" ? (
+            canManage ? (
+              <>
+                <Card id="ordencrm" className="scroll-mt-20">
+                  <CardHeader>
+                    <CardTitle>Conectar con OrdenCRM</CardTitle>
+                    <CardDescription>
+                      OrdenCRM recibe tus clientes, ventas y cotizaciones para hacer seguimiento comercial. Solo lee tus datos: no puede cambiar ni borrar nada.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
+                    <ol className="list-decimal space-y-2 pl-5">
+                      <li>Crea una clave aquí abajo, en “Claves de API”, y cópiala.</li>
+                      <li>En OrdenCRM, abre Integraciones, elige “Vincular OrdenSimple” y luego “Mi cuenta de OrdenSimple”.</li>
+                      <li>Pega la dirección de la API y la clave. OrdenCRM importa tus datos y queda sincronizado.</li>
+                      <li>Opcional: en OrdenCRM copia la dirección y el secreto del webhook, y agrégalos en “Avisos” para que cada venta llegue al instante.</li>
+                    </ol>
+                    <div className="space-y-1.5">
+                      <p className="font-medium">Dirección de la API</p>
+                      <ApiAddress url={`${getAppUrl()}/api/v1`} />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card id="claves" className="scroll-mt-20">
+                  <CardHeader>
+                    <CardTitle>Claves de API</CardTitle>
+                    <CardDescription>Cada clave da acceso de lectura a los datos de este negocio. Si una se filtra, revócala y crea otra.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ApiKeys
+                      keys={apiKeys.map((k) => ({
+                        id: k.id,
+                        name: k.name,
+                        hint: k.hint,
+                        createdLabel: formatDate(k.createdAt, ctx.timezone, { day: "numeric", month: "short", year: "numeric" }),
+                        lastUsedLabel: k.lastUsedAt ? shortDate(k.lastUsedAt) : null,
+                      }))}
+                    />
+                  </CardContent>
+                </Card>
+                <Card id="webhooks" className="scroll-mt-20">
+                  <CardHeader>
+                    <CardTitle>Avisos (webhooks)</CardTitle>
+                    <CardDescription>
+                      Le avisan al instante a otra app cuando hay un cliente nuevo o una venta o cotización nueva o modificada. Sin avisos, la app igual se
+                      sincroniza cada cierto tiempo.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Webhooks
+                      max={MAX_WEBHOOKS}
+                      hooks={webhooks.map((h) => ({
+                        id: h.id,
+                        url: h.url,
+                        events: h.events,
+                        active: h.active,
+                        lastLabel: h.lastSentAt ? shortDate(h.lastSentAt) : null,
+                        lastOk: h.lastSentAt ? !h.lastError : null,
+                        lastError: h.lastError,
+                      }))}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            ) : null
           ) : null}
           {section === "cuenta" ? (
             <>

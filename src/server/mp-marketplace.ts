@@ -8,6 +8,8 @@ import { onlineFee, saleMethodFromMp, type OnlineStatus } from "@/lib/online-pay
 import { quoteNumber } from "@/lib/quotes"
 import { businessManagers, sendPush } from "@/server/push"
 import { sendOrderConfirmation } from "@/server/order-email"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 // Cobros online como marketplace de Mercado Pago: cada negocio conecta su cuenta (OAuth), sus clientes le pagan
 // a esa cuenta y OrdenSimple recibe su comisión (marketplace_fee) en la cuenta de la aplicación.
@@ -220,7 +222,10 @@ export async function syncPayment(businessId: string, mpPaymentId: string) {
   let url = "/dashboard/cobros"
   if (payment.kind === "QUOTE" && payment.quoteId) {
     const q = await db.quote.findUnique({ where: { id: payment.quoteId }, select: { number: true, customerName: true, status: true } })
-    if (q?.status === "PENDING") await db.quote.update({ where: { id: payment.quoteId }, data: { status: "ACCEPTED", respondedAt: new Date() } })
+    if (q?.status === "PENDING") {
+      await db.quote.update({ where: { id: payment.quoteId }, data: { status: "ACCEPTED", respondedAt: new Date() } })
+      notifyIntegrations(businessId, "orden.actualizada", ID.quote(payment.quoteId))
+    }
     if (q) title = `💳 Cotización n.º ${quoteNumber(q.number)} pagada: ${money} (${q.customerName})`
     url = "/dashboard/cotizaciones"
   } else if (payment.kind === "WEB_ORDER" && payment.webOrderId) {

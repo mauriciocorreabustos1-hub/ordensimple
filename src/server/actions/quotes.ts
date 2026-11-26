@@ -18,6 +18,8 @@ import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, fiadoBlocked, li
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 const PRO_ONLY = "Las cotizaciones son parte del plan Pro."
 const NOT_FOUND = "Cotización no encontrada."
@@ -102,6 +104,7 @@ export async function createQuote(input: QuoteInput): Promise<ActionResult<{ id:
           select: { id: true, token: true, number: true },
         })
         revalidate()
+        notifyIntegrations(ctx.businessId, "orden.creada", ID.quote(quote.id))
         return { ok: true, message: `Cotización n.º ${quoteNumber(quote.number)} creada`, data: quote }
       } catch (error) {
         if (!isNumberTaken(error) || attempt >= 4) throw error
@@ -131,6 +134,7 @@ export async function updateQuote(id: string, input: QuoteInput): Promise<Action
     return toActionError(error)
   }
   revalidate()
+  notifyIntegrations(ctx.businessId, "orden.actualizada", ID.quote(id))
   return { ok: true, message: "Cotización actualizada" }
 }
 
@@ -164,6 +168,7 @@ export async function setQuoteStatus(id: string, status: "PENDING" | "ACCEPTED" 
     return toActionError(error)
   }
   revalidate()
+  notifyIntegrations(ctx.businessId, "orden.actualizada", ID.quote(id))
   return { ok: true, message: status === "ACCEPTED" ? "Marcada como aceptada" : status === "REJECTED" ? "Marcada como rechazada" : "Marcada como pendiente" }
 }
 
@@ -218,6 +223,7 @@ export async function sellQuote(id: string, paymentMethod: z.input<typeof paymen
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
+  notifyIntegrations(ctx.businessId, "orden.actualizada", ID.quote(id))
   return { ok: true, message: pm.data === "FIADO" ? "Venta fiada guardada" : "Venta guardada" }
 }
 
@@ -259,6 +265,7 @@ export async function respondToQuote(token: string, accept: boolean): Promise<Ac
     if (quoteState(quote.status, quote.validUntil) !== "PENDING") return { ok: false, message: "Esta cotización ya no se puede responder. Escríbele al negocio." }
     const r = await db.quote.updateMany({ where: { id: quote.id, status: "PENDING" }, data: { status: accept ? "ACCEPTED" : "REJECTED", respondedAt: new Date() } })
     if (r.count !== 1) return { ok: false, message: "Esta cotización ya se respondió." }
+    notifyIntegrations(quote.businessId, "orden.actualizada", ID.quote(quote.id))
     after(async () =>
       sendPush(await businessManagers(quote.businessId), {
         title: accept ? `✅ Cotización n.º ${quoteNumber(quote.number)} aceptada` : `❌ Cotización n.º ${quoteNumber(quote.number)} rechazada`,

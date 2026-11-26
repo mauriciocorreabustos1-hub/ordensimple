@@ -1,7 +1,7 @@
-import { Bell, Globe, Landmark, Printer, Store, UserRound, Users, type LucideIcon } from "lucide-react"
+import { Bell, Globe, Landmark, Plug, Printer, Store, UserRound, Users, type LucideIcon } from "lucide-react"
 
 /** Categorías de Configuración (cada una muestra solo sus ajustes). */
-export type SettingsSection = "negocio" | "tienda" | "impuestos" | "impresoras" | "avisos" | "equipo" | "cuenta"
+export type SettingsSection = "negocio" | "tienda" | "impuestos" | "impresoras" | "avisos" | "equipo" | "integraciones" | "cuenta"
 
 export const SETTINGS_SECTIONS: { id: SettingsSection; label: string; hint: string; icon: LucideIcon }[] = [
   { id: "negocio", label: "Tu negocio", hint: "Datos, logo y apariencia", icon: Store },
@@ -10,6 +10,7 @@ export const SETTINGS_SECTIONS: { id: SettingsSection; label: string; hint: stri
   { id: "impresoras", label: "Impresoras", hint: "Boletas, cuentas y comandas", icon: Printer },
   { id: "avisos", label: "Avisos", hint: "Qué te avisamos por correo", icon: Bell },
   { id: "equipo", label: "Equipo", hint: "Usuarios y permisos", icon: Users },
+  { id: "integraciones", label: "Integraciones", hint: "OrdenCRM y otras apps", icon: Plug },
   { id: "cuenta", label: "Tu cuenta", hint: "Plan, seguridad y datos", icon: UserRound },
 ]
 

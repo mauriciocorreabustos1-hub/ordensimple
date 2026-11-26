@@ -6,6 +6,8 @@ import { canUseFeature } from "@/lib/plans"
 import { customerSchema, idSchema, supplierSchema, type CustomerInput, type SupplierInput } from "@/lib/validations"
 import { assertCan, requireBusiness } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 // ─── Clientes ───────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ export async function saveCustomer(id: string | null, input: CustomerInput): Pro
       customerId = (await db.customer.create({ data: { ...data, businessId: ctx.businessId } })).id
     }
     revalidatePath("/dashboard", "layout")
+    notifyIntegrations(ctx.businessId, id ? "cliente.actualizado" : "cliente.creado", ID.customer(customerId))
     return { ok: true, message: id ? "Cliente actualizado" : "Cliente creado", data: { id: customerId } }
   } catch (error) {
     return toActionError(error)

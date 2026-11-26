@@ -22,6 +22,8 @@ import { sendOrderConfirmation } from "@/server/order-email"
 import { assertCan, requireBusiness } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 const PRO_ONLY = "La tienda online es parte del plan Pro."
 
@@ -256,6 +258,7 @@ const HANDLED = "Este pedido ya lo atendió otra persona. Recarga la página."
 /** Convierte el pedido en una venta (descuenta stock y suma a la caja). */
 export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<typeof paymentMethodSchema>): Promise<ActionResult> {
   const ctx = await requireBusiness()
+  let chargedSaleId = ""
   const pm = paymentMethodSchema.safeParse(paymentMethod)
   if (!idSchema.safeParse(id).success || !pm.success) return { ok: false, message: "Pedido no encontrado." }
   try {
@@ -295,12 +298,14 @@ export async function acceptWebOrderAsSale(id: string, paymentMethod: z.input<ty
         ...(order.couponCode && order.couponDiscount ? [{ promotionId: "", name: `Cupón ${order.couponCode}`, amount: order.couponDiscount }] : []),
       ])
       await claim(tx, id, ctx.user.id, { saleId: sale.id, status: "DONE" })
+      chargedSaleId = sale.id
     })
   } catch (error) {
     if (error instanceof Error && error.message === "ORDER_HANDLED") return { ok: false, message: HANDLED }
     return toActionError(error)
   }
   revalidatePath("/dashboard", "layout")
+  if (chargedSaleId) notifyIntegrations(ctx.businessId, "orden.creada", ID.sale(chargedSaleId))
   return { ok: true, message: "Pedido registrado como venta" }
 }
 

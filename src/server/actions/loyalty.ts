@@ -10,6 +10,8 @@ import { canApproveDiscounts } from "@/lib/roles"
 import { idSchema, money, optionalText } from "@/lib/validations"
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 const PRO_ONLY = "La tarjeta de fidelidad es parte del plan Pro."
 const NOT_FOUND = "Tarjeta no encontrada."
@@ -94,6 +96,7 @@ export async function issueLoyaltyCard(input: IssueCardInput): Promise<ActionRes
       select: { id: true, token: true },
     })
     revalidate()
+    if (!("customerId" in d)) notifyIntegrations(ctx.businessId, "cliente.creado", ID.customer(customerId))
     return { ok: true, message: "Tarjeta lista: envíasela por WhatsApp", data: { ...card, existed: false } }
   } catch (error) {
     return toActionError(error)

@@ -39,6 +39,8 @@ import { assertCan, requireBusiness, type BusinessContext } from "@/server/sessi
 import { earnLoyalty, relinkLoyalty, revertLoyalty } from "@/server/loyalty"
 import { earnedNote, type LoyaltyEarned } from "@/lib/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 function revalidate() {
   revalidatePath("/dashboard", "layout")
@@ -104,6 +106,7 @@ export async function createQuickSale(input: QuickSaleInput): Promise<ActionResu
       saleId = sale.id
     })
     revalidate()
+    if (customerName) notifyIntegrations(ctx.businessId, "orden.creada", ID.sale(saleId))
     return { ok: true, data: { saleId }, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
@@ -147,6 +150,7 @@ export async function updateQuickSale(id: string, input: QuickSaleInput): Promis
     return toActionError(error)
   }
   revalidate()
+  notifyIntegrations(ctx.businessId, "orden.actualizada", ID.sale(parsedId.data))
   return { ok: true, message: "Venta actualizada" }
 }
 
@@ -264,6 +268,7 @@ export async function createSale(input: SaleInput): Promise<ActionResult<{ saleI
       saleId = sale.id
     })
     revalidate()
+    if (customerName) notifyIntegrations(ctx.businessId, "orden.creada", ID.sale(saleId))
     return { ok: true, data: { saleId }, message: (paymentMethod === "FIADO" ? "Venta fiada guardada" : "Venta guardada") + earnedNote(loyal) }
   } catch (error) {
     if (isDuplicate(error)) return { ok: true, message: "Venta guardada" }
@@ -332,6 +337,7 @@ export async function updateSale(id: string, input: SaleInput): Promise<ActionRe
     return toActionError(error)
   }
   revalidate()
+  notifyIntegrations(ctx.businessId, "orden.actualizada", ID.sale(parsedId.data))
   return { ok: true, message: "Venta actualizada" }
 }
 

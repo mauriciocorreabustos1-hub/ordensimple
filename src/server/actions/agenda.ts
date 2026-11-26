@@ -15,6 +15,8 @@ import { applyStock, buildLines, customItemsBlocked, FIADO_PRO, priceBelowList, 
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 const PRO_ONLY = "La Agenda es parte del plan Pro."
 const CHANGED = "Esta cita cambió (otra persona la cobró o la editó). Recarga la página."
@@ -247,6 +249,7 @@ export async function markAppointmentReminded(id: string): Promise<ActionResult>
  */
 export async function chargeAppointment(id: string, payment: z.input<typeof paymentMethodSchema>): Promise<ActionResult> {
   const ctx = await requireBusiness()
+  let chargedSaleId = ""
   const pm = paymentMethodSchema.safeParse(payment)
   if (!idSchema.safeParse(id).success || !pm.success) return { ok: false, message: "Cita no encontrada" }
   try {
@@ -283,6 +286,7 @@ export async function chargeAppointment(id: string, payment: z.input<typeof paym
       // Solo si nadie la cobró entretanto.
       const done = await tx.appointment.updateMany({ where: { id, saleId: null }, data: { saleId: sale.id, status: "DONE" } })
       if (done.count !== 1) throw new Error("APPOINTMENT_CHARGED")
+      if (a.customerId) chargedSaleId = sale.id
     })
   } catch (error) {
     if (error instanceof Error && error.message === "APPOINTMENT_CHARGED") return { ok: false, message: CHANGED }
@@ -290,6 +294,7 @@ export async function chargeAppointment(id: string, payment: z.input<typeof paym
   }
   revalidate()
   revalidatePath("/dashboard/ventas")
+  if (chargedSaleId) notifyIntegrations(ctx.businessId, "orden.creada", ID.sale(chargedSaleId))
   return { ok: true, message: "Cita cobrada" }
 }
 

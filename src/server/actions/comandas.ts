@@ -32,6 +32,8 @@ import {
 import { assertCan, requireBusiness, type BusinessContext } from "@/server/session"
 import { earnLoyalty } from "@/server/loyalty"
 import { toActionError, validationError, type ActionResult } from "@/server/actions/result"
+import { notifyIntegrations } from "@/server/webhooks"
+import { ID } from "@/lib/api-v1"
 
 function revalidate() {
   revalidatePath("/dashboard", "layout")
@@ -154,6 +156,7 @@ export async function saveComanda(id: string, input: ComandaInput): Promise<Acti
 /** Cobra la comanda: crea una venta normal (descuenta stock, suma a la caja y a los reportes) y la cierra. */
 export async function chargeComanda(id: string, input: ComandaChargeInput): Promise<ActionResult> {
   const ctx = await requireBusiness()
+  let chargedSaleId = ""
   const parsed = comandaChargeSchema.safeParse(input)
   if (!parsed.success) return validationError(parsed.error)
   if (!idSchema.safeParse(id).success) return { ok: false, message: "Comanda no encontrada" }
@@ -239,6 +242,7 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
       await linkPromotions(tx, sale.id, promo.applied)
       await disc.link(tx, sale.id)
       await earnLoyalty(tx, ctx, sale.id, customerId, sale.total)
+      if (customerId) chargedSaleId = sale.id
     })
   } catch (error) {
     if (isDiscountUsed(error)) return { ok: false, message: DISCOUNT_USED_MESSAGE }
@@ -246,6 +250,7 @@ export async function chargeComanda(id: string, input: ComandaChargeInput): Prom
     return toActionError(error)
   }
   revalidate()
+  if (chargedSaleId) notifyIntegrations(ctx.businessId, "orden.creada", ID.sale(chargedSaleId))
   if (!finished) return { ok: true, message: "Parte cobrada" }
   return { ok: true, message: paymentMethod === "FIADO" ? "Comanda cobrada al fiado" : "Comanda cobrada" }
 }

@@ -238,6 +238,9 @@ model Business {
   referralCode      String?                  @unique
   /// Último aviso de que el plan vence ("2026-11-30:5" = 5 días antes, ":0" = el día que vence), para no repetirlo.
   planNoticeKey     String?
+  /// API para conectar otras apps (OrdenCRM): claves y avisos (webhooks).
+  apiKeys           ApiKey[]
+  webhooks          Webhook[]
 
   @@map("business")
 }
@@ -400,6 +403,7 @@ model Product {
   @@unique([businessId, sku])
   @@index([businessId, active])
   @@index([categoryId])
+  @@index([businessId, updatedAt])
   @@map("product")
 }
 
@@ -446,6 +450,7 @@ model Sale {
   @@unique([businessId, clientId])
   @@index([businessId, date])
   @@index([customerId])
+  @@index([businessId, updatedAt])
   @@map("sale")
 }
 
@@ -538,6 +543,7 @@ model Customer {
   updatedAt    DateTime          @updatedAt
 
   @@index([businessId])
+  @@index([businessId, updatedAt])
   @@map("customer")
 }
 
@@ -1064,6 +1070,7 @@ model Quote {
 
   @@unique([businessId, number])
   @@index([businessId, status, createdAt])
+  @@index([businessId, updatedAt])
   @@map("quote")
 }
 
@@ -1906,4 +1913,48 @@ model LinkEvent {
   @@index([pageId, createdAt])
   @@index([pageId, visitor, createdAt])
   @@map("link_event")
+}
+
+// ─── API para otras apps (OrdenCRM) ─────────────────────────────────────────
+
+/// Clave de la API de un negocio. Se guarda solo su huella (SHA-256): la clave completa se muestra una sola vez.
+model ApiKey {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Para qué es (ej.: "OrdenCRM").
+  name        String
+  /// Comienzo y final de la clave, para reconocerla en la lista (os_live_ab12…f9e0).
+  hint        String
+  hash        String    @unique
+  createdById String?
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId])
+  @@map("api_key")
+}
+
+/// Aviso (webhook): cuando cambia un cliente o una orden, se envía un POST firmado a esta dirección.
+model Webhook {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  url         String
+  /// cliente.creado, cliente.actualizado, orden.creada, orden.actualizada o "*" (todos).
+  events      String[]
+  /// Secreto para firmar (cifrado con secret-box).
+  secret      String
+  active      Boolean   @default(true)
+  lastSentAt  DateTime?
+  /// Código HTTP de la última entrega (0 = no se pudo conectar).
+  lastStatus  Int?
+  lastError   String?
+  /// Entregas fallidas seguidas: a las 50 se pausa.
+  failCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId])
+  @@map("webhook")
 }
